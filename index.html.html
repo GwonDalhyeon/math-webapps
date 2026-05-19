@@ -1,0 +1,1434 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>몬티홀 문제 실험</title>
+  <style>
+    :root {
+      --bg: #f7f9fc;
+      --panel: #ffffff;
+      --ink: #172033;
+      --muted: #667085;
+      --line: #d9e2ef;
+      --blue: #2563eb;
+      --blue-soft: #dbeafe;
+      --orange: #f97316;
+      --orange-soft: #ffedd5;
+      --green: #16a34a;
+      --green-soft: #dcfce7;
+      --red: #dc2626;
+      --red-soft: #fee2e2;
+      --gray-soft: #eef2f7;
+      --shadow: 0 12px 28px rgba(15, 23, 42, 0.08);
+      --radius: 22px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: radial-gradient(circle at top left, #e0f2fe 0, transparent 34%),
+                  radial-gradient(circle at top right, #ffedd5 0, transparent 30%),
+                  var(--bg);
+      color: var(--ink);
+      line-height: 1.55;
+    }
+
+    .app {
+      width: min(1180px, calc(100% - 28px));
+      margin: 22px auto 40px;
+    }
+
+    header {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 24px 28px;
+      box-shadow: var(--shadow);
+      display: grid;
+      gap: 14px;
+    }
+
+    .title-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(2rem, 4vw, 3.4rem);
+      line-height: 1.1;
+      letter-spacing: -0.04em;
+    }
+
+    .question {
+      margin: 6px 0 0;
+      font-size: clamp(1.12rem, 2vw, 1.45rem);
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    .teacher-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 800;
+      color: var(--muted);
+      font-size: 0.95rem;
+      user-select: none;
+      padding: 8px 10px;
+      border-radius: 999px;
+      background: var(--gray-soft);
+    }
+
+    .rules {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+
+    .rule {
+      background: #f8fafc;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 12px 14px;
+      font-size: clamp(0.98rem, 1.5vw, 1.12rem);
+      font-weight: 800;
+    }
+
+    .main-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.25fr) minmax(320px, 0.75fr);
+      gap: 18px;
+      margin-top: 18px;
+      align-items: start;
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 20px;
+    }
+
+    .stage-panel {
+      display: grid;
+      gap: 18px;
+    }
+
+    .doors {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+    }
+
+    .door-card {
+      position: relative;
+      min-height: 270px;
+      border: 4px solid var(--line);
+      border-radius: 24px;
+      background: linear-gradient(180deg, #f8fafc, #eef2ff);
+      display: grid;
+      place-items: center;
+      cursor: pointer;
+      transition: transform 0.18s ease, border-color 0.18s ease, background 0.18s ease, opacity 0.18s ease;
+      overflow: hidden;
+    }
+
+    .door-card:hover {
+      transform: translateY(-3px);
+      border-color: #93c5fd;
+    }
+
+    .door-card.not-clickable {
+      cursor: default;
+    }
+
+    .door-card.not-clickable:hover {
+      transform: none;
+      border-color: var(--line);
+    }
+
+    .door-card.initial-choice {
+      border-color: var(--blue);
+      background: linear-gradient(180deg, var(--blue-soft), #eff6ff);
+    }
+
+    .door-card.final-choice {
+      outline: 6px solid rgba(22, 163, 74, 0.2);
+      border-color: var(--green);
+    }
+
+    .door-card.host-revealed {
+      background: #f1f5f9;
+      border-color: #94a3b8;
+      opacity: 0.82;
+    }
+
+    .door-card.winning-door {
+      background: linear-gradient(180deg, #fef3c7, #fff7ed);
+      border-color: #f59e0b;
+    }
+
+    .door-icon {
+      font-size: clamp(4rem, 9vw, 6.8rem);
+      line-height: 1;
+      filter: drop-shadow(0 6px 8px rgba(15,23,42,0.12));
+    }
+
+    .door-number {
+      position: absolute;
+      top: 12px;
+      left: 14px;
+      font-size: 1.1rem;
+      font-weight: 900;
+      color: var(--muted);
+    }
+
+    .badge {
+      position: absolute;
+      right: 10px;
+      top: 10px;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      border-radius: 999px;
+      padding: 6px 10px;
+      background: rgba(255,255,255,0.86);
+      border: 1px solid var(--line);
+      font-size: 0.92rem;
+      font-weight: 900;
+    }
+
+    .badge.initial {
+      color: var(--blue);
+      border-color: #bfdbfe;
+    }
+
+    .badge.final {
+      color: var(--green);
+      border-color: #bbf7d0;
+      top: 48px;
+    }
+
+    .badge.host {
+      color: #475569;
+      border-color: #cbd5e1;
+    }
+
+    .message {
+      background: #0f172a;
+      color: #ffffff;
+      border-radius: 20px;
+      padding: 18px 20px;
+      font-size: clamp(1.15rem, 2vw, 1.45rem);
+      font-weight: 900;
+      min-height: 72px;
+      display: flex;
+      align-items: center;
+    }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    button {
+      border: 0;
+      border-radius: 16px;
+      padding: 14px 18px;
+      font-size: clamp(1rem, 1.5vw, 1.15rem);
+      font-weight: 900;
+      cursor: pointer;
+      background: #e2e8f0;
+      color: #0f172a;
+      transition: transform 0.12s ease, filter 0.12s ease;
+    }
+
+    button:hover {
+      transform: translateY(-1px);
+      filter: brightness(0.98);
+    }
+
+    button:active {
+      transform: translateY(0);
+    }
+
+    button.primary {
+      background: var(--blue);
+      color: white;
+    }
+
+    button.success {
+      background: var(--green);
+      color: white;
+    }
+
+    button.warning {
+      background: var(--orange);
+      color: white;
+    }
+
+    button.danger {
+      background: var(--red);
+      color: white;
+    }
+
+    button.ghost {
+      background: #f8fafc;
+      border: 1px solid var(--line);
+    }
+
+    button:disabled {
+      opacity: 0.48;
+      cursor: not-allowed;
+    }
+
+    .side-panel {
+      display: grid;
+      gap: 18px;
+    }
+
+    .section-title {
+      margin: 0 0 10px;
+      font-size: clamp(1.18rem, 2vw, 1.45rem);
+      letter-spacing: -0.02em;
+    }
+
+    .result-box {
+      min-height: 128px;
+      background: #f8fafc;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 15px;
+      font-size: 1rem;
+    }
+
+    .result-box strong {
+      font-weight: 950;
+    }
+
+    .outcome-win {
+      color: var(--green);
+      font-weight: 950;
+    }
+
+    .outcome-lose {
+      color: var(--red);
+      font-weight: 950;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+    }
+
+    .stat-card {
+      background: #f8fafc;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 12px;
+    }
+
+    .stat-label {
+      font-size: 0.9rem;
+      color: var(--muted);
+      font-weight: 800;
+    }
+
+    .stat-value {
+      display: block;
+      margin-top: 4px;
+      font-size: clamp(1.3rem, 3vw, 2rem);
+      font-weight: 950;
+      letter-spacing: -0.03em;
+    }
+
+    .bar-area {
+      display: grid;
+      gap: 16px;
+      margin-top: 10px;
+    }
+
+    .bar-row {
+      display: grid;
+      grid-template-columns: 92px 1fr 72px;
+      gap: 10px;
+      align-items: center;
+      font-weight: 900;
+    }
+
+    .bar-track {
+      position: relative;
+      height: 34px;
+      background: #e2e8f0;
+      border-radius: 999px;
+      overflow: hidden;
+      border: 1px solid #cbd5e1;
+    }
+
+    .bar-fill {
+      height: 100%;
+      width: 0%;
+      border-radius: 999px;
+      transition: width 0.2s ease;
+    }
+
+    .bar-fill.stay {
+      background: var(--blue);
+    }
+
+    .bar-fill.switch {
+      background: var(--orange);
+    }
+
+    .reference-line {
+      position: absolute;
+      top: -2px;
+      bottom: -2px;
+      width: 3px;
+      background: #0f172a;
+      opacity: 0.7;
+    }
+
+    .reference-labels {
+      display: flex;
+      justify-content: space-between;
+      color: var(--muted);
+      font-size: 0.86rem;
+      font-weight: 800;
+      margin-top: -8px;
+    }
+
+
+    .case-table-wrap {
+      margin: 14px 0 18px;
+      overflow-x: auto;
+    }
+
+    .case-table {
+      width: 100%;
+      min-width: 760px;
+      border-collapse: collapse;
+      background: #ffffff;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      overflow: hidden;
+    }
+
+    .case-table th,
+    .case-table td {
+      padding: 12px 14px;
+      border-bottom: 1px solid #e2e8f0;
+      border-right: 1px solid #e2e8f0;
+      text-align: center;
+      font-weight: 800;
+    }
+
+    .case-table th:last-child,
+    .case-table td:last-child {
+      border-right: 0;
+    }
+
+    .case-table tr:last-child td {
+      border-bottom: 0;
+    }
+
+    .case-table thead th {
+      background: #f8fafc;
+      font-weight: 950;
+    }
+
+    .table-note {
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 0.94rem;
+      font-weight: 700;
+    }
+
+    .result-success {
+      color: var(--green);
+      font-weight: 950;
+    }
+
+    .result-fail {
+      color: var(--red);
+      font-weight: 950;
+    }
+
+    .formula-panel {
+      display: grid;
+      gap: 12px;
+      margin: 14px 0;
+    }
+
+    .formula-card {
+      background: #f8fafc;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 14px 16px;
+    }
+
+    .formula-card h4 {
+      margin: 0 0 8px;
+      font-size: 1.05rem;
+    }
+
+    .math-line {
+      display: block;
+      margin: 8px 0;
+      padding: 10px 12px;
+      border-radius: 14px;
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      font-size: clamp(1.05rem, 2vw, 1.28rem);
+      font-weight: 950;
+      letter-spacing: -0.02em;
+      overflow-x: auto;
+      white-space: nowrap;
+    }
+
+    .symbol-def {
+      display: grid;
+      gap: 8px;
+      margin: 10px 0;
+    }
+
+    .symbol-def div {
+      padding: 10px 12px;
+      border-radius: 14px;
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      font-weight: 850;
+    }
+
+    details {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 0;
+      overflow: hidden;
+      box-shadow: 0 6px 16px rgba(15, 23, 42, 0.05);
+    }
+
+    summary {
+      cursor: pointer;
+      padding: 16px 18px;
+      font-weight: 950;
+      font-size: 1.08rem;
+      background: #f8fafc;
+    }
+
+    .details-body {
+      padding: 16px 18px 18px;
+      border-top: 1px solid var(--line);
+    }
+
+    .key-message {
+      background: var(--orange-soft);
+      border: 2px solid #fdba74;
+      border-radius: 18px;
+      padding: 14px 16px;
+      font-size: 1.08rem;
+      font-weight: 950;
+    }
+
+    .classification {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin: 12px 0;
+    }
+
+    .classification-card {
+      border-radius: 18px;
+      padding: 14px;
+      border: 2px solid transparent;
+      font-weight: 850;
+    }
+
+    .classification-card.car {
+      background: var(--blue-soft);
+      border-color: #93c5fd;
+    }
+
+    .classification-card.goat {
+      background: var(--orange-soft);
+      border-color: #fdba74;
+    }
+
+    .grid100 {
+      display: grid;
+      grid-template-columns: repeat(20, 1fr);
+      gap: 4px;
+      margin-top: 12px;
+    }
+
+    .cell {
+      aspect-ratio: 1;
+      border-radius: 4px;
+      background: #e2e8f0;
+      border: 1px solid rgba(15, 23, 42, 0.08);
+    }
+
+    .cell.car {
+      background: var(--blue);
+    }
+
+    .cell.goat {
+      background: var(--orange);
+    }
+
+    canvas {
+      width: 100%;
+      max-width: 100%;
+      background: #ffffff;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+    }
+
+    .learning-points {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    .point {
+      background: #f8fafc;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 12px 14px;
+      font-weight: 800;
+    }
+
+    .small-note {
+      color: var(--muted);
+      font-size: 0.92rem;
+      font-weight: 700;
+    }
+
+    .teacher-controls {
+      display: none;
+      margin-top: 10px;
+      padding: 12px;
+      border-radius: 16px;
+      background: #f8fafc;
+      border: 1px dashed #94a3b8;
+    }
+
+    .teacher-controls.show {
+      display: block;
+    }
+
+    @media (max-width: 900px) {
+      .main-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .doors {
+        gap: 10px;
+      }
+
+      .door-card {
+        min-height: 210px;
+      }
+
+      .rules,
+      .learning-points {
+        grid-template-columns: 1fr;
+      }
+
+      .classification {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 560px) {
+      .app {
+        width: min(100% - 16px, 1180px);
+        margin-top: 10px;
+      }
+
+      header,
+      .panel {
+        padding: 16px;
+      }
+
+      .doors {
+        grid-template-columns: 1fr;
+      }
+
+      .door-card {
+        min-height: 150px;
+      }
+
+      .bar-row {
+        grid-template-columns: 76px 1fr 58px;
+        font-size: 0.9rem;
+      }
+
+      .stats-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .grid100 {
+        grid-template-columns: repeat(10, 1fr);
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <div class="title-row">
+        <div>
+          <h1>몬티홀 문제 실험</h1>
+          <p class="question">선택을 바꾸면 정말 유리할까?</p>
+        </div>
+        <label class="teacher-toggle">
+          <input type="checkbox" id="teacherModeToggle" />
+          교사용 단계 시연 모드
+        </label>
+      </div>
+
+      <div class="rules" aria-label="사회자의 규칙">
+        <div class="rule">① 문 뒤의 자동차와 염소는 먼저 배치되어 있다.</div>
+        <div class="rule">② 사회자는 자동차 문을 열지 않는다.</div>
+        <div class="rule">③ 염소 문 하나를 반드시 열어 준다.</div>
+      </div>
+    </header>
+
+    <main class="main-grid">
+      <section class="panel stage-panel">
+        <div class="doors" id="doors"></div>
+
+        <div class="message" id="message">
+          먼저 문 하나를 선택하세요.
+        </div>
+
+        <div class="controls" id="controls"></div>
+
+        <div class="teacher-controls" id="teacherControls">
+          <strong>교사용 시연 안내</strong>
+          <p class="small-note">
+            기본 흐름은 학생이 문을 고르면 자동으로 사회자가 염소 문을 엽니다.
+            수업 시연에서는 각 단계의 안내 문구를 멈춰 읽고, 학생에게 다음 선택을 질문하는 용도로 사용하세요.
+          </p>
+          <button class="ghost" id="teacherResetCurrent">현재 시행만 다시 시작</button>
+        </div>
+      </section>
+
+      <aside class="side-panel">
+        <section class="panel">
+          <h2 class="section-title">이번 시행 해석</h2>
+          <div class="result-box" id="trialExplanation">
+            아직 결과가 없습니다. 문 하나를 골라 실험을 시작하세요.
+          </div>
+        </section>
+
+        <section class="panel">
+          <h2 class="section-title">누적 결과</h2>
+          <div class="stats-grid">
+            <div class="stat-card">
+              <span class="stat-label">총 시행 횟수</span>
+              <strong class="stat-value" id="totalTrials">0</strong>
+            </div>
+            <div class="stat-card">
+              <span class="stat-label">처음 선택 염소</span>
+              <strong class="stat-value" id="firstGoatCount">0</strong>
+            </div>
+            <div class="stat-card">
+              <span class="stat-label">유지 승리</span>
+              <strong class="stat-value" id="stayWins">0</strong>
+            </div>
+            <div class="stat-card">
+              <span class="stat-label">변경 승리</span>
+              <strong class="stat-value" id="switchWins">0</strong>
+            </div>
+          </div>
+
+          <div class="bar-area" aria-label="누적 승률 막대그래프">
+            <div class="bar-row">
+              <span>유지</span>
+              <div class="bar-track">
+                <div class="bar-fill stay" id="stayBar"></div>
+                <div class="reference-line" style="left:33.333%"></div>
+              </div>
+              <span id="stayRate">0.000</span>
+            </div>
+            <div class="bar-row">
+              <span>변경</span>
+              <div class="bar-track">
+                <div class="bar-fill switch" id="switchBar"></div>
+                <div class="reference-line" style="left:66.667%"></div>
+              </div>
+              <span id="switchRate">0.000</span>
+            </div>
+            <div class="reference-labels">
+              <span>유지 이론값 1/3</span>
+              <span>변경 이론값 2/3</span>
+            </div>
+          </div>
+
+          <p class="small-note" id="cumulativeComment">
+            누적 실험을 실행하면 상대도수가 어떻게 안정되는지 볼 수 있습니다.
+          </p>
+        </section>
+      </aside>
+    </main>
+
+    <section class="panel" style="margin-top: 18px;">
+      <h2 class="section-title">심화 패널</h2>
+
+      <details>
+        <summary>왜 바꾸면 2/3일까? — 조건부확률 식으로 보기</summary>
+        <div class="details-body">
+          <div class="classification">
+            <div class="classification-card car">
+              <strong>처음 선택이 자동차인 경우: 약 1/3</strong><br />
+              그대로 유지하면 승리, 바꾸면 패배
+            </div>
+            <div class="classification-card goat">
+              <strong>처음 선택이 염소인 경우: 약 2/3</strong><br />
+              그대로 유지하면 패배, 바꾸면 승리
+            </div>
+          </div>
+
+          <div class="case-table-wrap">
+            <table class="case-table">
+              <thead>
+                <tr>
+                  <th>경우</th>
+                  <th>1번 문</th>
+                  <th>2번 문</th>
+                  <th>3번 문</th>
+                  <th>사회자가 연 문<br />(자동차가 없는 문)</th>
+                  <th>바꾸면 선택하는 문</th>
+                  <th>결과</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>①</td>
+                  <td>자동차</td>
+                  <td>염소</td>
+                  <td>염소</td>
+                  <td>2번 또는 3번의 염소</td>
+                  <td>남아 있는 다른 염소 문</td>
+                  <td class="result-fail">실패</td>
+                </tr>
+                <tr>
+                  <td>②</td>
+                  <td>염소</td>
+                  <td>자동차</td>
+                  <td>염소</td>
+                  <td>3번의 염소</td>
+                  <td>2번 문</td>
+                  <td class="result-success">성공</td>
+                </tr>
+                <tr>
+                  <td>③</td>
+                  <td>염소</td>
+                  <td>염소</td>
+                  <td>자동차</td>
+                  <td>2번의 염소</td>
+                  <td>3번 문</td>
+                  <td class="result-success">성공</td>
+                </tr>
+              </tbody>
+            </table>
+            <div class="table-note">
+              처음 선택을 항상 1번으로 하고, 사회자가 자동차가 없는 문(염소 문) 하나를 연다고 하면 가능한 배치는 위의 3가지입니다.
+              이때 선택을 바꾸면 ①에서는 실패하고, ②와 ③에서는 성공합니다.
+              따라서 바꾸어서 성공하는 경우는 3가지 중 2가지이므로, 변경 전략의 승률은 2/3로 이해할 수 있습니다.
+            </div>
+          </div>
+
+          <div class="formula-panel">
+            <div class="formula-card">
+              <h4>사건을 이렇게 두자</h4>
+              <p class="small-note">
+                설명을 단순하게 하기 위해 처음에 1번 문을 골랐고, 사회자는 자동차가 없는 문(염소 문) 하나를 연다고 하자.
+              </p>
+              <div class="symbol-def">
+                <div><strong>A</strong>: 자동차가 처음 선택한 1번 문 뒤에 있는 사건</div>
+                <div><strong>B</strong>: 사회자가 3번 문을 열어 염소를 보여 주는 사건</div>
+              </div>
+            </div>
+
+            <div class="formula-card">
+              <h4>선택을 유지하면</h4>
+              <span class="math-line">P(유지 승리) = P(A|B) = 1/3</span>
+              <p>
+                사회자가 염소 문을 열어 주었다는 조건 <strong>B</strong> 아래에서,
+                자동차가 처음 선택한 문 뒤에 있는 사건 <strong>A</strong>가 일어나야 유지 전략이 이깁니다.
+              </p>
+            </div>
+
+            <div class="formula-card">
+              <h4>선택을 바꾸면</h4>
+              <span class="math-line">P(변경 승리) = P(Aᶜ|B) = 2/3</span>
+              <p>
+                자동차가 처음 선택한 문 뒤에 없는 사건은 <strong>Aᶜ</strong>입니다.
+                이 경우 사회자가 다른 염소 문을 제거해 주므로, 남은 닫힌 문으로 바꾸면 자동차를 얻게 됩니다.
+              </p>
+            </div>
+          </div>
+
+          <p>
+            사회자는 자동차 문을 열 수 없고, 내가 고르지 않은 문 중 염소 문 하나를 반드시 제거합니다.
+            그래서 처음 선택이 염소였던 경우에는 남은 닫힌 문이 자동차가 됩니다.
+          </p>
+          <div class="key-message">
+            바꾸는 전략은 남은 문 하나를 새로 찍는 것이 아니라,
+            처음에 고르지 않았던 두 문의 가능성 2/3을 가져오는 전략이다.
+          </div>
+        </div>
+      </details>
+
+      <details>
+        <summary>처음 선택 분류판 보기</summary>
+        <div class="details-body">
+          <div class="classification">
+            <div class="classification-card car">
+              <strong>처음 선택 자동차</strong><br />
+              <span id="classCarCount">0</span>회 → 유지 전략 승리
+            </div>
+            <div class="classification-card goat">
+              <strong>처음 선택 염소</strong><br />
+              <span id="classGoatCount">0</span>회 → 변경 전략 승리
+            </div>
+          </div>
+          <p class="small-note">
+            아래 격자는 최근 최대 100회의 시행을 나타냅니다. 파란색은 처음 선택이 자동차였던 시행,
+            주황색은 처음 선택이 염소였던 시행입니다.
+          </p>
+          <div class="grid100" id="grid100"></div>
+        </div>
+      </details>
+
+      <details>
+        <summary>상대도수 변화 그래프 보기</summary>
+        <div class="details-body">
+          <p class="small-note">
+            시행 횟수가 늘어날수록 유지 승률은 1/3 근처로, 변경 승률은 2/3 근처로 가까워집니다.
+          </p>
+          <canvas id="lineChart" width="1000" height="360" aria-label="상대도수 변화 그래프"></canvas>
+        </div>
+      </details>
+
+      <details>
+        <summary>심화 비교: 사회자가 아무 문이나 열면?</summary>
+        <div class="details-body">
+          <p>
+            원래 몬티홀 문제에서 사회자는 자동차 문을 열 수 없습니다. 사회자는 내가 고른 문도 열지 않고,
+            자동차 문도 열지 않으며, 염소 문 하나를 반드시 열어 줍니다.
+          </p>
+          <p>
+            만약 사회자가 남은 문 중 아무 문이나 무작위로 열어 자동차를 열 수도 있다면,
+            그것은 원래 몬티홀 문제와 다른 상황입니다. 즉, 사회자의 규칙이 조건부확률에서 중요한 정보가 됩니다.
+          </p>
+        </div>
+      </details>
+
+      <div class="learning-points">
+        <div class="point">유지 전략은 처음 선택이 맞았을 때만 이긴다.</div>
+        <div class="point">처음 선택이 맞을 확률은 1/3이다.</div>
+        <div class="point">변경 전략은 처음 선택이 틀렸을 때 이긴다.</div>
+        <div class="point">처음 선택이 틀릴 확률은 2/3이다.</div>
+        <div class="point">사회자의 염소 문 공개는 규칙에 따른 정보이다.</div>
+        <div class="point">그래서 남은 두 문이 단순히 1/2, 1/2이 아니다.</div>
+        <div class="point">조건부확률로는 유지 승리 P(A|B)=1/3, 변경 승리 P(Aᶜ|B)=2/3이다.</div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    const DOOR_CLOSED = "🚪";
+    const CAR = "🚗";
+    const GOAT = "🐐";
+
+    const state = {
+      phase: "ready",
+      carDoor: null,
+      firstChoice: null,
+      hostDoor: null,
+      finalChoice: null,
+      lastStrategy: null,
+      totalTrials: 0,
+      stayWins: 0,
+      switchWins: 0,
+      firstCarCount: 0,
+      firstGoatCount: 0,
+      history: [],
+      rateHistory: []
+    };
+
+    const el = {
+      doors: document.getElementById("doors"),
+      message: document.getElementById("message"),
+      controls: document.getElementById("controls"),
+      trialExplanation: document.getElementById("trialExplanation"),
+      totalTrials: document.getElementById("totalTrials"),
+      firstGoatCount: document.getElementById("firstGoatCount"),
+      stayWins: document.getElementById("stayWins"),
+      switchWins: document.getElementById("switchWins"),
+      stayBar: document.getElementById("stayBar"),
+      switchBar: document.getElementById("switchBar"),
+      stayRate: document.getElementById("stayRate"),
+      switchRate: document.getElementById("switchRate"),
+      cumulativeComment: document.getElementById("cumulativeComment"),
+      classCarCount: document.getElementById("classCarCount"),
+      classGoatCount: document.getElementById("classGoatCount"),
+      grid100: document.getElementById("grid100"),
+      lineChart: document.getElementById("lineChart"),
+      teacherModeToggle: document.getElementById("teacherModeToggle"),
+      teacherControls: document.getElementById("teacherControls"),
+      teacherResetCurrent: document.getElementById("teacherResetCurrent")
+    };
+
+    function randomDoor() {
+      return Math.floor(Math.random() * 3);
+    }
+
+    function doorName(index) {
+      return `${index + 1}번 문`;
+    }
+
+    function chooseRandomFrom(array) {
+      return array[Math.floor(Math.random() * array.length)];
+    }
+
+    // 자동차 위치와 사회자 공개 문을 결정하는 수학적 로직
+    function createTrial(firstChoice = randomDoor(), fixedCarDoor = randomDoor()) {
+      // 자동차 위치는 학생의 선택과 독립적으로 먼저 정해져 있어야 한다.
+      // 직접 체험에서는 startNewTrial()에서 미리 정한 자동차 위치를 사용하고,
+      // 자동 실험에서는 각 시행마다 새 자동차 위치를 무작위로 정한다.
+      const carDoor = fixedCarDoor;
+      const possibleHostDoors = [0, 1, 2].filter(
+        door => door !== firstChoice && door !== carDoor
+      );
+      const hostDoor = chooseRandomFrom(possibleHostDoors);
+      const switchDoor = [0, 1, 2].find(
+        door => door !== firstChoice && door !== hostDoor
+      );
+
+      return {
+        carDoor,
+        firstChoice,
+        hostDoor,
+        switchDoor,
+        stayWins: firstChoice === carDoor,
+        switchWins: switchDoor === carDoor,
+        firstChoiceWasCar: firstChoice === carDoor
+      };
+    }
+
+    function startNewTrial(keepStats = true) {
+      state.phase = "ready";
+      // 새 시행이 시작되는 순간, 문 뒤의 자동차 위치를 먼저 배치한다.
+      // 학생에게는 결과 공개 전까지 보이지 않는다.
+      state.carDoor = randomDoor();
+      state.firstChoice = null;
+      state.hostDoor = null;
+      state.finalChoice = null;
+      state.lastStrategy = null;
+
+      if (!keepStats) {
+        resetStats();
+      }
+
+      el.trialExplanation.innerHTML = "아직 결과가 없습니다. 문 하나를 골라 실험을 시작하세요.";
+      render();
+    }
+
+    function resetStats() {
+      state.totalTrials = 0;
+      state.stayWins = 0;
+      state.switchWins = 0;
+      state.firstCarCount = 0;
+      state.firstGoatCount = 0;
+      state.history = [];
+      state.rateHistory = [];
+    }
+
+    function handleDoorChoice(door) {
+      if (state.phase !== "ready") return;
+
+      const trial = createTrial(door, state.carDoor);
+      state.carDoor = trial.carDoor;
+      state.firstChoice = trial.firstChoice;
+      state.hostDoor = trial.hostDoor;
+      state.phase = "revealed";
+
+      render();
+
+      el.message.textContent = `사회자가 ${doorName(state.hostDoor)}을 열었습니다. 염소가 나왔습니다. 유지할까요, 바꿀까요?`;
+    }
+
+    function finishTrial(strategy) {
+      if (state.phase !== "revealed") return;
+
+      state.lastStrategy = strategy;
+      state.finalChoice = strategy === "stay"
+        ? state.firstChoice
+        : [0, 1, 2].find(door => door !== state.firstChoice && door !== state.hostDoor);
+
+      state.phase = "finished";
+
+      const stayWin = state.firstChoice === state.carDoor;
+      const switchWin = state.finalChoice !== state.firstChoice
+        ? state.finalChoice === state.carDoor
+        : [0, 1, 2].find(door => door !== state.firstChoice && door !== state.hostDoor) === state.carDoor;
+
+      addTrialToStats({
+        carDoor: state.carDoor,
+        firstChoice: state.firstChoice,
+        hostDoor: state.hostDoor,
+        switchDoor: [0, 1, 2].find(door => door !== state.firstChoice && door !== state.hostDoor),
+        stayWins: stayWin,
+        switchWins: !stayWin,
+        firstChoiceWasCar: stayWin,
+        studentStrategy: strategy,
+        finalChoice: state.finalChoice
+      });
+
+      const studentWon = state.finalChoice === state.carDoor;
+      el.message.textContent = studentWon
+        ? "성공! 최종 선택한 문 뒤에 자동차가 있었습니다."
+        : "실패. 최종 선택한 문 뒤에는 염소가 있었습니다.";
+
+      render();
+    }
+
+    function addTrialToStats(trial) {
+      state.totalTrials += 1;
+      if (trial.stayWins) state.stayWins += 1;
+      if (trial.switchWins) state.switchWins += 1;
+      if (trial.firstChoiceWasCar) {
+        state.firstCarCount += 1;
+      } else {
+        state.firstGoatCount += 1;
+      }
+
+      state.history.push(trial);
+      if (state.history.length > 1000) {
+        state.history.shift();
+      }
+
+      state.rateHistory.push({
+        n: state.totalTrials,
+        stayRate: state.stayWins / state.totalTrials,
+        switchRate: state.switchWins / state.totalTrials
+      });
+      if (state.rateHistory.length > 600) {
+        state.rateHistory.shift();
+      }
+    }
+
+    function runBatch(count) {
+      for (let i = 0; i < count; i++) {
+        const trial = createTrial(randomDoor(), randomDoor());
+        addTrialToStats(trial);
+      }
+
+      state.phase = "ready";
+      state.carDoor = null;
+      state.firstChoice = null;
+      state.hostDoor = null;
+      state.finalChoice = null;
+      state.lastStrategy = null;
+
+      el.message.textContent = `${count}회 자동 실험을 누적했습니다. 문을 직접 골라 한 번 더 체험할 수도 있습니다.`;
+      el.trialExplanation.innerHTML = `
+        <strong>${count}회 자동 실험 완료</strong><br />
+        자동 실험은 자동차 위치와 처음 선택을 모두 무작위로 정하고,
+        같은 시행에서 유지 전략과 변경 전략의 결과를 동시에 비교합니다.
+      `;
+
+      render();
+    }
+
+    function renderDoors() {
+      el.doors.innerHTML = "";
+
+      for (let i = 0; i < 3; i++) {
+        const card = document.createElement("button");
+        card.type = "button";
+        card.className = "door-card";
+        card.setAttribute("aria-label", `${doorName(i)}`);
+
+        const isInitial = state.firstChoice === i;
+        const isHost = state.hostDoor === i;
+        const isFinal = state.finalChoice === i;
+        const isFinished = state.phase === "finished";
+        const isCar = state.carDoor === i;
+
+        if (state.phase !== "ready") card.classList.add("not-clickable");
+        if (isInitial) card.classList.add("initial-choice");
+        if (isHost) card.classList.add("host-revealed");
+        if (isFinal) card.classList.add("final-choice");
+        if (isFinished && isCar) card.classList.add("winning-door");
+
+        let icon = DOOR_CLOSED;
+        if (isHost) icon = GOAT;
+        if (isFinished) icon = isCar ? CAR : GOAT;
+
+        card.innerHTML = `
+          <span class="door-number">${doorName(i)}</span>
+          <span class="door-icon">${icon}</span>
+          ${isInitial ? `<span class="badge initial">처음 선택</span>` : ""}
+          ${isFinal ? `<span class="badge final">최종 선택</span>` : ""}
+          ${isHost ? `<span class="badge host">사회자 공개</span>` : ""}
+        `;
+
+        if (state.phase === "ready") {
+          card.addEventListener("click", () => handleDoorChoice(i));
+        }
+
+        el.doors.appendChild(card);
+      }
+    }
+
+    function renderControls() {
+      el.controls.innerHTML = "";
+
+      if (state.phase === "ready") {
+        [0, 1, 2].forEach(index => {
+          const btn = makeButton(`${index + 1}번 문 선택`, "primary", () => handleDoorChoice(index));
+          el.controls.appendChild(btn);
+        });
+        el.controls.appendChild(makeButton("10회 실험", "ghost", () => runBatch(10)));
+        el.controls.appendChild(makeButton("100회 실험", "ghost", () => runBatch(100)));
+        el.controls.appendChild(makeButton("1000회 실험", "ghost", () => runBatch(1000)));
+        el.controls.appendChild(makeButton("초기화", "danger", () => startNewTrial(false)));
+      }
+
+      if (state.phase === "revealed") {
+        el.controls.appendChild(makeButton("그대로 유지", "success", () => finishTrial("stay")));
+        el.controls.appendChild(makeButton("다른 문으로 바꾸기", "warning", () => finishTrial("switch")));
+      }
+
+      if (state.phase === "finished") {
+        el.controls.appendChild(makeButton("한 번 더", "primary", () => startNewTrial(true)));
+        el.controls.appendChild(makeButton("10회 실험", "ghost", () => runBatch(10)));
+        el.controls.appendChild(makeButton("100회 실험", "ghost", () => runBatch(100)));
+        el.controls.appendChild(makeButton("1000회 실험", "ghost", () => runBatch(1000)));
+        el.controls.appendChild(makeButton("초기화", "danger", () => startNewTrial(false)));
+      }
+    }
+
+    function makeButton(label, type, handler) {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = type;
+      btn.textContent = label;
+      btn.addEventListener("click", handler);
+      return btn;
+    }
+
+    function renderMessageIfNeeded() {
+      if (state.phase === "ready" && state.totalTrials === 0) {
+        el.message.textContent = "자동차와 염소는 이미 문 뒤에 숨어 있습니다. 먼저 문 하나를 선택하세요.";
+      } else if (state.phase === "ready") {
+        el.message.textContent = "문 하나를 선택하거나, 여러 번 실험을 실행해 보세요.";
+      }
+    }
+
+    function renderTrialExplanation() {
+      if (state.phase !== "finished") return;
+
+      const firstWasCar = state.firstChoice === state.carDoor;
+      const stayOutcome = firstWasCar ? "승리" : "패배";
+      const switchOutcome = firstWasCar ? "패배" : "승리";
+      const strategyLabel = state.lastStrategy === "stay" ? "유지" : "변경";
+      const studentWon = state.finalChoice === state.carDoor;
+
+      const situationText = firstWasCar
+        ? "이번 시행에서는 처음 선택이 자동차였습니다. 이 경우에는 그대로 유지하면 이기고, 바꾸면 집니다. 이런 경우는 전체의 약 1/3입니다."
+        : "이번 시행에서는 처음 선택이 염소였습니다. 사회자가 다른 염소 문을 열어 주었기 때문에, 바꾸면 자동차를 얻게 됩니다. 이런 경우는 전체의 약 2/3입니다.";
+
+      el.trialExplanation.innerHTML = `
+        <strong>자동차 위치:</strong> ${doorName(state.carDoor)}<br />
+        <strong>처음 선택:</strong> ${doorName(state.firstChoice)}<br />
+        <strong>사회자가 연 문:</strong> ${doorName(state.hostDoor)}<br />
+        <strong>최종 선택:</strong> ${doorName(state.finalChoice)} (${strategyLabel})<br />
+        <strong>처음 선택의 정체:</strong> ${firstWasCar ? "자동차" : "염소"}<br />
+        <strong>유지 전략:</strong> <span class="${stayOutcome === "승리" ? "outcome-win" : "outcome-lose"}">${stayOutcome}</span>,
+        <strong>변경 전략:</strong> <span class="${switchOutcome === "승리" ? "outcome-win" : "outcome-lose"}">${switchOutcome}</span><br />
+        <strong>내 최종 결과:</strong> <span class="${studentWon ? "outcome-win" : "outcome-lose"}">${studentWon ? "승리" : "패배"}</span>
+        <hr style="border:0;border-top:1px solid #d9e2ef;margin:10px 0;" />
+        ${situationText}
+      `;
+    }
+
+    function renderStats() {
+      const total = state.totalTrials;
+      const stayRate = total ? state.stayWins / total : 0;
+      const switchRate = total ? state.switchWins / total : 0;
+
+      el.totalTrials.textContent = total.toLocaleString("ko-KR");
+      el.firstGoatCount.textContent = state.firstGoatCount.toLocaleString("ko-KR");
+      el.stayWins.textContent = state.stayWins.toLocaleString("ko-KR");
+      el.switchWins.textContent = state.switchWins.toLocaleString("ko-KR");
+
+      el.stayRate.textContent = stayRate.toFixed(3);
+      el.switchRate.textContent = switchRate.toFixed(3);
+
+      el.stayBar.style.width = `${stayRate * 100}%`;
+      el.switchBar.style.width = `${switchRate * 100}%`;
+
+      el.classCarCount.textContent = state.firstCarCount.toLocaleString("ko-KR");
+      el.classGoatCount.textContent = state.firstGoatCount.toLocaleString("ko-KR");
+
+      if (total === 0) {
+        el.cumulativeComment.textContent = "누적 실험을 실행하면 상대도수가 어떻게 안정되는지 볼 수 있습니다.";
+      } else if (total < 30) {
+        el.cumulativeComment.textContent = "아직 시행 횟수가 적어 승률이 많이 흔들릴 수 있습니다. 100회 이상 실행해 보세요.";
+      } else {
+        el.cumulativeComment.textContent = "시행 횟수가 커질수록 유지 전략의 승률은 1/3 근처로, 변경 전략의 승률은 2/3 근처로 가까워집니다.";
+      }
+
+      renderGrid100();
+      drawLineChart();
+    }
+
+    function renderGrid100() {
+      el.grid100.innerHTML = "";
+      const recent = state.history.slice(-100);
+
+      for (let i = 0; i < 100; i++) {
+        const cell = document.createElement("div");
+        cell.className = "cell";
+
+        const trial = recent[i];
+        if (trial) {
+          cell.classList.add(trial.firstChoiceWasCar ? "car" : "goat");
+          cell.title = trial.firstChoiceWasCar
+            ? "처음 선택 자동차 → 유지 승리"
+            : "처음 선택 염소 → 변경 승리";
+        }
+
+        el.grid100.appendChild(cell);
+      }
+    }
+
+    function drawLineChart() {
+      const canvas = el.lineChart;
+      const ctx = canvas.getContext("2d");
+      const width = canvas.width;
+      const height = canvas.height;
+
+      ctx.clearRect(0, 0, width, height);
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, width, height);
+
+      const pad = { left: 58, right: 22, top: 28, bottom: 48 };
+      const plotW = width - pad.left - pad.right;
+      const plotH = height - pad.top - pad.bottom;
+
+      // axes
+      ctx.strokeStyle = "#cbd5e1";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(pad.left, pad.top);
+      ctx.lineTo(pad.left, height - pad.bottom);
+      ctx.lineTo(width - pad.right, height - pad.bottom);
+      ctx.stroke();
+
+      // horizontal grid and labels
+      ctx.font = "22px system-ui, sans-serif";
+      ctx.fillStyle = "#64748b";
+      ctx.textAlign = "right";
+      ctx.textBaseline = "middle";
+
+      [0, 1/3, 1/2, 2/3, 1].forEach(value => {
+        const y = pad.top + (1 - value) * plotH;
+        ctx.strokeStyle = value === 1/3 || value === 2/3 ? "#0f172a" : "#e2e8f0";
+        ctx.lineWidth = value === 1/3 || value === 2/3 ? 3 : 1;
+        ctx.beginPath();
+        ctx.moveTo(pad.left, y);
+        ctx.lineTo(width - pad.right, y);
+        ctx.stroke();
+        ctx.fillText(value === 1/3 ? "1/3" : value === 2/3 ? "2/3" : value.toFixed(1), pad.left - 10, y);
+      });
+
+      const data = state.rateHistory;
+      if (data.length < 2) {
+        ctx.fillStyle = "#64748b";
+        ctx.textAlign = "center";
+        ctx.font = "26px system-ui, sans-serif";
+        ctx.fillText("실험을 누적하면 그래프가 나타납니다.", width / 2, height / 2);
+        return;
+      }
+
+      const minN = data[0].n;
+      const maxN = data[data.length - 1].n;
+      const xFor = n => {
+        if (maxN === minN) return pad.left;
+        return pad.left + ((n - minN) / (maxN - minN)) * plotW;
+      };
+      const yFor = rate => pad.top + (1 - rate) * plotH;
+
+      drawSeries(data, "stayRate", "#2563eb");
+      drawSeries(data, "switchRate", "#f97316");
+
+      function drawSeries(series, key, color) {
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        series.forEach((point, index) => {
+          const x = xFor(point.n);
+          const y = yFor(point[key]);
+          if (index === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        });
+        ctx.stroke();
+      }
+
+      ctx.textAlign = "left";
+      ctx.textBaseline = "top";
+      ctx.font = "24px system-ui, sans-serif";
+      ctx.fillStyle = "#2563eb";
+      ctx.fillText("유지 승률", pad.left + 12, pad.top + 8);
+      ctx.fillStyle = "#f97316";
+      ctx.fillText("변경 승률", pad.left + 130, pad.top + 8);
+
+      ctx.textAlign = "center";
+      ctx.textBaseline = "top";
+      ctx.fillStyle = "#64748b";
+      ctx.font = "20px system-ui, sans-serif";
+      ctx.fillText(`최근 그래프 범위: ${minN}회 ~ ${maxN}회`, width / 2, height - 34);
+    }
+
+    function render() {
+      renderDoors();
+      renderControls();
+      renderMessageIfNeeded();
+      renderTrialExplanation();
+      renderStats();
+    }
+
+    el.teacherModeToggle.addEventListener("change", event => {
+      el.teacherControls.classList.toggle("show", event.target.checked);
+    });
+
+    el.teacherResetCurrent.addEventListener("click", () => {
+      startNewTrial(true);
+    });
+
+    startNewTrial(false);
+  </script>
+</body>
+</html>
