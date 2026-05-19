@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>비트 연산 실험실</title>
+  <style>
+    :root{
+      --bg:#ffffff;--card:#f8fafc;--line:#dbe4ee;--text:#1f2937;--muted:#6b7280;
+      --blue:#2563eb;--blue-soft:#dbeafe;--pink:#db2777;--green:#059669;--green-soft:#ecfdf5;
+      --indigo:#4f46e5;--shadow:0 10px 25px rgba(15,23,42,.08)
+    }
+    *{box-sizing:border-box}
+    body{margin:0;background:var(--bg);font-family:"Pretendard","Noto Sans KR",system-ui,sans-serif;color:var(--text)}
+    .wrap{max-width:1200px;margin:0 auto;padding:24px}
+    h1{margin:0 0 8px}
+    h2{margin:0 0 12px;font-size:1.2rem}
+    .lead{color:var(--muted);margin:0 0 18px;line-height:1.6}
+    .card{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:20px;box-shadow:var(--shadow)}
+    .section{margin-bottom:18px}
+    .operator-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:14px 0 18px}
+    .operator-card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:14px}
+    .operator-card h3{margin:0 0 6px;font-size:1rem}
+    .operator-card p{margin:0 0 10px;color:var(--muted);font-size:.92rem;line-height:1.5;min-height:64px}
+    .truth{width:100%;border-collapse:collapse;font-size:.94rem}
+    .truth th,.truth td{border:1px solid var(--line);padding:7px 6px;text-align:center}
+    .truth th{background:#f8fafc}
+    .truth input{width:42px;padding:7px 4px;border:1px solid #cbd5e1;border-radius:10px;text-align:center;font:inherit;background:#fff}
+    .truth input:focus{outline:2px solid var(--blue-soft);border-color:var(--blue)}
+    .check-btn, .secondary-btn, .op-btn{
+      padding:10px 14px;border:none;border-radius:12px;font:inherit;cursor:pointer;transition:.15s ease;
+    }
+    .check-btn{width:100%;margin-top:10px;background:var(--blue);color:#fff}
+    .check-btn:hover{filter:brightness(.97)}
+    .status{margin-top:8px;font-size:.92rem;text-align:center;color:var(--muted);min-height:22px}
+    .status.ok{color:var(--green);font-weight:700}
+    .status.bad{color:#b91c1c;font-weight:700}
+    .bit-area{display:grid;gap:14px}
+    .toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+    .toolbar-label{font-weight:700}
+    .op-buttons{display:flex;gap:8px;flex-wrap:wrap}
+    .op-btn{background:#fff;color:var(--text);border:1px solid var(--line)}
+    .op-btn.active{background:var(--pink);color:#fff;border-color:var(--pink)}
+    .secondary-btn{background:#fff;color:var(--text);border:1px solid var(--line)}
+    .bit-row{display:grid;grid-template-columns:70px 1fr;gap:12px;align-items:center}
+    .label{font-weight:800;font-size:1rem}
+    .bits{display:flex;gap:8px;flex-wrap:nowrap;overflow-x:auto;padding-bottom:2px}
+    .bit{width:54px;height:54px;border-radius:14px;border:2px solid #a5b4fc;background:#fff;cursor:pointer;font-size:1.2rem;font-weight:800;color:var(--indigo);flex:0 0 auto}
+    .bit.on{background:var(--indigo);color:#fff}
+    .bit.result{border-color:#93c5fd;color:#1d4ed8;cursor:default}
+    .bit.result.on{background:#1d4ed8;color:#fff}
+    .mini{font-size:.93rem;color:var(--muted);line-height:1.6}
+    .panel{padding:14px;background:#fff;border:1px solid var(--line);border-radius:16px}
+    .result-note{background:var(--green-soft);border:1px solid #a7f3d0;border-radius:14px;padding:12px 14px}
+    .result-note strong{color:var(--green)}
+    @media (max-width: 980px){
+      .operator-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+    }
+    @media (max-width: 640px){
+      .wrap{padding:16px}
+      .operator-grid{grid-template-columns:1fr}
+      .bit-row{grid-template-columns:1fr}
+      .operator-card p{min-height:unset}
+    }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <h1>비트 연산 실험실</h1>
+  <p class="lead">먼저 연산자를 직접 정의해 보고, 그다음 그 규칙을 사용해 A와 B의 6비트를 계산해 보세요. 표의 결과를 빈칸에 입력한 뒤 정답을 확인하고, 아래에서 직접 비트를 눌러 실험해 볼 수 있습니다.</p>
+
+  <section class="card section">
+    <h2>1. 연산자 정의하기</h2>
+    <div class="operator-grid">
+      <div class="operator-card" data-op="AND">
+        <h3>AND</h3>
+        <p>두 비트를 함께 살펴볼 때, <strong>둘 다 1일 때만 1</strong>로 정하는 방식입니다.</p>
+        <table class="truth">
+          <tr><th>x1</th><th>x2</th><th>결과</th></tr>
+          <tr><td>0</td><td>0</td><td><input maxlength="1" inputmode="numeric"></td></tr>
+          <tr><td>0</td><td>1</td><td><input maxlength="1" inputmode="numeric"></td></tr>
+          <tr><td>1</td><td>0</td><td><input maxlength="1" inputmode="numeric"></td></tr>
+          <tr><td>1</td><td>1</td><td><input maxlength="1" inputmode="numeric"></td></tr>
+        </table>
+        <button class="check-btn" onclick="checkTruth('AND')">정답 확인</button>
+        <div class="status" id="status_AND"></div>
+      </div>
+
+      <div class="operator-card" data-op="OR">
+        <h3>OR</h3>
+        <p>두 비트 중에서 <strong>하나라도 1이면 1</strong>로 정하는 방식입니다.</p>
+        <table class="truth">
+          <tr><th>x1</th><th>x2</th><th>결과</th></tr>
+          <tr><td>0</td><td>0</td><td><input maxlength="1" inputmode="numeric"></td></tr>
+          <tr><td>0</td><td>1</td><td><input maxlength="1" inputmode="numeric"></td></tr>
+          <tr><td>1</td><td>0</td><td><input maxlength="1" inputmode="numeric"></td></tr>
+          <tr><td>1</td><td>1</td><td><input maxlength="1" inputmode="numeric"></td></tr>
+        </table>
+        <button class="check-btn" onclick="checkTruth('OR')">정답 확인</button>
+        <div class="status" id="status_OR"></div>
+      </div>
+
+      <div class="operator-card" data-op="XOR">
+        <h3>XOR</h3>
+        <p>두 비트가 <strong>서로 다를 때만 1</strong>로 정하는 방식입니다.</p>
+        <table class="truth">
+          <tr><th>x1</th><th>x2</th><th>결과</th></tr>
+          <tr><td>0</td><td>0</td><td><input maxlength="1" inputmode="numeric"></td></tr>
+          <tr><td>0</td><td>1</td><td><input maxlength="1" inputmode="numeric"></td></tr>
+          <tr><td>1</td><td>0</td><td><input maxlength="1" inputmode="numeric"></td></tr>
+          <tr><td>1</td><td>1</td><td><input maxlength="1" inputmode="numeric"></td></tr>
+        </table>
+        <button class="check-btn" onclick="checkTruth('XOR')">정답 확인</button>
+        <div class="status" id="status_XOR"></div>
+      </div>
+
+      <div class="operator-card" data-op="NAND">
+        <h3>NAND</h3>
+        <p>AND의 반대 느낌으로, <strong>둘 다 1인 경우만 0</strong>으로 정하는 방식입니다.</p>
+        <table class="truth">
+          <tr><th>x1</th><th>x2</th><th>결과</th></tr>
+          <tr><td>0</td><td>0</td><td><input maxlength="1" inputmode="numeric"></td></tr>
+          <tr><td>0</td><td>1</td><td><input maxlength="1" inputmode="numeric"></td></tr>
+          <tr><td>1</td><td>0</td><td><input maxlength="1" inputmode="numeric"></td></tr>
+          <tr><td>1</td><td>1</td><td><input maxlength="1" inputmode="numeric"></td></tr>
+        </table>
+        <button class="check-btn" onclick="checkTruth('NAND')">정답 확인</button>
+        <div class="status" id="status_NAND"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>2. 비트 연산 해보기</h2>
+    <div class="bit-area">
+      <div class="toolbar panel">
+        <span class="toolbar-label">연산 선택</span>
+        <div class="op-buttons">
+          <button class="op-btn active" data-select-op="AND" onclick="setOp('AND')">AND</button>
+          <button class="op-btn" data-select-op="OR" onclick="setOp('OR')">OR</button>
+          <button class="op-btn" data-select-op="XOR" onclick="setOp('XOR')">XOR</button>
+          <button class="op-btn" data-select-op="NAND" onclick="setOp('NAND')">NAND</button>
+        </div>
+        <button class="secondary-btn" onclick="randomizeBits()">예시 만들기</button>
+        <button class="secondary-btn" onclick="resetBits()">초기화</button>
+      </div>
+
+      <div class="mini">A와 B의 각 칸을 눌러 0과 1을 바꿔 보세요. 선택한 연산 버튼의 규칙을 이용해 결과 R이 계산됩니다.</div>
+
+      <div class="bit-row">
+        <div class="label">A</div>
+        <div class="bits" id="bitsA"></div>
+      </div>
+
+      <div class="bit-row">
+        <div class="label">B</div>
+        <div class="bits" id="bitsB"></div>
+      </div>
+
+      <div class="bit-row">
+        <div class="label">R</div>
+        <div class="bits" id="bitsR"></div>
+      </div>
+
+      <div class="result-note"><strong id="opName">AND</strong> 규칙으로 각 자리의 A, B를 한 번씩 계산한 결과가 R에 나타납니다.</div>
+    </div>
+  </section>
+</div>
+
+<script>
+  const correctTruth = {
+    AND:[0,0,0,1],
+    OR:[0,1,1,1],
+    XOR:[0,1,1,0],
+    NAND:[1,1,1,0]
+  };
+
+  let currentOp = 'AND';
+
+  function sanitizeInput(input){
+    input.addEventListener('input', () => {
+      input.value = input.value.replace(/[^01]/g,'').slice(0,1);
+      updateResult();
+    });
+  }
+
+  document.querySelectorAll('.truth input').forEach(sanitizeInput);
+
+  function getTruthValues(op){
+    const card = document.querySelector(`[data-op="${op}"]`);
+    return [...card.querySelectorAll('input')].map(el => el.value === '' ? '' : Number(el.value));
+  }
+
+  function checkTruth(op){
+    const values = getTruthValues(op);
+    const status = document.getElementById('status_' + op);
+    const allFilled = values.every(v => v === 0 || v === 1);
+
+    if(!allFilled){
+      status.textContent = '빈칸을 모두 채운 뒤 확인해 보세요.';
+      status.className = 'status bad';
+      return;
+    }
+
+    const ok = values.every((v, i) => v === correctTruth[op][i]);
+    if(ok){
+      status.textContent = '정답입니다.';
+      status.className = 'status ok';
+    }else{
+      status.textContent = '다시 생각해 보세요.';
+      status.className = 'status bad';
+    }
+  }
+
+  function createBits(containerId, clickable=true){
+    const container = document.getElementById(containerId);
+    for(let i=0;i<6;i++){
+      const btn = document.createElement('button');
+      btn.className = 'bit' + (clickable ? '' : ' result');
+      btn.textContent = '0';
+      if(clickable){
+        btn.addEventListener('click', () => {
+          btn.textContent = btn.textContent === '0' ? '1' : '0';
+          btn.classList.toggle('on', btn.textContent === '1');
+          updateResult();
+        });
+      }
+      container.appendChild(btn);
+    }
+  }
+
+  createBits('bitsA', true);
+  createBits('bitsB', true);
+  createBits('bitsR', false);
+
+  function setOp(op){
+    currentOp = op;
+    document.querySelectorAll('.op-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.selectOp === op);
+    });
+    document.getElementById('opName').textContent = op;
+    updateResult();
+  }
+
+  function getBitArray(id){
+    return [...document.querySelectorAll(`#${id} .bit`)].map(el => Number(el.textContent));
+  }
+
+  function applyTruth(op, x, y){
+    const values = getTruthValues(op);
+    const indexMap = {'00':0, '01':1, '10':2, '11':3};
+    const idx = indexMap[String(x)+String(y)];
+    const chosen = values[idx];
+    if(chosen === '' || Number.isNaN(chosen)){
+      return 0;
+    }
+    return Number(chosen);
+  }
+
+  function updateResult(){
+    const A = getBitArray('bitsA');
+    const B = getBitArray('bitsB');
+    const resultBits = document.querySelectorAll('#bitsR .bit');
+
+    for(let i=0;i<6;i++){
+      const r = applyTruth(currentOp, A[i], B[i]);
+      resultBits[i].textContent = r;
+      resultBits[i].classList.toggle('on', r === 1);
+    }
+  }
+
+  function randomizeBits(){
+    ['bitsA','bitsB'].forEach(id => {
+      document.querySelectorAll(`#${id} .bit`).forEach(bit => {
+        const v = Math.random() < 0.5 ? 0 : 1;
+        bit.textContent = String(v);
+        bit.classList.toggle('on', v === 1);
+      });
+    });
+    updateResult();
+  }
+
+  function resetBits(){
+    ['bitsA','bitsB','bitsR'].forEach(id => {
+      document.querySelectorAll(`#${id} .bit`).forEach(bit => {
+        bit.textContent = '0';
+        bit.classList.remove('on');
+      });
+    });
+  }
+
+  updateResult();
+</script>
+</body>
+</html>

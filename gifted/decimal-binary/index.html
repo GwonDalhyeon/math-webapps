@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>10진법과 2진법 변환 실험실</title>
+  <style>
+    :root{
+      --bg:#ffffff;--card:#f8fafc;--line:#dbe4ee;--text:#1f2937;--muted:#6b7280;
+      --blue:#2563eb;--blue-soft:#dbeafe;--pink:#db2777;--green:#059669;--green-soft:#ecfdf5;
+      --indigo:#4f46e5;--red:#dc2626;--shadow:0 10px 25px rgba(15,23,42,.08)
+    }
+    *{box-sizing:border-box}
+    body{margin:0;background:var(--bg);font-family:"Pretendard","Noto Sans KR",system-ui,sans-serif;color:var(--text)}
+    .wrap{max-width:1200px;margin:0 auto;padding:24px}
+    h1{margin:0 0 8px}
+    h2{margin:0 0 12px;font-size:1.18rem}
+    h3{margin:0 0 8px;font-size:1rem}
+    .lead,.mini{color:var(--muted);line-height:1.6}
+    .lead{margin:0 0 18px}
+    .card{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:20px;box-shadow:var(--shadow);margin-bottom:18px}
+    .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+    .grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+    .btn{padding:11px 14px;border:none;border-radius:12px;background:var(--blue);color:#fff;cursor:pointer;font:inherit}
+    .btn.secondary{background:#fff;color:var(--text);border:1px solid var(--line)}
+    .btn.green{background:var(--green)}
+    .btn.pink{background:var(--pink)}
+    .btn-row{display:flex;gap:10px;flex-wrap:wrap}
+    input[type="text"], input[type="number"], select{
+      width:100%;padding:11px 12px;border:1px solid #cbd5e1;border-radius:12px;background:#fff;font:inherit
+    }
+    .status{padding:12px 14px;border-radius:14px;background:#fff;border:1px solid var(--line)}
+    .status.ok{background:var(--green-soft);border-color:#a7f3d0}
+    .status.bad{background:#fef2f2;border-color:#fecaca}
+    .big-box{padding:16px;border:1px dashed #cbd5e1;border-radius:16px;background:#fff}
+    .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+    .digit-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+    .digit{
+      min-width:58px;padding:10px 8px;border-radius:14px;border:1px solid var(--line);
+      background:#fff;text-align:center
+    }
+    .digit .top{font-size:.85rem;color:var(--muted);margin-bottom:6px}
+    .digit .mid{font-size:1.2rem;font-weight:800}
+    .digit .bot{font-size:.82rem;color:var(--blue);margin-top:4px}
+    table{width:100%;border-collapse:collapse;background:#fff;border-radius:16px;overflow:hidden}
+    th,td{border:1px solid var(--line);padding:9px 8px;text-align:center;font-size:.94rem}
+    th{background:#f8fafc}
+    .steps{display:grid;gap:10px}
+    .step{display:flex;gap:10px;padding:12px;border-radius:14px;background:#fff;border:1px solid var(--line);align-items:flex-start}
+    .num{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:var(--blue-soft);color:var(--blue);font-weight:800;flex:0 0 auto}
+    .bit-grid{display:flex;gap:8px;flex-wrap:wrap}
+    .bit-btn{
+      width:58px;height:58px;border-radius:14px;border:2px solid #a5b4fc;background:#fff;cursor:pointer;
+      font-size:1.15rem;font-weight:800;color:var(--indigo)
+    }
+    .bit-btn.on{background:var(--indigo);color:#fff}
+    .pill{display:inline-block;padding:4px 10px;border-radius:999px;background:#eef2ff;color:#4338ca;font-weight:800}
+    @media (max-width:900px){
+      .grid-2,.grid-3{grid-template-columns:1fr}
+      .wrap{padding:16px}
+    }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <h1>10진법과 2진법 변환 실험실</h1>
+  <p class="lead">10진수와 2진수를 서로 바꾸는 과정을 직접 해 보며, <strong>자리값</strong>과 <strong>2의 거듭제곱</strong> 규칙을 탐구하는 웹앱입니다.</p>
+
+  <section class="card">
+    <h2>활동 순서</h2>
+    <div class="steps">
+      <div class="step"><div class="num">1</div><div>2진수의 각 자리가 어떤 값을 뜻하는지 살펴봅니다.</div></div>
+      <div class="step"><div class="num">2</div><div>10진수를 2진수로 바꾸는 과정을 직접 따라 해 봅니다.</div></div>
+      <div class="step"><div class="num">3</div><div>2진수를 10진수로 다시 바꾸며 규칙을 확인합니다.</div></div>
+      <div class="step"><div class="num">4</div><div>퀴즈를 풀며 자리값 규칙을 스스로 정리합니다.</div></div>
+    </div>
+  </section>
+
+  <div class="grid-2">
+    <section class="card">
+      <h2>1. 자리값 탐구</h2>
+      <p class="mini">아래 비트를 눌러 0과 1을 바꾸면, 각 자리의 값이 더해져 10진수가 됩니다.</p>
+      <div class="bit-grid" id="bitGrid"></div>
+      <div class="big-box" style="margin-top:12px">
+        <div><strong>현재 2진수:</strong> <span class="mono" id="currentBinary">00000000</span></div>
+        <div style="margin-top:8px"><strong>현재 10진수:</strong> <span id="currentDecimal">0</span></div>
+      </div>
+      <div class="digit-row" id="placeValueRow"></div>
+    </section>
+
+    <section class="card">
+      <h2>2. 10진수 → 2진수</h2>
+      <p class="mini">10진수를 입력하고, 나누기 2 과정을 보며 2진수로 바꾸어 보세요.</p>
+      <input type="number" id="decInput" min="0" max="255" placeholder="0~255 사이 숫자 입력">
+      <div class="btn-row" style="margin-top:12px">
+        <button class="btn" onclick="convertDecimalToBinary()">변환하기</button>
+        <button class="btn secondary" onclick="randomDecimal()">랜덤 숫자</button>
+      </div>
+      <div id="decStatus" class="status" style="margin-top:12px">숫자를 입력하고 변환하기를 눌러 보세요.</div>
+      <div class="big-box" style="margin-top:12px">
+        <div><strong>결과 2진수:</strong> <span class="mono" id="decToBinResult">-</span></div>
+      </div>
+      <div id="divisionTable" style="margin-top:12px"></div>
+    </section>
+  </div>
+
+  <div class="grid-2">
+    <section class="card">
+      <h2>3. 2진수 → 10진수</h2>
+      <p class="mini">2진수를 입력하면 각 자리의 값이 어떻게 더해지는지 볼 수 있습니다.</p>
+      <input type="text" id="binInput" maxlength="8" placeholder="예: 10110101">
+      <div class="btn-row" style="margin-top:12px">
+        <button class="btn green" onclick="convertBinaryToDecimal()">변환하기</button>
+        <button class="btn secondary" onclick="useCurrentBinary()">위의 현재 2진수 사용</button>
+      </div>
+      <div id="binStatus" class="status" style="margin-top:12px">2진수를 입력하고 변환하기를 눌러 보세요.</div>
+      <div class="big-box" style="margin-top:12px">
+        <div><strong>결과 10진수:</strong> <span id="binToDecResult">-</span></div>
+      </div>
+      <div id="sumTable" style="margin-top:12px"></div>
+    </section>
+
+    <section class="card">
+      <h2>4. 변환 퀴즈</h2>
+      <div class="big-box">
+        <div><span class="pill" id="quizMode">10진수 → 2진수</span></div>
+        <div style="margin-top:10px"><strong>문제:</strong> <span id="quizQuestion">13</span></div>
+        <input type="text" id="quizAnswer" style="margin-top:12px" placeholder="정답 입력">
+        <div class="btn-row" style="margin-top:12px">
+          <button class="btn" onclick="checkQuiz()">정답 확인</button>
+          <button class="btn pink" onclick="newQuiz()">새 문제</button>
+        </div>
+        <div id="quizStatus" class="status" style="margin-top:12px">문제를 보고 답을 입력해 보세요.</div>
+      </div>
+      <table style="margin-top:12px">
+        <thead><tr><th>맞힘</th><th>틀림</th></tr></thead>
+        <tbody><tr><td id="quizCorrect">0</td><td id="quizWrong">0</td></tr></tbody>
+      </table>
+    </section>
+  </div>
+</div>
+
+<script>
+  const bitGrid = document.getElementById('bitGrid');
+  const placeValueRow = document.getElementById('placeValueRow');
+  const decStatus = document.getElementById('decStatus');
+  const decToBinResult = document.getElementById('decToBinResult');
+  const divisionTable = document.getElementById('divisionTable');
+  const binStatus = document.getElementById('binStatus');
+  const binToDecResult = document.getElementById('binToDecResult');
+  const sumTable = document.getElementById('sumTable');
+  const quizMode = document.getElementById('quizMode');
+  const quizQuestion = document.getElementById('quizQuestion');
+  const quizStatus = document.getElementById('quizStatus');
+  const quizCorrect = document.getElementById('quizCorrect');
+  const quizWrong = document.getElementById('quizWrong');
+
+  let bits = Array(8).fill(0);
+  let quiz = {mode:'dec2bin', question:'13', answer:'1101'};
+  let score = {correct:0, wrong:0};
+
+  function renderBitExplorer(){
+    bitGrid.innerHTML = '';
+    placeValueRow.innerHTML = '';
+    for(let i=0;i<8;i++){
+      const power = 7 - i;
+      const value = 2 ** power;
+
+      const btn = document.createElement('button');
+      btn.className = 'bit-btn' + (bits[i] ? ' on' : '');
+      btn.textContent = bits[i];
+      btn.onclick = () => {
+        bits[i] = bits[i] ? 0 : 1;
+        renderBitExplorer();
+      };
+      bitGrid.appendChild(btn);
+
+      const box = document.createElement('div');
+      box.className = 'digit';
+      box.innerHTML = `
+        <div class="top">2^${power}</div>
+        <div class="mid">${bits[i]}</div>
+        <div class="bot">${bits[i]} × ${value}</div>
+      `;
+      placeValueRow.appendChild(box);
+    }
+    const binaryString = bits.join('');
+    const decimalValue = parseInt(binaryString, 2);
+    document.getElementById('currentBinary').textContent = binaryString;
+    document.getElementById('currentDecimal').textContent = decimalValue;
+  }
+
+  function convertDecimalToBinary(){
+    const n = Number(document.getElementById('decInput').value);
+    if(!Number.isInteger(n) || n < 0 || n > 255){
+      decStatus.className = 'status bad';
+      decStatus.textContent = '0부터 255 사이의 정수를 입력해 주세요.';
+      return;
+    }
+    const result = n.toString(2);
+    decToBinResult.textContent = result;
+    decStatus.className = 'status ok';
+    decStatus.innerHTML = `<strong>${n}</strong>을 2진수로 바꾸었습니다.`;
+
+    let x = n;
+    let rows = '';
+    if(n === 0){
+      rows = '<tr><td>0</td><td>0</td><td>0</td></tr>';
+    } else {
+      while(x > 0){
+        rows += `<tr><td>${x}</td><td>${Math.floor(x/2)}</td><td>${x%2}</td></tr>`;
+        x = Math.floor(x/2);
+      }
+    }
+    divisionTable.innerHTML = `
+      <table>
+        <thead><tr><th>현재 수</th><th>2로 나눈 몫</th><th>나머지</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+      <p class="mini" style="margin-top:10px">아래에서 위로 나머지를 읽으면 2진수가 됩니다.</p>
+    `;
+  }
+
+  function randomDecimal(){
+    document.getElementById('decInput').value = Math.floor(Math.random()*256);
+    convertDecimalToBinary();
+  }
+
+  function convertBinaryToDecimal(){
+    const s = document.getElementById('binInput').value.trim();
+    if(!/^[01]+$/.test(s)){
+      binStatus.className = 'status bad';
+      binStatus.textContent = '0과 1로만 이루어진 2진수를 입력해 주세요.';
+      return;
+    }
+    const decimal = parseInt(s, 2);
+    binToDecResult.textContent = decimal;
+    binStatus.className = 'status ok';
+    binStatus.innerHTML = `<strong>${s}</strong>을 10진수로 바꾸었습니다.`;
+
+    let rows = '';
+    const chars = s.split('');
+    for(let i=0;i<chars.length;i++){
+      const power = chars.length - 1 - i;
+      const value = 2 ** power;
+      rows += `<tr><td>${chars[i]}</td><td>2^${power}</td><td>${value}</td><td>${chars[i] * value}</td></tr>`;
+    }
+    sumTable.innerHTML = `
+      <table>
+        <thead><tr><th>비트</th><th>자리</th><th>자리값</th><th>더해지는 값</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+      <p class="mini" style="margin-top:10px">1이 있는 자리의 값만 더하면 10진수가 됩니다.</p>
+    `;
+  }
+
+  function useCurrentBinary(){
+    document.getElementById('binInput').value = bits.join('');
+    convertBinaryToDecimal();
+  }
+
+  function newQuiz(){
+    if(Math.random() < 0.5){
+      const n = Math.floor(Math.random()*64);
+      quiz = {mode:'dec2bin', question:String(n), answer:n.toString(2)};
+      quizMode.textContent = '10진수 → 2진수';
+    } else {
+      const n = Math.floor(Math.random()*64);
+      quiz = {mode:'bin2dec', question:n.toString(2), answer:String(n)};
+      quizMode.textContent = '2진수 → 10진수';
+    }
+    quizQuestion.textContent = quiz.question;
+    document.getElementById('quizAnswer').value = '';
+    quizStatus.className = 'status';
+    quizStatus.textContent = '문제를 보고 답을 입력해 보세요.';
+  }
+
+  function checkQuiz(){
+    const user = document.getElementById('quizAnswer').value.trim();
+    if(user === ''){
+      quizStatus.className = 'status bad';
+      quizStatus.textContent = '답을 먼저 입력해 주세요.';
+      return;
+    }
+    if(user === quiz.answer){
+      score.correct += 1;
+      quizStatus.className = 'status ok';
+      quizStatus.textContent = '정답입니다.';
+    } else {
+      score.wrong += 1;
+      quizStatus.className = 'status bad';
+      quizStatus.innerHTML = `다시 생각해 보세요. 정답은 <strong>${quiz.answer}</strong>입니다.`;
+    }
+    quizCorrect.textContent = score.correct;
+    quizWrong.textContent = score.wrong;
+  }
+
+  document.getElementById('binInput').addEventListener('keydown', (e) => {
+    if(e.key === 'Enter') convertBinaryToDecimal();
+  });
+  document.getElementById('decInput').addEventListener('keydown', (e) => {
+    if(e.key === 'Enter') convertDecimalToBinary();
+  });
+  document.getElementById('quizAnswer').addEventListener('keydown', (e) => {
+    if(e.key === 'Enter') checkQuiz();
+  });
+
+  renderBitExplorer();
+  newQuiz();
+</script>
+</body>
+</html>
