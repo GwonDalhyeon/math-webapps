@@ -79,7 +79,7 @@ function render(){
     const b=document.createElement('button');
     b.className='bit'+(bit?' on':'');
     b.textContent=bit;
-    b.addEventListener('click',()=>{bits[i]=bits[i]?0:1; updateTexts();});
+    b.addEventListener('click',()=>{bits[i]=bits[i]?0:1; render();});
     bitsEl.appendChild(b);
   });
   updateTexts();

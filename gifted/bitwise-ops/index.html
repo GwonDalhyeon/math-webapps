@@ -281,12 +281,13 @@
   }
 
   function resetBits(){
-    ['bitsA','bitsB','bitsR'].forEach(id => {
+    ['bitsA','bitsB'].forEach(id => {
       document.querySelectorAll(`#${id} .bit`).forEach(bit => {
         bit.textContent = '0';
         bit.classList.remove('on');
       });
     });
+    updateResult();
   }
 
   updateResult();
