@@ -1,0 +1,460 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>단위원에서 보는 sec, csc, tan, cot</title>
+  <style>
+    :root {
+      --bg: #f8fafc;
+      --panel: #ffffff;
+      --border: #cbd5e1;
+      --text: #0f172a;
+      --muted: #475569;
+      --axis: #64748b;
+      --op: #0f766e;
+      --cos: #16a34a;
+      --sin: #7c3aed;
+      --tan: #f59e0b;
+      --cot: #0ea5e9;
+      --sec: #dc2626;
+      --csc: #2563eb;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Pretendard", "Noto Sans KR", "Apple SD Gothic Neo", Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+    .app {
+      max-width: 1500px;
+      margin: 0 auto;
+      padding: 16px;
+      display: grid;
+      gap: 16px;
+    }
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 28px;
+      padding: 20px;
+      box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+    }
+    .top {
+      display: grid;
+      gap: 16px;
+    }
+    .top-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    h1 {
+      margin: 0;
+      font-size: 44px;
+      line-height: 1.15;
+      letter-spacing: -0.02em;
+    }
+    .subtitle {
+      margin-top: 10px;
+      font-size: 20px;
+      color: var(--muted);
+    }
+    .controls {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .button, .preset {
+      border: 1px solid #334155;
+      background: white;
+      color: var(--text);
+      border-radius: 16px;
+      padding: 12px 16px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .button.active, .preset.active {
+      background: #0f172a;
+      color: white;
+      border-color: #0f172a;
+    }
+    .control-row {
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 18px;
+      display: flex;
+      gap: 18px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .angle-box { min-width: 150px; }
+    .angle-label { font-size: 18px; color: var(--muted); }
+    .angle-value { font-size: 56px; font-weight: 800; }
+    .slider-wrap { flex: 1; min-width: 280px; }
+    .slider-desc { font-size: 14px; color: var(--muted); margin-bottom: 10px; }
+    input[type="range"] { width: 100%; }
+    .presets { display: flex; gap: 8px; flex-wrap: wrap; }
+    .diagram-card { padding: 16px; }
+    svg {
+      width: 100%;
+      height: auto;
+      display: block;
+      border-radius: 24px;
+      touch-action: none;
+      user-select: none;
+      -webkit-user-select: none;
+      background: white;
+    }
+    .bottom {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    .values-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }
+    .value-card {
+      border: 2px solid var(--border);
+      border-radius: 22px;
+      padding: 14px 16px;
+      background: white;
+    }
+    .value-label { font-size: 18px; font-weight: 700; color: var(--muted); }
+    .value-num { margin-top: 6px; font-size: 34px; font-weight: 800; color: var(--text); }
+    .v-sin { border-color: #c4b5fd; }
+    .v-cos { border-color: #86efac; }
+    .v-tan { border-color: #fcd34d; }
+    .v-cot { border-color: #7dd3fc; }
+    .v-sec { border-color: #fca5a5; }
+    .v-csc { border-color: #93c5fd; }
+    .note-title { font-size: 30px; font-weight: 800; margin: 0 0 14px; }
+    .note-list { margin: 0; padding-left: 24px; font-size: 22px; line-height: 1.65; color: var(--muted); }
+    @media (max-width: 1000px) {
+      h1 { font-size: 34px; }
+      .subtitle { font-size: 16px; }
+      .angle-value { font-size: 40px; }
+      .bottom { grid-template-columns: 1fr; }
+      .values-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .note-list { font-size: 18px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <section class="card top">
+      <div class="top-head">
+        <div>
+          <h1>단위원에서 보는 sec, csc, tan, cot</h1>
+          <div class="subtitle">점 P를 움직이며 sin, cos, tan, cot, sec, csc가 어떤 선분으로 나타나는지 관찰합니다.</div>
+        </div>
+        <div class="controls">
+          <button id="projectorBtn" class="button active">프로젝터 모드 켜짐</button>
+          <div class="button" style="cursor: default; border-color: var(--border);">제1사분면: 5° ~ 85°</div>
+        </div>
+      </div>
+
+      <div class="control-row">
+        <div class="angle-box">
+          <div class="angle-label">각 θ</div>
+          <div class="angle-value"><span id="thetaValue">45</span>°</div>
+        </div>
+        <div class="slider-wrap">
+          <div class="slider-desc">슬라이더 또는 단위원 위의 점 P를 드래그해 각도를 바꿀 수 있습니다.</div>
+          <input id="thetaSlider" type="range" min="5" max="85" value="45" />
+        </div>
+        <div class="presets">
+          <button class="preset" data-angle="15">15°</button>
+          <button class="preset" data-angle="30">30°</button>
+          <button class="preset active" data-angle="45">45°</button>
+          <button class="preset" data-angle="60">60°</button>
+          <button class="preset" data-angle="75">75°</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="card diagram-card">
+      <svg id="diagram" viewBox="0 0 1320 820" aria-label="단위원 삼각비 그림"></svg>
+    </section>
+
+    <section class="bottom">
+      <div class="card">
+        <h2 class="note-title">현재 값</h2>
+        <div class="values-grid">
+          <div class="value-card v-sin"><div class="value-label">sinθ</div><div id="sinVal" class="value-num"></div></div>
+          <div class="value-card v-cos"><div class="value-label">cosθ</div><div id="cosVal" class="value-num"></div></div>
+          <div class="value-card v-tan"><div class="value-label">tanθ</div><div id="tanVal" class="value-num"></div></div>
+          <div class="value-card v-cot"><div class="value-label">cotθ</div><div id="cotVal" class="value-num"></div></div>
+          <div class="value-card v-sec"><div class="value-label">secθ</div><div id="secVal" class="value-num"></div></div>
+          <div class="value-card v-csc"><div class="value-label">cscθ</div><div id="cscVal" class="value-num"></div></div>
+        </div>
+      </div>
+      <div class="card">
+        <h2 class="note-title">이 파일 실행 방법</h2>
+        <ul class="note-list">
+          <li>이 파일을 <b>.html</b>로 저장</li>
+          <li>파일을 더블클릭해서 브라우저에서 바로 열기</li>
+          <li>설치나 빌드 없이 그대로 실행 가능</li>
+          <li>학교 컴퓨터에서도 브라우저만 있으면 사용 가능</li>
+        </ul>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    (() => {
+      const W = 1320;
+      const H = 820;
+      const cx = 340;
+      const cy = 500;
+      const scale = 205;
+      const legendX = 905;
+      const legendY = 64;
+      const legendW = 350;
+      const legendH = 300;
+
+      let thetaDeg = 45;
+      let dragging = false;
+      let projectorMode = true;
+
+      const svg = document.getElementById('diagram');
+      const slider = document.getElementById('thetaSlider');
+      const thetaValue = document.getElementById('thetaValue');
+      const projectorBtn = document.getElementById('projectorBtn');
+      const presets = [...document.querySelectorAll('.preset')];
+
+      const setText = (id, text) => { document.getElementById(id).textContent = text; };
+      const fmt = (n) => Number.isFinite(n) ? n.toFixed(3) : '정의 안 됨';
+      const clamp = (v, min, max) => Math.min(max, Math.max(min, v));
+      const rad = (deg) => deg * Math.PI / 180;
+      const toSvg = (x, y) => ({ x: cx + x * scale, y: cy - y * scale });
+
+      function line(attrs = {}) {
+        const el = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, String(v));
+        return el;
+      }
+      function rect(attrs = {}) {
+        const el = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+        for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, String(v));
+        return el;
+      }
+      function circle(attrs = {}) {
+        const el = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, String(v));
+        return el;
+      }
+      function textEl(text, attrs = {}) {
+        const el = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        el.textContent = text;
+        for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, String(v));
+        return el;
+      }
+      function path(attrs = {}) {
+        const el = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, String(v));
+        return el;
+      }
+      function labelGroup(point, label, labelX, labelY, opts = {}) {
+        const { small = false, withLeader = false } = opts;
+        const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        const width = Math.max(70, label.length * (small ? 10 : 11.5));
+        const height = small ? 32 : 38;
+        const boxX = labelX - 10;
+        const boxY = labelY - 24;
+        const anchorX = boxX + width / 2;
+        const anchorY = boxY + height;
+        if (withLeader) g.appendChild(line({ x1: anchorX, y1: anchorY, x2: point.x, y2: point.y, stroke: '#94A3B8', 'stroke-width': 3 }));
+        g.appendChild(circle({ cx: point.x, cy: point.y, r: small ? 6 : 7, fill: '#0F172A' }));
+        g.appendChild(rect({ x: boxX, y: boxY, width, height, rx: 12, fill: '#FFFFFF', stroke: '#CBD5E1', 'stroke-width': 2 }));
+        g.appendChild(textEl(label, { x: labelX, y: labelY, 'font-size': small ? 18 : 22, fill: '#0F172A', 'font-weight': 700 }));
+        return g;
+      }
+      function segmentLabel(x, y, text, textColor, borderColor) {
+        const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        const width = Math.max(100, text.length * 18);
+        const height = 38;
+        g.appendChild(rect({ x, y, width, height, rx: 12, fill: '#FFFFFF', 'fill-opacity': 0.96, stroke: borderColor, 'stroke-width': 3 }));
+        g.appendChild(textEl(text, { x: x + 16, y: y + 26, 'font-size': 24, fill: textColor, 'font-weight': 800 }));
+        return g;
+      }
+      function legendRow(x, y, color, text) {
+        const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        g.appendChild(line({ x1: x, y1: y - 6, x2: x + 34, y2: y - 6, stroke: color, 'stroke-width': 6, 'stroke-linecap': 'round' }));
+        g.appendChild(textEl(text, { x: x + 48, y, 'font-size': 24, fill: '#334155', 'font-weight': 700 }));
+        return g;
+      }
+
+      function updateValues(values) {
+        setText('thetaValue', String(thetaDeg));
+        setText('sinVal', fmt(values.sin));
+        setText('cosVal', fmt(values.cos));
+        setText('tanVal', fmt(values.tan));
+        setText('cotVal', fmt(values.cot));
+        setText('secVal', fmt(values.sec));
+        setText('cscVal', fmt(values.csc));
+        slider.value = String(thetaDeg);
+        presets.forEach(btn => btn.classList.toggle('active', Number(btn.dataset.angle) === thetaDeg));
+      }
+
+      function render() {
+        const theta = rad(thetaDeg);
+        const sin = Math.sin(theta);
+        const cos = Math.cos(theta);
+        const tan = sin / cos;
+        const sec = 1 / cos;
+        const csc = 1 / sin;
+        const cot = cos / sin;
+        const values = { sin, cos, tan, sec, csc, cot };
+        updateValues(values);
+
+        const O = toSvg(0, 0);
+        const P = toSvg(cos, sin);
+        const A = toSvg(1, tan);
+        const B = toSvg(cot, 1);
+        const C = toSvg(cos, 0);
+        const D = toSvg(0, sin);
+        const x1Point = toSvg(1, 0);
+        const y1Point = toSvg(0, 1);
+        const X1Bottom = toSvg(1, -0.07);
+        const X1Top = toSvg(1, 2.25);
+        const Y1Left = toSvg(-0.22, 1);
+        const Y1Right = toSvg(3.15, 1);
+
+        const dirX = P.x - O.x;
+        const dirY = P.y - O.y;
+        const dirLen = Math.hypot(dirX, dirY) || 1;
+        const perp = { x: -dirY / dirLen, y: dirX / dirLen };
+        const offsetPx = projectorMode ? 8 : 5;
+        const offset = (pt, amount) => ({ x: pt.x + perp.x * amount, y: pt.y + perp.y * amount });
+        const OAStart = offset(O, offsetPx);
+        const OAEnd = offset(A, offsetPx);
+        const OBStart = offset(O, -offsetPx);
+        const OBEnd = offset(B, -offsetPx);
+
+        const rayEnd = tan > 1 ? toSvg(csc * Math.cos(theta), csc * Math.sin(theta)) : toSvg(sec * Math.cos(theta), sec * Math.sin(theta));
+        const angleArcRadius = 56;
+        const arcStart = toSvg(angleArcRadius / scale, 0);
+        const arcEnd = toSvg(Math.cos(theta) * (angleArcRadius / scale), Math.sin(theta) * (angleArcRadius / scale));
+        const thetaText = toSvg(Math.cos(theta / 2) * 0.42, Math.sin(theta / 2) * 0.42);
+
+        const pointLabelPositions = {
+          O: { x: O.x - 26, y: O.y + 42 },
+          A: { x: A.x + 18, y: A.y + (thetaDeg < 35 ? 42 : -16) },
+          B: { x: B.x + (thetaDeg > 58 ? -148 : -178), y: B.y - (thetaDeg > 58 ? 54 : 58) },
+          xPoint: { x: x1Point.x + 18, y: x1Point.y + 38 },
+          yPoint: { x: y1Point.x - 88, y: y1Point.y - 18 },
+          P: { x: P.x + (thetaDeg < 48 ? -92 : -118), y: P.y + (thetaDeg < 48 ? -42 : -30) },
+        };
+
+        svg.innerHTML = '';
+
+        const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+        const marker = document.createElementNS('http://www.w3.org/2000/svg', 'marker');
+        marker.setAttribute('id', 'arrow'); marker.setAttribute('markerWidth', '10'); marker.setAttribute('markerHeight', '10'); marker.setAttribute('refX', '7'); marker.setAttribute('refY', '5'); marker.setAttribute('orient', 'auto');
+        marker.appendChild(path({ d: 'M0,0 L10,5 L0,10 Z', fill: '#334155' }));
+        defs.appendChild(marker);
+        svg.appendChild(defs);
+
+        svg.appendChild(rect({ x: 0, y: 0, width: W, height: H, fill: '#ffffff' }));
+        svg.appendChild(line({ x1: 40, y1: cy, x2: 1265, y2: cy, stroke: '#64748B', 'stroke-width': 4 }));
+        svg.appendChild(line({ x1: cx, y1: 760, x2: cx, y2: 45, stroke: '#64748B', 'stroke-width': 4 }));
+        svg.appendChild(line({ x1: X1Bottom.x, y1: X1Bottom.y, x2: X1Bottom.x, y2: X1Bottom.y + 28, stroke: '#334155', 'stroke-width': 3 }));
+        svg.appendChild(line({ x1: y1Point.x - 14, y1: y1Point.y, x2: y1Point.x + 14, y2: y1Point.y, stroke: '#334155', 'stroke-width': 3 }));
+        svg.appendChild(textEl('x', { x: 1268, y: cy - 12, 'font-size': 28, fill: '#334155', 'font-weight': 700 }));
+        svg.appendChild(textEl('y', { x: cx + 14, y: 52, 'font-size': 28, fill: '#334155', 'font-weight': 700 }));
+        svg.appendChild(textEl('1', { x: x1Point.x - 6, y: cy + 42, 'font-size': 22, fill: '#334155', 'font-weight': 700 }));
+        svg.appendChild(textEl('1', { x: cx - 28, y: y1Point.y + 8, 'font-size': 22, fill: '#334155', 'font-weight': 700 }));
+
+        svg.appendChild(circle({ cx, cy, r: scale, fill: '#F8FAFC', stroke: '#94A3B8', 'stroke-width': 4 }));
+        svg.appendChild(line({ x1: toSvg(1, -0.22).x, y1: toSvg(1, -0.22).y, x2: toSvg(1, 2.25).x, y2: toSvg(1, 2.25).y, stroke: '#F59E0B', 'stroke-width': 4, 'stroke-dasharray': '12 8' }));
+        svg.appendChild(line({ x1: Y1Left.x, y1: Y1Left.y, x2: Y1Right.x, y2: Y1Right.y, stroke: '#0EA5E9', 'stroke-width': 4, 'stroke-dasharray': '12 8' }));
+        svg.appendChild(textEl('x = 1', { x: toSvg(1, 2.25).x + 16, y: toSvg(1, 2.25).y + 12, 'font-size': 26, fill: '#B45309', 'font-weight': 700 }));
+        svg.appendChild(textEl('y = 1', { x: Y1Right.x - 8, y: Y1Right.y - 14, 'text-anchor': 'end', 'font-size': 26, fill: '#0369A1', 'font-weight': 700 }));
+
+        svg.appendChild(rect({ x: legendX, y: legendY, width: legendW, height: legendH, rx: 26, fill: '#FFFFFF', stroke: '#CBD5E1', 'stroke-width': 2.5 }));
+        svg.appendChild(textEl('핵심 길이', { x: legendX + 24, y: legendY + 34, 'font-size': 28, fill: '#0F172A', 'font-weight': 800 }));
+        svg.appendChild(legendRow(legendX + 24, legendY + 68, '#0F766E', 'OP = 1'));
+        svg.appendChild(legendRow(legendX + 24, legendY + 104, '#16A34A', 'x축 위 길이 = cosθ'));
+        svg.appendChild(legendRow(legendX + 24, legendY + 140, '#7C3AED', 'y축 위 길이 = sinθ'));
+        svg.appendChild(legendRow(legendX + 24, legendY + 176, '#F59E0B', '(1,0)→A = tanθ'));
+        svg.appendChild(legendRow(legendX + 24, legendY + 212, '#0EA5E9', '(0,1)→B = cotθ'));
+        svg.appendChild(legendRow(legendX + 24, legendY + 248, '#DC2626', 'OA = secθ,  OB = cscθ'));
+
+        svg.appendChild(line({ x1: O.x, y1: O.y, x2: rayEnd.x, y2: rayEnd.y, stroke: '#475569', 'stroke-width': 3, 'stroke-dasharray': '8 7', 'marker-end': 'url(#arrow)' }));
+        svg.appendChild(line({ x1: O.x, y1: O.y, x2: C.x, y2: C.y, stroke: '#16A34A', 'stroke-width': 8, 'stroke-linecap': 'round' }));
+        svg.appendChild(line({ x1: O.x, y1: O.y, x2: D.x, y2: D.y, stroke: '#7C3AED', 'stroke-width': 8, 'stroke-linecap': 'round' }));
+        svg.appendChild(line({ x1: P.x, y1: P.y, x2: D.x, y2: D.y, stroke: '#16A34A', 'stroke-width': 3, 'stroke-dasharray': '8 8', opacity: 0.95 }));
+        svg.appendChild(line({ x1: P.x, y1: P.y, x2: C.x, y2: C.y, stroke: '#7C3AED', 'stroke-width': 3, 'stroke-dasharray': '8 8', opacity: 0.95 }));
+        svg.appendChild(line({ x1: OAStart.x, y1: OAStart.y, x2: OAEnd.x, y2: OAEnd.y, stroke: '#DC2626', 'stroke-width': 5, 'stroke-linecap': 'round', opacity: 0.95 }));
+        svg.appendChild(line({ x1: OBStart.x, y1: OBStart.y, x2: OBEnd.x, y2: OBEnd.y, stroke: '#2563EB', 'stroke-width': 5, 'stroke-linecap': 'round', opacity: 0.95 }));
+        svg.appendChild(line({ x1: x1Point.x, y1: x1Point.y, x2: A.x, y2: A.y, stroke: '#F59E0B', 'stroke-width': 8, 'stroke-linecap': 'round' }));
+        svg.appendChild(line({ x1: y1Point.x, y1: y1Point.y, x2: B.x, y2: B.y, stroke: '#0EA5E9', 'stroke-width': 8, 'stroke-linecap': 'round' }));
+        svg.appendChild(line({ x1: O.x, y1: O.y, x2: P.x, y2: P.y, stroke: '#0F766E', 'stroke-width': 8, 'stroke-linecap': 'round' }));
+
+        svg.appendChild(path({ d: `M ${arcStart.x} ${arcStart.y} A 56 56 0 0 0 ${arcEnd.x} ${arcEnd.y}`, fill: 'none', stroke: '#0F766E', 'stroke-width': 4 }));
+        svg.appendChild(textEl('θ', { x: thetaText.x + 6, y: thetaText.y - 4, 'font-size': 28, fill: '#0F766E', 'font-weight': 800 }));
+
+        svg.appendChild(labelGroup(O, 'O', pointLabelPositions.O.x, pointLabelPositions.O.y));
+        svg.appendChild(labelGroup(A, 'A(1, tanθ)', pointLabelPositions.A.x, pointLabelPositions.A.y));
+        svg.appendChild(labelGroup(B, 'B(cotθ, 1)', pointLabelPositions.B.x, pointLabelPositions.B.y, { withLeader: true }));
+        svg.appendChild(labelGroup(x1Point, '(1, 0)', pointLabelPositions.xPoint.x, pointLabelPositions.xPoint.y, { small: true }));
+        svg.appendChild(labelGroup(y1Point, '(0, 1)', pointLabelPositions.yPoint.x, pointLabelPositions.yPoint.y, { small: true }));
+        svg.appendChild(circle({ cx: C.x, cy: C.y, r: 7, fill: '#334155' }));
+        svg.appendChild(circle({ cx: D.x, cy: D.y, r: 7, fill: '#334155' }));
+        svg.appendChild(labelGroup(C, '(cosθ, 0)', C.x - 58, cy + 62, { small: true }));
+        svg.appendChild(labelGroup(D, '(0, sinθ)', cx - 132, D.y + 8, { small: true }));
+
+        const pHit = circle({ cx: P.x, cy: P.y, r: 20, fill: 'transparent', style: 'cursor: grab;' });
+        pHit.addEventListener('pointerdown', (e) => { dragging = true; pHit.setPointerCapture(e.pointerId); e.preventDefault(); });
+        svg.appendChild(pHit);
+        const pVisible = circle({ cx: P.x, cy: P.y, r: 11, fill: '#0F766E', stroke: '#ffffff', 'stroke-width': 5, style: 'cursor: grab;' });
+        pVisible.addEventListener('pointerdown', (e) => { dragging = true; pVisible.setPointerCapture(e.pointerId); e.preventDefault(); });
+        svg.appendChild(pVisible);
+        svg.appendChild(labelGroup(P, 'P', pointLabelPositions.P.x, pointLabelPositions.P.y, { withLeader: true }));
+
+        svg.appendChild(segmentLabel((O.x + C.x) / 2 - 52, cy + 26, 'cosθ', '#16A34A', '#16A34A'));
+        svg.appendChild(segmentLabel(cx - 124, (O.y + D.y) / 2 - 18, 'sinθ', '#7C3AED', '#7C3AED'));
+        svg.appendChild(textEl('tanθ', { x: A.x + 18, y: (x1Point.y + A.y) / 2 + 8, 'font-size': 26, fill: '#D97706', 'font-weight': 800 }));
+        svg.appendChild(textEl('cotθ', { x: (y1Point.x + B.x) / 2 - 22, y: B.y - 18, 'font-size': 26, fill: '#0284C7', 'font-weight': 800 }));
+        svg.appendChild(textEl('secθ', { x: (OAEnd.x + OAStart.x) / 2 + 28, y: (OAEnd.y + OAStart.y) / 2 - 16, 'font-size': 24, fill: '#B91C1C', 'font-weight': 800 }));
+        svg.appendChild(textEl('cscθ', { x: (OBEnd.x + OBStart.x) / 2 - 18, y: (OBEnd.y + OBStart.y) / 2 - 18, 'font-size': 24, fill: '#1D4ED8', 'font-weight': 800 }));
+      }
+
+      function updateThetaFromPointer(evt) {
+        const rect = svg.getBoundingClientRect();
+        const svgX = ((evt.clientX - rect.left) / rect.width) * W;
+        const svgY = ((evt.clientY - rect.top) / rect.height) * H;
+        const dx = (svgX - cx) / scale;
+        const dy = (cy - svgY) / scale;
+        let deg = Math.atan2(dy, dx) * 180 / Math.PI;
+        deg = clamp(deg, 5, 85);
+        thetaDeg = Math.round(deg);
+        render();
+      }
+
+      slider.addEventListener('input', (e) => { thetaDeg = Number(e.target.value); render(); });
+      presets.forEach(btn => btn.addEventListener('click', () => { thetaDeg = Number(btn.dataset.angle); render(); }));
+      svg.addEventListener('pointermove', (e) => { if (dragging) updateThetaFromPointer(e); });
+      svg.addEventListener('pointerup', () => { dragging = false; });
+      svg.addEventListener('pointerleave', () => { dragging = false; });
+      projectorBtn.addEventListener('click', () => {
+        projectorMode = !projectorMode;
+        projectorBtn.textContent = projectorMode ? '프로젝터 모드 켜짐' : '프로젝터 모드 꺼짐';
+        projectorBtn.classList.toggle('active', projectorMode);
+        render();
+      });
+
+      render();
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,1240 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>sinx/x 극한 유도 시각화</title>
+  <style>
+    :root {
+      --bg: #f5f7fb;
+      --panel: #ffffff;
+      --line: #d8deea;
+      --text: #1b2430;
+      --muted: #5f6b7b;
+      --blue: #2f6fed;
+      --blue-fill: rgba(47, 111, 237, 0.23);
+      --amber: #d18a00;
+      --amber-fill: rgba(209, 138, 0, 0.23);
+      --red: #d64a4a;
+      --red-fill: rgba(214, 74, 74, 0.16);
+      --green: #1f8f63;
+      --purple: #7a47c9;
+      --shadow: 0 10px 28px rgba(20, 35, 70, 0.08);
+      --radius: 20px;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Pretendard", "Noto Sans KR", "Apple SD Gothic Neo", sans-serif;
+      background: linear-gradient(180deg, #f8fbff 0%, var(--bg) 100%);
+      color: var(--text);
+    }
+    .wrap {
+      max-width: 1540px;
+      margin: 0 auto;
+      padding: 22px;
+    }
+    .app { display: grid; gap: 18px; }
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+    .intro { padding: 22px 24px; }
+    .panel-pad { padding: 16px; }
+
+    h1 { margin: 0 0 10px; font-size: 30px; line-height: 1.25; }
+    h2 { margin: 0; font-size: 22px; }
+    p { margin: 0; line-height: 1.6; color: var(--muted); }
+    .highlight { font-weight: 900; color: var(--text); }
+
+    .top-stage {
+      display: grid;
+      grid-template-columns: 300px minmax(0, 1fr);
+      gap: 16px;
+      align-items: start;
+    }
+    .right-stack {
+      display: grid;
+      gap: 16px;
+      align-content: start;
+    }
+    .main-box, .right-box, .graphs-box { display: grid; gap: 12px; }
+
+    .inline-controls {
+      display: grid;
+      gap: 10px;
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: linear-gradient(180deg, #fbfdff 0%, #f7faff 100%);
+    }
+    .control-row {
+      display: grid;
+      grid-template-columns: 70px 1fr auto;
+      gap: 10px;
+      align-items: center;
+    }
+    .button-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .graph-controls {
+      display: grid;
+      grid-template-columns: 80px 1fr auto auto;
+      gap: 10px;
+      align-items: center;
+      padding: 0 2px;
+    }
+    .label { font-weight: 800; font-size: 14px; }
+    .pill {
+      min-width: 102px;
+      text-align: center;
+      padding: 10px 12px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: #fff;
+      font-weight: 800;
+      font-size: 13px;
+    }
+    input[type="range"] { width: 100%; accent-color: var(--blue); }
+    button {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: #fff;
+      padding: 10px 14px;
+      font-size: 14px;
+      font-weight: 800;
+      color: var(--text);
+      cursor: pointer;
+      transition: transform 0.12s ease, background 0.12s ease, border-color 0.12s ease;
+    }
+    button:hover {
+      transform: translateY(-1px);
+      background: #f8fbff;
+      border-color: #b9c6dd;
+    }
+    .primary {
+      background: #eef4ff;
+      border-color: #cddcfb;
+      color: #1f4fb3;
+    }
+    .toggle-on { background: #eef7ff; border-color: #bdd5ff; color: #184da9; }
+    .toggle-off { background: #fff6f6; border-color: #f0c9c9; color: #a43f3f; }
+    .toggle-state { margin-left: 2px; }
+
+    canvas {
+      width: 100%;
+      display: block;
+      border-radius: 16px;
+      background: linear-gradient(180deg, #fff, #fcfdff);
+      border: 1px solid #e2e7f0;
+    }
+    #mainCanvas { height: 240px; }
+    .mini-canvas { height: 240px; }
+    .graph-canvas { height: 255px; }
+
+    .canvas-caption, .footnote {
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.55;
+    }
+
+    .mini-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }
+    .mini-card, .graph-card {
+      display: grid;
+      gap: 10px;
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: linear-gradient(180deg, #ffffff 0%, #fafcff 100%);
+    }
+    .mini-title, .graph-title {
+      font-weight: 900;
+      font-size: 16px;
+      line-height: 1.35;
+    }
+
+    .formula-box { display: grid; gap: 6px; }
+    .formula {
+      font-size: 15px;
+      font-weight: 900;
+      line-height: 1.45;
+    }
+    .formula small {
+      display: block;
+      font-weight: 600;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .ineq { padding: 16px 18px; display: grid; gap: 10px; }
+    .ineq-main { font-size: 24px; font-weight: 900; line-height: 1.4; }
+    .ineq-sub { color: var(--muted); line-height: 1.7; font-size: 15px; display: grid; gap: 6px; }
+
+    .graphs-head { display: grid; gap: 10px; padding-bottom: 4px; }
+    .graph-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }
+    .graph-head-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    .graph-meta {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    .meta-item {
+      padding: 10px 12px;
+      border-radius: 14px;
+      border: 1px solid var(--line);
+      background: linear-gradient(180deg, #fff, #fbfdff);
+    }
+    .meta-item .k {
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 4px;
+      min-height: 20px;
+    }
+    .meta-item .v {
+      font-size: 18px;
+      font-weight: 900;
+      line-height: 1.25;
+      min-height: 30px;
+    }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .legend span {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+    }
+    .dot {
+      width: 11px;
+      height: 11px;
+      border-radius: 999px;
+      display: inline-block;
+    }
+    .green { background: var(--green); }
+    .blue { background: var(--blue); }
+    .purple { background: var(--purple); }
+    .red { background: var(--red); }
+
+    math {
+      max-width: 100%;
+      white-space: nowrap;
+      font-size: 1em;
+    }
+    .math-inline, .math-display, .k, .v, .graph-title { overflow-x: auto; overflow-y: hidden; }
+    .math-display math { display: block; }
+
+    @media (max-width: 1260px) {
+      .top-stage { grid-template-columns: 1fr; }
+      .graph-grid, .mini-grid { grid-template-columns: 1fr; }
+      #mainCanvas, .mini-canvas, .graph-canvas { height: 230px; }
+    }
+
+    @media (max-width: 760px) {
+      .wrap { padding: 14px; }
+      .control-row, .graph-controls { grid-template-columns: 1fr; }
+      .ineq-main { font-size: 20px; }
+      #mainCanvas, .mini-canvas, .graph-canvas { height: 210px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="app">
+      <section class="card intro">
+        <h1>
+          <span class="highlight">
+            <math xmlns="http://www.w3.org/1998/Math/MathML" display="inline">
+              <mrow>
+                <munder><mo>lim</mo><mrow><mi>x</mi><mo>→</mo><mn>0</mn></mrow></munder>
+                <mfrac><mrow><mi>sin</mi><mi>x</mi></mrow><mi>x</mi></mfrac>
+              </mrow>
+            </math>
+          </span>
+          를 도형과 그래프로 함께 보기
+        </h1>
+        <p>
+          위에서는 단위원에서 <span class="highlight">안쪽 삼각형, 부채꼴, 바깥 접선 삼각형</span>의 넓이 관계를 봅니다.
+          아래에서는 <span class="highlight"><math xmlns="http://www.w3.org/1998/Math/MathML"><mrow><mi>sin</mi><mi>x</mi></mrow></math></span>,
+          <span class="highlight"><math xmlns="http://www.w3.org/1998/Math/MathML"><mrow><mi>tan</mi><mi>x</mi></mrow></math></span>,
+          <span class="highlight"><math xmlns="http://www.w3.org/1998/Math/MathML"><mrow><mi>cos</mi><mi>x</mi></mrow></math></span>와 그 비교 함수들을 각각 따로 그려,
+          현재 <span class="highlight"><math xmlns="http://www.w3.org/1998/Math/MathML"><mi>x</mi></math></span>에서
+          <span class="highlight"><math xmlns="http://www.w3.org/1998/Math/MathML"><mfrac><mrow><mi>sin</mi><mi>x</mi></mrow><mi>x</mi></mfrac></math></span>,
+          <span class="highlight"><math xmlns="http://www.w3.org/1998/Math/MathML"><mfrac><mrow><mi>tan</mi><mi>x</mi></mrow><mi>x</mi></mfrac></math></span>,
+          <span class="highlight"><math xmlns="http://www.w3.org/1998/Math/MathML"><mfrac><mrow><mi>cos</mi><mi>x</mi></mrow><mrow><mn>1</mn><mo>-</mo><mfrac><msup><mi>x</mi><mn>2</mn></msup><mn>2</mn></mfrac></mrow></mfrac></math></span>
+          가 어떻게 움직이는지 확인할 수 있습니다.
+        </p>
+      </section>
+
+      <section class="top-stage">
+        <section class="card panel-pad">
+          <div class="main-box">
+            <h2>겹쳐서 본 도형</h2>
+            <div class="inline-controls">
+              <div class="control-row">
+                <div class="label">각 x</div>
+                <input id="thetaSlider" type="range" min="0.03" max="1.2" step="0.001" value="0.72" />
+                <div class="pill" id="thetaRad">0.720 rad</div>
+              </div>
+              <div class="control-row">
+                <div class="label">각도</div>
+                <div class="footnote">큰 도형의 점 A를 드래그해도 각 x가 바뀝니다.</div>
+                <div class="pill" id="thetaDeg">41.3°</div>
+              </div>
+              <div class="button-row">
+                <button id="stepDown">−0.05 rad</button>
+                <button id="stepUp">+0.05 rad</button>
+                <button class="primary" id="playBtn">자동 실행</button>
+                <button id="resetBtn">초기화</button>
+              </div>
+            </div>
+            <canvas id="mainCanvas"></canvas>
+            <div class="canvas-caption">파랑: 안쪽 삼각형, 주황: 부채꼴, 빨강: 바깥 접선 삼각형. 작은 각 x에 해당하는 부채꼴 부분만 칠해집니다.</div>
+          </div>
+        </section>
+
+        <div class="right-stack">
+          <section class="card panel-pad">
+            <div class="right-box">
+              <h2>각각 따로 본 도형</h2>
+              <div class="mini-grid">
+                <div class="mini-card">
+                  <div class="mini-title">안쪽 삼각형</div>
+                  <canvas id="triCanvas" class="mini-canvas"></canvas>
+                  <div class="formula-box" id="triFormula"></div>
+                </div>
+                <div class="mini-card">
+                  <div class="mini-title">부채꼴</div>
+                  <canvas id="sectorCanvas" class="mini-canvas"></canvas>
+                  <div class="formula-box" id="sectorFormula"></div>
+                </div>
+                <div class="mini-card">
+                  <div class="mini-title">바깥 접선 삼각형</div>
+                  <canvas id="outerCanvas" class="mini-canvas"></canvas>
+                  <div class="formula-box" id="outerFormula"></div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section class="card ineq">
+            <div class="ineq-main" id="ineqMain"></div>
+            <div class="ineq-sub" id="ineqSub"></div>
+          </section>
+        </div>
+      </section>
+
+      <section class="card panel-pad">
+        <div class="graphs-box">
+          <div class="graphs-head">
+            <h2>원점 근처 그래프 비교</h2>
+            <p>세 그래프는 같은 x 값을 공유합니다. 그래프 안을 클릭하거나 드래그하면 점선과 x 표시가 함께 움직이고, 현재 x에서의 비율값이 아래에 바로 나타납니다. 아래 그래프의 x는 음수도 가능합니다. x축 눈금은 라디안 단위입니다.</p>
+            <div class="graph-controls">
+              <div class="label">확대</div>
+              <input id="zoomSlider" type="range" min="0.12" max="1.52" step="0.01" value="1.25" />
+              <div class="pill" id="zoomValue">±1.25 rad</div>
+              <div class="button-row">
+                <button id="zoomInBtn">확대</button>
+                <button id="zoomOutBtn">축소</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="graph-grid">
+            <div class="graph-card">
+              <div class="graph-head-row">
+                <div class="graph-title" id="sinTitle"></div>
+                <button id="toggleSinRef" class="toggle-on"><span id="sinToggleLabel"></span> <span class="toggle-state">켜짐</span></button>
+              </div>
+              <canvas id="sinGraphCanvas" class="graph-canvas"></canvas>
+              <div class="graph-meta">
+                <div class="meta-item">
+                  <div class="k" id="sinK1"></div>
+                  <div class="v" id="sinGraphX"></div>
+                </div>
+                <div class="meta-item">
+                  <div class="k" id="sinK2"></div>
+                  <div class="v" id="sinGraphRatio"></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="graph-card">
+              <div class="graph-head-row">
+                <div class="graph-title" id="tanTitle"></div>
+                <button id="toggleTanRef" class="toggle-on"><span id="tanToggleLabel"></span> <span class="toggle-state">켜짐</span></button>
+              </div>
+              <canvas id="tanGraphCanvas" class="graph-canvas"></canvas>
+              <div class="graph-meta">
+                <div class="meta-item">
+                  <div class="k" id="tanK1"></div>
+                  <div class="v" id="tanGraphX"></div>
+                </div>
+                <div class="meta-item">
+                  <div class="k" id="tanK2"></div>
+                  <div class="v" id="tanGraphRatio"></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="graph-card">
+              <div class="graph-head-row">
+                <div class="graph-title" id="cosTitle"></div>
+                <button id="toggleCosRef" class="toggle-on"><span id="cosToggleLabel"></span> <span class="toggle-state">켜짐</span></button>
+              </div>
+              <canvas id="cosGraphCanvas" class="graph-canvas"></canvas>
+              <div class="graph-meta">
+                <div class="meta-item">
+                  <div class="k" id="cosK1"></div>
+                  <div class="v" id="cosGraphX"></div>
+                </div>
+                <div class="meta-item">
+                  <div class="k" id="cosK2"></div>
+                  <div class="v" id="cosGraphRatio"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="legend">
+            <span><i class="dot green"></i> 삼각함수</span>
+            <span><i class="dot blue"></i> 비교 함수</span>
+            <span><i class="dot red"></i> 현재 x의 점선</span>
+            <span><i class="dot purple"></i> 현재 x에서의 함수값</span>
+          </div>
+          <div class="footnote">tan 그래프는 x = ±π/2 근처에서 매우 급격히 커지므로, 보기 좋은 범위만 표시합니다.</div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <script>
+    const state = {
+      theta: 0.72,
+      graphX: 0.72,
+      minTheta: 0.03,
+      maxTheta: 1.2,
+      zoom: 1.25,
+      minZoom: 0.12,
+      maxZoom: 1.52,
+      playing: false,
+      direction: 1,
+      draggingMain: false,
+      draggingGraph: null,
+      showSinRef: true,
+      showTanRef: true,
+      showCosRef: true,
+      rafId: null,
+    };
+
+    const els = {
+      thetaSlider: document.getElementById('thetaSlider'),
+      thetaRad: document.getElementById('thetaRad'),
+      thetaDeg: document.getElementById('thetaDeg'),
+      stepDown: document.getElementById('stepDown'),
+      stepUp: document.getElementById('stepUp'),
+      playBtn: document.getElementById('playBtn'),
+      resetBtn: document.getElementById('resetBtn'),
+      mainCanvas: document.getElementById('mainCanvas'),
+      triCanvas: document.getElementById('triCanvas'),
+      sectorCanvas: document.getElementById('sectorCanvas'),
+      outerCanvas: document.getElementById('outerCanvas'),
+      triFormula: document.getElementById('triFormula'),
+      sectorFormula: document.getElementById('sectorFormula'),
+      outerFormula: document.getElementById('outerFormula'),
+      ineqMain: document.getElementById('ineqMain'),
+      ineqSub: document.getElementById('ineqSub'),
+      zoomSlider: document.getElementById('zoomSlider'),
+      zoomValue: document.getElementById('zoomValue'),
+      zoomInBtn: document.getElementById('zoomInBtn'),
+      zoomOutBtn: document.getElementById('zoomOutBtn'),
+      sinGraphCanvas: document.getElementById('sinGraphCanvas'),
+      tanGraphCanvas: document.getElementById('tanGraphCanvas'),
+      cosGraphCanvas: document.getElementById('cosGraphCanvas'),
+      toggleSinRef: document.getElementById('toggleSinRef'),
+      toggleTanRef: document.getElementById('toggleTanRef'),
+      toggleCosRef: document.getElementById('toggleCosRef'),
+      sinGraphX: document.getElementById('sinGraphX'),
+      tanGraphX: document.getElementById('tanGraphX'),
+      cosGraphX: document.getElementById('cosGraphX'),
+      sinGraphRatio: document.getElementById('sinGraphRatio'),
+      tanGraphRatio: document.getElementById('tanGraphRatio'),
+      cosGraphRatio: document.getElementById('cosGraphRatio'),
+    };
+
+    const dynamicEls = {};
+
+    function clamp(value, min, max) {
+      return Math.min(max, Math.max(min, value));
+    }
+    function fmt(n, digits = 3) {
+      return Number(n).toFixed(digits);
+    }
+    function fmtDeg(rad) {
+      return `${fmt(rad * 180 / Math.PI, 1)}°`;
+    }
+    function safeSinRatio(x) {
+      return Math.abs(x) < 1e-9 ? 1 : Math.sin(x) / x;
+    }
+    function safeTanRatio(x) {
+      return Math.abs(x) < 1e-9 ? 1 : Math.tan(x) / x;
+    }
+    function safeCosPolyRatio(x) {
+      const denom = 1 - (x * x) / 2;
+      if (Math.abs(denom) < 1e-9) return NaN;
+      return Math.cos(x) / denom;
+    }
+
+    function esc(s) {
+      return String(s)
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;');
+    }
+    function mWrap(body, display = false) {
+      return `<math xmlns="http://www.w3.org/1998/Math/MathML"${display ? ' display="block"' : ''}><mrow>${body}</mrow></math>`;
+    }
+    function setMath(el, body, display = false) {
+      if (el) el.innerHTML = mWrap(body, display);
+    }
+    function mi(v) { return `<mi>${esc(v)}</mi>`; }
+    function mn(v) { return `<mn>${esc(v)}</mn>`; }
+    function mo(v) { return `<mo>${esc(v)}</mo>`; }
+    function mtext(v) { return `<mtext>${esc(v)}</mtext>`; }
+    function frac(a, b) { return `<mfrac><mrow>${a}</mrow><mrow>${b}</mrow></mfrac>`; }
+    function sup(a, b) { return `<msup><mrow>${a}</mrow><mrow>${b}</mrow></msup>`; }
+    function par(a) { return `<mo>(</mo>${a}<mo>)</mo>`; }
+
+    function setTheta(theta) {
+      state.theta = clamp(theta, state.minTheta, state.maxTheta);
+      els.thetaSlider.value = state.theta;
+      renderAll();
+    }
+    function setGraphX(x) {
+      state.graphX = clamp(x, -state.zoom, state.zoom);
+      renderAll();
+    }
+    function setZoom(z) {
+      state.zoom = clamp(z, state.minZoom, state.maxZoom);
+      els.zoomSlider.value = state.zoom;
+      state.graphX = clamp(state.graphX, -state.zoom, state.zoom);
+      renderAll();
+    }
+
+    function canvasCtx(canvas) {
+      const dpr = window.devicePixelRatio || 1;
+      const rect = canvas.getBoundingClientRect();
+      const width = Math.max(1, rect.width);
+      const height = Math.max(1, rect.height);
+      if (canvas.width !== Math.round(width * dpr) || canvas.height !== Math.round(height * dpr)) {
+        canvas.width = Math.round(width * dpr);
+        canvas.height = Math.round(height * dpr);
+      }
+      const ctx = canvas.getContext('2d');
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.clearRect(0, 0, width, height);
+      return { ctx, width, height };
+    }
+
+    function geometry(theta) {
+      return {
+        O: { x: 0, y: 0 },
+        B: { x: 1, y: 0 },
+        A: { x: Math.cos(theta), y: Math.sin(theta) },
+        T: { x: 1, y: Math.tan(theta) },
+      };
+    }
+    function worldToScreen(point, ox, oy, scale) {
+      return { x: ox + point.x * scale, y: oy - point.y * scale };
+    }
+    function line(ctx, p1, p2, color, width = 2, dash = []) {
+      ctx.save();
+      ctx.strokeStyle = color;
+      ctx.lineWidth = width;
+      ctx.setLineDash(dash);
+      ctx.beginPath();
+      ctx.moveTo(p1.x, p1.y);
+      ctx.lineTo(p2.x, p2.y);
+      ctx.stroke();
+      ctx.restore();
+    }
+    function fillPolygon(ctx, points, fill, stroke, lineWidth = 2) {
+      ctx.save();
+      ctx.beginPath();
+      ctx.moveTo(points[0].x, points[0].y);
+      for (let i = 1; i < points.length; i++) ctx.lineTo(points[i].x, points[i].y);
+      ctx.closePath();
+      ctx.fillStyle = fill;
+      ctx.fill();
+      if (stroke) {
+        ctx.strokeStyle = stroke;
+        ctx.lineWidth = lineWidth;
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+    function fillSector(ctx, center, radius, theta, fill, stroke, lineWidth = 2) {
+      ctx.save();
+      ctx.beginPath();
+      ctx.moveTo(center.x, center.y);
+      ctx.arc(center.x, center.y, radius, 0, -theta, true);
+      ctx.closePath();
+      ctx.fillStyle = fill;
+      ctx.fill();
+      if (stroke) {
+        ctx.strokeStyle = stroke;
+        ctx.lineWidth = lineWidth;
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+    function drawPoint(ctx, p, label, color = '#1b2430', r = 4.5, ox = 8, oy = -8) {
+      ctx.save();
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.font = '13px sans-serif';
+      ctx.fillText(label, p.x + ox, p.y + oy);
+      ctx.restore();
+    }
+    function drawAngleMark(ctx, ox, oy, theta, radius = 26) {
+      ctx.save();
+      ctx.strokeStyle = '#42536b';
+      ctx.lineWidth = 1.8;
+      ctx.beginPath();
+      ctx.arc(ox, oy, radius, 0, -theta, true);
+      ctx.stroke();
+      ctx.fillStyle = '#42536b';
+      ctx.font = '15px sans-serif';
+      const mx = ox + Math.cos(theta / 2) * (radius + 12);
+      const my = oy - Math.sin(theta / 2) * (radius + 8);
+      ctx.fillText('x', mx, my);
+      ctx.restore();
+    }
+    function drawGrid(ctx, ox, oy, scale, xMax, yMax) {
+      ctx.save();
+      ctx.strokeStyle = '#eef2f8';
+      ctx.lineWidth = 1;
+      for (let x = 0; x <= xMax + 0.001; x += 0.5) {
+        const px = ox + x * scale;
+        ctx.beginPath();
+        ctx.moveTo(px, oy - yMax * scale);
+        ctx.lineTo(px, oy + 8);
+        ctx.stroke();
+      }
+      for (let y = 0; y <= yMax + 0.001; y += 0.5) {
+        const py = oy - y * scale;
+        ctx.beginPath();
+        ctx.moveTo(ox - 8, py);
+        ctx.lineTo(ox + xMax * scale + 12, py);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+    function drawAxes(ctx, ox, oy, scale, xMax, yMax) {
+      ctx.save();
+      ctx.strokeStyle = '#657388';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(ox - 8, oy);
+      ctx.lineTo(ox + xMax * scale + 16, oy);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(ox, oy + 8);
+      ctx.lineTo(ox, oy - yMax * scale - 10);
+      ctx.stroke();
+      ctx.fillStyle = '#657388';
+      ctx.font = '12px sans-serif';
+      ctx.fillText('x', ox + xMax * scale + 6, oy - 8);
+      ctx.fillText('y', ox + 8, oy - yMax * scale - 2);
+      ctx.restore();
+    }
+
+    function getMainLayout(canvas) {
+      const rect = canvas.getBoundingClientRect();
+      const theta = state.theta;
+      const yMax = Math.max(1.1, Math.tan(theta) + 0.25);
+      const scale = Math.min((rect.width - 92) / 1.45, (rect.height - 42) / yMax);
+      return { ox: 50, oy: rect.height - 24, scale, xMax: 1.18, yMax };
+    }
+    function getMiniLayout(canvas) {
+      const rect = canvas.getBoundingClientRect();
+      const theta = state.theta;
+      const yMax = Math.max(1.18, Math.tan(theta) + 0.25);
+      const scale = Math.min((rect.width - 56) / 1.48, (rect.height - 34) / yMax);
+      return { ox: 28, oy: rect.height - 22, scale, xMax: 1.2, yMax };
+    }
+
+    function drawShapeCanvas(canvas, mode, isMain = false) {
+      const { ctx } = canvasCtx(canvas);
+      const theta = state.theta;
+      const g = geometry(theta);
+      const layout = isMain ? getMainLayout(canvas) : getMiniLayout(canvas);
+      const { ox, oy, scale, xMax, yMax } = layout;
+
+      drawGrid(ctx, ox, oy, scale, xMax, yMax);
+      drawAxes(ctx, ox, oy, scale, xMax, yMax);
+
+      const O = worldToScreen(g.O, ox, oy, scale);
+      const A = worldToScreen(g.A, ox, oy, scale);
+      const B = worldToScreen(g.B, ox, oy, scale);
+      const T = worldToScreen(g.T, ox, oy, scale);
+
+      ctx.save();
+      ctx.strokeStyle = '#b9c4d6';
+      ctx.lineWidth = 1.8;
+      ctx.beginPath();
+      ctx.arc(ox, oy, scale, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
+
+      line(ctx, O, B, '#3d4d65', 2.1);
+      line(ctx, O, A, '#3d4d65', 2.1);
+
+      if (mode === 'main' || mode === 'outer') {
+        fillPolygon(ctx, [O, B, T], 'rgba(214, 74, 74, 0.16)', '#d64a4a', 2.1);
+        line(ctx, B, T, '#d64a4a', 2.1);
+        line(ctx, O, T, '#d64a4a', 2.1);
+      }
+      if (mode === 'main' || mode === 'sector') {
+        fillSector(ctx, O, scale, theta, 'rgba(209, 138, 0, 0.23)', '#d18a00', 2.1);
+      }
+      if (mode === 'main' || mode === 'triangle') {
+        fillPolygon(ctx, [O, B, A], 'rgba(47, 111, 237, 0.25)', '#2f6fed', 2.1);
+        line(ctx, B, A, '#2f6fed', 2.1);
+      }
+
+      drawAngleMark(ctx, ox, oy, theta, isMain ? 30 : 26);
+      drawPoint(ctx, O, 'O', '#1b2430', isMain ? 5 : 4.5, -14, -8);
+      drawPoint(ctx, B, 'B', '#1b2430', isMain ? 5 : 4.5, 8, 14);
+      drawPoint(ctx, A, 'A', '#1b2430', isMain ? 5 : 4.5, 8, -8);
+      if (mode === 'main' || mode === 'outer') drawPoint(ctx, T, 'T', '#1b2430', isMain ? 5 : 4.5, 8, -8);
+
+      if (isMain) {
+        ctx.save();
+        ctx.fillStyle = '#5a6677';
+        ctx.font = '13px sans-serif';
+        ctx.fillText('반지름 = 1', ox + scale * 0.22, oy - scale * 0.52);
+        ctx.restore();
+      }
+    }
+
+    function choosePiStep(xRange) {
+      const candidates = [Math.PI / 12, Math.PI / 8, Math.PI / 6, Math.PI / 4, Math.PI / 3, Math.PI / 2, Math.PI];
+      for (const s of candidates) {
+        if ((2 * xRange) / s <= 10) return s;
+      }
+      return Math.PI;
+    }
+    function gcd(a, b) {
+      a = Math.abs(a); b = Math.abs(b);
+      while (b) {
+        const t = a % b;
+        a = b;
+        b = t;
+      }
+      return a || 1;
+    }
+    function formatPi(value) {
+      if (Math.abs(value) < 1e-9) return '0';
+      const sign = value < 0 ? '-' : '';
+      const ratio = Math.abs(value / Math.PI);
+      const denoms = [1, 2, 3, 4, 6, 8, 12];
+      let best = null;
+      let bestErr = Infinity;
+      for (const d of denoms) {
+        const n = Math.round(ratio * d);
+        const err = Math.abs(ratio - n / d);
+        if (err < bestErr) {
+          bestErr = err;
+          best = { n, d };
+        }
+      }
+      if (!best || bestErr > 0.015) return `${fmt(value, 2)}`;
+      let { n, d } = best;
+      if (n === 0) return '0';
+      const g = gcd(n, d);
+      n /= g; d /= g;
+      if (d === 1 && n === 1) return `${sign}π`;
+      if (d === 1) return `${sign}${n}π`;
+      if (n === 1) return `${sign}π/${d}`;
+      return `${sign}${n}π/${d}`;
+    }
+
+    function drawGraphAxes(ctx, sx, sy, plotRect, xRange, yMin, yMax) {
+      ctx.save();
+      ctx.strokeStyle = '#edf1f7';
+      ctx.lineWidth = 1;
+      const xStep = choosePiStep(xRange);
+      for (let x = -Math.ceil(xRange / xStep) * xStep; x <= xRange + 1e-9; x += xStep) {
+        const px = sx(x);
+        ctx.beginPath();
+        ctx.moveTo(px, plotRect.top);
+        ctx.lineTo(px, plotRect.bottom);
+        ctx.stroke();
+      }
+      const ySpan = yMax - yMin;
+      const yStepCandidates = [0.2, 0.5, 1, 2];
+      let yStep = 0.5;
+      for (const s of yStepCandidates) {
+        if (ySpan / s <= 8) { yStep = s; break; }
+      }
+      for (let y = Math.ceil(yMin / yStep) * yStep; y <= yMax + 1e-9; y += yStep) {
+        const py = sy(y);
+        ctx.beginPath();
+        ctx.moveTo(plotRect.left, py);
+        ctx.lineTo(plotRect.right, py);
+        ctx.stroke();
+      }
+      ctx.restore();
+
+      ctx.save();
+      ctx.strokeStyle = '#657388';
+      ctx.lineWidth = 1.5;
+      if (yMin <= 0 && 0 <= yMax) {
+        ctx.beginPath();
+        ctx.moveTo(plotRect.left, sy(0));
+        ctx.lineTo(plotRect.right, sy(0));
+        ctx.stroke();
+      }
+      if (-xRange <= 0 && 0 <= xRange) {
+        ctx.beginPath();
+        ctx.moveTo(sx(0), plotRect.top);
+        ctx.lineTo(sx(0), plotRect.bottom);
+        ctx.stroke();
+      }
+      ctx.restore();
+
+      ctx.save();
+      ctx.fillStyle = '#657388';
+      ctx.font = '12px sans-serif';
+      const xAxisY = yMin <= 0 && 0 <= yMax ? sy(0) : plotRect.bottom - 10;
+      for (let x = -Math.ceil(xRange / xStep) * xStep; x <= xRange + 1e-9; x += xStep) {
+        const label = formatPi(x);
+        if (label === '0') continue;
+        ctx.fillText(label, sx(x) - 12, xAxisY + 16);
+      }
+      const yAxisX = sx(0) + 8;
+      for (let y = Math.ceil(yMin / yStep) * yStep; y <= yMax + 1e-9; y += yStep) {
+        if (Math.abs(y) < 1e-9) continue;
+        ctx.fillText(Number(y.toFixed(2)).toString(), yAxisX, sy(y) + 4);
+      }
+      ctx.fillText('x(rad)', plotRect.right - 40, xAxisY - 8);
+      ctx.fillText('y', yAxisX, plotRect.top + 12);
+      ctx.restore();
+    }
+
+    function drawCurve(ctx, fn, sx, sy, xRange, yMin, yMax, color, width) {
+      ctx.save();
+      ctx.strokeStyle = color;
+      ctx.lineWidth = width;
+      const samples = 900;
+      let started = false;
+      let prevY = null;
+      for (let i = 0; i <= samples; i++) {
+        const x = -xRange + (2 * xRange * i) / samples;
+        const y = fn(x);
+        const bad = !Number.isFinite(y) || y < yMin - 0.7 || y > yMax + 0.7;
+        if (bad || (prevY !== null && Math.abs(y - prevY) > (yMax - yMin) * 0.9)) {
+          started = false;
+          prevY = null;
+          continue;
+        }
+        const px = sx(x);
+        const py = sy(y);
+        if (!started) {
+          ctx.beginPath();
+          ctx.moveTo(px, py);
+          started = true;
+        } else {
+          ctx.lineTo(px, py);
+        }
+        prevY = y;
+        if (i === samples) ctx.stroke();
+        else {
+          const nextX = -xRange + (2 * xRange * (i + 1)) / samples;
+          const nextY = fn(nextX);
+          if (!Number.isFinite(nextY) || nextY < yMin - 0.7 || nextY > yMax + 0.7 || Math.abs(nextY - y) > (yMax - yMin) * 0.9) {
+            ctx.stroke();
+            started = false;
+            prevY = null;
+          }
+        }
+      }
+      ctx.restore();
+    }
+
+    function drawXMarker(ctx, sx, sy, plotRect, x, targetY, refY, yMin, yMax, xLabelText) {
+      const px = sx(x);
+      ctx.save();
+      ctx.strokeStyle = '#d64a4a';
+      ctx.lineWidth = 1.6;
+      ctx.setLineDash([6, 5]);
+      ctx.beginPath();
+      ctx.moveTo(px, plotRect.top);
+      ctx.lineTo(px, plotRect.bottom);
+      ctx.stroke();
+      ctx.restore();
+
+      const labelX = clamp(px - 44, plotRect.left + 8, plotRect.right - 92);
+      ctx.save();
+      ctx.fillStyle = 'rgba(27, 36, 48, 0.82)';
+      const boxY = plotRect.top + 8;
+      ctx.beginPath();
+      ctx.roundRect(labelX, boxY, 88, 24, 8);
+      ctx.fill();
+      ctx.fillStyle = '#fff';
+      ctx.font = '12px sans-serif';
+      ctx.fillText(xLabelText, labelX + 10, boxY + 16);
+      ctx.restore();
+
+      function drawMarker(y, color) {
+        if (!Number.isFinite(y) || y < yMin || y > yMax) return;
+        ctx.save();
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.arc(px, sy(y), 5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+      drawMarker(targetY, '#7a47c9');
+      drawMarker(refY, '#2f6fed');
+    }
+
+    const graphConfigs = {
+      sin: {
+        target: x => Math.sin(x),
+        ref: x => x,
+        showRef: () => state.showSinRef,
+        targetColor: '#1f8f63',
+        ratio: x => safeSinRatio(x),
+        yRange: xRange => {
+          const bound = Math.max(0.7, xRange * 1.05);
+          return [-bound, bound];
+        },
+      },
+      tan: {
+        target: x => Math.tan(x),
+        ref: x => x,
+        showRef: () => state.showTanRef,
+        targetColor: '#1f8f63',
+        ratio: x => safeTanRatio(x),
+        yRange: xRange => {
+          const safe = Math.min(1.42, xRange * 0.98);
+          const bound = Math.max(1.2, Math.min(5.5, Math.abs(Math.tan(safe)) + 0.4));
+          return [-bound, bound];
+        },
+      },
+      cos: {
+        target: x => Math.cos(x),
+        ref: x => 1 - (x * x) / 2,
+        showRef: () => state.showCosRef,
+        targetColor: '#1f8f63',
+        ratio: x => safeCosPolyRatio(x),
+        yRange: xRange => {
+          const low = Math.min(-0.45, 1 - (xRange * xRange) / 2 - 0.15);
+          return [low, 1.18];
+        },
+      },
+    };
+
+    function renderGraphCard(canvas, config) {
+      const { ctx, width, height } = canvasCtx(canvas);
+      const xRange = state.zoom;
+      const pad = { left: 50, right: 16, top: 16, bottom: 34 };
+      const plotRect = { left: pad.left, top: pad.top, right: width - pad.right, bottom: height - pad.bottom };
+      const plotW = plotRect.right - plotRect.left;
+      const plotH = plotRect.bottom - plotRect.top;
+      const [yMin, yMax] = config.yRange(xRange);
+
+      const sx = x => plotRect.left + ((x + xRange) / (2 * xRange)) * plotW;
+      const sy = y => plotRect.top + ((yMax - y) / (yMax - yMin)) * plotH;
+
+      drawGraphAxes(ctx, sx, sy, plotRect, xRange, yMin, yMax);
+
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(plotRect.left, plotRect.top, plotW, plotH);
+      ctx.clip();
+
+      if (config.showRef()) drawCurve(ctx, config.ref, sx, sy, xRange, yMin, yMax, '#2f6fed', 2.2);
+      drawCurve(ctx, config.target, sx, sy, xRange, yMin, yMax, config.targetColor, 2.6);
+
+      const x = state.graphX;
+      if (Math.abs(x) <= xRange) {
+        drawXMarker(ctx, sx, sy, plotRect, x, config.target(x), config.showRef() ? config.ref(x) : NaN, yMin, yMax, `x=${fmt(x, 3)}`);
+      }
+      ctx.restore();
+    }
+
+    function initMathAreas() {
+      els.triFormula.innerHTML = `<div class="formula math-inline" id="triStatic"></div><div class="formula"><small id="triVal"></small></div>`;
+      els.sectorFormula.innerHTML = `<div class="formula math-inline" id="sectorStatic"></div><div class="formula"><small id="sectorVal"></small></div>`;
+      els.outerFormula.innerHTML = `<div class="formula math-inline" id="outerStatic"></div><div class="formula"><small id="outerVal"></small></div>`;
+      els.ineqMain.innerHTML = `<div class="math-display" id="ineqMain1"></div><div class="math-display" id="ineqMain2"></div><div class="math-display" id="ineqMain3"></div>`;
+      els.ineqSub.innerHTML = `<div class="value-line" id="ineqXVal"></div><div class="value-line" id="ineqAreaVals"></div><div class="value-line" id="ineqRatioVals"></div><div class="value-line" id="ineqInvRatioVals"></div>`;
+
+      Object.assign(dynamicEls, {
+        triStatic: document.getElementById('triStatic'),
+        sectorStatic: document.getElementById('sectorStatic'),
+        outerStatic: document.getElementById('outerStatic'),
+        triVal: document.getElementById('triVal'),
+        sectorVal: document.getElementById('sectorVal'),
+        outerVal: document.getElementById('outerVal'),
+        ineqMain1: document.getElementById('ineqMain1'),
+        ineqMain2: document.getElementById('ineqMain2'),
+        ineqMain3: document.getElementById('ineqMain3'),
+        ineqXVal: document.getElementById('ineqXVal'),
+        ineqAreaVals: document.getElementById('ineqAreaVals'),
+        ineqRatioVals: document.getElementById('ineqRatioVals'),
+        ineqInvRatioVals: document.getElementById('ineqInvRatioVals'),
+        sinTitle: document.getElementById('sinTitle'),
+        tanTitle: document.getElementById('tanTitle'),
+        cosTitle: document.getElementById('cosTitle'),
+        sinToggleLabel: document.getElementById('sinToggleLabel'),
+        tanToggleLabel: document.getElementById('tanToggleLabel'),
+        cosToggleLabel: document.getElementById('cosToggleLabel'),
+        sinK1: document.getElementById('sinK1'),
+        sinK2: document.getElementById('sinK2'),
+        tanK1: document.getElementById('tanK1'),
+        tanK2: document.getElementById('tanK2'),
+        cosK1: document.getElementById('cosK1'),
+        cosK2: document.getElementById('cosK2'),
+      });
+
+      setMath(dynamicEls.triStatic, `${mtext('넓이')} ${mo('=')} ${frac(mn('1'), mn('2'))} ${mo('·')} ${mi('sin')} ${mi('x')}`);
+      setMath(dynamicEls.sectorStatic, `${mtext('넓이')} ${mo('=')} ${frac(mi('x'), mn('2'))}`);
+      setMath(dynamicEls.outerStatic, `${mtext('넓이')} ${mo('=')} ${frac(mn('1'), mn('2'))} ${mo('·')} ${mi('tan')} ${mi('x')}`);
+
+      setMath(dynamicEls.ineqMain1, `${frac(mn('1'), mn('2'))}${mo('·')}${mi('sin')}${mi('x')} ${mo('<')} ${frac(mi('x'), mn('2'))} ${mo('<')} ${frac(mn('1'), mn('2'))}${mo('·')}${mi('tan')}${mi('x')} ${mo('=')} ${frac(mn('1'), mn('2'))}${mo('·')}${frac(`${mi('sin')}${mi('x')}`, `${mi('cos')}${mi('x')}`)}`, true);
+      setMath(dynamicEls.ineqMain2, `${mi('cos')}${mi('x')} ${mo('<')} ${frac(`${mi('sin')}${mi('x')}`, mi('x'))} ${mo('<')} ${mn('1')}`, true);
+      setMath(dynamicEls.ineqMain3, `${mn('1')} ${mo('<')} ${frac(mi('x'), `${mi('sin')}${mi('x')}`)} ${mo('<')} ${frac(mn('1'), `${mi('cos')}${mi('x')}`)}`, true);
+
+      setMath(dynamicEls.sinTitle, `${mi('y')}${mo('=')}${mi('sin')}${mi('x')} ${mtext('와')} ${mi('y')}${mo('=')}${mi('x')}`);
+      setMath(dynamicEls.tanTitle, `${mi('y')}${mo('=')}${mi('tan')}${mi('x')} ${mtext('와')} ${mi('y')}${mo('=')}${mi('x')}`);
+      setMath(dynamicEls.cosTitle, `${mi('y')}${mo('=')}${mi('cos')}${mi('x')} ${mtext('와')} ${mi('y')}${mo('=')}${mn('1')}${mo('-')}${frac(sup(mi('x'), mn('2')), mn('2'))}`);
+      setMath(dynamicEls.sinToggleLabel, `${mtext('비교함수')} ${mi('y')}${mo('=')}${mi('x')}`);
+      setMath(dynamicEls.tanToggleLabel, `${mtext('비교함수')} ${mi('y')}${mo('=')}${mi('x')}`);
+      setMath(dynamicEls.cosToggleLabel, `${mtext('비교함수')} ${mi('y')}${mo('=')}${mn('1')}${mo('-')}${frac(sup(mi('x'), mn('2')), mn('2'))}`);
+      setMath(dynamicEls.sinK1, `${mtext('현재')} ${mi('x')}`);
+      setMath(dynamicEls.tanK1, `${mtext('현재')} ${mi('x')}`);
+      setMath(dynamicEls.cosK1, `${mtext('현재')} ${mi('x')}`);
+      setMath(dynamicEls.sinK2, frac(`${mi('sin')}${mi('x')}`, mi('x')));
+      setMath(dynamicEls.tanK2, frac(`${mi('tan')}${mi('x')}`, mi('x')));
+      setMath(dynamicEls.cosK2, frac(`${mi('cos')}${mi('x')}`, `${mn('1')}${mo('-')}${frac(sup(mi('x'), mn('2')), mn('2'))}`));
+    }
+
+    function drawMiniFormulas() {
+      const x = state.theta;
+      const sinx = Math.sin(x);
+      const tanx = Math.tan(x);
+      setMath(dynamicEls.triVal, `${frac(mn('1'), mn('2'))}${mo('·')}${mi('sin')}${par(mn(fmt(x,3)))}${mo('=')}${mn(fmt(0.5 * sinx, 4))}`);
+      setMath(dynamicEls.sectorVal, `${frac(mn(fmt(x,3)), mn('2'))}${mo('=')}${mn(fmt(0.5 * x, 4))}`);
+      setMath(dynamicEls.outerVal, `${frac(mn('1'), mn('2'))}${mo('·')}${mi('tan')}${par(mn(fmt(x,3)))}${mo('=')}${mn(fmt(0.5 * tanx, 4))}`);
+    }
+
+    function drawInequality() {
+      const x = state.theta;
+      const sinx = Math.sin(x);
+      const tanx = Math.tan(x);
+      const cosx = Math.cos(x);
+      const ratio = safeSinRatio(x);
+      const invRatio = 1 / ratio;
+      const invCos = 1 / cosx;
+      setMath(dynamicEls.ineqXVal, `${mtext('현재 x 값:')} ${mi('x')}${mo('=')}${mn(fmt(x, 3))} ${mtext('rad')}`);
+      setMath(dynamicEls.ineqAreaVals, `${mtext('면적 비교:')} ${mn(fmt(0.5 * sinx, 4))} ${mo('<')} ${mn(fmt(0.5 * x, 4))} ${mo('<')} ${mn(fmt(0.5 * tanx, 4))}`);
+      setMath(dynamicEls.ineqRatioVals, `${mtext('cos x, sin x / x, 1 의 현재 값:')} ${mn(fmt(cosx, 4))} ${mo('<')} ${mn(fmt(ratio, 4))} ${mo('<')} ${mn('1.0000')}`);
+      setMath(dynamicEls.ineqInvRatioVals, `${mtext('1, x / sin x, 1 / cos x 의 현재 값:')} ${mn('1.0000')} ${mo('<')} ${mn(fmt(invRatio, 4))} ${mo('<')} ${mn(fmt(invCos, 4))}`);
+    }
+
+    function updateGraphTexts() {
+      const x = state.graphX;
+      const sinRatio = graphConfigs.sin.ratio(x);
+      const tanRatio = graphConfigs.tan.ratio(x);
+      const cosRatio = graphConfigs.cos.ratio(x);
+      setMath(els.sinGraphX, `${mi('x')}${mo('=')}${mn(fmt(x, 3))} ${mtext('rad')}`);
+      setMath(els.tanGraphX, `${mi('x')}${mo('=')}${mn(fmt(x, 3))} ${mtext('rad')}`);
+      setMath(els.cosGraphX, `${mi('x')}${mo('=')}${mn(fmt(x, 3))} ${mtext('rad')}`);
+      setMath(els.sinGraphRatio, `${frac(`${mi('sin')}${mi('x')}`, mi('x'))}${mo('=')}${Number.isFinite(sinRatio) ? mn(fmt(sinRatio, 4)) : mtext('정의 안 됨')}`);
+      setMath(els.tanGraphRatio, `${frac(`${mi('tan')}${mi('x')}`, mi('x'))}${mo('=')}${Number.isFinite(tanRatio) ? mn(fmt(tanRatio, 4)) : mtext('정의 안 됨')}`);
+      setMath(els.cosGraphRatio, `${frac(`${mi('cos')}${mi('x')}`, `${mn('1')}${mo('-')}${frac(sup(mi('x'), mn('2')), mn('2'))}`)}${mo('=')}${Number.isFinite(cosRatio) ? mn(fmt(cosRatio, 4)) : mtext('정의 안 됨')}`);
+    }
+
+    function updateToggleButtons() {
+      const buttonStates = [
+        [els.toggleSinRef, state.showSinRef],
+        [els.toggleTanRef, state.showTanRef],
+        [els.toggleCosRef, state.showCosRef],
+      ];
+      buttonStates.forEach(([btn, on]) => {
+        const stateEl = btn.querySelector('.toggle-state');
+        if (stateEl) stateEl.textContent = on ? '켜짐' : '꺼짐';
+        btn.classList.toggle('toggle-on', on);
+        btn.classList.toggle('toggle-off', !on);
+      });
+    }
+
+    function updateInfo() {
+      els.thetaRad.textContent = `${fmt(state.theta, 3)} rad`;
+      els.thetaDeg.textContent = fmtDeg(state.theta);
+      els.zoomValue.textContent = `±${fmt(state.zoom, 2)} rad`;
+      updateGraphTexts();
+      updateToggleButtons();
+    }
+
+    function renderAll() {
+      drawShapeCanvas(els.mainCanvas, 'main', true);
+      drawShapeCanvas(els.triCanvas, 'triangle');
+      drawShapeCanvas(els.sectorCanvas, 'sector');
+      drawShapeCanvas(els.outerCanvas, 'outer');
+      drawMiniFormulas();
+      drawInequality();
+      renderGraphCard(els.sinGraphCanvas, graphConfigs.sin);
+      renderGraphCard(els.tanGraphCanvas, graphConfigs.tan);
+      renderGraphCard(els.cosGraphCanvas, graphConfigs.cos);
+      updateInfo();
+    }
+
+    function togglePlay() {
+      state.playing = !state.playing;
+      els.playBtn.textContent = state.playing ? '자동 실행 멈춤' : '자동 실행';
+      if (state.playing) animate();
+      else if (state.rafId) cancelAnimationFrame(state.rafId);
+    }
+    function animate() {
+      if (!state.playing) return;
+      let next = state.theta + state.direction * 0.006;
+      if (next >= state.maxTheta) {
+        next = state.maxTheta;
+        state.direction = -1;
+      } else if (next <= state.minTheta) {
+        next = state.minTheta;
+        state.direction = 1;
+      }
+      state.theta = next;
+      els.thetaSlider.value = state.theta;
+      renderAll();
+      state.rafId = requestAnimationFrame(animate);
+    }
+
+    function pointerPos(canvas, evt) {
+      const rect = canvas.getBoundingClientRect();
+      return { x: evt.clientX - rect.left, y: evt.clientY - rect.top, rect };
+    }
+    function updateThetaFromMainPointer(evt) {
+      const layout = getMainLayout(els.mainCanvas);
+      const p = pointerPos(els.mainCanvas, evt);
+      const dx = p.x - layout.ox;
+      const dy = layout.oy - p.y;
+      let theta = Math.atan2(dy, dx);
+      theta = clamp(theta, state.minTheta, state.maxTheta);
+      setTheta(theta);
+    }
+    function getMainAPoint() {
+      const layout = getMainLayout(els.mainCanvas);
+      return { x: layout.ox + Math.cos(state.theta) * layout.scale, y: layout.oy - Math.sin(state.theta) * layout.scale };
+    }
+    function attachMainCanvasEvents() {
+      const c = els.mainCanvas;
+      c.addEventListener('pointerdown', evt => {
+        const p = pointerPos(c, evt);
+        const A = getMainAPoint();
+        const dist = Math.hypot(p.x - A.x, p.y - A.y);
+        if (dist <= 22) {
+          state.draggingMain = true;
+          c.setPointerCapture(evt.pointerId);
+          updateThetaFromMainPointer(evt);
+        }
+      });
+      c.addEventListener('pointermove', evt => {
+        if (!state.draggingMain) return;
+        updateThetaFromMainPointer(evt);
+      });
+      const stop = evt => {
+        state.draggingMain = false;
+        try { c.releasePointerCapture(evt.pointerId); } catch (_) {}
+      };
+      c.addEventListener('pointerup', stop);
+      c.addEventListener('pointercancel', stop);
+    }
+
+    function updateGraphFromPointer(canvas, evt) {
+      const rect = canvas.getBoundingClientRect();
+      const plotLeft = 50;
+      const plotRight = rect.width - 16;
+      const p = pointerPos(canvas, evt);
+      const px = clamp(p.x, plotLeft, plotRight);
+      const x = -state.zoom + (2 * state.zoom * (px - plotLeft)) / (plotRight - plotLeft);
+      setGraphX(x);
+    }
+    function attachGraphEvents(canvas) {
+      canvas.addEventListener('pointerdown', evt => {
+        state.draggingGraph = canvas;
+        canvas.setPointerCapture(evt.pointerId);
+        updateGraphFromPointer(canvas, evt);
+      });
+      canvas.addEventListener('pointermove', evt => {
+        if (state.draggingGraph !== canvas) return;
+        updateGraphFromPointer(canvas, evt);
+      });
+      const stop = evt => {
+        if (state.draggingGraph === canvas) state.draggingGraph = null;
+        try { canvas.releasePointerCapture(evt.pointerId); } catch (_) {}
+      };
+      canvas.addEventListener('pointerup', stop);
+      canvas.addEventListener('pointercancel', stop);
+      canvas.addEventListener('wheel', evt => {
+        evt.preventDefault();
+        setZoom(state.zoom * (evt.deltaY < 0 ? 0.9 : 1.12));
+      }, { passive: false });
+    }
+
+    function installEvents() {
+      els.thetaSlider.addEventListener('input', e => setTheta(parseFloat(e.target.value)));
+      els.stepDown.addEventListener('click', () => setTheta(state.theta - 0.05));
+      els.stepUp.addEventListener('click', () => setTheta(state.theta + 0.05));
+      els.playBtn.addEventListener('click', togglePlay);
+      els.resetBtn.addEventListener('click', () => { state.direction = 1; setTheta(0.72); });
+      els.zoomSlider.addEventListener('input', e => setZoom(parseFloat(e.target.value)));
+      els.zoomInBtn.addEventListener('click', () => setZoom(state.zoom / 1.25));
+      els.zoomOutBtn.addEventListener('click', () => setZoom(state.zoom * 1.25));
+      els.toggleSinRef.addEventListener('click', () => { state.showSinRef = !state.showSinRef; renderAll(); });
+      els.toggleTanRef.addEventListener('click', () => { state.showTanRef = !state.showTanRef; renderAll(); });
+      els.toggleCosRef.addEventListener('click', () => { state.showCosRef = !state.showCosRef; renderAll(); });
+      attachMainCanvasEvents();
+      attachGraphEvents(els.sinGraphCanvas);
+      attachGraphEvents(els.tanGraphCanvas);
+      attachGraphEvents(els.cosGraphCanvas);
+      window.addEventListener('resize', renderAll);
+    }
+
+    initMathAreas();
+    installEvents();
+    renderAll();
+  </script>
+</body>
+</html>

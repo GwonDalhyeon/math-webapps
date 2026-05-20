@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>재배열로 임의의 상수 c에 가까워지기</title>
+  <style>
+    :root{
+      --bg:#f6f8fb;
+      --card:#ffffff;
+      --text:#1f2937;
+      --sub:#4b5563;
+      --line:#d1d5db;
+      --blue:#2563eb;
+      --blue-soft:#dbeafe;
+      --red:#dc2626;
+      --red-soft:#fee2e2;
+      --green:#059669;
+      --green-soft:#d1fae5;
+      --shadow:0 8px 24px rgba(15,23,42,.06);
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      background:var(--bg);
+      color:var(--text);
+      font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Noto Sans KR",Arial,sans-serif;
+      line-height:1.55;
+    }
+    .wrap{
+      max-width:1200px;
+      margin:0 auto;
+      padding:20px;
+    }
+    h1{
+      margin:0 0 8px;
+      font-size:clamp(1.5rem, 2vw + 1rem, 2.4rem);
+    }
+    .lead{
+      margin:0 0 18px;
+      color:var(--sub);
+    }
+    .grid{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:16px;
+    }
+    .full{
+      grid-column:1 / -1;
+    }
+    .card{
+      background:var(--card);
+      border:1px solid #e5e7eb;
+      border-radius:18px;
+      box-shadow:var(--shadow);
+      padding:16px 18px;
+    }
+    h2{
+      margin:0 0 10px;
+      font-size:1.12rem;
+    }
+    .formula{
+      background:#f9fafb;
+      border-left:4px solid var(--blue);
+      padding:10px 12px;
+      border-radius:10px;
+      margin:10px 0;
+      overflow:auto;
+      font-family:"Times New Roman", serif;
+      font-size:1.05rem;
+    }
+    .row{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      flex-wrap:wrap;
+    }
+    .controls{
+      display:grid;
+      gap:12px;
+    }
+    label{font-weight:600}
+    input[type="number"]{
+      width:140px;
+      padding:10px 12px;
+      border:1px solid var(--line);
+      border-radius:10px;
+      font-size:1rem;
+    }
+    button{
+      border:0;
+      border-radius:12px;
+      padding:10px 14px;
+      font-size:.97rem;
+      cursor:pointer;
+      transition:.15s transform ease, .15s opacity ease, .15s box-shadow ease;
+      box-shadow:0 2px 8px rgba(0,0,0,.05);
+    }
+    button:hover{transform:translateY(-1px)}
+    button:disabled{
+      opacity:.55;
+      cursor:not-allowed;
+      transform:none;
+    }
+    .primary{background:var(--blue);color:#fff}
+    .secondary{background:#eef2ff;color:#1e3a8a}
+    .danger{background:#fef2f2;color:#991b1b}
+    .success{background:var(--green-soft);color:#065f46}
+    .termBtn{
+      min-width:120px;
+      font-weight:700;
+      border:1px solid transparent;
+    }
+    .term-positive{
+      background:var(--blue-soft);
+      color:#1e3a8a;
+      border-color:#bfdbfe;
+    }
+    .term-negative{
+      background:var(--red-soft);
+      color:#991b1b;
+      border-color:#fecaca;
+    }
+    .columns{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:14px;
+    }
+    .termList{
+      display:grid;
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      gap:8px;
+    }
+    .stats{
+      display:grid;
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      gap:10px;
+    }
+    .stat{
+      border:1px solid var(--line);
+      border-radius:14px;
+      padding:12px;
+      background:#fcfcff;
+    }
+    .stat strong{
+      display:block;
+      font-size:.9rem;
+      color:var(--sub);
+      margin-bottom:4px;
+    }
+    .stat span{
+      font-size:1.15rem;
+      font-weight:700;
+    }
+    .wide{grid-column:1/-1}
+    canvas{
+      width:100%;
+      height:auto;
+      display:block;
+      border:1px solid var(--line);
+      border-radius:14px;
+      background:#fff;
+    }
+    .note{
+      color:var(--sub);
+      font-size:.95rem;
+    }
+    .tag{
+      display:inline-block;
+      padding:4px 10px;
+      border-radius:999px;
+      background:#eef2ff;
+      color:#3730a3;
+      font-size:.84rem;
+      margin:4px 6px 0 0;
+    }
+    .history{
+      max-height:220px;
+      overflow:auto;
+      border:1px solid var(--line);
+      border-radius:12px;
+      padding:10px 12px;
+      background:#fafafa;
+      font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+      font-size:.92rem;
+    }
+    @media (max-width:900px){
+      .grid{grid-template-columns:1fr}
+      .columns{grid-template-columns:1fr}
+      .stats{grid-template-columns:1fr}
+      .termList{grid-template-columns:repeat(2,minmax(0,1fr))}
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>교대조화급수의 재배열로 임의의 상수 c에 가까워지기</h1>
+    <p class="lead">
+      양의 항과 음의 항을 따로 나열한 뒤 클릭하여 더해 보며, 부분합이 목표값 <strong>c</strong>에 가까워지도록 재배열하는 웹앱입니다.
+      클릭은 직접 할 수도 있고, 자동으로 진행하게 할 수도 있습니다.
+    </p>
+
+    <div class="grid">
+      <section class="card full">
+        <h2>수학 개념 설명</h2>
+        <p>원래 급수는 다음과 같습니다.</p>
+        <div class="formula">
+          a<sub>n</sub> = (-1)<sup>n+1</sup> &middot; 1/n,
+          &nbsp;&nbsp;
+          Σa<sub>n</sub> = 1 - 1/2 + 1/3 - 1/4 + 1/5 - ...
+        </div>
+        <p>
+          양의 항만 모으면 <strong>1, 1/3, 1/5, 1/7, ...</strong>,
+          음의 항만 모으면 <strong>-1/2, -1/4, -1/6, -1/8, ...</strong> 입니다.
+        </p>
+        <p>
+          이 앱에서는 목표값 <strong>c</strong>를 정한 뒤,
+          부분합이 <strong>c보다 작으면 다음 양의 항</strong>을 더하고,
+          부분합이 <strong>c보다 크면 다음 음의 항</strong>을 더하는 방식으로 진행합니다.
+          그러면 부분합이 목표값을 번갈아 넘나들면서 점점 가까워지는 모습을 볼 수 있습니다.
+        </p>
+        <div class="formula">
+          S &lt; c 이면 다음 양의 항 추가<br/>
+          S &gt; c 이면 다음 음의 항 추가
+        </div>
+        <p class="note">
+          이 앱은 “덧셈의 순서를 바꾸면 부분합의 움직임이 달라진다”는 점을 시각적으로 보여 주기 위한 탐구용 모델입니다.
+        </p>
+        <div>
+          <span class="tag">교대조화급수</span>
+          <span class="tag">재배열</span>
+          <span class="tag">부분합</span>
+          <span class="tag">수렴</span>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>조작 영역</h2>
+        <div class="row">
+          <label for="targetInput">목표값 c</label>
+          <input id="targetInput" type="number" step="0.1" value="1.2" />
+          <button id="applyTargetBtn" class="primary">목표값 적용</button>
+        </div>
+        <div class="row">
+          <button id="nextAutoBtn" class="secondary">한 단계 자동 선택</button>
+          <button id="autoRunBtn" class="primary">자동 실행 시작</button>
+          <button id="stopBtn" class="danger">자동 실행 멈춤</button>
+          <button id="resetBtn" class="success">처음부터 다시</button>
+        </div>
+        <p class="note">
+          직접 클릭해도 되고, “한 단계 자동 선택” 또는 “자동 실행 시작”으로 목표값에 가까워지는 과정을 볼 수도 있습니다.
+        </p>
+      </section>
+
+      <section class="card">
+        <h2>현재 상태</h2>
+        <div class="stats">
+          <div class="stat">
+            <strong>목표값 c</strong>
+            <span id="targetOut">1.200000</span>
+          </div>
+          <div class="stat">
+            <strong>현재 부분합 S</strong>
+            <span id="sumOut">0.000000</span>
+          </div>
+          <div class="stat">
+            <strong>오차 |S - c|</strong>
+            <span id="errorOut">1.200000</span>
+          </div>
+          <div class="stat">
+            <strong>사용한 항의 개수</strong>
+            <span id="countOut">0</span>
+          </div>
+          <div class="stat">
+            <strong>다음 양의 항</strong>
+            <span id="nextPosOut">1</span>
+          </div>
+          <div class="stat">
+            <strong>다음 음의 항</strong>
+            <span id="nextNegOut">-1/2</span>
+          </div>
+          <div class="stat wide">
+            <strong>자동 추천</strong>
+            <span id="suggestOut">현재 부분합이 c보다 작으므로 다음 양의 항을 더하는 것이 좋습니다.</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>클릭해서 항 더하기</h2>
+        <div class="columns">
+          <div>
+            <h3 style="margin:0 0 8px;color:#1e3a8a;">양의 항 목록</h3>
+            <div id="positiveList" class="termList"></div>
+          </div>
+          <div>
+            <h3 style="margin:0 0 8px;color:#991b1b;">음의 항 목록</h3>
+            <div id="negativeList" class="termList"></div>
+          </div>
+        </div>
+        <p class="note" style="margin-top:10px;">
+          각 열에는 아직 사용하지 않은 다음 항들이 보입니다. 버튼을 누르면 해당 항이 부분합에 더해집니다.
+        </p>
+      </section>
+
+      <section class="controls">
+        <div class="card">
+          <h2>부분합 그래프</h2>
+          <canvas id="chart" width="520" height="340" aria-label="부분합 그래프"></canvas>
+          <p class="note">
+            파란 선은 부분합의 변화, 초록 점선은 목표값 c입니다.
+          </p>
+        </div>
+
+        <div class="card">
+          <h2>더한 항의 기록</h2>
+          <div id="history" class="history">아직 더한 항이 없습니다.</div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <script>
+    const DISPLAY_COUNT = 8;
+    const MAX_POINTS = 220;
+
+    let targetC = 1.2;
+    let sum = 0;
+    let posIndex = 1;
+    let negIndex = 1;
+    let usedTerms = [];
+    let autoTimer = null;
+
+    const targetInput = document.getElementById('targetInput');
+    const applyTargetBtn = document.getElementById('applyTargetBtn');
+    const nextAutoBtn = document.getElementById('nextAutoBtn');
+    const autoRunBtn = document.getElementById('autoRunBtn');
+    const stopBtn = document.getElementById('stopBtn');
+    const resetBtn = document.getElementById('resetBtn');
+
+    const positiveList = document.getElementById('positiveList');
+    const negativeList = document.getElementById('negativeList');
+    const historyBox = document.getElementById('history');
+
+    const targetOut = document.getElementById('targetOut');
+    const sumOut = document.getElementById('sumOut');
+    const errorOut = document.getElementById('errorOut');
+    const countOut = document.getElementById('countOut');
+    const nextPosOut = document.getElementById('nextPosOut');
+    const nextNegOut = document.getElementById('nextNegOut');
+    const suggestOut = document.getElementById('suggestOut');
+
+    const canvas = document.getElementById('chart');
+    const ctx = canvas.getContext('2d');
+
+    function fmt(x){
+      return Number(x).toFixed(6);
+    }
+
+    function positiveTerm(k){
+      return 1 / (2 * k - 1);
+    }
+
+    function negativeTerm(k){
+      return -1 / (2 * k);
+    }
+
+    function positiveLabel(k){
+      return k === 1 ? "1" : `1/${2*k - 1}`;
+    }
+
+    function negativeLabel(k){
+      return `-1/${2*k}`;
+    }
+
+    function addPositive(){
+      const value = positiveTerm(posIndex);
+      const label = positiveLabel(posIndex);
+      sum += value;
+      usedTerms.push({label, value, sum});
+      posIndex += 1;
+      updateAll();
+    }
+
+    function addNegative(){
+      const value = negativeTerm(negIndex);
+      const label = negativeLabel(negIndex);
+      sum += value;
+      usedTerms.push({label, value, sum});
+      negIndex += 1;
+      updateAll();
+    }
+
+    function autoChooseOneStep(){
+      if(sum < targetC){
+        addPositive();
+      }else if(sum > targetC){
+        addNegative();
+      }else{
+        addNegative();
+      }
+    }
+
+    function stopAuto(){
+      if(autoTimer){
+        clearInterval(autoTimer);
+        autoTimer = null;
+      }
+    }
+
+    function resetAll(){
+      stopAuto();
+      sum = 0;
+      posIndex = 1;
+      negIndex = 1;
+      usedTerms = [];
+      updateAll();
+    }
+
+    function applyTarget(){
+      const value = Number(targetInput.value);
+      if(Number.isNaN(value)){
+        alert("목표값 c를 숫자로 입력해 주세요.");
+        return;
+      }
+      targetC = value;
+      updateAll();
+    }
+
+    function renderButtons(){
+      positiveList.innerHTML = "";
+      negativeList.innerHTML = "";
+
+      for(let i=0; i<DISPLAY_COUNT; i++){
+        const k = posIndex + i;
+        const btn = document.createElement('button');
+        btn.className = 'termBtn term-positive';
+        btn.textContent = `${positiveLabel(k)} ≈ ${fmt(positiveTerm(k))}`;
+        btn.addEventListener('click', () => {
+          if(k !== posIndex) return;
+          addPositive();
+        });
+        if(k !== posIndex) btn.disabled = true;
+        positiveList.appendChild(btn);
+      }
+
+      for(let i=0; i<DISPLAY_COUNT; i++){
+        const k = negIndex + i;
+        const btn = document.createElement('button');
+        btn.className = 'termBtn term-negative';
+        btn.textContent = `${negativeLabel(k)} ≈ ${fmt(negativeTerm(k))}`;
+        btn.addEventListener('click', () => {
+          if(k !== negIndex) return;
+          addNegative();
+        });
+        if(k !== negIndex) btn.disabled = true;
+        negativeList.appendChild(btn);
+      }
+    }
+
+    function renderHistory(){
+      if(usedTerms.length === 0){
+        historyBox.textContent = "아직 더한 항이 없습니다.";
+        return;
+      }
+      const lines = usedTerms.slice(-80).map((item, idx, arr) => {
+        const n = usedTerms.length - arr.length + idx + 1;
+        return `${String(n).padStart(2, '0')}. ${item.label.padEnd(6, ' ')}  →  부분합 S ≈ ${fmt(item.sum)}`;
+      });
+      historyBox.innerHTML = lines.join("<br>");
+      historyBox.scrollTop = historyBox.scrollHeight;
+    }
+
+    function renderStats(){
+      targetOut.textContent = fmt(targetC);
+      sumOut.textContent = fmt(sum);
+      errorOut.textContent = fmt(Math.abs(sum - targetC));
+      countOut.textContent = String(usedTerms.length);
+      nextPosOut.textContent = `${positiveLabel(posIndex)} ≈ ${fmt(positiveTerm(posIndex))}`;
+      nextNegOut.textContent = `${negativeLabel(negIndex)} ≈ ${fmt(negativeTerm(negIndex))}`;
+
+      if(sum < targetC){
+        suggestOut.textContent = "현재 부분합이 c보다 작으므로 다음 양의 항을 더하는 것이 좋습니다.";
+      }else if(sum > targetC){
+        suggestOut.textContent = "현재 부분합이 c보다 크므로 다음 음의 항을 더하는 것이 좋습니다.";
+      }else{
+        suggestOut.textContent = "현재 부분합이 c와 같습니다. 다음 항을 더해 다시 움직임을 볼 수 있습니다.";
+      }
+    }
+
+    function drawChart(){
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      const values = [0, ...usedTerms.map(t => t.sum)];
+      const shown = values.slice(-MAX_POINTS);
+      const xs = shown.map((_, i) => i);
+
+      let minY = Math.min(targetC, ...shown);
+      let maxY = Math.max(targetC, ...shown);
+      const pad = Math.max(0.2, (maxY - minY) * 0.2);
+      minY -= pad;
+      maxY += pad;
+
+      const m = {left:48, right:18, top:18, bottom:34};
+      const w = canvas.width - m.left - m.right;
+      const h = canvas.height - m.top - m.bottom;
+
+      function toX(i){
+        if(xs.length === 1) return m.left;
+        return m.left + (i / (xs.length - 1)) * w;
+      }
+      function toY(v){
+        return m.top + (maxY - v) / (maxY - minY) * h;
+      }
+
+      ctx.strokeStyle = '#e5e7eb';
+      ctx.lineWidth = 1;
+      for(let j=0; j<=4; j++){
+        const y = m.top + h * j / 4;
+        ctx.beginPath();
+        ctx.moveTo(m.left, y);
+        ctx.lineTo(canvas.width - m.right, y);
+        ctx.stroke();
+      }
+
+      const yTarget = toY(targetC);
+      ctx.save();
+      ctx.setLineDash([7,5]);
+      ctx.strokeStyle = '#059669';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(m.left, yTarget);
+      ctx.lineTo(canvas.width - m.right, yTarget);
+      ctx.stroke();
+      ctx.restore();
+
+      ctx.fillStyle = '#065f46';
+      ctx.font = '13px sans-serif';
+      ctx.fillText(`목표값 c = ${fmt(targetC)}`, m.left + 6, yTarget - 8);
+
+      ctx.strokeStyle = '#2563eb';
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      shown.forEach((v, i) => {
+        const x = toX(i);
+        const y = toY(v);
+        if(i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      });
+      ctx.stroke();
+
+      ctx.fillStyle = '#1d4ed8';
+      shown.forEach((v, i) => {
+        const x = toX(i);
+        const y = toY(v);
+        ctx.beginPath();
+        ctx.arc(x, y, 2.6, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      ctx.strokeStyle = '#111827';
+      ctx.lineWidth = 1.4;
+      ctx.beginPath();
+      ctx.moveTo(m.left, m.top);
+      ctx.lineTo(m.left, canvas.height - m.bottom);
+      ctx.lineTo(canvas.width - m.right, canvas.height - m.bottom);
+      ctx.stroke();
+
+      ctx.fillStyle = '#4b5563';
+      ctx.font = '12px sans-serif';
+      ctx.fillText('0', m.left - 14, canvas.height - m.bottom + 14);
+      ctx.fillText(String(usedTerms.length), canvas.width - m.right - 8, canvas.height - m.bottom + 14);
+
+      for(let j=0; j<=4; j++){
+        const value = maxY - (maxY - minY) * j / 4;
+        const y = m.top + h * j / 4;
+        ctx.fillText(fmt(value), 4, y + 4);
+      }
+
+      ctx.fillStyle = '#111827';
+      ctx.fillText('단계', canvas.width - 44, canvas.height - 8);
+      ctx.save();
+      ctx.translate(12, 30);
+      ctx.rotate(-Math.PI/2);
+      ctx.fillText('부분합 S', 0, 0);
+      ctx.restore();
+    }
+
+    function updateAll(){
+      renderButtons();
+      renderHistory();
+      renderStats();
+      drawChart();
+    }
+
+    applyTargetBtn.addEventListener('click', applyTarget);
+    nextAutoBtn.addEventListener('click', autoChooseOneStep);
+    autoRunBtn.addEventListener('click', () => {
+      stopAuto();
+      autoTimer = setInterval(autoChooseOneStep, 350);
+    });
+    stopBtn.addEventListener('click', stopAuto);
+    resetBtn.addEventListener('click', resetAll);
+
+    updateAll();
+  </script>
+</body>
+</html>

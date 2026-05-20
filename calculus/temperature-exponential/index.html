@@ -1,0 +1,1157 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>음료의 온도 차와 지수함수</title>
+  <script>
+    window.MathJax = {
+      tex: {
+        inlineMath: [['\\(', '\\)'], ['$', '$']],
+        displayMath: [['\\[', '\\]']]
+      },
+      svg: { fontCache: 'global' }
+    };
+  </script>
+  <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+  <style>
+    :root {
+      --bg: #f6f8fb;
+      --card: #ffffff;
+      --line: #d9e1ec;
+      --text: #1f2a37;
+      --muted: #5b6777;
+      --accent: #2563eb;
+      --warm: #ef4444;
+      --cool: #0ea5e9;
+      --good: #16a34a;
+      --shadow: 0 10px 28px rgba(15, 23, 42, 0.08);
+      --radius: 18px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: "Pretendard", "Noto Sans KR", "Apple SD Gothic Neo", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    .app {
+      max-width: 1380px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    h1, h2, h3, p { margin: 0; }
+
+    .header {
+      background: linear-gradient(135deg, #eff6ff, #ffffff);
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      padding: 20px 22px;
+      box-shadow: var(--shadow);
+      margin-bottom: 16px;
+    }
+
+    .header h1 {
+      font-size: 30px;
+      margin-bottom: 8px;
+    }
+
+    .header p {
+      color: var(--muted);
+      line-height: 1.6;
+      font-size: 15px;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 360px minmax(0, 1fr) 320px;
+      gap: 16px;
+      align-items: start;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 16px;
+    }
+
+    .card h2 {
+      font-size: 20px;
+      margin-bottom: 12px;
+    }
+
+    .card h3 {
+      font-size: 16px;
+      margin-bottom: 8px;
+    }
+
+    .subtle {
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.55;
+    }
+
+    .formula-box {
+      margin: 10px 0;
+      padding: 12px 14px;
+      border-radius: 14px;
+      background: #f8fafc;
+      border: 1px solid var(--line);
+      font-size: 16px;
+      overflow-x: auto;
+    }
+
+    .focus-list {
+      margin-top: 12px;
+      display: grid;
+      gap: 8px;
+    }
+
+    .focus-item {
+      padding: 10px 12px;
+      border-radius: 12px;
+      background: #f8fafc;
+      border: 1px solid var(--line);
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .controls {
+      display: grid;
+      gap: 14px;
+    }
+
+    .control-row {
+      display: grid;
+      gap: 8px;
+    }
+
+    .control-label {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      font-size: 14px;
+      color: var(--muted);
+    }
+
+    .control-label strong {
+      color: var(--text);
+      font-size: 15px;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--accent);
+      cursor: pointer;
+    }
+
+    .btn-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+      margin-top: 4px;
+    }
+
+    button {
+      border: 1px solid #bfdbfe;
+      background: #eff6ff;
+      color: #1d4ed8;
+      border-radius: 14px;
+      padding: 12px 12px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 0.12s ease, background 0.12s ease;
+    }
+
+    button:hover {
+      transform: translateY(-1px);
+      background: #dbeafe;
+    }
+
+    button.active {
+      background: #2563eb;
+      color: white;
+      border-color: #2563eb;
+    }
+
+    .toggle-row {
+      display: flex;
+      gap: 14px;
+      flex-wrap: wrap;
+      margin-top: 2px;
+      font-size: 14px;
+      color: var(--muted);
+    }
+
+    .toggle-row label {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+    }
+
+    .center-column {
+      display: grid;
+      gap: 16px;
+    }
+
+    .viz-stack {
+      display: grid;
+      grid-template-rows: auto auto;
+      gap: 14px;
+    }
+
+    .canvas-frame {
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      overflow: hidden;
+      background: white;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: auto;
+      background: linear-gradient(180deg, #ffffff, #fbfdff);
+    }
+
+    .caption {
+      padding: 10px 12px;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.5;
+      background: #fbfcfe;
+    }
+
+    .status-grid {
+      display: grid;
+      gap: 10px;
+    }
+
+    .stat-box {
+      padding: 12px 14px;
+      border-radius: 14px;
+      border: 1px solid var(--line);
+      background: #f8fafc;
+    }
+
+    .stat-title {
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+
+    .stat-value {
+      font-size: 22px;
+      font-weight: 800;
+      letter-spacing: -0.01em;
+    }
+
+    .stat-small {
+      margin-top: 6px;
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.45;
+    }
+
+    .equation-panel {
+      padding: 14px;
+      border-radius: 16px;
+      background: linear-gradient(135deg, #eff6ff, #f8fafc);
+      border: 1px solid #bfdbfe;
+      font-size: 14px;
+      line-height: 1.7;
+      overflow-x: auto;
+    }
+
+    .equation-panel .eq-line {
+      margin: 6px 0;
+    }
+
+    .insight-box {
+      padding: 14px;
+      border-radius: 16px;
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+    }
+
+    .insight-box .headline {
+      font-weight: 800;
+      color: #166534;
+      margin-bottom: 8px;
+      font-size: 15px;
+    }
+
+    .insight-box p {
+      color: #166534;
+      line-height: 1.6;
+      font-size: 14px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    th, td {
+      border-bottom: 1px solid var(--line);
+      padding: 8px 6px;
+      text-align: right;
+    }
+
+    th:first-child, td:first-child { text-align: center; }
+
+    th {
+      color: var(--muted);
+      font-weight: 700;
+      background: #fafcff;
+      position: sticky;
+      top: 0;
+    }
+
+    .table-wrap {
+      max-height: 250px;
+      overflow: auto;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: white;
+    }
+
+    .footer-note {
+      margin-top: 16px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.6;
+      text-align: center;
+    }
+
+    @media (max-width: 1180px) {
+      .layout { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <section class="header">
+      <h1>왜 음료의 <span style="color:#2563eb;">온도 차</span>는 지수함수로 표현될까?</h1>
+      <p>
+        뜨거운 음료는 처음에는 빨리 식고, 실내 온도에 가까워질수록 천천히 식습니다.
+        이 앱은 <strong>현재의 온도 차가 변화율을 결정</strong>한다는 점을 시각적으로 보여 주고,
+        그 결과 <strong>\(D(t)=T(t)-T_{\mathrm{room}}\)</strong> 가 <strong>\(Ce^{-kt}\)</strong> 꼴과 연결됨을 설명하도록 설계되었습니다.
+      </p>
+    </section>
+
+    <section class="layout">
+      <aside class="card">
+        <h2>설명과 조작</h2>
+        <p class="subtle">
+          교사는 버튼을 이용해 단계적으로 설명할 수 있고, 학생은 값을 바꾸어 각 현상을 직접 확인할 수 있습니다.
+          핵심은 <strong>온도 자체</strong>보다 <strong>실내 온도와의 차 \(D(t)\)</strong>를 보는 것입니다.
+        </p>
+
+        <div class="formula-box">\[\frac{dT}{dt}=-k\bigl(T-T_{\mathrm{room}}\bigr)\]</div>
+        <div class="formula-box">\[D(t)=T(t)-T_{\mathrm{room}} \quad\Rightarrow\quad \frac{dD}{dt}=-kD\]</div>
+        <div class="formula-box">\[D(t)=D_0e^{-kt}, \qquad T(t)=T_{\mathrm{room}}+D_0e^{-kt}\]</div>
+
+        <div class="focus-list">
+          <div class="focus-item"><strong>관찰 포인트 1</strong><br>처음에는 왜 많이 식고, 나중에는 왜 조금만 식을까?</div>
+          <div class="focus-item"><strong>관찰 포인트 2</strong><br>현재의 온도 차 \(D\)가 작아질수록 변화율 \(\left|\frac{dT}{dt}\right|\)도 작아진다.</div>
+          <div class="focus-item"><strong>관찰 포인트 3</strong><br>시간이 흐를수록 그래프가 실내 온도 선에 가까워지는 모습을 보자.</div>
+        </div>
+
+        <div style="height: 14px;"></div>
+
+        <div class="controls">
+          <div class="control-row">
+            <div class="control-label">
+              <strong>초기 음료 온도</strong>
+              <span><span id="initialTempValue">80</span> °C</span>
+            </div>
+            <input id="initialTemp" type="range" min="5" max="95" step="1" value="80" />
+          </div>
+
+          <div class="control-row">
+            <div class="control-label">
+              <strong>실내 온도</strong>
+              <span><span id="roomTempValue">20</span> °C</span>
+            </div>
+            <input id="roomTemp" type="range" min="0" max="35" step="1" value="20" />
+          </div>
+
+          <div class="control-row">
+            <div class="control-label">
+              <strong>냉각 상수 \(k\)</strong>
+              <span><span id="kValue">0.16</span> /min</span>
+            </div>
+            <input id="coolingRate" type="range" min="0.03" max="0.45" step="0.01" value="0.16" />
+          </div>
+
+          <div class="control-row">
+            <div class="control-label">
+              <strong>단계 간격 \(\Delta t\)</strong>
+              <span><span id="dtValue">0.50</span> min</span>
+            </div>
+            <input id="timeStep" type="range" min="0.1" max="2.0" step="0.1" value="0.5" />
+          </div>
+
+          <div class="control-row">
+            <div class="control-label">
+              <strong>그래프 시간 범위</strong>
+              <span>0 ~ <span id="maxTimeValue">16</span> min</span>
+            </div>
+            <input id="maxTime" type="range" min="8" max="30" step="1" value="16" />
+          </div>
+
+          <div class="btn-grid">
+            <button id="stepOneBtn">1회 실행</button>
+            <button id="stepTenBtn">10회 실행</button>
+            <button id="autoBtn">자동 실행</button>
+            <button id="resetBtn">초기화</button>
+          </div>
+
+          <div class="toggle-row">
+            <label><input id="showExactCurve" type="checkbox" checked /> 정확한 해 곡선 보기</label>
+            <label><input id="showEulerPoints" type="checkbox" checked /> 단계 근사 점 보기</label>
+          </div>
+        </div>
+      </aside>
+
+      <main class="center-column">
+        <section class="card viz-stack">
+          <div class="canvas-frame">
+            <canvas id="sceneCanvas" width="860" height="380"></canvas>
+            <div class="caption">
+              왼쪽 두 카드는 음료와 실내 온도를, 오른쪽 위 패널은 온도 차 \(D(t)\)를, 오른쪽 아래 패널은 현재 변화율 \(\frac{dT}{dt}\)를 보여 줍니다.
+              화살표가 길수록 지금 이 순간의 변화가 더 빠르다는 뜻입니다.
+            </div>
+          </div>
+
+          <div class="canvas-frame">
+            <canvas id="graphCanvas" width="860" height="560"></canvas>
+            <div class="caption">
+              위 그래프는 온도 \(T(t)\), 아래 그래프는 온도 차 \(D(t)\)를 나타냅니다.
+              주황색은 단계별 근사 점, 파란색은 지수함수로 표현한 정확한 해입니다.
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <aside class="card">
+        <h2>현재 상태와 해석</h2>
+        <div class="status-grid">
+          <div class="stat-box">
+            <div class="stat-title">현재 시간</div>
+            <div class="stat-value" id="timeDisplay">0.00 min</div>
+            <div class="stat-small">한 번 실행할 때마다 \(\Delta t\)만큼 시간이 흐릅니다.</div>
+          </div>
+
+          <div class="stat-box">
+            <div class="stat-title">현재 음료 온도 \(T(t)\)</div>
+            <div class="stat-value" id="tempDisplay">80.00 °C</div>
+            <div class="stat-small">실내 온도에 가까워질수록 그래프의 기울기가 완만해집니다.</div>
+          </div>
+
+          <div class="stat-box">
+            <div class="stat-title">현재 온도 차 \(D(t)=T(t)-T_{\mathrm{room}}\)</div>
+            <div class="stat-value" id="differenceDisplay">60.00 °C</div>
+            <div class="stat-small">이 값이 클수록 식는 빠르기의 크기도 커집니다.</div>
+          </div>
+
+          <div class="equation-panel" id="equationPanel"></div>
+
+          <div class="insight-box">
+            <div class="headline">지금 무엇을 봐야 할까?</div>
+            <p id="insightText"></p>
+          </div>
+
+          <div>
+            <h3 style="margin-bottom:8px;">최근 계산 기록</h3>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>회</th>
+                    <th>\(t\)</th>
+                    <th>\(T(t)\)</th>
+                    <th>\(D(t)\)</th>
+                    <th>\(\frac{dT}{dt}\)</th>
+                  </tr>
+                </thead>
+                <tbody id="historyBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </aside>
+    </section>
+
+    <p class="footer-note">
+      추천 사용 흐름: <strong>초기화 → 1회 실행 몇 번 → 10회 실행 → 자동 실행</strong>.
+      “현재의 차이가 다음 변화율을 결정한다”는 점과 “온도 차가 지수적으로 줄어든다”는 점을 함께 설명하기 좋습니다.
+    </p>
+  </div>
+
+  <script>
+    const latex = (strings, ...values) => String.raw({ raw: strings.raw }, ...values);
+
+    const ui = {
+      initialTemp: document.getElementById('initialTemp'),
+      roomTemp: document.getElementById('roomTemp'),
+      coolingRate: document.getElementById('coolingRate'),
+      timeStep: document.getElementById('timeStep'),
+      maxTime: document.getElementById('maxTime'),
+      initialTempValue: document.getElementById('initialTempValue'),
+      roomTempValue: document.getElementById('roomTempValue'),
+      kValue: document.getElementById('kValue'),
+      dtValue: document.getElementById('dtValue'),
+      maxTimeValue: document.getElementById('maxTimeValue'),
+      stepOneBtn: document.getElementById('stepOneBtn'),
+      stepTenBtn: document.getElementById('stepTenBtn'),
+      autoBtn: document.getElementById('autoBtn'),
+      resetBtn: document.getElementById('resetBtn'),
+      showExactCurve: document.getElementById('showExactCurve'),
+      showEulerPoints: document.getElementById('showEulerPoints'),
+      timeDisplay: document.getElementById('timeDisplay'),
+      tempDisplay: document.getElementById('tempDisplay'),
+      differenceDisplay: document.getElementById('differenceDisplay'),
+      equationPanel: document.getElementById('equationPanel'),
+      insightText: document.getElementById('insightText'),
+      historyBody: document.getElementById('historyBody'),
+      sceneCanvas: document.getElementById('sceneCanvas'),
+      graphCanvas: document.getElementById('graphCanvas')
+    };
+
+    const state = {
+      initialTemp: 80,
+      roomTemp: 20,
+      k: 0.16,
+      dt: 0.5,
+      maxTime: 16,
+      time: 0,
+      currentTemp: 80,
+      currentDifference: 60,
+      currentRate: -9.6,
+      stepCount: 0,
+      history: [],
+      autoPlaying: false,
+      autoFrameId: null,
+      lastFrameTime: 0,
+      autoIntervalMs: 350
+    };
+
+    function clamp(value, min, max) {
+      return Math.min(max, Math.max(min, value));
+    }
+
+    function formatNumber(value, digits = 2) {
+      return Number(value).toFixed(digits);
+    }
+
+    function computeExactTemperature(time) {
+      const difference0 = state.initialTemp - state.roomTemp;
+      return state.roomTemp + difference0 * Math.exp(-state.k * time);
+    }
+
+    function computeExactDifference(time) {
+      const difference0 = state.initialTemp - state.roomTemp;
+      return difference0 * Math.exp(-state.k * time);
+    }
+
+    function computeRate(temp) {
+      return -state.k * (temp - state.roomTemp);
+    }
+
+    function renderMath(targets) {
+      if (!(window.MathJax && window.MathJax.typesetPromise)) return;
+      const safeTargets = targets && targets.length ? targets : [document.body];
+      if (window.MathJax.typesetClear) {
+        window.MathJax.typesetClear(safeTargets);
+      }
+      window.MathJax.typesetPromise(safeTargets);
+    }
+
+    function syncLabels() {
+      ui.initialTempValue.textContent = formatNumber(state.initialTemp, 0);
+      ui.roomTempValue.textContent = formatNumber(state.roomTemp, 0);
+      ui.kValue.textContent = formatNumber(state.k, 2);
+      ui.dtValue.textContent = formatNumber(state.dt, 2);
+      ui.maxTimeValue.textContent = formatNumber(state.maxTime, 0);
+    }
+
+    function resetSimulation() {
+      stopAuto();
+      state.time = 0;
+      state.currentTemp = state.initialTemp;
+      state.currentDifference = state.currentTemp - state.roomTemp;
+      state.currentRate = computeRate(state.currentTemp);
+      state.stepCount = 0;
+      state.history = [];
+      pushHistory();
+      renderAll();
+    }
+
+    function pushHistory() {
+      state.history.unshift({
+        step: state.stepCount,
+        time: state.time,
+        temp: state.currentTemp,
+        difference: state.currentDifference,
+        rate: state.currentRate
+      });
+      state.history = state.history.slice(0, 14);
+    }
+
+    function applyInputsAndReset() {
+      state.initialTemp = Number(ui.initialTemp.value);
+      state.roomTemp = Number(ui.roomTemp.value);
+      state.k = Number(ui.coolingRate.value);
+      state.dt = Number(ui.timeStep.value);
+      state.maxTime = Number(ui.maxTime.value);
+      syncLabels();
+      resetSimulation();
+    }
+
+    function advanceOnce() {
+      if (state.time >= state.maxTime) {
+        stopAuto();
+        return;
+      }
+
+      const safeDt = Math.min(state.dt, state.maxTime - state.time);
+      const rateNow = computeRate(state.currentTemp);
+      const nextTemp = state.currentTemp + rateNow * safeDt;
+
+      state.time += safeDt;
+      state.currentTemp = nextTemp;
+      state.currentDifference = state.currentTemp - state.roomTemp;
+      state.currentRate = computeRate(state.currentTemp);
+      state.stepCount += 1;
+      pushHistory();
+      renderAll();
+
+      if (state.time >= state.maxTime) {
+        stopAuto();
+      }
+    }
+
+    function advanceMultiple(count) {
+      for (let i = 0; i < count; i += 1) {
+        if (state.time >= state.maxTime) break;
+        advanceOnce();
+      }
+    }
+
+    function startAuto() {
+      if (state.autoPlaying) return;
+      state.autoPlaying = true;
+      ui.autoBtn.classList.add('active');
+      ui.autoBtn.textContent = '자동 실행 중';
+      state.lastFrameTime = 0;
+      state.autoFrameId = requestAnimationFrame(autoLoop);
+    }
+
+    function stopAuto() {
+      state.autoPlaying = false;
+      ui.autoBtn.classList.remove('active');
+      ui.autoBtn.textContent = '자동 실행';
+      if (state.autoFrameId) {
+        cancelAnimationFrame(state.autoFrameId);
+        state.autoFrameId = null;
+      }
+    }
+
+    function autoLoop(timestamp) {
+      if (!state.autoPlaying) return;
+      if (!state.lastFrameTime) state.lastFrameTime = timestamp;
+      const elapsed = timestamp - state.lastFrameTime;
+      if (elapsed >= state.autoIntervalMs) {
+        advanceOnce();
+        state.lastFrameTime = timestamp;
+      }
+      state.autoFrameId = requestAnimationFrame(autoLoop);
+    }
+
+    function updateStatusTexts() {
+      const exactTemp = computeExactTemperature(state.time);
+      const exactDifference = computeExactDifference(state.time);
+      const predictedTemp = state.currentTemp + computeRate(state.currentTemp) * state.dt;
+      const currentRateNow = computeRate(state.currentTemp);
+
+      ui.timeDisplay.textContent = `${formatNumber(state.time)} min`;
+      ui.tempDisplay.textContent = `${formatNumber(state.currentTemp)} °C`;
+      ui.differenceDisplay.textContent = `${formatNumber(state.currentDifference)} °C`;
+
+      ui.equationPanel.innerHTML = [
+        latex`<div class="eq-line">\[\frac{dT}{dt}=-k\bigl(T-T_{\mathrm{room}}\bigr)\]</div>`,
+        latex`<div class="eq-line">\[=-${formatNumber(state.k)}\times\bigl(${formatNumber(state.currentTemp)}-${formatNumber(state.roomTemp)}\bigr)\]</div>`,
+        latex`<div class="eq-line">\[=${formatNumber(currentRateNow)}\,{}^\circ\mathrm{C}/\mathrm{min}\]</div>`,
+        latex`<div class="eq-line">\[T_{\mathrm{next}}\approx T+\frac{dT}{dt}\Delta t\]</div>`,
+        latex`<div class="eq-line">\[\approx ${formatNumber(state.currentTemp)}+\bigl(${formatNumber(currentRateNow)}\times ${formatNumber(state.dt)}\bigr)\]</div>`,
+        latex`<div class="eq-line">\[\approx ${formatNumber(predictedTemp)}\,{}^\circ\mathrm{C}\]</div>`,
+        latex`<div class="eq-line">\[D(t)=D_0e^{-kt}=${formatNumber(state.initialTemp - state.roomTemp)}e^{-${formatNumber(state.k)}t}\]</div>`,
+        latex`<div class="eq-line">\[T_{\mathrm{exact}}(${formatNumber(state.time)})\approx ${formatNumber(exactTemp)}\,{}^\circ\mathrm{C}\]</div>`,
+        latex`<div class="eq-line">\[D_{\mathrm{exact}}(${formatNumber(state.time)})\approx ${formatNumber(exactDifference)}\,{}^\circ\mathrm{C}\]</div>`
+      ].join('');
+
+      const absDiff = Math.abs(state.currentDifference);
+      const absRate = Math.abs(currentRateNow);
+
+      let insight = '';
+      if (state.initialTemp === state.roomTemp) {
+        insight = latex`초기 온도와 실내 온도가 같습니다. 이 경우 \(D=0\) 이고 \(\frac{dT}{dt}=0\) 이어서 온도가 변하지 않습니다.`;
+      } else if (state.initialTemp < state.roomTemp) {
+        insight = latex`현재는 음료가 실내보다 더 차갑습니다. 이 경우 \(\frac{dT}{dt}\)가 양수가 되어 실내 온도 쪽으로 올라갑니다. 식 자체는 “실내 온도에 가까워지려는 변화”를 나타냅니다.`;
+      } else if (absDiff > 30) {
+        insight = latex`온도 차 \(D\)가 아직 매우 큽니다. 그래서 변화율의 크기 \(\left|\frac{dT}{dt}\right|\approx ${formatNumber(absRate)}\) 도 큽니다. 처음에 빨리 식는 이유를 설명하기 좋은 구간입니다.`;
+      } else if (absDiff > 10) {
+        insight = latex`온도 차가 줄어들면서 식는 속도도 함께 줄고 있습니다. 그래프의 기울기가 점점 완만해지는지 확인해 보세요.`;
+      } else if (absDiff > 2) {
+        insight = latex`음료가 실내 온도에 많이 가까워졌습니다. 현재의 차가 작으므로 변화율도 작아집니다. “나중에는 천천히 식는다”는 점이 잘 드러납니다.`;
+      } else {
+        insight = latex`온도 차가 거의 \(0\)에 가까워졌습니다. 이제 변화율도 거의 \(0\)이어서 온도가 거의 변하지 않는 것처럼 보입니다.`;
+      }
+
+      ui.insightText.innerHTML = insight;
+      renderMath([ui.equationPanel, ui.insightText]);
+    }
+
+    function updateHistoryTable() {
+      ui.historyBody.innerHTML = state.history.map(row => `
+        <tr>
+          <td>${row.step}</td>
+          <td>${formatNumber(row.time, 2)}</td>
+          <td>${formatNumber(row.temp, 2)}</td>
+          <td>${formatNumber(row.difference, 2)}</td>
+          <td>${formatNumber(row.rate, 2)}</td>
+        </tr>
+      `).join('');
+    }
+
+    function drawTemperatureCard(ctx, x, y, width, height, title, value, color, subtitle) {
+      const gaugeX = x + 48;
+      const gaugeY = y + 54;
+      const gaugeW = 44;
+      const gaugeH = 120;
+      const fillRatio = clamp(value / 100, 0, 1);
+      const fillH = gaugeH * fillRatio;
+
+      ctx.fillStyle = '#ffffff';
+      ctx.strokeStyle = '#d9e1ec';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.roundRect(x, y, width, height, 18);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = '#1f2937';
+      ctx.font = '700 18px Pretendard, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(title, x + width / 2, y + 30);
+
+      ctx.fillStyle = '#f1f5f9';
+      ctx.strokeStyle = '#cbd5e1';
+      ctx.beginPath();
+      ctx.roundRect(gaugeX, gaugeY, gaugeW, gaugeH + 16, 20);
+      ctx.fill();
+      ctx.stroke();
+
+      const grad = ctx.createLinearGradient(0, gaugeY, 0, gaugeY + gaugeH);
+      grad.addColorStop(0, color);
+      grad.addColorStop(1, '#ffffff');
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.roundRect(gaugeX + 8, gaugeY + gaugeH - fillH, gaugeW - 16, fillH + 8, 10);
+      ctx.fill();
+
+      ctx.fillStyle = '#111827';
+      ctx.font = '800 28px Pretendard, sans-serif';
+      ctx.fillText(`${formatNumber(value, 1)}°C`, x + width / 2, y + height - 34);
+      ctx.font = '13px Pretendard, sans-serif';
+      ctx.fillStyle = '#5b6777';
+      ctx.fillText(subtitle, x + width / 2, y + height - 14);
+    }
+
+    function drawDifferenceBar(ctx, x, y, width, height, difference, maxDiffAbs) {
+      ctx.fillStyle = '#ffffff';
+      ctx.strokeStyle = '#d9e1ec';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.roundRect(x, y, width, height, 18);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = '#1f2937';
+      ctx.textAlign = 'left';
+      ctx.font = '700 18px Pretendard, sans-serif';
+      ctx.fillText('현재의 온도 차', x + 18, y + 28);
+      ctx.font = '800 30px Pretendard, sans-serif';
+      ctx.fillText(`${formatNumber(difference)}°C`, x + 18, y + 64);
+      ctx.font = '14px Pretendard, sans-serif';
+      ctx.fillStyle = '#5b6777';
+      ctx.fillText('실내 온도와 얼마나 차이 나는가', x + 18, y + 88);
+
+      const barX = x + 20;
+      const barY = y + height - 26;
+      const barW = width - 40;
+      const centerX = barX + barW / 2;
+
+      ctx.strokeStyle = '#cbd5e1';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(barX, barY);
+      ctx.lineTo(barX + barW, barY);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(centerX, barY - 10);
+      ctx.lineTo(centerX, barY + 10);
+      ctx.stroke();
+
+      const normalized = clamp(difference / maxDiffAbs, -1, 1);
+      ctx.fillStyle = difference >= 0 ? '#ef4444' : '#16a34a';
+      ctx.beginPath();
+      ctx.roundRect(
+        normalized >= 0 ? centerX : centerX + normalized * (barW / 2),
+        barY - 6,
+        Math.abs(normalized) * (barW / 2),
+        12,
+        6
+      );
+      ctx.fill();
+
+      ctx.fillStyle = '#64748b';
+      ctx.font = '12px Pretendard, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('0', centerX, barY + 24);
+    }
+
+    function drawRatePanel(ctx, x, y, width, height, rate, baseMagnitude) {
+      ctx.fillStyle = '#ffffff';
+      ctx.strokeStyle = '#d9e1ec';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.roundRect(x, y, width, height, 18);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = '#1f2937';
+      ctx.textAlign = 'left';
+      ctx.font = '700 18px Pretendard, sans-serif';
+      ctx.fillText('현재의 변화율', x + 18, y + 28);
+      ctx.font = '800 28px Pretendard, sans-serif';
+      ctx.fillText(`${formatNumber(rate)}°C/min`, x + 18, y + 62);
+
+      const arrowMaxW = 170;
+      const normalized = clamp(Math.abs(rate) / (baseMagnitude || 1), 0.05, 1);
+      const arrowW = arrowMaxW * normalized;
+      const arrowY = y + 92;
+      const arrowX = x + 18;
+
+      ctx.fillStyle = rate >= 0 ? '#16a34a' : '#ef4444';
+      ctx.beginPath();
+      ctx.moveTo(arrowX, arrowY - 10);
+      ctx.lineTo(arrowX + arrowW - 14, arrowY - 10);
+      ctx.lineTo(arrowX + arrowW - 14, arrowY - 18);
+      ctx.lineTo(arrowX + arrowW, arrowY);
+      ctx.lineTo(arrowX + arrowW - 14, arrowY + 18);
+      ctx.lineTo(arrowX + arrowW - 14, arrowY + 10);
+      ctx.lineTo(arrowX, arrowY + 10);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.fillStyle = '#5b6777';
+      ctx.font = '13px Pretendard, sans-serif';
+      ctx.fillText('|D|가 클수록 화살표도 커짐', x + 205, y + 95);
+    }
+
+    function drawScene() {
+      const canvas = ui.sceneCanvas;
+      const ctx = canvas.getContext('2d');
+      const w = canvas.width;
+      const h = canvas.height;
+      ctx.clearRect(0, 0, w, h);
+
+      ctx.fillStyle = '#f8fbff';
+      ctx.fillRect(16, 16, w - 32, h - 32);
+      ctx.strokeStyle = '#d9e1ec';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(16, 16, w - 32, h - 32);
+
+      drawTemperatureCard(ctx, 42, 46, 150, 250, '음료', state.currentTemp, '#ef4444', '현재 온도');
+      drawTemperatureCard(ctx, 214, 46, 150, 250, '실내', state.roomTemp, '#0ea5e9', '기준 온도');
+
+      const maxDiffAbs = Math.max(Math.abs(state.initialTemp - state.roomTemp), 5);
+      drawDifferenceBar(ctx, 392, 46, 420, 130, state.currentDifference, maxDiffAbs);
+
+      const baseMagnitude = Math.abs(state.k * ((state.initialTemp - state.roomTemp) || 1)) || 1;
+      drawRatePanel(ctx, 392, 192, 420, 110, state.currentRate, baseMagnitude);
+
+      ctx.fillStyle = '#eff6ff';
+      ctx.strokeStyle = '#bfdbfe';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.roundRect(42, 318, 770, 36, 14);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = '#1d4ed8';
+      ctx.font = '700 15px Pretendard, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('온도 차가 크면 식는 빠르기도 크고, 차가 작아지면 변화도 느려진다', 427, 341);
+    }
+
+    function drawGraph() {
+      const canvas = ui.graphCanvas;
+      const ctx = canvas.getContext('2d');
+      const w = canvas.width;
+      const h = canvas.height;
+      ctx.clearRect(0, 0, w, h);
+
+      const padding = { left: 62, right: 28, top: 30, middle: 56, bottom: 40 };
+      const plotW = w - padding.left - padding.right;
+      const plotH = (h - padding.top - padding.middle - padding.bottom) / 2;
+      const topRect = { x: padding.left, y: padding.top, w: plotW, h: plotH };
+      const bottomRect = { x: padding.left, y: padding.top + plotH + padding.middle, w: plotW, h: plotH };
+
+      function drawPlotFrame(rect, title, yLabel, yMin, yMax) {
+        ctx.fillStyle = '#ffffff';
+        ctx.strokeStyle = '#d9e1ec';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.roundRect(rect.x, rect.y, rect.w, rect.h, 14);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.fillStyle = '#111827';
+        ctx.textAlign = 'left';
+        ctx.font = '700 16px Pretendard, sans-serif';
+        ctx.fillText(title, rect.x + 10, rect.y - 8);
+
+        ctx.save();
+        ctx.translate(rect.x - 42, rect.y + rect.h / 2);
+        ctx.rotate(-Math.PI / 2);
+        ctx.textAlign = 'center';
+        ctx.font = '13px Pretendard, sans-serif';
+        ctx.fillStyle = '#5b6777';
+        ctx.fillText(yLabel, 0, 0);
+        ctx.restore();
+
+        ctx.strokeStyle = '#e5e7eb';
+        ctx.lineWidth = 1;
+        for (let i = 0; i <= 4; i += 1) {
+          const y = rect.y + (rect.h / 4) * i;
+          ctx.beginPath();
+          ctx.moveTo(rect.x, y);
+          ctx.lineTo(rect.x + rect.w, y);
+          ctx.stroke();
+
+          const value = yMax - ((y - rect.y) / rect.h) * (yMax - yMin);
+          ctx.fillStyle = '#6b7280';
+          ctx.textAlign = 'right';
+          ctx.font = '12px Pretendard, sans-serif';
+          ctx.fillText(formatNumber(value, 0), rect.x - 8, y + 4);
+        }
+
+        for (let i = 0; i <= 8; i += 1) {
+          const x = rect.x + (rect.w / 8) * i;
+          ctx.beginPath();
+          ctx.moveTo(x, rect.y);
+          ctx.lineTo(x, rect.y + rect.h);
+          ctx.stroke();
+
+          const time = (state.maxTime / 8) * i;
+          ctx.fillStyle = '#6b7280';
+          ctx.textAlign = 'center';
+          ctx.font = '12px Pretendard, sans-serif';
+          ctx.fillText(formatNumber(time, 0), x, rect.y + rect.h + 18);
+        }
+      }
+
+      function project(rect, time, value, minY, maxY) {
+        const x = rect.x + (time / state.maxTime) * rect.w;
+        const y = rect.y + rect.h - ((value - minY) / (maxY - minY)) * rect.h;
+        return { x, y };
+      }
+
+      const roomAdjustedMin = Math.min(state.initialTemp, state.roomTemp) - 5;
+      const roomAdjustedMax = Math.max(state.initialTemp, state.roomTemp) + 10;
+      const dynamicMin = Math.min(0, roomAdjustedMin);
+      const dynamicMax = Math.max(100, roomAdjustedMax);
+      const maxDiffAbs = Math.max(Math.abs(state.initialTemp - state.roomTemp), 5);
+
+      drawPlotFrame(topRect, '온도 그래프', '온도 (°C)', dynamicMin, dynamicMax);
+      drawPlotFrame(bottomRect, '온도 차 그래프', '온도 차 (°C)', -maxDiffAbs * 1.15, maxDiffAbs * 1.15);
+
+      ctx.strokeStyle = '#0ea5e9';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([8, 6]);
+      const roomStart = project(topRect, 0, state.roomTemp, dynamicMin, dynamicMax);
+      const roomEnd = project(topRect, state.maxTime, state.roomTemp, dynamicMin, dynamicMax);
+      ctx.beginPath();
+      ctx.moveTo(roomStart.x, roomStart.y);
+      ctx.lineTo(roomEnd.x, roomEnd.y);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      if (ui.showExactCurve.checked) {
+        ctx.setLineDash([6, 5]);
+        ctx.lineWidth = 3;
+        ctx.strokeStyle = '#2563eb';
+        ctx.beginPath();
+        for (let i = 0; i <= 240; i += 1) {
+          const t = (state.maxTime / 240) * i;
+          const temp = computeExactTemperature(t);
+          const p = project(topRect, t, temp, dynamicMin, dynamicMax);
+          if (i === 0) ctx.moveTo(p.x, p.y);
+          else ctx.lineTo(p.x, p.y);
+        }
+        ctx.stroke();
+
+        ctx.beginPath();
+        for (let i = 0; i <= 240; i += 1) {
+          const t = (state.maxTime / 240) * i;
+          const diff = computeExactDifference(t);
+          const p = project(bottomRect, t, diff, -maxDiffAbs * 1.15, maxDiffAbs * 1.15);
+          if (i === 0) ctx.moveTo(p.x, p.y);
+          else ctx.lineTo(p.x, p.y);
+        }
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
+
+      const orderedHistory = [...state.history].reverse();
+      if (orderedHistory.length > 0) {
+        ctx.strokeStyle = '#f97316';
+        ctx.lineWidth = 3;
+
+        ctx.beginPath();
+        orderedHistory.forEach((row, index) => {
+          const p = project(topRect, row.time, row.temp, dynamicMin, dynamicMax);
+          if (index === 0) ctx.moveTo(p.x, p.y);
+          else ctx.lineTo(p.x, p.y);
+        });
+        ctx.stroke();
+
+        ctx.beginPath();
+        orderedHistory.forEach((row, index) => {
+          const p = project(bottomRect, row.time, row.difference, -maxDiffAbs * 1.15, maxDiffAbs * 1.15);
+          if (index === 0) ctx.moveTo(p.x, p.y);
+          else ctx.lineTo(p.x, p.y);
+        });
+        ctx.stroke();
+
+        if (ui.showEulerPoints.checked) {
+          orderedHistory.forEach(row => {
+            const pt = project(topRect, row.time, row.temp, dynamicMin, dynamicMax);
+            const pd = project(bottomRect, row.time, row.difference, -maxDiffAbs * 1.15, maxDiffAbs * 1.15);
+            ctx.fillStyle = '#f97316';
+            ctx.beginPath();
+            ctx.arc(pt.x, pt.y, 4.5, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(pd.x, pd.y, 4.5, 0, Math.PI * 2);
+            ctx.fill();
+          });
+        }
+      }
+
+      const currentTop = project(topRect, state.time, state.currentTemp, dynamicMin, dynamicMax);
+      const currentBottom = project(bottomRect, state.time, state.currentDifference, -maxDiffAbs * 1.15, maxDiffAbs * 1.15);
+      ctx.fillStyle = '#111827';
+      ctx.beginPath();
+      ctx.arc(currentTop.x, currentTop.y, 6.5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(currentBottom.x, currentBottom.y, 6.5, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = '#111827';
+      ctx.font = '12px Pretendard, sans-serif';
+      ctx.textAlign = 'left';
+      ctx.fillText('시간 (min)', topRect.x + topRect.w - 46, topRect.y + topRect.h + 18);
+      ctx.fillText('시간 (min)', bottomRect.x + bottomRect.w - 46, bottomRect.y + bottomRect.h + 18);
+
+      const legendX = w - 210;
+      const legendY = 18;
+      ctx.fillStyle = '#ffffff';
+      ctx.strokeStyle = '#d9e1ec';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.roundRect(legendX, legendY, 182, 68, 12);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.strokeStyle = '#2563eb';
+      ctx.setLineDash([6, 5]);
+      ctx.beginPath();
+      ctx.moveTo(legendX + 12, legendY + 22);
+      ctx.lineTo(legendX + 42, legendY + 22);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = '#374151';
+      ctx.font = '13px Pretendard, sans-serif';
+      ctx.fillText('정확한 해', legendX + 50, legendY + 26);
+
+      ctx.strokeStyle = '#f97316';
+      ctx.beginPath();
+      ctx.moveTo(legendX + 12, legendY + 48);
+      ctx.lineTo(legendX + 42, legendY + 48);
+      ctx.stroke();
+      ctx.fillStyle = '#f97316';
+      ctx.beginPath();
+      ctx.arc(legendX + 27, legendY + 48, 4.5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#374151';
+      ctx.fillText('단계 근사 점', legendX + 50, legendY + 52);
+    }
+
+    function renderAll() {
+      updateStatusTexts();
+      updateHistoryTable();
+      drawScene();
+      drawGraph();
+    }
+
+    [ui.initialTemp, ui.roomTemp, ui.coolingRate, ui.timeStep, ui.maxTime].forEach(input => {
+      input.addEventListener('input', applyInputsAndReset);
+    });
+
+    ui.stepOneBtn.addEventListener('click', () => {
+      stopAuto();
+      advanceOnce();
+    });
+
+    ui.stepTenBtn.addEventListener('click', () => {
+      stopAuto();
+      advanceMultiple(10);
+    });
+
+    ui.autoBtn.addEventListener('click', () => {
+      if (state.autoPlaying) stopAuto();
+      else startAuto();
+    });
+
+    ui.resetBtn.addEventListener('click', () => {
+      applyInputsAndReset();
+    });
+
+    ui.showExactCurve.addEventListener('change', renderAll);
+    ui.showEulerPoints.addEventListener('change', renderAll);
+
+    window.addEventListener('load', () => {
+      syncLabels();
+      resetSimulation();
+      renderMath([document.body]);
+    });
+  </script>
+</body>
+</html>
