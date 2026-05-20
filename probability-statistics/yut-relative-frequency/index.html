@@ -1,0 +1,1010 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>윷 1개 통계적 확률 탐구</title>
+  <style>
+    :root {
+      --bg: #f6f8fc;
+      --card: #ffffff;
+      --line: #d7deea;
+      --text: #1f2937;
+      --sub: #5b6577;
+      --accent: #2563eb;
+      --accent-soft: #dbeafe;
+      --round: #2563eb;
+      --flat: #ef4444;
+      --ok: #16a34a;
+      --warn: #f59e0b;
+      --shadow: 0 10px 28px rgba(17, 24, 39, 0.08);
+      --radius: 18px;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Malgun Gothic", "Apple SD Gothic Neo", sans-serif;
+      background: linear-gradient(180deg, #f8fbff 0%, #f4f6fb 100%);
+      color: var(--text);
+    }
+
+    .wrap {
+      max-width: 1360px;
+      margin: 0 auto;
+      padding: 18px;
+    }
+
+    h1, h2, h3, p { margin: 0; }
+
+    .titlebar {
+      margin-bottom: 14px;
+      padding: 20px 22px;
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      box-shadow: var(--shadow);
+    }
+
+    .titlebar h1 {
+      font-size: clamp(1.5rem, 2.4vw, 2.1rem);
+      margin-bottom: 8px;
+    }
+
+    .titlebar p {
+      color: var(--sub);
+      line-height: 1.6;
+      font-size: 0.97rem;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 370px 1fr;
+      gap: 16px;
+      align-items: start;
+    }
+
+    .stack {
+      display: grid;
+      gap: 16px;
+      align-content: start;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 16px;
+      overflow: hidden;
+    }
+
+    .card h2 {
+      font-size: 1.05rem;
+      margin-bottom: 12px;
+    }
+
+    .muted {
+      color: var(--sub);
+      line-height: 1.6;
+      font-size: 0.93rem;
+    }
+
+    .control-group {
+      display: grid;
+      gap: 14px;
+      margin-top: 6px;
+    }
+
+    .slider-box {
+      padding: 12px;
+      border-radius: 14px;
+      background: #f8fafc;
+      border: 1px solid #e7edf7;
+    }
+
+    .slider-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .slider-head strong { font-size: 0.97rem; }
+    .slider-value {
+      min-width: 56px;
+      text-align: right;
+      font-weight: 700;
+      color: var(--accent);
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--accent);
+      cursor: pointer;
+    }
+
+    .slider-help {
+      margin-top: 6px;
+      font-size: 0.85rem;
+      color: var(--sub);
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .btn-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    button {
+      border: 0;
+      border-radius: 12px;
+      padding: 11px 10px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: #fff;
+      background: var(--accent);
+      cursor: pointer;
+      transition: transform 0.12s ease, opacity 0.12s ease;
+    }
+
+    button.secondary {
+      background: #475569;
+    }
+
+    button.ghost {
+      background: #e5eefc;
+      color: #1e3a8a;
+    }
+
+    button.warn {
+      background: #ef4444;
+    }
+
+    button:hover { transform: translateY(-1px); }
+    button:active { transform: translateY(0); }
+
+    .shape-panel {
+      display: grid;
+      grid-template-columns: 320px 1fr;
+      gap: 18px;
+      align-items: center;
+      min-height: 250px;
+    }
+
+    .shape-box {
+      min-height: 184px;
+      padding: 8px;
+      border-radius: 18px;
+      background: linear-gradient(180deg, #f8fbff 0%, #edf4ff 100%);
+      border: 1px solid #dbe7fb;
+      display: flex;
+      align-items: center;
+    }
+
+    .shape-labels {
+      margin-top: 8px;
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.86rem;
+      color: var(--sub);
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+
+    .stat {
+      padding: 12px;
+      border-radius: 14px;
+      background: #f8fafc;
+      border: 1px solid #e7edf7;
+    }
+
+    .stat .label {
+      color: var(--sub);
+      font-size: 0.84rem;
+      margin-bottom: 6px;
+    }
+
+    .stat .value {
+      font-size: clamp(1rem, 2vw, 1.35rem);
+      font-weight: 800;
+    }
+
+    .legend {
+      display: flex;
+      gap: 14px;
+      flex-wrap: wrap;
+      font-size: 0.88rem;
+      color: var(--sub);
+      margin-top: 8px;
+    }
+
+    .dot {
+      display: inline-flex;
+      width: 11px;
+      height: 11px;
+      border-radius: 50%;
+      margin-right: 6px;
+      transform: translateY(1px);
+    }
+
+    .chart-card canvas {
+      width: 100%;
+      height: 360px;
+      display: block;
+      border-radius: 14px;
+      background: #fbfdff;
+      border: 1px solid #e7edf7;
+    }
+
+    .bottom-grid {
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: 16px;
+    }
+
+    .table-wrap {
+      overflow: auto;
+      border: 1px solid #e7edf7;
+      border-radius: 14px;
+      height: 332px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.92rem;
+      background: #fff;
+    }
+
+    th, td {
+      padding: 10px 12px;
+      border-bottom: 1px solid #eef2f7;
+      text-align: center;
+      white-space: nowrap;
+    }
+
+    th {
+      background: #f8fafc;
+      color: #475569;
+      font-weight: 700;
+    }
+
+    .outcome-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 12px;
+      min-height: 74px;
+      max-height: 74px;
+      overflow: auto;
+      align-content: flex-start;
+    }
+
+    .chip {
+      padding: 8px 12px;
+      border-radius: 999px;
+      font-size: 0.86rem;
+      font-weight: 700;
+      border: 1px solid transparent;
+    }
+
+    .chip.round {
+      background: rgba(37, 99, 235, 0.1);
+      color: #1d4ed8;
+      border-color: rgba(37, 99, 235, 0.18);
+    }
+
+    .chip.flat {
+      background: rgba(239, 68, 68, 0.1);
+      color: #dc2626;
+      border-color: rgba(239, 68, 68, 0.18);
+    }
+
+    .interpret {
+      margin-top: 12px;
+      padding: 12px;
+      border-radius: 14px;
+      background: #f8fafc;
+      border: 1px solid #e7edf7;
+      line-height: 1.65;
+      color: #334155;
+      min-height: 152px;
+      max-height: 152px;
+      overflow: auto;
+    }
+
+    .footer-note {
+      margin-top: 14px;
+      font-size: 0.85rem;
+      color: var(--sub);
+      line-height: 1.6;
+    }
+
+    .toggle-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-top: 8px;
+      flex-wrap: wrap;
+    }
+
+    .checkbox {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.9rem;
+      color: #334155;
+    }
+
+    .speed-box {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 12px;
+    }
+
+    .speed-box span {
+      min-width: 84px;
+      font-size: 0.9rem;
+      color: var(--sub);
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: 0.86rem;
+      background: var(--accent-soft);
+      color: #1e40af;
+      font-weight: 700;
+    }
+
+
+    .chart-card {
+      min-height: 454px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .table-card {
+      min-height: 430px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .table-card .table-wrap {
+      flex: 1 1 auto;
+    }
+
+    .shape-card {
+      min-height: 286px;
+    }
+
+    .status-card {
+      min-height: 390px;
+    }
+
+    @media (max-width: 1080px) {
+      .grid,
+      .bottom-grid,
+      .shape-panel {
+        grid-template-columns: 1fr;
+      }
+      .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    @media (max-width: 720px) {
+      .wrap { padding: 12px; }
+      .btn-grid { grid-template-columns: repeat(2, 1fr); }
+      .stats-grid { grid-template-columns: 1fr; }
+      .chart-card canvas { height: 300px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <section class="titlebar">
+      <h1>윷 1개의 통계적 확률 탐구</h1>
+      <p>
+        윷은 둥근면과 평평한 면이 <strong>같은 가능성으로 나온다고 보기 어려운</strong> 대표적인 예입니다.
+        이 앱은 한 개의 윷을 반복해서 던진다고 가정하고, 시행 횟수가 늘어날수록 <strong>둥근면의 상대도수</strong>가
+        어떤 값에 가까워지는지 그래프로 보여 줍니다. 곡면 정도와 평평한 면 길이를 바꾸며
+        “모양 변화 → 결과 변화 → 상대도수의 안정”을 함께 관찰해 보세요.
+      </p>
+    </section>
+
+    <div class="grid">
+      <div class="stack">
+        <section class="card">
+          <h2>조작 영역</h2>
+          <p class="muted">슬라이더로 윷의 모양을 바꾸고, 여러 번 던지기를 실행해 보세요.</p>
+
+          <div class="control-group">
+            <div class="slider-box">
+              <div class="slider-head">
+                <strong>둥근면의 곡면 정도</strong>
+                <div id="curveValue" class="slider-value">60</div>
+              </div>
+              <input id="curveSlider" type="range" min="20" max="90" value="60" />
+              <div class="slider-help">
+                <span>덜 둥글다</span>
+                <span>더 둥글다</span>
+              </div>
+            </div>
+
+            <div class="slider-box">
+              <div class="slider-head">
+                <strong>평평한 면의 길이</strong>
+                <div id="flatValue" class="slider-value">58</div>
+              </div>
+              <input id="flatSlider" type="range" min="20" max="90" value="58" />
+              <div class="slider-help">
+                <span>짧다</span>
+                <span>길다</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="speed-box">
+            <span>자동 속도</span>
+            <input id="speedSlider" type="range" min="1" max="120" value="40" />
+            <strong id="speedValue">40회/프레임</strong>
+          </div>
+
+          <div class="btn-grid">
+            <button id="onceBtn">1회 실행</button>
+            <button id="tenBtn">10회 실행</button>
+            <button id="hundredBtn">100회 실행</button>
+            <button id="thousandBtn" class="ghost">1000회 실행</button>
+            <button id="autoBtn" class="secondary">자동 실행</button>
+            <button id="resetBtn" class="warn">초기화</button>
+          </div>
+
+          <div class="toggle-row">
+            <label class="checkbox"><input id="guideToggle" type="checkbox" checked /> 모형값 안내선 표시</label>
+            <div class="pill">기록 대상: 위로 보이는 면</div>
+          </div>
+        </section>
+
+        <section class="card status-card">
+          <h2>현재 상태</h2>
+          <div class="stats-grid">
+            <div class="stat">
+              <div class="label">전체 시행 횟수</div>
+              <div id="totalValue" class="value">0</div>
+            </div>
+            <div class="stat">
+              <div class="label">둥근면 나온 횟수</div>
+              <div id="roundCountValue" class="value" style="color: var(--round);">0</div>
+            </div>
+            <div class="stat">
+              <div class="label">평평한 면 나온 횟수</div>
+              <div id="flatCountValue" class="value" style="color: var(--flat);">0</div>
+            </div>
+            <div class="stat">
+              <div class="label">둥근면 상대도수</div>
+              <div id="roundFreqValue" class="value">-</div>
+            </div>
+            <div class="stat">
+              <div class="label">평평한 면 상대도수</div>
+              <div id="flatFreqValue" class="value">-</div>
+            </div>
+            <div class="stat">
+              <div class="label">모형 기반 예상값</div>
+              <div id="modelValue" class="value">0.500</div>
+            </div>
+          </div>
+
+          <div id="interpretBox" class="interpret"></div>
+        </section>
+      </div>
+
+      <div class="stack">
+        <section class="card shape-card">
+          <h2>핵심 시각화</h2>
+          <div class="shape-panel">
+            <div>
+              <div class="shape-box">
+                <svg id="yutSvg" viewBox="0 0 320 150" width="100%" height="150" aria-label="윷 모양">
+                  <defs>
+                    <linearGradient id="curveGrad" x1="0" x2="0" y1="0" y2="1">
+                      <stop offset="0%" stop-color="#cfe3ff" />
+                      <stop offset="100%" stop-color="#7fb3ff" />
+                    </linearGradient>
+                  </defs>
+                  <rect x="10" y="12" width="300" height="126" rx="18" fill="#f8fbff" stroke="#dbe7fb" />
+                  <path id="yutPath" d="" fill="url(#curveGrad)" stroke="#2563eb" stroke-width="3" />
+                  <rect id="flatFace" x="70" y="100" width="180" height="10" fill="#ef4444" opacity="0.9" />
+                  <text x="160" y="132" text-anchor="middle" font-size="13" fill="#475569">빨간 부분은 평평한 면, 위쪽 파란 곡선은 둥근면</text>
+                </svg>
+              </div>
+              <div class="shape-labels">
+                <span>모양이 바뀌면 예상 확률도 함께 바뀝니다.</span>
+              </div>
+            </div>
+            <div>
+              <p class="muted">
+                이 앱은 실제 공기 저항·충돌·마찰을 모두 계산하지 않고, <strong>모양이 결과에 주는 영향</strong>을 단순화한
+                확률 모형을 사용합니다. 점선은 슬라이더로 정한 모양에서의 <strong>예상 확률</strong>, 실선은 반복 시행으로 얻은
+                <strong>둥근면 상대도수</strong>입니다.
+              </p>
+              <div class="legend">
+                <span><span class="dot" style="background: var(--round);"></span>둥근면 상대도수</span>
+                <span><span class="dot" style="background: var(--flat);"></span>평평한 면 상대도수</span>
+                <span><span class="dot" style="background: #111827;"></span>모형값 안내선</span>
+              </div>
+              <div class="outcome-list" id="recentOutcomes"></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="card chart-card">
+          <h2>상대도수 그래프</h2>
+          <canvas id="freqCanvas" width="900" height="360"></canvas>
+          <div class="footer-note">
+            가로축은 시행 횟수, 세로축은 상대도수입니다. 시행 횟수가 커질수록 실선이 점선 근처에서 점차 안정되는지 관찰해 보세요.
+          </div>
+        </section>
+
+        <div class="bottom-grid">
+          <section class="card table-card">
+            <h2>구간별 기록</h2>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>시행 횟수</th>
+                    <th>둥근면 횟수</th>
+                    <th>상대도수</th>
+                    <th>예상값과 차이</th>
+                  </tr>
+                </thead>
+                <tbody id="checkpointBody"></tbody>
+              </table>
+            </div>
+          </section>
+
+          <section class="card chart-card">
+            <h2>누적 횟수 비교</h2>
+            <canvas id="barCanvas" width="540" height="300"></canvas>
+            <div class="footer-note">
+              둥근면과 평평한 면의 누적 횟수를 함께 보며 상대도수의 변화를 해석해 보세요.
+            </div>
+          </section>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const curveSlider = document.getElementById('curveSlider');
+    const flatSlider = document.getElementById('flatSlider');
+    const speedSlider = document.getElementById('speedSlider');
+    const guideToggle = document.getElementById('guideToggle');
+
+    const curveValue = document.getElementById('curveValue');
+    const flatValue = document.getElementById('flatValue');
+    const speedValue = document.getElementById('speedValue');
+
+    const totalValue = document.getElementById('totalValue');
+    const roundCountValue = document.getElementById('roundCountValue');
+    const flatCountValue = document.getElementById('flatCountValue');
+    const roundFreqValue = document.getElementById('roundFreqValue');
+    const flatFreqValue = document.getElementById('flatFreqValue');
+    const modelValue = document.getElementById('modelValue');
+    const recentOutcomes = document.getElementById('recentOutcomes');
+    const checkpointBody = document.getElementById('checkpointBody');
+    const interpretBox = document.getElementById('interpretBox');
+    const yutPath = document.getElementById('yutPath');
+    const flatFace = document.getElementById('flatFace');
+
+    const freqCanvas = document.getElementById('freqCanvas');
+    const freqCtx = freqCanvas.getContext('2d');
+    const barCanvas = document.getElementById('barCanvas');
+    const barCtx = barCanvas.getContext('2d');
+
+    const checkpoints = [10, 20, 50, 100, 200, 500, 1000, 2000, 5000, 10000];
+
+    let total = 0;
+    let roundCount = 0;
+    let flatCount = 0;
+    let freqHistory = [];
+    let recent = [];
+    let autoRunning = false;
+    let animationId = null;
+
+    function clamp(value, min, max) {
+      return Math.max(min, Math.min(max, value));
+    }
+
+    function formatFreq(value) {
+      return Number.isFinite(value) ? value.toFixed(3) : '-';
+    }
+
+    function getModelProbability() {
+      const curve = Number(curveSlider.value) / 100;
+      const flat = Number(flatSlider.value) / 100;
+      const score =
+        1.15 * (curve - 0.5) +
+        1.35 * (flat - 0.5) +
+        1.4 * (curve - 0.5) * (flat - 0.5);
+      const logistic = 1 / (1 + Math.exp(-3.15 * score));
+      return clamp(logistic, 0.05, 0.95);
+    }
+
+    function drawYutShape() {
+      const curve = Number(curveSlider.value);
+      const flat = Number(flatSlider.value);
+      const topY = 92;
+      const bodyThickness = 26;
+      const curveHeight = 12 + curve * 0.6;
+      const width = 110 + flat * 1.25;
+      const cx = 160;
+      const x1 = cx - width / 2;
+      const x2 = cx + width / 2;
+      const controlY = topY - curveHeight;
+      const bottomY = topY + bodyThickness;
+
+      const path = [
+        `M ${x1} ${topY}`,
+        `Q ${cx} ${controlY} ${x2} ${topY}`,
+        `L ${x2} ${bottomY}`,
+        `L ${x1} ${bottomY}`,
+        'Z'
+      ].join(' ');
+      yutPath.setAttribute('d', path);
+      flatFace.setAttribute('x', x1.toFixed(1));
+      flatFace.setAttribute('y', (bottomY - 10).toFixed(1));
+      flatFace.setAttribute('width', width.toFixed(1));
+      flatFace.setAttribute('height', '10');
+    }
+
+    function recordCheckpointTable() {
+      const p = getModelProbability();
+      let rows = '';
+      checkpoints.forEach((n) => {
+        if (n <= total) {
+          const entry = freqHistory[n - 1];
+          const diff = Math.abs(entry.freq - p);
+          rows += `
+            <tr>
+              <td>${n.toLocaleString()}</td>
+              <td>${entry.round.toLocaleString()}</td>
+              <td>${entry.freq.toFixed(3)}</td>
+              <td>${diff.toFixed(3)}</td>
+            </tr>
+          `;
+        }
+      });
+
+      if (!rows) {
+        rows = `<tr><td colspan="4" style="color:#64748b;">아직 기록이 없습니다. 실행 버튼을 눌러 보세요.</td></tr>`;
+      }
+      checkpointBody.innerHTML = rows;
+    }
+
+    function updateRecent() {
+      if (recent.length === 0) {
+        recentOutcomes.innerHTML = '<span class="muted">최근 결과가 여기에 표시됩니다.</span>';
+        return;
+      }
+      recentOutcomes.innerHTML = recent
+        .slice(-12)
+        .map((item) => `<span class="chip ${item.type}">${item.text}</span>`)
+        .join('');
+    }
+
+    function updateInterpretation() {
+      const p = getModelProbability();
+      if (total === 0) {
+        interpretBox.innerHTML = '아직 시행 전입니다. 먼저 1회, 10회, 100회 실행 중 하나를 눌러 상대도수가 어떻게 시작되는지 살펴보세요.';
+        return;
+      }
+
+      const freq = roundCount / total;
+      const diff = Math.abs(freq - p);
+      let message = `현재 둥근면 상대도수는 <strong>${freq.toFixed(3)}</strong>이고, 이 모양에서의 예상값은 <strong>${p.toFixed(3)}</strong>입니다. `;
+
+      if (total < 20) {
+        message += '시행 횟수가 아직 적어서 상대도수가 크게 흔들릴 수 있습니다.';
+      } else if (diff < 0.02) {
+        message += '상대도수가 예상값에 매우 가깝게 모였습니다. 시행을 더 늘려도 큰 틀에서는 비슷한 값 주변에서 움직일 가능성이 큽니다.';
+      } else if (diff < 0.05) {
+        message += '상대도수가 예상값 근처로 다가가고 있습니다. 조금 더 시행하면 선이 점선 가까이에서 안정되는 모습을 보기 쉽습니다.';
+      } else {
+        message += '아직 예상값과 차이가 제법 있습니다. 하지만 시행 횟수를 더 늘리면 차이가 점차 줄어드는지 확인할 수 있습니다.';
+      }
+
+      message += `<br><br>둥근면이 더 자주 나오도록 바꾸고 싶다면 <strong>곡면 정도</strong>와 <strong>평평한 면 길이</strong>를 조금씩 키운 뒤 다시 초기화하여 비교해 보세요.`;
+      interpretBox.innerHTML = message;
+    }
+
+    function updateStats() {
+      const p = getModelProbability();
+      curveValue.textContent = curveSlider.value;
+      flatValue.textContent = flatSlider.value;
+      speedValue.textContent = `${speedSlider.value}회/프레임`;
+      modelValue.textContent = p.toFixed(3);
+      totalValue.textContent = total.toLocaleString();
+      roundCountValue.textContent = roundCount.toLocaleString();
+      flatCountValue.textContent = flatCount.toLocaleString();
+      roundFreqValue.textContent = total ? (roundCount / total).toFixed(3) : '-';
+      flatFreqValue.textContent = total ? (flatCount / total).toFixed(3) : '-';
+
+      updateRecent();
+      recordCheckpointTable();
+      updateInterpretation();
+      drawYutShape();
+      drawFreqChart();
+      drawBarChart();
+    }
+
+    function addTrial() {
+      const p = getModelProbability();
+      const isRound = Math.random() < p;
+      total += 1;
+      if (isRound) {
+        roundCount += 1;
+        recent.push({ type: 'round', text: `${total}회: 둥근면` });
+      } else {
+        flatCount += 1;
+        recent.push({ type: 'flat', text: `${total}회: 평평한 면` });
+      }
+      if (recent.length > 20) recent.shift();
+
+      freqHistory.push({
+        n: total,
+        round: roundCount,
+        flat: flatCount,
+        freq: roundCount / total
+      });
+    }
+
+    function runTrials(count) {
+      for (let i = 0; i < count; i += 1) addTrial();
+      updateStats();
+    }
+
+    function resetAll() {
+      total = 0;
+      roundCount = 0;
+      flatCount = 0;
+      freqHistory = [];
+      recent = [];
+      updateStats();
+    }
+
+    function stopAuto() {
+      autoRunning = false;
+      document.getElementById('autoBtn').textContent = '자동 실행';
+      document.getElementById('autoBtn').classList.remove('ghost');
+      if (animationId) cancelAnimationFrame(animationId);
+      animationId = null;
+    }
+
+    function autoLoop() {
+      if (!autoRunning) return;
+      const speed = Number(speedSlider.value);
+      runTrials(speed);
+      animationId = requestAnimationFrame(autoLoop);
+    }
+
+    function toggleAuto() {
+      autoRunning = !autoRunning;
+      const autoBtn = document.getElementById('autoBtn');
+      if (autoRunning) {
+        autoBtn.textContent = '일시 정지';
+        autoBtn.classList.add('ghost');
+        autoLoop();
+      } else {
+        stopAuto();
+      }
+    }
+
+    function drawAxes(ctx, width, height, plot) {
+      ctx.strokeStyle = '#334155';
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.moveTo(plot.left, plot.top);
+      ctx.lineTo(plot.left, plot.bottom);
+      ctx.lineTo(plot.right, plot.bottom);
+      ctx.stroke();
+    }
+
+    function drawFreqChart() {
+      const ctx = freqCtx;
+      const width = freqCanvas.width;
+      const height = freqCanvas.height;
+      const plot = { left: 56, right: width - 18, top: 18, bottom: height - 42 };
+      const p = getModelProbability();
+
+      ctx.clearRect(0, 0, width, height);
+      ctx.fillStyle = '#fbfdff';
+      ctx.fillRect(0, 0, width, height);
+
+      // grid
+      ctx.strokeStyle = '#e5edf7';
+      ctx.lineWidth = 1;
+      ctx.font = '12px sans-serif';
+      ctx.fillStyle = '#64748b';
+      for (let i = 0; i <= 5; i += 1) {
+        const y = plot.top + (plot.bottom - plot.top) * (i / 5);
+        ctx.beginPath();
+        ctx.moveTo(plot.left, y);
+        ctx.lineTo(plot.right, y);
+        ctx.stroke();
+        const value = (1 - i / 5).toFixed(1);
+        ctx.fillText(value, 18, y + 4);
+      }
+
+      drawAxes(ctx, width, height, plot);
+
+      ctx.fillStyle = '#334155';
+      ctx.font = '13px sans-serif';
+      ctx.fillText('상대도수', 12, 14);
+      ctx.fillText('시행 횟수', width - 76, height - 12);
+
+      if (total === 0) {
+        ctx.fillStyle = '#94a3b8';
+        ctx.font = '16px sans-serif';
+        ctx.fillText('아직 그래프가 없습니다. 시행을 시작해 보세요.', plot.left + 40, plot.top + 40);
+        return;
+      }
+
+      // guideline
+      if (guideToggle.checked) {
+        const y = plot.bottom - (plot.bottom - plot.top) * p;
+        ctx.save();
+        ctx.setLineDash([8, 6]);
+        ctx.strokeStyle = '#111827';
+        ctx.lineWidth = 1.6;
+        ctx.beginPath();
+        ctx.moveTo(plot.left, y);
+        ctx.lineTo(plot.right, y);
+        ctx.stroke();
+        ctx.restore();
+        ctx.fillStyle = '#111827';
+        ctx.fillText(`모형값 ${p.toFixed(3)}`, plot.right - 112, y - 8);
+      }
+
+      // x ticks
+      const tickCount = 5;
+      for (let i = 0; i <= tickCount; i += 1) {
+        const x = plot.left + (plot.right - plot.left) * (i / tickCount);
+        const n = Math.round(total * (i / tickCount));
+        ctx.strokeStyle = '#e5edf7';
+        ctx.beginPath();
+        ctx.moveTo(x, plot.top);
+        ctx.lineTo(x, plot.bottom);
+        ctx.stroke();
+        ctx.fillStyle = '#64748b';
+        ctx.fillText(n.toLocaleString(), x - 12, plot.bottom + 18);
+      }
+
+      // round frequency line
+      ctx.beginPath();
+      ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--round').trim();
+      ctx.lineWidth = 2.5;
+      freqHistory.forEach((entry, index) => {
+        const x = plot.left + (plot.right - plot.left) * ((entry.n - 1) / Math.max(total - 1, 1));
+        const y = plot.bottom - (plot.bottom - plot.top) * entry.freq;
+        if (index === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      });
+      ctx.stroke();
+
+      // flat frequency line
+      ctx.beginPath();
+      ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--flat').trim();
+      ctx.lineWidth = 1.8;
+      freqHistory.forEach((entry, index) => {
+        const x = plot.left + (plot.right - plot.left) * ((entry.n - 1) / Math.max(total - 1, 1));
+        const y = plot.bottom - (plot.bottom - plot.top) * (1 - entry.freq);
+        if (index === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      });
+      ctx.stroke();
+    }
+
+    function drawBarChart() {
+      const ctx = barCtx;
+      const width = barCanvas.width;
+      const height = barCanvas.height;
+      ctx.clearRect(0, 0, width, height);
+      ctx.fillStyle = '#fbfdff';
+      ctx.fillRect(0, 0, width, height);
+
+      const plot = { left: 56, right: width - 24, top: 22, bottom: height - 44 };
+      drawAxes(ctx, width, height, plot);
+      ctx.fillStyle = '#64748b';
+      ctx.font = '12px sans-serif';
+      ctx.fillText('횟수', 18, 16);
+
+      if (total === 0) {
+        ctx.fillStyle = '#94a3b8';
+        ctx.font = '16px sans-serif';
+        ctx.fillText('누적 실행 후 막대그래프가 나타납니다.', 72, 52);
+        return;
+      }
+
+      const maxCount = Math.max(roundCount, flatCount, 1);
+      const labels = [
+        { name: '둥근면', count: roundCount, color: getComputedStyle(document.documentElement).getPropertyValue('--round').trim() },
+        { name: '평평한 면', count: flatCount, color: getComputedStyle(document.documentElement).getPropertyValue('--flat').trim() }
+      ];
+
+      labels.forEach((item, index) => {
+        const x = plot.left + 90 + index * 160;
+        const barWidth = 90;
+        const barHeight = (plot.bottom - plot.top) * (item.count / maxCount);
+        const y = plot.bottom - barHeight;
+
+        ctx.fillStyle = item.color;
+        ctx.fillRect(x, y, barWidth, barHeight);
+        ctx.fillStyle = '#334155';
+        ctx.font = '14px sans-serif';
+        ctx.fillText(item.name, x + 10, plot.bottom + 20);
+        ctx.font = 'bold 18px sans-serif';
+        ctx.fillText(item.count.toLocaleString(), x + 22, y - 10);
+      });
+
+      for (let i = 0; i <= 4; i += 1) {
+        const y = plot.bottom - (plot.bottom - plot.top) * (i / 4);
+        const value = Math.round(maxCount * (i / 4));
+        ctx.strokeStyle = '#e5edf7';
+        ctx.beginPath();
+        ctx.moveTo(plot.left, y);
+        ctx.lineTo(plot.right, y);
+        ctx.stroke();
+        ctx.fillStyle = '#64748b';
+        ctx.fillText(value.toLocaleString(), 14, y + 4);
+      }
+    }
+
+    document.getElementById('onceBtn').addEventListener('click', () => runTrials(1));
+    document.getElementById('tenBtn').addEventListener('click', () => runTrials(10));
+    document.getElementById('hundredBtn').addEventListener('click', () => runTrials(100));
+    document.getElementById('thousandBtn').addEventListener('click', () => runTrials(1000));
+    document.getElementById('autoBtn').addEventListener('click', toggleAuto);
+    document.getElementById('resetBtn').addEventListener('click', () => {
+      stopAuto();
+      resetAll();
+    });
+
+    [curveSlider, flatSlider, speedSlider, guideToggle].forEach((el) => {
+      el.addEventListener('input', () => {
+        if (el === curveSlider || el === flatSlider) {
+          stopAuto();
+          resetAll();
+        } else {
+          updateStats();
+        }
+      });
+    });
+
+    window.addEventListener('resize', () => {
+      drawYutShape();
+      drawFreqChart();
+      drawBarChart();
+    });
+
+    resetAll();
+  </script>
+</body>
+</html>
