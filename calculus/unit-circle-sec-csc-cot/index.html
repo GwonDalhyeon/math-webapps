@@ -34,6 +34,13 @@
       display: grid;
       gap: 16px;
     }
+    .back-link {
+      display: inline-block;
+      color: #2563eb;
+      font-weight: 700;
+      text-decoration: none;
+    }
+    .back-link:hover { text-decoration: underline; }
     .card {
       background: var(--panel);
       border: 1px solid var(--border);
@@ -150,6 +157,8 @@
 </head>
 <body>
   <div class="app">
+    <a class="back-link" href="../">← 미적분 목록</a>
+
     <section class="card top">
       <div class="top-head">
         <div>

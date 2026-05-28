@@ -32,6 +32,14 @@
       margin:0 auto;
       padding:20px;
     }
+    .back-link{
+      display:inline-block;
+      margin-bottom:14px;
+      color:#2563eb;
+      font-weight:700;
+      text-decoration:none;
+    }
+    .back-link:hover{text-decoration:underline}
     h1{
       margin:0 0 8px;
       font-size:clamp(1.5rem, 2vw + 1rem, 2.4rem);
@@ -194,6 +202,8 @@
 </head>
 <body>
   <div class="wrap">
+    <a class="back-link" href="../">← 미적분 목록</a>
+
     <h1>교대조화급수의 재배열로 임의의 상수 c에 가까워지기</h1>
     <p class="lead">
       양의 항과 음의 항을 따로 나열한 뒤 클릭하여 더해 보며, 부분합이 목표값 <strong>c</strong>에 가까워지도록 재배열하는 웹앱입니다.
