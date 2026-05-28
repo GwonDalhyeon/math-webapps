@@ -1,0 +1,749 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>이항분포의 고정 범위 확률</title>
+  <link rel="stylesheet" href="../../assets/common.css" />
+  <style>
+    /* ── 전체 레이아웃 ──────────────────────────────
+       조작 패널(좌 220px) | 오른쪽 2행
+         1행: 이항분포 차트 | 결과 패널(260px)
+         2행: p(1-p) 보조그래프(240px) | 비교 표
+    ──────────────────────────────────────────────── */
+    .app-outer {
+      display: grid;
+      grid-template-columns: 220px 1fr;
+      gap: 20px;
+      align-items: start;
+    }
+    .right-area { display: grid; gap: 20px; }
+    .top-row {
+      display: grid;
+      grid-template-columns: 1fr 260px;
+      gap: 20px;
+      align-items: start;
+    }
+    .bottom-row {
+      display: grid;
+      grid-template-columns: 240px 1fr;
+      gap: 20px;
+      align-items: start;
+    }
+    @media (max-width: 960px) {
+      .app-outer  { grid-template-columns: 1fr; }
+      .top-row    { grid-template-columns: 1fr; }
+      .bottom-row { grid-template-columns: 1fr; }
+    }
+
+    /* ── 패널 공통 ── */
+    .panel {
+      background: white;
+      border: 1px solid #e5e7eb;
+      border-radius: 16px;
+      padding: 20px;
+      box-shadow: 0 4px 12px rgba(15,23,42,0.06);
+    }
+    .panel-title {
+      margin: 0 0 14px;
+      font-size: 16px;
+      font-weight: 700;
+      color: #374151;
+      border-bottom: 2px solid #e5e7eb;
+      padding-bottom: 8px;
+    }
+
+    /* ── 조작 패널 ── */
+    .control-group { margin-bottom: 18px; }
+    .control-label {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 6px;
+    }
+    .control-name  { font-size: 15px; font-weight: 700; color: #111827; }
+    .control-value { font-size: 18px; font-weight: 700; color: #2563eb; }
+    input[type="range"] {
+      width: 100%;
+      height: 6px;
+      accent-color: #2563eb;
+      cursor: pointer;
+    }
+    .q-btn-group { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+    .q-btn {
+      padding: 5px 10px;
+      border: 1.5px solid #d1d5db;
+      border-radius: 8px;
+      background: white;
+      font-size: 13px;
+      font-weight: 600;
+      color: #374151;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s, color 0.15s;
+    }
+    .q-btn:hover  { background: #eff6ff; border-color: #2563eb; color: #2563eb; }
+    .q-btn.active { background: #2563eb; border-color: #2563eb; color: white; }
+    .q-btn.reset  { background: #f3f4f6; border-color: #9ca3af; color: #374151; }
+    .q-btn.reset:hover { background: #e5e7eb; border-color: #6b7280; }
+
+    /* ── 캔버스 ── */
+    canvas { display: block; width: 100%; height: auto; }
+
+    /* ── 차트 범례 ── */
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 8px;
+      font-size: 12px;
+      color: #4b5563;
+    }
+    .legend span { display: flex; align-items: center; gap: 5px; }
+
+    /* ── 결과 패널 ── */
+    .result-grid { display: grid; gap: 8px; }
+    .result-row {
+      background: #f8fafc;
+      border-radius: 10px;
+      padding: 9px 12px;
+    }
+    .result-label { font-size: 12px; color: #6b7280; margin-bottom: 2px; }
+    .result-value { font-size: 17px; font-weight: 700; color: #111827; }
+    .result-value.sm { font-size: 14px; font-weight: 600; color: #374151; }
+    .result-prob { font-size: 26px; font-weight: 800; color: #2563eb; }
+    .interp-box {
+      margin-top: 12px;
+      padding: 12px;
+      background: #eff6ff;
+      border-left: 4px solid #2563eb;
+      border-radius: 0 8px 8px 0;
+      font-size: 13px;
+      color: #1e40af;
+      line-height: 1.65;
+    }
+
+    /* ── 비교 표 ── */
+    .table-subtitle { font-size: 13px; font-weight: 400; color: #6b7280; }
+    .table-scroll { overflow-x: auto; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      min-width: 460px;
+    }
+    th {
+      background: #1e40af;
+      color: white;
+      padding: 9px 8px;
+      text-align: center;
+      font-weight: 700;
+    }
+    td {
+      padding: 8px;
+      text-align: center;
+      border-bottom: 1px solid #e5e7eb;
+      color: #374151;
+    }
+    tr:nth-child(even) td { background: #f9fafb; }
+    tr.hl td { background: #dbeafe; font-weight: 700; color: #1e40af; }
+
+    /* ── 산술기하 연결 박스 ── */
+    .amgm-box {
+      margin-top: 28px;
+      background: white;
+      border: 1px solid #e5e7eb;
+      border-radius: 16px;
+      padding: 20px 24px;
+      box-shadow: 0 4px 12px rgba(15,23,42,0.06);
+    }
+    .amgm-box h3 { margin: 0 0 12px; font-size: 16px; font-weight: 700; color: #374151; }
+    .amgm-box p  { font-size: 15px; color: #4b5563; line-height: 1.7; margin: 6px 0; }
+    .me { font-style: italic; font-weight: 700; color: #2563eb; }
+
+    .app-header { margin-bottom: 24px; }
+    .app-header .question {
+      font-size: 20px;
+      font-weight: 700;
+      color: #1e40af;
+      margin: 8px 0 0;
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <a class="back-link" href="../">← 확률과 통계</a>
+
+    <header class="hero app-header">
+      <p class="eyebrow">Probability & Statistics · 이항분포</p>
+      <h1>이항분포의 고정 범위 확률</h1>
+      <p>
+        같은 문제를 <span id="hdr-n">40</span>문제 풀 때,
+        한 문제를 맞힐 확률이 <span id="hdr-p">0.50</span>이면
+        맞힌 수 X&nbsp;~&nbsp;B(n,&nbsp;p)이다.
+      </p>
+      <p class="question">범위 폭 2a가 같아도 p가 달라지면 확률도 달라질까?</p>
+    </header>
+
+    <div class="app-outer">
+
+      <!-- ── 왼쪽: 조작 패널 ── -->
+      <div class="panel">
+        <div class="panel-title">조작</div>
+
+        <div class="control-group">
+          <div class="control-label">
+            <span class="control-name">시행 횟수 <i>n</i></span>
+            <span class="control-value" id="val-n">40</span>
+          </div>
+          <input type="range" id="slider-n" min="5" max="100" step="1" value="40" />
+        </div>
+
+        <div class="control-group">
+          <div class="control-label">
+            <span class="control-name">성공확률 <i>p</i></span>
+            <span class="control-value" id="val-p">0.50</span>
+          </div>
+          <input type="range" id="slider-p" min="0.01" max="0.99" step="0.01" value="0.50" />
+          <div class="q-btn-group" id="p-btns">
+            <button class="q-btn" data-p="0.1">p=0.1</button>
+            <button class="q-btn" data-p="0.3">p=0.3</button>
+            <button class="q-btn active" data-p="0.5">p=0.5</button>
+            <button class="q-btn" data-p="0.7">p=0.7</button>
+            <button class="q-btn" data-p="0.9">p=0.9</button>
+          </div>
+        </div>
+
+        <div class="control-group">
+          <div class="control-label">
+            <!-- a = 범위 반폭 (단위: 문제 수) -->
+            <span class="control-name">범위 반폭 <i>a</i></span>
+            <span class="control-value" id="val-a">5</span>
+          </div>
+          <input type="range" id="slider-a" min="1" max="15" step="1" value="5" />
+          <div class="q-btn-group" id="a-btns">
+            <button class="q-btn" data-a="3">a=3</button>
+            <button class="q-btn active" data-a="5">a=5</button>
+            <button class="q-btn" data-a="8">a=8</button>
+          </div>
+        </div>
+
+        <button class="q-btn reset" id="btn-reset" style="width:100%;margin-top:4px;">초기화</button>
+      </div>
+
+      <!-- ── 오른쪽 영역 ── -->
+      <div class="right-area">
+
+        <!-- 1행: 이항분포 차트 + 현재 결과 -->
+        <div class="top-row">
+
+          <!-- 이항분포 막대그래프 -->
+          <div class="panel">
+            <div class="panel-title">이항분포 막대그래프</div>
+            <canvas id="chart-main" width="600" height="320"></canvas>
+            <div class="legend">
+              <span>
+                <span style="width:13px;height:13px;border-radius:3px;background:#93c5fd;flex-shrink:0;"></span>
+                범위 밖
+              </span>
+              <span>
+                <span style="width:13px;height:13px;border-radius:3px;background:#1d4ed8;flex-shrink:0;"></span>
+                범위 안
+              </span>
+              <span>
+                <span style="display:inline-block;width:18px;border-top:2px solid #dc2626;margin-bottom:1px;flex-shrink:0;"></span>
+                평균 m (실선)
+              </span>
+              <span>
+                <span style="display:inline-block;width:18px;border-top:2px dashed #f59e0b;margin-bottom:1px;flex-shrink:0;"></span>
+                경계 m±a (점선, 연속값)
+              </span>
+            </div>
+            <p style="font-size:11px;color:#9ca3af;margin:6px 0 0;line-height:1.4;">
+              ※ 점선 경계(m ± a)는 실수값, 파란 막대는 그것을 올림/내림해 얻은 정수 범위
+            </p>
+          </div>
+
+          <!-- 현재 결과 -->
+          <div class="panel">
+            <div class="panel-title">현재 결과</div>
+            <div class="result-grid">
+              <div class="result-row">
+                <div class="result-label">분포</div>
+                <div class="result-value" id="res-dist">X ~ B(40, 0.50)</div>
+              </div>
+              <div class="result-row">
+                <div class="result-label">평균 m = np</div>
+                <div class="result-value" id="res-mean">20.00</div>
+              </div>
+              <div class="result-row">
+                <div class="result-label">표준편차 σ = √(np(1−p))</div>
+                <div class="result-value" id="res-sigma">3.162</div>
+              </div>
+              <div class="result-row">
+                <div class="result-label">범위 m ± a (점선)</div>
+                <div class="result-value sm" id="res-bounds">15.00 ~ 25.00</div>
+              </div>
+              <div class="result-row">
+                <div class="result-label">실제 정수 범위 (올림/내림)</div>
+                <div class="result-value" id="res-range">15 ≤ X ≤ 25</div>
+              </div>
+              <div class="result-row">
+                <div class="result-label">범위 안 확률 P(하한 ≤ X ≤ 상한)</div>
+                <div class="result-prob" id="res-prob">—</div>
+              </div>
+            </div>
+            <div class="interp-box" id="interp-box">—</div>
+          </div>
+        </div>
+
+        <!-- 2행: p(1-p) 보조 그래프 + p별 비교 표 -->
+        <div class="bottom-row">
+
+          <!-- p(1-p) 보조 그래프 -->
+          <div class="panel">
+            <div class="panel-title">p(1−p) — σ 크면 확률 낮아짐</div>
+            <canvas id="chart-aux" width="300" height="200"></canvas>
+          </div>
+
+          <!-- p별 비교 표 -->
+          <div class="panel">
+            <div class="panel-title">
+              p별 비교 표
+              <span class="table-subtitle">
+                (n = <span id="tbl-n">40</span>, a = <span id="tbl-a">5</span> 기준)
+              </span>
+            </div>
+            <div class="table-scroll">
+              <table>
+                <thead>
+                  <tr>
+                    <th>p</th>
+                    <th>평균 m</th>
+                    <th>표준편차 σ</th>
+                    <th>a/σ</th>
+                    <th>정수 범위</th>
+                    <th>범위 안 확률</th>
+                  </tr>
+                </thead>
+                <tbody id="table-body"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /right-area -->
+    </div><!-- /app-outer -->
+
+    <!-- ── 산술기하 부등식 연결 ── -->
+    <div class="amgm-box">
+      <h3>왜 p = 1/2일 때 고정 범위 확률이 가장 낮을까?</h3>
+      <p>
+        산술기하 부등식에 의해 <span class="me">p(1−p) ≤ 1/4</span>,
+        등호는 <span class="me">p = 1/2</span>일 때 성립한다.
+        따라서 <span class="me">σ = √(np(1−p))</span>는 p = 1/2에서 최대이다.
+      </p>
+      <p>
+        범위 폭 <span class="me">2a</span>가 고정되면, σ가 클수록 분포가 더 넓게 퍼진다.
+        넓게 퍼진 분포에서 같은 너비의 범위가 차지하는 비율, 즉 <span class="me">a/σ</span>가 작아진다.
+        a/σ가 작을수록 범위 안 확률이 낮다.
+      </p>
+      <p>
+        결론: p = 1/2에서 σ 최대 → a/σ 최소 → <span class="me">같은 범위 폭에서 확률이 가장 낮다</span>.
+        비교 표의 "범위 안 확률" 열에서 p = 0.5 부근이 골짜기를 이루는 이유이다.
+      </p>
+    </div>
+
+  </main>
+
+  <script>
+  (() => {
+    'use strict';
+
+    // ── 상태 ──
+    const state = { n: 40, p: 0.50, a: 5 };
+
+    // ── DOM ──
+    const sliderN = document.getElementById('slider-n');
+    const sliderP = document.getElementById('slider-p');
+    const sliderA = document.getElementById('slider-a');
+    const valN    = document.getElementById('val-n');
+    const valP    = document.getElementById('val-p');
+    const valA    = document.getElementById('val-a');
+    const hdrN    = document.getElementById('hdr-n');
+    const hdrP    = document.getElementById('hdr-p');
+    const resDist   = document.getElementById('res-dist');
+    const resMean   = document.getElementById('res-mean');
+    const resSigma  = document.getElementById('res-sigma');
+    const resBounds = document.getElementById('res-bounds');
+    const resRange  = document.getElementById('res-range');
+    const resProb   = document.getElementById('res-prob');
+    const interpBox = document.getElementById('interp-box');
+    const tblN      = document.getElementById('tbl-n');
+    const tblA      = document.getElementById('tbl-a');
+    const tableBody = document.getElementById('table-body');
+    const canvasMain = document.getElementById('chart-main');
+    const canvasAux  = document.getElementById('chart-aux');
+
+    // ── 수학 ──
+
+    // 재귀 방식 PMF — 오버플로 방지
+    function calcPMF(n, p) {
+      const pmf = new Array(n + 1).fill(0);
+      if (p < 1e-9)     { pmf[0] = 1; return pmf; }
+      if (p > 1 - 1e-9) { pmf[n] = 1; return pmf; }
+      pmf[0] = Math.pow(1 - p, n);
+      const r = p / (1 - p);
+      for (let k = 0; k < n; k++) {
+        pmf[k + 1] = pmf[k] * ((n - k) / (k + 1)) * r;
+      }
+      return pmf;
+    }
+
+    // 범위: m ± a (고정 폭, σ와 무관)
+    function computeRange(n, p, a) {
+      const m     = n * p;
+      const sigma = Math.sqrt(n * p * (1 - p));
+      const lo    = Math.max(0, Math.ceil(m  - a));
+      const hi    = Math.min(n, Math.floor(m + a));
+      return { m, sigma, lo, hi,
+               boundLo: m - a,
+               boundHi: m + a };
+    }
+
+    function sumProb(pmf, lo, hi) {
+      let s = 0;
+      for (let k = lo; k <= hi; k++) s += pmf[k];
+      return s;
+    }
+
+    // ── 결과 패널 ──
+    function updateResults(pmf, range) {
+      const { n, p, a } = state;
+      const { m, sigma, lo, hi, boundLo, boundHi } = range;
+      const prob = sumProb(pmf, lo, hi);
+
+      hdrN.textContent     = n;
+      hdrP.textContent     = p.toFixed(2);
+      resDist.textContent  = `X ~ B(${n}, ${p.toFixed(2)})`;
+      resMean.textContent  = m.toFixed(2);
+      resSigma.textContent = sigma.toFixed(3);
+      resBounds.textContent = `${boundLo.toFixed(2)} ~ ${boundHi.toFixed(2)}`;
+      resRange.textContent  = (lo <= hi) ? `${lo} ≤ X ≤ ${hi}` : '(없음)';
+      resProb.textContent   = (lo <= hi) ? `${(prob * 100).toFixed(1)}%` : '0%';
+
+      // a/σ 비율: 범위가 몇 표준편차에 해당하는지
+      const aSigmaRatio = (sigma > 0.01) ? (a / sigma) : Infinity;
+      const ratioStr = isFinite(aSigmaRatio) ? aSigmaRatio.toFixed(2) : '∞';
+
+      // p(1-p)/0.25 비율로 퍼짐 설명
+      const pq = p * (1 - p);
+      const spreadRatio = pq / 0.25;
+      let spreadDesc;
+      if (spreadRatio >= 0.90) {
+        spreadDesc = 'p가 1/2에 가까워 <b>σ 최대 → 같은 범위에서 확률 최소</b>입니다.';
+      } else if (spreadRatio >= 0.60) {
+        spreadDesc = `p(1−p) = ${pq.toFixed(3)}으로 최대(0.25)의 ${(spreadRatio * 100).toFixed(0)}% 수준입니다.`;
+      } else {
+        spreadDesc = `p가 0 또는 1에 가까워 <b>σ 작음 → 좁은 분포 → 같은 범위에서 확률 높음</b>입니다.`;
+      }
+
+      interpBox.innerHTML =
+        `범위 [${boundLo.toFixed(2)}, ${boundHi.toFixed(2)}] → 정수 범위 [${lo <= hi ? `${lo}, ${hi}` : '없음'}]<br>` +
+        `σ = ${sigma.toFixed(3)}, &nbsp;a/σ = ${ratioStr} (범위가 σ의 ${ratioStr}배)<br>` +
+        spreadDesc;
+    }
+
+    // ── 비교 표 ──
+    const P_VALUES = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9];
+
+    function updateTable() {
+      const { n, a, p: curP } = state;
+      tblN.textContent = n;
+      tblA.textContent = a;
+
+      // 가장 가까운 행 하나만 강조
+      const closestP = P_VALUES.reduce((acc, pv) =>
+        Math.abs(pv - curP) < Math.abs(acc - curP) ? pv : acc
+      );
+
+      const rows = P_VALUES.map(pv => {
+        const pmf2 = calcPMF(n, pv);
+        const { m, sigma, lo, hi } = computeRange(n, pv, a);
+        const prob = sumProb(pmf2, lo, hi);
+        // a/σ: 범위가 σ의 몇 배인지 — σ가 크면 작아짐 → 확률 낮아짐
+        const aSigRatio = (sigma > 0.01) ? (a / sigma) : Infinity;
+        const ratioCell = isFinite(aSigRatio) ? aSigRatio.toFixed(2) : '∞';
+        const isHL = pv === closestP;
+        return `<tr class="${isHL ? 'hl' : ''}">
+          <td>${pv.toFixed(1)}</td>
+          <td>${m.toFixed(2)}</td>
+          <td>${sigma.toFixed(3)}</td>
+          <td>${ratioCell}</td>
+          <td>${lo <= hi ? `${lo} ~ ${hi}` : '—'}</td>
+          <td>${lo <= hi ? (prob * 100).toFixed(1) + '%' : '0%'}</td>
+        </tr>`;
+      });
+      tableBody.innerHTML = rows.join('');
+    }
+
+    // ── 이항분포 막대그래프 ──
+    function drawMain(pmf, range) {
+      const { n } = state;
+      const { m, lo, hi, boundLo, boundHi } = range;
+
+      const dpr = window.devicePixelRatio || 1;
+      const W   = canvasMain.clientWidth || 600;
+      const H   = 320;
+      canvasMain.width  = W * dpr;
+      canvasMain.height = H * dpr;
+      const ctx = canvasMain.getContext('2d');
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+      const pad = { top: 20, right: 16, bottom: 40, left: 52 };
+      const cw  = W - pad.left - pad.right;
+      const ch  = H - pad.top  - pad.bottom;
+      ctx.clearRect(0, 0, W, H);
+
+      const maxP   = Math.max(...pmf);
+      const yScale = ch / (maxP * 1.1);
+      const xStep  = cw / (n + 1);
+      const barW   = Math.max(1, xStep * 0.8);
+
+      // 강조 배경
+      if (lo <= hi) {
+        const x1 = pad.left + (lo + 0.5) * xStep - barW / 2 - 2;
+        const x2 = pad.left + (hi + 0.5) * xStep + barW / 2 + 2;
+        ctx.fillStyle = 'rgba(191,219,254,0.30)';
+        ctx.fillRect(x1, pad.top, x2 - x1, ch);
+      }
+
+      // 막대
+      for (let k = 0; k <= n; k++) {
+        const bh = pmf[k] * yScale;
+        const bx = pad.left + (k + 0.5) * xStep - barW / 2;
+        ctx.fillStyle = (k >= lo && k <= hi) ? '#1d4ed8' : '#93c5fd';
+        ctx.fillRect(bx, pad.top + ch - bh, barW, bh);
+      }
+
+      // 축
+      ctx.setLineDash([]);
+      ctx.strokeStyle = '#d1d5db';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(pad.left, pad.top);
+      ctx.lineTo(pad.left, pad.top + ch);
+      ctx.lineTo(pad.left + cw, pad.top + ch);
+      ctx.stroke();
+
+      // y 눈금
+      ctx.fillStyle = '#6b7280';
+      ctx.font = '11px system-ui';
+      ctx.textAlign = 'right';
+      for (let i = 0; i <= 4; i++) {
+        const val = (maxP * 1.1) * i / 4;
+        const y   = pad.top + ch - val * yScale;
+        ctx.fillText(val.toFixed(3), pad.left - 4, y + 4);
+        ctx.strokeStyle = '#e5e7eb';
+        ctx.lineWidth = 0.5;
+        ctx.setLineDash([]);
+        ctx.beginPath();
+        ctx.moveTo(pad.left, y);
+        ctx.lineTo(pad.left + cw, y);
+        ctx.stroke();
+      }
+
+      // x 눈금
+      ctx.fillStyle = '#374151';
+      ctx.textAlign = 'center';
+      ctx.font = '12px system-ui';
+      const xTickStep = Math.max(1, Math.round(n / 12));
+      for (let k = 0; k <= n; k += xTickStep) {
+        ctx.fillText(k, pad.left + (k + 0.5) * xStep, pad.top + ch + 16);
+      }
+      ctx.fillStyle = '#6b7280';
+      ctx.fillText('맞힌 문제 수 k', pad.left + cw / 2, pad.top + ch + 34);
+
+      // 평균선: 실선, 빨강
+      ctx.setLineDash([]);
+      ctx.strokeStyle = '#dc2626';
+      ctx.lineWidth = 2;
+      const mx = pad.left + (m + 0.5) * xStep;
+      ctx.beginPath();
+      ctx.moveTo(mx, pad.top);
+      ctx.lineTo(mx, pad.top + ch);
+      ctx.stroke();
+
+      // 경계선: 점선, 주황 — m ± a 위치
+      ctx.strokeStyle = '#f59e0b';
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([5, 4]);
+      [boundLo, boundHi].forEach(bv => {
+        const bx2 = pad.left + (bv + 0.5) * xStep;
+        ctx.beginPath();
+        ctx.moveTo(bx2, pad.top);
+        ctx.lineTo(bx2, pad.top + ch);
+        ctx.stroke();
+      });
+      ctx.setLineDash([]);
+    }
+
+    // ── p(1-p) 보조 그래프 ──
+    function drawAux() {
+      const { p } = state;
+      const dpr = window.devicePixelRatio || 1;
+      const W   = canvasAux.clientWidth || 300;
+      const H   = 200;
+      canvasAux.width  = W * dpr;
+      canvasAux.height = H * dpr;
+      const ctx = canvasAux.getContext('2d');
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+      const pad = { top: 22, right: 16, bottom: 36, left: 50 };
+      const cw  = W - pad.left - pad.right;
+      const ch  = H - pad.top  - pad.bottom;
+      ctx.clearRect(0, 0, W, H);
+
+      // p(1-p) 곡선
+      ctx.setLineDash([]);
+      ctx.strokeStyle = '#6366f1';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      for (let i = 0; i <= cw; i++) {
+        const pv = 0.01 + (i / cw) * 0.98;
+        const y  = pad.top + ch - (pv * (1 - pv)) / 0.25 * ch;
+        i === 0 ? ctx.moveTo(pad.left + i, y) : ctx.lineTo(pad.left + i, y);
+      }
+      ctx.stroke();
+
+      // p = 1/2 기준선 (점선, 주황)
+      const cx05 = pad.left + ((0.5 - 0.01) / 0.98) * cw;
+      ctx.strokeStyle = '#f59e0b';
+      ctx.lineWidth = 1;
+      ctx.setLineDash([3, 3]);
+      ctx.beginPath();
+      ctx.moveTo(cx05, pad.top);
+      ctx.lineTo(cx05, pad.top + ch);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = '#b45309';
+      ctx.font = 'bold 11px system-ui';
+      ctx.textAlign = 'center';
+      ctx.fillText('p = ½', cx05, pad.top - 5);
+
+      // 현재 p 위치 점 + 좌표
+      const cpx = pad.left + ((p - 0.01) / 0.98) * cw;
+      const cpy = pad.top + ch - (p * (1 - p)) / 0.25 * ch;
+      ctx.fillStyle = '#dc2626';
+      ctx.beginPath();
+      ctx.arc(cpx, cpy, 5, 0, Math.PI * 2);
+      ctx.fill();
+
+      const labelLeft = cpx > pad.left + cw * 0.65;
+      ctx.fillStyle = '#dc2626';
+      ctx.font = 'bold 11px system-ui';
+      ctx.textAlign = labelLeft ? 'right' : 'left';
+      ctx.fillText(
+        `(${p.toFixed(2)}, ${(p*(1-p)).toFixed(3)})`,
+        cpx + (labelLeft ? -9 : 9),
+        cpy - 7
+      );
+
+      // 축
+      ctx.setLineDash([]);
+      ctx.strokeStyle = '#d1d5db';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(pad.left, pad.top);
+      ctx.lineTo(pad.left, pad.top + ch);
+      ctx.lineTo(pad.left + cw, pad.top + ch);
+      ctx.stroke();
+
+      // y 라벨
+      ctx.fillStyle = '#6b7280';
+      ctx.font = '11px system-ui';
+      ctx.textAlign = 'right';
+      ctx.fillText('0.25', pad.left - 4, pad.top + 4);
+      ctx.fillText('0',    pad.left - 4, pad.top + ch + 4);
+
+      // x 라벨
+      ctx.textAlign = 'center';
+      ['0', '0.5', '1'].forEach((lbl, i) => {
+        ctx.fillText(lbl, pad.left + i * cw / 2, pad.top + ch + 14);
+      });
+      ctx.fillText('p', pad.left + cw / 2, pad.top + ch + 30);
+
+      // y축 회전 라벨
+      ctx.save();
+      ctx.translate(11, pad.top + ch / 2);
+      ctx.rotate(-Math.PI / 2);
+      ctx.textAlign = 'center';
+      ctx.fillStyle = '#6b7280';
+      ctx.font = '11px system-ui';
+      ctx.fillText('p(1−p)', 0, 0);
+      ctx.restore();
+    }
+
+    // ── 버튼 동기화 ──
+    function syncBtns() {
+      document.querySelectorAll('#p-btns .q-btn').forEach(btn => {
+        btn.classList.toggle('active', Math.abs(+btn.dataset.p - state.p) < 0.005);
+      });
+      document.querySelectorAll('#a-btns .q-btn').forEach(btn => {
+        btn.classList.toggle('active', +btn.dataset.a === state.a);
+      });
+    }
+
+    // ── 전체 갱신 — PMF 1회 계산 ──
+    function update() {
+      const { n, p, a } = state;
+      valN.textContent = n;
+      valP.textContent = p.toFixed(2);
+      valA.textContent = a;
+      syncBtns();
+
+      const pmf   = calcPMF(n, p);
+      const range = computeRange(n, p, a);
+
+      updateResults(pmf, range);
+      drawMain(pmf, range);
+      updateTable();
+      drawAux();
+    }
+
+    // ── 이벤트 ──
+    sliderN.addEventListener('input', () => { state.n = +sliderN.value; update(); });
+    sliderP.addEventListener('input', () => { state.p = +sliderP.value; update(); });
+    sliderA.addEventListener('input', () => { state.a = +sliderA.value; update(); });
+
+    document.querySelectorAll('#p-btns .q-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        state.p = +btn.dataset.p;
+        sliderP.value = state.p;
+        update();
+      });
+    });
+    document.querySelectorAll('#a-btns .q-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        state.a = +btn.dataset.a;
+        sliderA.value = state.a;
+        update();
+      });
+    });
+    document.getElementById('btn-reset').addEventListener('click', () => {
+      state.n = 40; state.p = 0.50; state.a = 5;
+      sliderN.value = 40; sliderP.value = 0.50; sliderA.value = 5;
+      update();
+    });
+
+    window.addEventListener('resize', () => {
+      const pmf   = calcPMF(state.n, state.p);
+      const range = computeRange(state.n, state.p, state.a);
+      drawMain(pmf, range);
+      drawAux();
+    });
+
+    update();
+  })();
+  </script>
+</body>
+</html>
