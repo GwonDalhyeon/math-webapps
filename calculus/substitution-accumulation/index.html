@@ -4,6 +4,14 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>치환적분: 누적 속도와 가로폭</title>
+  <!-- MathJax: 수식 렌더링 -->
+  <script>
+    MathJax = {
+      tex: { inlineMath: [['\\(', '\\)']], displayMath: [['\\[', '\\]']] },
+      options: { skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre'] }
+    };
+  </script>
+  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
   <style>
     :root {
       --bg: #f6f8fb;
@@ -186,8 +194,25 @@
     canvas {
       display: block;
       width: 100%;
-      height: 560px;
+      height: 720px;
     }
+
+    .canvas-wrap {
+      position: relative;
+    }
+
+    .graph-label {
+      position: absolute;
+      left: 68px;
+      font: 700 14px "Malgun Gothic", sans-serif;
+      color: #17202a;
+      pointer-events: none;
+      white-space: nowrap;
+      z-index: 1;
+    }
+
+    .graph-label-top { top: 14px; }
+    .graph-label-bot { top: 396px; }
 
     .side-panel {
       padding: 16px;
@@ -295,7 +320,7 @@
       }
 
       .formula-card { white-space: normal; }
-      canvas { height: 640px; }
+      canvas { height: 860px; }
     }
   </style>
 </head>
@@ -307,13 +332,13 @@
       <div>
         <h1>치환적분: 같은 함수값, 다른 누적 속도</h1>
         <p class="lead">
-          <span class="math">0 ≤ x ≤ 1</span>에서 <span class="math">f(2x)</span>를 적분하면
-          함수 <span class="math">f</span>의 값은 <span class="math">0 ≤ u ≤ 2</span>를 모두 지나간다.
-          하지만 <span class="math">u</span>의 두 칸이 <span class="math">x</span>의 한 칸에 압축되므로,
-          같은 높이를 더해도 넓이는 절반이 된다.
+          \(0 \le t \le 1\)에서 \(f(at)\)를 적분할 때
+          \(x = at\)로 치환하면 \(t\)가 1씩 움직이는 동안 \(x\)는 \(a\)씩 움직인다.
+          따라서 \(\Delta t = \Delta x / a\)이고,
+          같은 높이의 직사각형 폭이 \(\tfrac{1}{a}\)배로 줄어 넓이도 \(\tfrac{1}{a}\)배가 된다.
         </p>
       </div>
-      <div class="formula-card"><span>u = ax</span>, dx = du / a</div>
+      <div class="formula-card">\(x = at,\quad dt = \dfrac{dx}{a}\)</div>
     </header>
 
     <section class="app-grid">
@@ -322,9 +347,8 @@
           <label>
             함수 선택
             <select id="functionSelect">
-              <option value="wave">완만한 물결형 함수</option>
-              <option value="linear">증가하는 일차함수</option>
-              <option value="curve">휘어진 이차함수</option>
+              <option value="linear">일차함수 &nbsp; f(x) = 0.8 + 0.5x</option>
+              <option value="arch" selected>아치형 &nbsp; f(x) = 0.5 + 1.5 sin²(πx/2)</option>
             </select>
           </label>
           <label>
@@ -341,21 +365,29 @@
           <div class="metric">
             <div class="name">위 그래프 누적</div>
             <div class="value" id="topArea">0.000</div>
-            <div class="note">∫₀ᵘ f(t) dt</div>
+            <div class="note">\(\int_0^x f(x)\,dx\)</div>
           </div>
           <div class="metric">
             <div class="name">아래 그래프 누적</div>
             <div class="value" id="bottomArea">0.000</div>
-            <div class="note">∫₀ˣ f(as) ds</div>
+            <div class="note">\(\int_0^t f(at)\,dt\)</div>
           </div>
           <div class="metric">
-            <div class="name">관계</div>
+            <div class="name">비율</div>
             <div class="value" id="ratioText">아래 = 위 / 2</div>
-            <div class="note">같은 높이, 가로폭만 1/a</div>
+            <div class="note">폭 \(\Delta t = \Delta x / a\)</div>
           </div>
         </div>
 
-        <canvas id="graphCanvas" aria-label="치환적분에서 함수값 누적 속도와 가로폭 변화를 비교하는 시각화"></canvas>
+        <div class="canvas-wrap">
+          <canvas id="graphCanvas" aria-label="치환적분에서 같은 스케일로 비교하는 시각화"></canvas>
+          <div class="graph-label graph-label-top">
+            위 그래프&ensp;<i>x</i>축&ensp;[0,&thinsp;<span id="aTitleDyn">2</span>]&emsp;\(\int_0^x f(x)\,dx\)
+          </div>
+          <div class="graph-label graph-label-bot">
+            아래 그래프&ensp;<i>t</i>축&ensp;[0,&thinsp;1]&emsp;\(\int_0^t f(at)\,dt\)
+          </div>
+        </div>
       </section>
 
       <aside class="side-panel">
@@ -369,10 +401,10 @@
 
         <div class="range-box">
           <div class="range-head">
-            <span>현재 x 위치</span>
-            <span class="range-value" id="xValue">0.65</span>
+            <span>현재 t 위치</span>
+            <span class="range-value" id="tValue">0.65</span>
           </div>
-          <input id="xSlider" type="range" min="0" max="1" step="0.005" value="0.65" />
+          <input id="tSlider" type="range" min="0" max="1" step="0.005" value="0.65" />
         </div>
 
         <div class="range-box">
@@ -387,16 +419,19 @@
           <h2>관찰 포인트</h2>
           <div class="keyline">
             <span class="swatch teal"></span>
-            <p>위쪽은 <span class="math">u</span>축에서 <span class="math">f(u)</span>를 누적한다. 현재 <span class="math">u = ax</span>이다.</p>
+            <p><b>위 그래프</b>: 치환 후 \(\frac{1}{a}\int_0^a f(x)\,dx\). \(x\)축 \([0,\,a]\) 전체 폭 사용.</p>
           </div>
           <div class="keyline">
             <span class="swatch coral"></span>
-            <p>아래쪽은 <span class="math">x</span>축에서 <span class="math">f(ax)</span>를 누적한다. 같은 함수값을 보지만 가로폭이 줄어든다.</p>
+            <p><b>아래 그래프</b>: 원래 적분 \(\int_0^1 f(at)\,dt\). <b>같은 눈금 스케일</b>이므로 \(t=1\)에서 끝나고 오른쪽은 회색.</p>
           </div>
           <div class="keyline">
             <span class="swatch amber"></span>
-            <p>같은 높이의 직사각형을 비교하면 <span class="math">Δx = Δu / a</span>이므로 넓이도 <span class="math">1/a</span>배가 된다.</p>
+            <p>가운데 패널: 같은 순간의 <b>직사각형 폭 비교</b>. 높이 \(f\)는 같고 폭만 \(\Delta t = \Delta x / a\).</p>
           </div>
+          <p style="font-size:13px; color: var(--muted); margin-top: 4px;">
+            \(a=1\)이면 두 그래프 같은 폭. \(a\)를 키우면 아래 그래프가 눈에 띄게 좁아진다.
+          </p>
         </div>
       </aside>
     </section>
@@ -406,10 +441,10 @@
       <p>먼저 관찰하고, 식은 나중에 정리하도록 구성한 문항이다.</p>
       <div class="problem-grid">
         <article class="problem">
-          <strong>1. 같은 값을 지나가는데 왜 넓이가 다를까?</strong>
+          <strong>1. 같은 함수값을 지나가는데 왜 넓이가 다를까?</strong>
           <ol>
-            <li><span class="math">a = 2</span>로 두고 위쪽 누적값과 아래쪽 누적값을 비교하시오.</li>
-            <li>아래쪽 넓이가 위쪽 넓이의 몇 배인지 쓰시오.</li>
+            <li>\(a = 2\)로 두고, 아래 그래프가 전체 폭의 어느 비율까지 채워지는지 확인하시오.</li>
+            <li>아래 그래프의 누적값이 위 그래프의 몇 배인지 쓰시오.</li>
             <li>그 이유를 "함수값의 높이"와 "가로폭"이라는 말을 사용하여 설명하시오.</li>
           </ol>
         </article>
@@ -417,27 +452,27 @@
         <article class="problem">
           <strong>2. 직사각형 한 칸으로 설명하기</strong>
           <ol>
-            <li>위쪽 그래프의 한 직사각형 폭을 <span class="math">Δu</span>라고 하자.</li>
-            <li>같은 함수값에 대응하는 아래쪽 직사각형의 폭 <span class="math">Δx</span>를 구하시오.</li>
-            <li>두 직사각형의 넓이 비를 설명하시오.</li>
+            <li>가운데 비교 패널에서 두 직사각형의 높이가 같음을 확인하시오.</li>
+            <li>위쪽 직사각형의 폭을 \(\Delta x\)라 할 때, 아래쪽 폭 \(\Delta t\)를 \(\Delta x\)와 \(a\)로 나타내시오.</li>
+            <li>두 직사각형의 넓이 비를 \(a\)를 사용하여 나타내시오.</li>
           </ol>
         </article>
 
         <article class="problem">
-          <strong>3. 계산으로 확인하기</strong>
+          <strong>3. 계산으로 확인하기 — 일차함수 선택</strong>
           <ol>
-            <li><span class="math">f(t) = t + 1</span>일 때 <span class="math">∫₀¹ f(2x) dx</span>를 구하시오.</li>
-            <li><span class="math">∫₀² f(t) dt</span>를 구하시오.</li>
-            <li>두 값의 관계가 웹앱에서 본 결과와 일치하는지 확인하시오.</li>
+            <li>\(f(x) = 0.8 + 0.5x\)일 때 \(\displaystyle\int_0^1 f(2t)\,dt\)를 구하시오.</li>
+            <li>\(\displaystyle\int_0^2 f(x)\,dx\)를 구하시오.</li>
+            <li>두 값의 관계가 웹앱에서 본 비율과 일치하는지 확인하시오.</li>
           </ol>
         </article>
 
         <article class="problem">
           <strong>4. 일반화하기</strong>
           <ol>
-            <li><span class="math">u = ax</span>이면 <span class="math">du</span>와 <span class="math">dx</span>의 관계를 쓰시오.</li>
-            <li><span class="math">∫₀¹ f(ax) dx</span>를 <span class="math">u</span>에 대한 적분으로 바꾸시오.</li>
-            <li>치환적분에서 왜 <span class="math">1/a</span>가 붙는지 말로 설명하시오.</li>
+            <li>\(x = at\)로 놓으면 \(dx\)와 \(dt\)의 관계를 쓰시오.</li>
+            <li>\(\displaystyle\int_0^1 f(at)\,dt\)를 \(x\)에 대한 적분으로 바꾸시오.</li>
+            <li>치환적분에서 왜 \(\dfrac{1}{a}\)가 붙는지 말로 설명하시오.</li>
           </ol>
         </article>
       </div>
@@ -446,123 +481,130 @@
 
   <script>
     const canvas = document.getElementById("graphCanvas");
-    const ctx = canvas.getContext("2d");
+    const ctx    = canvas.getContext("2d");
 
     const functionSelect = document.getElementById("functionSelect");
-    const aSlider = document.getElementById("aSlider");
-    const xSlider = document.getElementById("xSlider");
-    const nSlider = document.getElementById("nSlider");
-    const playButton = document.getElementById("playButton");
-    const resetButton = document.getElementById("resetButton");
+    const aSlider        = document.getElementById("aSlider");
+    const tSlider        = document.getElementById("tSlider");   // t: 아래 그래프 변수 [0,1]
+    const nSlider        = document.getElementById("nSlider");
+    const playButton     = document.getElementById("playButton");
+    const resetButton    = document.getElementById("resetButton");
+    const aValue         = document.getElementById("aValue");
+    const tValue         = document.getElementById("tValue");    // 현재 t 표시
+    const nValue         = document.getElementById("nValue");
+    const topAreaEl      = document.getElementById("topArea");
+    const bottomAreaEl   = document.getElementById("bottomArea");
+    const ratioText      = document.getElementById("ratioText");
 
-    const aValue = document.getElementById("aValue");
-    const xValue = document.getElementById("xValue");
-    const nValue = document.getElementById("nValue");
-    const topAreaEl = document.getElementById("topArea");
-    const bottomAreaEl = document.getElementById("bottomArea");
-    const ratioText = document.getElementById("ratioText");
+    let playing = false, rafId = null, lastTime = 0;
 
-    let playing = false;
-    let rafId = null;
-    let lastTime = 0;
+    // ── 수학 함수 ──────────────────────────────────────────────
 
-    function f(u) {
-      const kind = functionSelect.value;
-      if (kind === "linear") return 0.65 + 0.5 * u;
-      if (kind === "curve") return 0.45 + 0.2 * u * u + 0.2 * u;
-      return 1.2 + 0.42 * Math.sin(1.6 * u) + 0.16 * Math.cos(3.1 * u);
+    function f(v) {
+      if (functionSelect.value === "linear") return 0.8 + 0.5 * v;
+      // 아치형: f(v) = 0.5 + 1.5·sin²(πv/2), 주기 = 2
+      // a=2일 때 위 그래프에 아치 1개가 정확히 들어맞고
+      // 아래 그래프는 같은 아치가 절반 폭으로 압축되어 나타남
+      const s = Math.sin(Math.PI * v / 2);
+      return 0.5 + 1.5 * s * s;
     }
 
     function integrate(fn, start, end, steps = 1200) {
       if (end <= start) return 0;
       const h = (end - start) / steps;
       let sum = 0.5 * (fn(start) + fn(end));
-      for (let i = 1; i < steps; i += 1) {
-        sum += fn(start + i * h);
-      }
+      for (let i = 1; i < steps; i++) sum += fn(start + i * h);
       return sum * h;
     }
 
     function maxY(a) {
-      let maxValue = 1;
-      for (let i = 0; i <= 500; i += 1) {
-        maxValue = Math.max(maxValue, f((a * i) / 500));
-      }
-      return maxValue * 1.22;
+      let m = 1;
+      for (let i = 0; i <= 500; i++) m = Math.max(m, f((a * i) / 500));
+      return m * 1.22;
     }
+
+    // ── 캔버스 설정 ────────────────────────────────────────────
 
     function setupCanvas() {
       const ratio = window.devicePixelRatio || 1;
-      const rect = canvas.getBoundingClientRect();
-      canvas.width = Math.round(rect.width * ratio);
+      const rect  = canvas.getBoundingClientRect();
+      canvas.width  = Math.round(rect.width  * ratio);
       canvas.height = Math.round(rect.height * ratio);
       ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
     }
 
-    function drawAxes(plot, label) {
+    // ── 공통 그리기 도우미 ─────────────────────────────────────
+
+    // xFn: 도메인 값 → 픽셀 x
+    // yFn: 도메인 값 → 함수값 (높이 계산용)
+    function shade(plot, from, to, yMax, xFn, yFn, fill) {
+      if (to <= from) return;
+      ctx.save();
+      ctx.fillStyle = fill;
+      ctx.beginPath();
+      ctx.moveTo(xFn(from), plot.bottom);
+      for (let i = 0; i <= 200; i++) {
+        const v = from + (to - from) * i / 200;
+        ctx.lineTo(xFn(v), plot.bottom - (yFn(v) / yMax) * plot.height);
+      }
+      ctx.lineTo(xFn(to), plot.bottom);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+    }
+
+    function drawCurve(plot, from, to, yMax, xFn, yFn, color) {
+      ctx.save();
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      for (let i = 0; i <= 300; i++) {
+        const v  = from + (to - from) * i / 300;
+        const px = xFn(v);
+        const py = plot.bottom - (yFn(v) / yMax) * plot.height;
+        i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
+      }
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    function drawRects(plot, n, progress, from, to, yMax, xFn, yFn, stroke) {
+      const active = Math.ceil(n * progress);
+      const step   = (to - from) / n;
+      ctx.save();
+      ctx.strokeStyle = stroke;
+      ctx.lineWidth = 1;
+      for (let i = 0; i < active; i++) {
+        const mid = from + (i + 0.5) * step;
+        const x1  = xFn(from + i * step);
+        const x2  = xFn(from + (i + 1) * step);
+        const y   = plot.bottom - (yFn(mid) / yMax) * plot.height;
+        ctx.strokeRect(x1, y, x2 - x1, plot.bottom - y);
+      }
+      ctx.restore();
+    }
+
+    function drawAxes(plot, xLabel) {
+      ctx.save();
       ctx.strokeStyle = "#9aa8b6";
       ctx.lineWidth = 1;
       ctx.beginPath();
       ctx.moveTo(plot.left, plot.bottom);
-      ctx.lineTo(plot.right, plot.bottom);
+      ctx.lineTo(plot.right + 10, plot.bottom);
       ctx.moveTo(plot.left, plot.top);
       ctx.lineTo(plot.left, plot.bottom);
       ctx.stroke();
-
       ctx.fillStyle = "#5d6d7e";
       ctx.font = "12px Malgun Gothic, sans-serif";
       ctx.fillText("0", plot.left - 14, plot.bottom + 16);
-      ctx.fillText(label, plot.right - 28, plot.bottom + 20);
+      ctx.fillText(xLabel, plot.right + 14, plot.bottom + 5);
+      ctx.restore();
     }
 
-    function shade(plot, from, to, yMax, transformX, fillStyle) {
-      if (to <= from) return;
-      ctx.fillStyle = fillStyle;
-      ctx.beginPath();
-      ctx.moveTo(transformX(from), plot.bottom);
-      for (let i = 0; i <= 180; i += 1) {
-        const value = from + ((to - from) * i) / 180;
-        ctx.lineTo(transformX(value), plot.bottom - (f(value) / yMax) * plot.height);
-      }
-      ctx.lineTo(transformX(to), plot.bottom);
-      ctx.closePath();
-      ctx.fill();
-    }
-
-    function drawCurve(plot, domainEnd, yMax, transformX, color) {
-      ctx.strokeStyle = color;
-      ctx.lineWidth = 2.5;
-      ctx.beginPath();
-      for (let i = 0; i <= 320; i += 1) {
-        const value = (domainEnd * i) / 320;
-        const px = transformX(value);
-        const py = plot.bottom - (f(value) / yMax) * plot.height;
-        if (i === 0) ctx.moveTo(px, py);
-        else ctx.lineTo(px, py);
-      }
-      ctx.stroke();
-    }
-
-    function drawRectangles(plot, count, progress, domainEnd, yMax, transformX, strokeStyle) {
-      const active = Math.ceil(count * progress);
-      const step = domainEnd / count;
-      ctx.strokeStyle = strokeStyle;
-      ctx.lineWidth = 1;
-      for (let i = 0; i < active; i += 1) {
-        const left = i * step;
-        const mid = left + step / 2;
-        const right = (i + 1) * step;
-        const x1 = transformX(left);
-        const x2 = transformX(right);
-        const y = plot.bottom - (f(mid) / yMax) * plot.height;
-        ctx.strokeRect(x1, y, x2 - x1, plot.bottom - y);
-      }
-    }
-
-    function drawMarker(plot, value, yMax, transformX, label, color) {
-      const px = transformX(value);
-      const py = plot.bottom - (f(value) / yMax) * plot.height;
-
+    function drawMarker(plot, value, yMax, xFn, yFn, label, color) {
+      const px = xFn(value);
+      const py = plot.bottom - (yFn(value) / yMax) * plot.height;
+      ctx.save();
       ctx.strokeStyle = color;
       ctx.lineWidth = 1.5;
       ctx.setLineDash([5, 5]);
@@ -571,109 +613,362 @@
       ctx.lineTo(px, plot.bottom);
       ctx.stroke();
       ctx.setLineDash([]);
-
       ctx.fillStyle = color;
       ctx.beginPath();
       ctx.arc(px, py, 5, 0, Math.PI * 2);
       ctx.fill();
-
       ctx.fillStyle = "#17202a";
       ctx.font = "13px Malgun Gothic, sans-serif";
-      ctx.fillText(label, Math.min(px + 8, plot.right - 130), Math.max(plot.top + 18, py - 10));
+      // 오른쪽 경계 넘침 방지
+      const lx = Math.min(px + 8, plot.right - 110);
+      const ly = Math.max(plot.top + 18, py - 10);
+      ctx.fillText(label, lx, ly);
+      ctx.restore();
     }
 
-    function drawArrow(x1, y1, x2, y2, text) {
-      ctx.strokeStyle = "#f4a261";
-      ctx.fillStyle = "#f4a261";
-      ctx.lineWidth = 2;
+    // ── x ↔ t 대응 눈금자 ─────────────────────────────────────
+    // x: 위 그래프 변수 [0, a]  |  t: 아래 그래프 변수 [0, 1]
+    // 두 눈금자는 같은 픽셀 스케일로 그려 길이 차이가 압축을 보여줌
+
+    function drawRuler(left, right, topY, botY, a, tNow) {
+      const xNow  = a * tNow;          // 현재 x = a·t
+      const W     = right - left - 16;
+      const rLeft = left + 8;
+      const xRY   = topY + 34;         // x 눈금자 y 위치 (위, teal)
+      const tRY   = topY + 78;         // t 눈금자 y 위치 (아래, coral)
+
+      ctx.save();
+
+      // 제목
+      ctx.fillStyle = "#17202a";
+      ctx.font = "700 13px Malgun Gothic, sans-serif";
+      ctx.fillText("x ↔ t 대응 눈금 (같은 픽셀 스케일)", rLeft, topY + 14);
+
+      // ── x 눈금자 (전체 폭, teal) ──
+      ctx.strokeStyle = "#0f766e";
+      ctx.lineWidth = 2.5;
       ctx.beginPath();
-      ctx.moveTo(x1, y1);
-      ctx.lineTo(x2, y2);
+      ctx.moveTo(rLeft, xRY);
+      ctx.lineTo(rLeft + W, xRY);
       ctx.stroke();
 
-      const angle = Math.atan2(y2 - y1, x2 - x1);
-      ctx.beginPath();
-      ctx.moveTo(x2, y2);
-      ctx.lineTo(x2 - 10 * Math.cos(angle - Math.PI / 6), y2 - 10 * Math.sin(angle - Math.PI / 6));
-      ctx.lineTo(x2 - 10 * Math.cos(angle + Math.PI / 6), y2 - 10 * Math.sin(angle + Math.PI / 6));
-      ctx.closePath();
-      ctx.fill();
+      ctx.fillStyle = "#0f766e";
+      ctx.font = "700 13px Malgun Gothic, sans-serif";
+      ctx.fillText("x", rLeft - 16, xRY + 5);
 
-      ctx.font = "13px Malgun Gothic, sans-serif";
-      ctx.fillText(text, (x1 + x2) / 2 + 8, (y1 + y2) / 2 - 8);
+      // x 눈금 (0, 1, …, a)
+      ctx.font = "12px Malgun Gothic, sans-serif";
+      for (let xi = 0; xi <= Math.ceil(a); xi++) {
+        if (xi > a + 0.01) break;
+        const px = rLeft + (Math.min(xi, a) / a) * W;
+        ctx.save();
+        ctx.strokeStyle = "#0f766e"; ctx.lineWidth = 1.5;
+        ctx.beginPath(); ctx.moveTo(px, xRY - 6); ctx.lineTo(px, xRY + 6); ctx.stroke();
+        ctx.restore();
+        ctx.fillStyle = "#0f766e";
+        ctx.fillText(xi.toString(), px - 4, xRY + 20);
+      }
+
+      // x 현재 위치 마커
+      const xPx = rLeft + (xNow / a) * W;
+      ctx.fillStyle = "#0f766e";
+      ctx.beginPath(); ctx.arc(xPx, xRY, 5, 0, Math.PI * 2); ctx.fill();
+
+      // ── t 눈금자 (1/a 폭, coral) ──
+      const tRulerEnd = rLeft + W / a;
+
+      ctx.strokeStyle = "#e76f51";
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.moveTo(rLeft, tRY);
+      ctx.lineTo(tRulerEnd, tRY);
+      ctx.stroke();
+
+      // 점선 연장 (t=1 이후 – 실제로는 적분 없는 영역)
+      if (tRulerEnd < rLeft + W - 4) {
+        ctx.save();
+        ctx.strokeStyle = "#d0d8e4"; ctx.lineWidth = 1.5; ctx.setLineDash([4, 4]);
+        ctx.beginPath(); ctx.moveTo(tRulerEnd, tRY); ctx.lineTo(rLeft + W, tRY); ctx.stroke();
+        ctx.setLineDash([]); ctx.restore();
+      }
+
+      ctx.fillStyle = "#e76f51";
+      ctx.font = "700 13px Malgun Gothic, sans-serif";
+      ctx.fillText("t", rLeft - 16, tRY + 5);
+
+      // t 눈금 (0, 0.5, 1)
+      ctx.font = "12px Malgun Gothic, sans-serif";
+      [0, 0.5, 1].forEach(tv => {
+        const px = rLeft + (tv / a) * W;
+        ctx.save();
+        ctx.strokeStyle = "#e76f51"; ctx.lineWidth = 1.5;
+        ctx.beginPath(); ctx.moveTo(px, tRY - 6); ctx.lineTo(px, tRY + 6); ctx.stroke();
+        ctx.restore();
+        ctx.fillStyle = "#e76f51";
+        ctx.fillText(tv.toString(), px - 4, tRY + 20);
+      });
+
+      // t 현재 위치 마커
+      const tPx = rLeft + (tNow / a) * W;
+      ctx.fillStyle = "#e76f51";
+      ctx.beginPath(); ctx.arc(tPx, tRY, 5, 0, Math.PI * 2); ctx.fill();
+
+      // 대응 연결선: 현재 t ↔ 현재 x (같은 시각, 다른 픽셀 위치)
+      ctx.save();
+      ctx.strokeStyle = "#f4a261"; ctx.lineWidth = 1.5; ctx.setLineDash([3, 3]);
+      ctx.beginPath(); ctx.moveTo(tPx, tRY - 8); ctx.lineTo(xPx, xRY + 8); ctx.stroke();
+      ctx.setLineDash([]); ctx.restore();
+
+      // 설명 문구 (섹션 하단 경계 안으로)
+      const noteY = tRY + 36;
+      if (noteY < botY - 4) {
+        ctx.fillStyle = "#5d6d7e";
+        ctx.font = "11px Malgun Gothic, sans-serif";
+        ctx.fillText(
+          `t = ${tNow.toFixed(2)} → x = ${xNow.toFixed(2)}   (x가 ${a.toFixed(1)}배 앞서 있음)`,
+          rLeft, noteY
+        );
+      }
+
+      ctx.restore();
     }
+
+    // ── 직사각형 한 칸 비교 ────────────────────────────────────
+    // 같은 t 위치에서 위(Δx) · 아래(Δt = Δx/a) 직사각형을 나란히 표시
+
+    function drawRectComparison(left, right, topY, botY, a, n, tNow, yMax) {
+      const W    = right - left;
+      const cx   = left + W / 2;
+      const midY = (topY + botY) / 2;
+
+      // 현재 t 위치의 직사각형 인덱스
+      const idx  = Math.min(Math.floor(tNow * n), n - 1);
+      const tMid = (idx + 0.5) / n;
+      const xMid = a * tMid;
+      const fVal = f(xMid);
+
+      const maxW  = Math.min(46, W * 0.30);
+      const dxPx  = maxW;          // Δx 폭 (위 그래프, 넓음)
+      const dtPx  = maxW / a;      // Δt = Δx/a 폭 (아래 그래프, 좁음)
+      const maxH  = 62;
+      const rectH = Math.max(8, (fVal / yMax) * maxH);
+      const gap   = 16;
+      const totalW = dxPx + gap + dtPx;
+      const rx  = cx - totalW / 2;
+
+      // 직사각형 상단 y (섹션 제목 아래, 겹침 방지)
+      const rectTop = Math.max(topY + 28, midY - rectH / 2);
+
+      ctx.save();
+
+      // 제목
+      ctx.fillStyle = "#17202a";
+      ctx.font = "700 13px Malgun Gothic, sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText("한 칸 비교", cx, topY + 14);
+
+      // 같은 높이 기준선 (점선)
+      ctx.strokeStyle = "#ccc"; ctx.lineWidth = 1; ctx.setLineDash([3, 3]);
+      ctx.beginPath();
+      ctx.moveTo(rx - 6, rectTop);
+      ctx.lineTo(rx + totalW + 6, rectTop);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // 높이 라벨 (기준선 바로 위, topY+14와 겹치지 않도록 클램프)
+      const hLabelY = Math.max(topY + 22, rectTop - 5);
+      ctx.fillStyle = "#888";
+      ctx.font = "11px Malgun Gothic, sans-serif";
+      ctx.fillText(`높이 f = ${fVal.toFixed(2)}`, cx, hLabelY);
+
+      // Δx 직사각형 (위 그래프, teal)
+      ctx.fillStyle = "rgba(15, 118, 110, 0.18)";
+      ctx.fillRect(rx, rectTop, dxPx, rectH);
+      ctx.strokeStyle = "#0f766e"; ctx.lineWidth = 2;
+      ctx.strokeRect(rx, rectTop, dxPx, rectH);
+
+      // Δt 직사각형 (아래 그래프, coral)
+      const crx = rx + dxPx + gap;
+      ctx.fillStyle = "rgba(231, 111, 81, 0.18)";
+      ctx.fillRect(crx, rectTop, dtPx, rectH);
+      ctx.strokeStyle = "#e76f51"; ctx.lineWidth = 2;
+      ctx.strokeRect(crx, rectTop, dtPx, rectH);
+
+      // 폭 라벨 (직사각형 바로 아래)
+      const lblY = rectTop + rectH + 15;
+      ctx.font = "12px Malgun Gothic, sans-serif";
+      ctx.fillStyle = "#0f766e";
+      ctx.fillText("Δx", rx + dxPx / 2, lblY);
+      const aStr = a % 1 === 0 ? a.toFixed(0) : a.toFixed(2);
+      ctx.fillStyle = "#e76f51";
+      ctx.fillText(`Δx÷${aStr}`, crx + dtPx / 2, lblY);
+      ctx.fillStyle = "#5d6d7e";
+      ctx.font = "11px Malgun Gothic, sans-serif";
+      ctx.fillText("= Δt", crx + dtPx / 2, lblY + 14);
+
+      // 넓이 비 라벨 (섹션 하단, 라벨과 겹치지 않도록 체크)
+      const ratioY = botY - 10;
+      if (ratioY > lblY + 20) {
+        ctx.fillStyle = "#555";
+        ctx.fillText(`넓이 비  1 : 1/${aStr}`, cx, ratioY);
+      }
+
+      ctx.textAlign = "left";
+      ctx.restore();
+    }
+
+    // ── 메인 그리기 ────────────────────────────────────────────
 
     function draw() {
       setupCanvas();
+      const W = canvas.clientWidth;
+      ctx.clearRect(0, 0, W, canvas.clientHeight);
 
-      const width = canvas.clientWidth;
-      const height = canvas.clientHeight;
-      ctx.clearRect(0, 0, width, height);
-
-      const a = Number(aSlider.value);
-      const xNow = Number(xSlider.value);
-      const n = Number(nSlider.value);
-      const uNow = a * xNow;
+      const a    = Number(aSlider.value);
+      const tNow = Number(tSlider.value);   // t: 아래 그래프, [0, 1]
+      const n    = Number(nSlider.value);
+      const xNow = a * tNow;                // x = a·t: 위 그래프, [0, a]
       const yMax = maxY(a);
 
-      const left = 68;
-      const right = width - 28;
-      const topPlot = { left, right, top: 44, bottom: 238, width: right - left, height: 194 };
-      const bottomPlot = { left, right, top: 318, bottom: 512, width: right - left, height: 194 };
-      const topX = (u) => topPlot.left + (u / a) * topPlot.width;
-      const bottomX = (x) => bottomPlot.left + x * bottomPlot.width;
+      // HTML 제목 레이블 동적 업데이트 (a 값 반영)
+      document.getElementById("aTitleDyn").textContent = a % 1 === 0 ? a.toFixed(0) : a.toFixed(2);
 
-      ctx.fillStyle = "#17202a";
-      ctx.font = "700 16px Malgun Gothic, sans-serif";
-      ctx.fillText(`위: u축에서 f(u)를 0부터 ${a.toFixed(2)}까지 누적`, topPlot.left, 24);
-      ctx.fillText("아래: x축에서 f(ax)를 0부터 1까지 누적", bottomPlot.left, 298);
+      const L  = 68;
+      const R  = W - 28;
+      const PW = R - L;
 
-      drawAxes(topPlot, "u");
-      drawAxes(bottomPlot, "x");
-      shade(topPlot, 0, uNow, yMax, topX, "rgba(15, 118, 110, 0.16)");
-      shade(bottomPlot, 0, xNow, yMax, (x) => bottomX(x), "rgba(231, 111, 81, 0.18)");
-      drawRectangles(topPlot, n, xNow, a, yMax, topX, "rgba(15, 118, 110, 0.55)");
-      drawRectangles(bottomPlot, n, xNow, 1, yMax, (x) => bottomX(x), "rgba(231, 111, 81, 0.58)");
-      drawCurve(topPlot, a, yMax, topX, "#0f766e");
-      drawCurve(bottomPlot, a, yMax, (u) => bottomX(u / a), "#e76f51");
-      drawMarker(topPlot, uNow, yMax, topX, `u = ax = ${uNow.toFixed(2)}`, "#0f766e");
-      drawMarker(bottomPlot, xNow, yMax, (x) => bottomX(x), `x = ${xNow.toFixed(2)}`, "#e76f51");
-      drawArrow(Math.min(topX(uNow), right - 20), topPlot.bottom + 20, bottomX(xNow), bottomPlot.top - 18, `u = ${a.toFixed(2)}x`);
+      const top = { left: L, right: R, top: 48,  bottom: 252, width: PW, height: 204 };
+      const bot = { left: L, right: R, top: 420,  bottom: 624, width: PW, height: 204 };
+      const midT = 262, midB = 392;
+      const midSplit = L + PW * 0.54;
 
-      ctx.fillStyle = "#5d6d7e";
-      ctx.font = "13px Malgun Gothic, sans-serif";
-      ctx.fillText(`같은 높이 f(u), 하지만 Δx = Δu / ${a.toFixed(2)}`, left, height - 18);
+      // 두 그래프 동일 픽셀 스케일
+      // topX: x ∈ [0, a] → 전체 폭   botX: t ∈ [0, 1] → 1/a 폭
+      const topX   = (x) => L + (x / a) * PW;
+      const botX   = (t) => L + (t / a) * PW;
+      const botEnd = botX(1);   // t=1에서 끝나는 픽셀 x 좌표
 
-      const topArea = integrate(f, 0, uNow);
-      const bottomArea = topArea / a;
-      topAreaEl.textContent = topArea.toFixed(3);
+      // ━━ 위 그래프: (1/a)∫₀ᵃ f(x) dx ━━━━━━━━━━━━━━━━━━━━
+
+      drawAxes(top, "x");
+      shade(top, 0, xNow, yMax, topX, f, "rgba(15,118,110,0.15)");
+      drawRects(top, n, tNow, 0, a, yMax, topX, f, "rgba(15,118,110,0.55)");
+      drawCurve(top, 0, a, yMax, topX, f, "#0f766e");
+      if (xNow > 0) drawMarker(top, xNow, yMax, topX, f, `x = ${xNow.toFixed(2)}`, "#0f766e");
+
+      // x축 눈금
+      ctx.save();
+      ctx.fillStyle = "#5d6d7e"; ctx.strokeStyle = "#9aa8b6"; ctx.lineWidth = 1;
+      ctx.font = "12px Malgun Gothic, sans-serif";
+      for (let xi = 0; xi <= a + 0.01; xi++) {
+        if (xi > a + 0.01) break;
+        const px = topX(Math.min(xi, a));
+        ctx.beginPath(); ctx.moveTo(px, top.bottom); ctx.lineTo(px, top.bottom + 5); ctx.stroke();
+        ctx.fillText(xi.toString(), px - 4, top.bottom + 17);
+      }
+      ctx.restore();
+
+      // ━━ 가운데 패널 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+      ctx.save();
+      ctx.strokeStyle = "#e8ecf2"; ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(L, midT); ctx.lineTo(R, midT);
+      ctx.moveTo(L, midB); ctx.lineTo(R, midB);
+      ctx.moveTo(midSplit, midT + 8); ctx.lineTo(midSplit, midB - 8);
+      ctx.stroke();
+      ctx.restore();
+
+      drawRuler(L, midSplit, midT, midB, a, tNow);
+      drawRectComparison(midSplit + 4, R, midT, midB, a, n, tNow, yMax);
+
+      // ━━ 아래 그래프: ∫₀ᵗ f(at) dt ━━━━━━━━━━━━━━━━━━━━━━
+
+      // 회색 구간: t=1 오른쪽은 적분 없음
+      if (botEnd < R - 4) {
+        ctx.save();
+        ctx.fillStyle = "rgba(200,210,224,0.22)";
+        ctx.fillRect(botEnd, bot.top, R - botEnd, bot.height);
+
+        // 유령 곡선: f(x)를 전체 폭으로 연하게 그려 "압축 전" 형태 표시
+        ctx.globalAlpha = 0.14;
+        drawCurve(bot, 0, a, yMax, topX, f, "#444");
+        ctx.globalAlpha = 1;
+
+        // t=1 경계 점선
+        ctx.strokeStyle = "#aab"; ctx.lineWidth = 1.5; ctx.setLineDash([5, 4]);
+        ctx.beginPath(); ctx.moveTo(botEnd, bot.top); ctx.lineTo(botEnd, bot.bottom); ctx.stroke();
+        ctx.setLineDash([]);
+
+        // 회색 구간 라벨 (공간이 충분할 때만)
+        const gzW = R - botEnd;
+        if (gzW > 52) {
+          ctx.globalAlpha = 0.65;
+          ctx.fillStyle = "#8899aa";
+          ctx.font = "11px Malgun Gothic, sans-serif";
+          ctx.fillText("t=1 이후", botEnd + 5, bot.top + 20);
+          ctx.fillText("적분 없음", botEnd + 5, bot.top + 34);
+          if (gzW > 76) ctx.fillText(`x: 1~${a.toFixed(1)}`, botEnd + 5, bot.top + 48);
+        }
+        ctx.restore();
+      }
+
+      drawAxes(bot, "t");
+      shade(bot, 0, tNow, yMax, botX, (t) => f(a * t), "rgba(231,111,81,0.18)");
+      drawRects(bot, n, tNow, 0, 1, yMax, botX, (t) => f(a * t), "rgba(231,111,81,0.58)");
+      drawCurve(bot, 0, 1, yMax, botX, (t) => f(a * t), "#e76f51");
+      if (tNow > 0) drawMarker(bot, tNow, yMax, botX, (t) => f(a * t), `t = ${tNow.toFixed(2)}`, "#e76f51");
+
+      // t축 눈금 + 대응 x값 표기
+      ctx.save();
+      ctx.strokeStyle = "#9aa8b6"; ctx.lineWidth = 1;
+      [0, 0.5, 1].forEach(tv => {
+        const px = botX(tv);
+        ctx.beginPath(); ctx.moveTo(px, bot.bottom); ctx.lineTo(px, bot.bottom + 5); ctx.stroke();
+        ctx.fillStyle = "#5d6d7e";
+        ctx.font = "12px Malgun Gothic, sans-serif";
+        ctx.fillText(tv.toString(), px - 4, bot.bottom + 17);
+        // 대응 x값 (t=0→x=0, t=0.5→x=a/2, t=1→x=a)
+        const xCorr = a * tv;
+        const xLbl  = xCorr === 0 ? "(x=0)" : `(x=${xCorr % 1 === 0 ? xCorr.toFixed(0) : xCorr.toFixed(1)})`;
+        ctx.fillStyle = "#0f766e";
+        ctx.font = "11px Malgun Gothic, sans-serif";
+        // t=1 라벨은 왼쪽 정렬해 경계 밖으로 넘치지 않게
+        ctx.fillText(xLbl, tv === 1 ? px - 30 : px - 14, bot.bottom + 30);
+      });
+      ctx.restore();
+
+      // ━━ 지표 갱신 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+      const topArea    = integrate(f, 0, xNow);
+      const bottomArea = integrate(t => f(a * t), 0, tNow);
+      topAreaEl.textContent    = topArea.toFixed(3);
       bottomAreaEl.textContent = bottomArea.toFixed(3);
-      ratioText.textContent = `아래 = 위 / ${a.toFixed(2)}`;
-      aValue.textContent = a.toFixed(2);
-      xValue.textContent = xNow.toFixed(2);
-      nValue.textContent = n.toString();
+      ratioText.textContent    = `아래 = 위 ÷ ${a.toFixed(2)}`;
+      aValue.textContent       = a.toFixed(2);
+      tValue.textContent       = tNow.toFixed(2);
+      nValue.textContent       = n.toString();
     }
+
+    // ── 애니메이션 ─────────────────────────────────────────────
 
     function animate(time) {
       if (!playing) return;
       if (!lastTime) lastTime = time;
       const dt = (time - lastTime) / 1000;
       lastTime = time;
-
-      let next = Number(xSlider.value) + dt * 0.18;
+      let next = Number(tSlider.value) + dt * 0.18;
       if (next >= 1) {
         next = 1;
         playing = false;
         playButton.textContent = "진행 보기";
       }
-      xSlider.value = String(next);
+      tSlider.value = String(next);
       draw();
       rafId = requestAnimationFrame(animate);
     }
 
-    [functionSelect, aSlider, xSlider, nSlider].forEach((el) => {
-      el.addEventListener("input", draw);
-    });
+    [functionSelect, aSlider, tSlider, nSlider].forEach(el => el.addEventListener("input", draw));
 
     playButton.addEventListener("click", () => {
       playing = !playing;
@@ -686,7 +981,7 @@
     resetButton.addEventListener("click", () => {
       playing = false;
       playButton.textContent = "진행 보기";
-      xSlider.value = "0";
+      tSlider.value = "0";
       draw();
     });
 
