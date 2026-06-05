@@ -1,0 +1,928 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>상자에서 뽑는 표본평균</title>
+  <link rel="stylesheet" href="../../assets/common.css" />
+  <style>
+    .app-wrap { max-width: 1200px; margin: 0 auto; padding: 28px 16px; }
+
+    .app-hero { margin-bottom: 18px; }
+    .app-hero h1 { font-size: clamp(22px, 4vw, 32px); margin: 0 0 6px; }
+    .app-hero p  { font-size: 15px; margin: 3px 0; color: #4b5563; }
+
+    /* ── 조작 패널 ── */
+    .ctrl-panel {
+      background: white; border: 1px solid #e5e7eb; border-radius: 14px;
+      padding: 18px 20px; margin-bottom: 14px;
+      display: grid; grid-template-columns: 1fr 1fr; gap: 18px;
+    }
+    @media (max-width: 640px) { .ctrl-panel { grid-template-columns: 1fr; } }
+
+    .ctrl-group { margin-bottom: 12px; }
+    .ctrl-group:last-child { margin-bottom: 0; }
+    .ctrl-group label { display: block; font-size: 14px; font-weight: 700; margin-bottom: 6px; }
+    .ctrl-group select {
+      width: 100%; padding: 7px 10px; border: 1px solid #d1d5db;
+      border-radius: 8px; font-size: 14px; background: white;
+    }
+    .hint-text { font-size: 12px; color: #6b7280; margin: 5px 0 0; }
+
+    .slider-row { display: flex; align-items: center; gap: 10px; }
+    .slider-row input[type=range] { flex: 1; }
+    .n-big { font-size: 22px; font-weight: 700; color: #2563eb; min-width: 30px; text-align: right; }
+
+    .n-quick { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 7px; }
+    .n-quick button {
+      padding: 3px 10px; border: 1px solid #9ca3af; border-radius: 6px;
+      background: white; font-size: 13px; cursor: pointer;
+    }
+    .n-quick button.active { background: #2563eb; color: white; border-color: #2563eb; }
+
+    .speed-row { display: flex; gap: 6px; margin-top: 6px; }
+    .speed-row button {
+      flex: 1; padding: 5px; border: 1px solid #d1d5db; border-radius: 8px;
+      background: white; font-size: 13px; cursor: pointer;
+    }
+    .speed-row button.active { background: #0891b2; color: white; border-color: #0891b2; }
+
+    .btn-row { display: flex; flex-wrap: wrap; gap: 7px; }
+    .btn {
+      padding: 9px 13px; border: none; border-radius: 10px;
+      font-size: 14px; font-weight: 700; cursor: pointer; min-width: 70px;
+    }
+    .btn:disabled { opacity: 0.38; cursor: default; }
+    .btn:not(:disabled):hover { filter: brightness(1.1); }
+    .btn-blue   { background: #2563eb; color: white; }
+    .btn-violet { background: #7c3aed; color: white; }
+    .btn-orange { background: #ea580c; color: white; }
+    .btn-cyan   { background: #0891b2; color: white; }
+    .btn-amber  { background: #d97706; color: white; }
+    .btn-gray   { background: #6b7280; color: white; }
+
+    .status-strip {
+      display: flex; gap: 14px; flex-wrap: wrap; align-items: center;
+      font-size: 13px; color: #374151;
+      padding: 8px 12px; background: #f8fafc; border-radius: 8px; margin-top: 10px;
+    }
+    .status-strip strong { font-size: 16px; color: #111827; }
+    .state-badge {
+      margin-left: auto; padding: 3px 10px; border-radius: 999px;
+      font-size: 12px; font-weight: 700; background: #e5e7eb; color: #374151;
+    }
+    .state-badge.active  { background: #dcfce7; color: #15803d; }
+    .state-badge.running { background: #dbeafe; color: #1d4ed8; }
+    .state-badge.manual  { background: #fef3c7; color: #92400e; }
+
+    /* ── 메인 흐름 ── */
+    .flow-grid {
+      display: grid;
+      grid-template-columns: 250px 1fr 200px 1fr;
+      gap: 10px;
+      align-items: start;
+      margin-bottom: 14px;
+    }
+    @media (max-width: 960px) {
+      .flow-grid { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 540px) {
+      .flow-grid { grid-template-columns: 1fr; }
+    }
+
+    .flow-arrow {
+      font-size: 22px; color: #9ca3af;
+      display: flex; align-items: flex-start; justify-content: center; padding-top: 52px;
+    }
+    @media (max-width: 960px) { .flow-arrow { display: none; } }
+
+    .panel {
+      background: white; border: 1px solid #e5e7eb;
+      border-top: 3px solid #e5e7eb;
+      border-radius: 14px; padding: 14px;
+    }
+    .panel h3 { font-size: 14px; font-weight: 700; margin: 0 0 10px; }
+
+    .panel-box    { border-top-color: #3b82f6; }
+    .panel-box h3 { color: #2563eb; }
+    .panel-basket    { border-top-color: #7c3aed; }
+    .panel-basket h3 { color: #6d28d9; }
+    .panel-calc    { border-top-color: #ea580c; }
+    .panel-calc h3 { color: #c2410c; }
+    .panel-record    { border-top-color: #16a34a; }
+    .panel-record h3 { color: #15803d; }
+
+    /* ── 상자 ── */
+    .box-grid {
+      display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px;
+    }
+    .ball {
+      aspect-ratio: 1; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px; font-weight: 700; color: white;
+      user-select: none; background: #3b82f6;
+      transition: opacity 0.25s, transform 0.2s, box-shadow 0.2s;
+    }
+    .ball.highlighted {
+      transform: scale(1.22);
+      box-shadow: 0 0 0 3px #fbbf24, 0 0 10px rgba(251,191,36,0.7);
+    }
+    .ball.drawn { opacity: 0.2; }
+
+    .box-footer { font-size: 13px; color: #6b7280; margin-top: 8px; }
+    .box-footer strong { color: #111827; }
+
+    .mu-toggle-row { display: flex; align-items: center; gap: 6px; font-size: 13px; margin-top: 6px; }
+    .mu-toggle-row input { cursor: pointer; }
+
+    /* ── 바구니 ── */
+    .basket-slots {
+      display: flex; flex-wrap: wrap; gap: 5px; min-height: 46px;
+    }
+    .basket-slot {
+      width: 42px; height: 42px; border-radius: 50%;
+      border: 2px dashed #c4b5fd; background: #faf5ff;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px; font-weight: 700; color: #111827;
+    }
+    .basket-slot.filled {
+      background: #7c3aed; color: white; border-style: solid; border-color: #6d28d9;
+      animation: pop-in 0.22s ease;
+    }
+    @keyframes pop-in {
+      0%   { transform: scale(0.4); opacity: 0; }
+      70%  { transform: scale(1.15); }
+      100% { transform: scale(1);   opacity: 1; }
+    }
+
+    .basket-footer { font-size: 13px; color: #374151; margin-top: 8px; line-height: 1.7; }
+    .basket-footer strong { font-size: 15px; color: #111827; }
+    .label-xbar { color: #6d28d9; font-weight: 700; }
+
+    /* ── 계산판 ── */
+    .calc-empty { font-size: 13px; color: #9ca3af; text-align: center; padding: 18px 0; }
+    .calc-body  { font-size: 14px; color: #111827; line-height: 2; }
+    .calc-xbar-big {
+      display: inline-block; font-size: 24px; font-weight: 700; color: #ea580c;
+      padding: 2px 10px; background: #fff7ed; border-radius: 8px;
+      border: 2px solid #fdba74;
+    }
+    .calc-xbar-big.flash { animation: xbar-flash 0.45s ease; }
+    @keyframes xbar-flash {
+      0%,100% { background: #fff7ed; }
+      40%     { background: #ea580c; color: white; transform: scale(1.18); }
+    }
+    .calc-hint { font-size: 12px; color: #9ca3af; margin-top: 6px; }
+
+    /* ── 기록판 ── */
+    .record-canvas { width: 100%; display: block; border-radius: 6px; }
+    .record-footer { font-size: 13px; color: #374151; margin-top: 6px; line-height: 1.7; }
+    .record-footer strong { font-size: 15px; color: #111827; }
+    .rec-diff { font-size: 12px; color: #9ca3af; }
+
+    .recent-wrap { margin-top: 8px; }
+    .recent-title { font-size: 12px; color: #9ca3af; margin-bottom: 3px; }
+    .recent-list { list-style: none; margin: 0; padding: 0; max-height: 110px; overflow-y: auto; }
+    .recent-list li {
+      font-size: 13px; padding: 3px 0; border-bottom: 1px solid #f3f4f6; color: #374151;
+    }
+    .recent-list li.new-entry { color: #16a34a; font-weight: 700; }
+
+    /* ── 해석 ── */
+    .interp {
+      background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 12px;
+      padding: 14px 18px; font-size: 15px; color: #166534; line-height: 1.7;
+    }
+    .interp strong { color: #15803d; }
+  </style>
+</head>
+<body>
+<main class="app-wrap">
+  <a class="back-link" href="../">← 확률과 통계</a>
+
+  <header class="app-hero">
+    <p class="eyebrow">확률과 통계 · 표본평균</p>
+    <h1>상자에서 뽑는 표본평균</h1>
+    <p>상자에서 번호 공을 뽑아 표본을 만들고, 그 표본의 평균이 하나의 값으로 기록되는 과정을 봅니다.</p>
+    <p>한 번의 표본 추출에서 x̄는 하나만 생깁니다.</p>
+  </header>
+
+  <!-- 조작 패널 -->
+  <div class="ctrl-panel">
+    <div>
+      <div class="ctrl-group">
+        <label for="box-select">모집단 상자 선택</label>
+        <select id="box-select">
+          <option value="balanced">균형 잡힌 상자</option>
+          <option value="low">낮은 값이 많은 상자</option>
+          <option value="high">높은 값이 많은 상자</option>
+          <option value="bimodal">양쪽으로 나뉜 상자</option>
+        </select>
+      </div>
+      <div class="ctrl-group">
+        <label>표본 크기 n &nbsp;<span class="n-big" id="n-disp">5</span></label>
+        <div class="slider-row">
+          <input type="range" id="n-slider" min="2" max="10" value="5" />
+        </div>
+        <div class="n-quick">
+          <button class="n-btn" data-n="2">n=2</button>
+          <button class="n-btn" data-n="3">n=3</button>
+          <button class="n-btn active" data-n="5">n=5</button>
+          <button class="n-btn" data-n="8">n=8</button>
+          <button class="n-btn" data-n="10">n=10</button>
+        </div>
+        <p class="hint-text">n은 한 번에 뽑아 표본을 만들 공의 개수입니다.</p>
+      </div>
+    </div>
+
+    <div>
+      <div class="ctrl-group">
+        <label>애니메이션 속도</label>
+        <div class="speed-row">
+          <button class="speed-btn" data-sp="slow">느림</button>
+          <button class="speed-btn active" data-sp="normal">보통</button>
+          <button class="speed-btn" data-sp="fast">빠름</button>
+        </div>
+      </div>
+      <div class="ctrl-group">
+        <label>실행</label>
+        <div class="btn-row">
+          <button class="btn btn-blue"   id="btn-one">표본 1개 뽑기</button>
+          <button class="btn btn-violet" id="btn-manual">천천히 1개씩</button>
+          <button class="btn btn-orange" id="btn-five">5개 연속</button>
+          <button class="btn btn-cyan"   id="btn-auto">자동 반복</button>
+          <button class="btn btn-amber"  id="btn-pause" disabled>일시정지</button>
+          <button class="btn btn-gray"   id="btn-reset">초기화</button>
+        </div>
+      </div>
+      <div class="status-strip">
+        <span>이번 표본: <strong id="st-drawn">0</strong>/<strong id="st-n">5</strong>개</span>
+        <span>기록된 x̄: <strong id="st-m">0</strong>개</span>
+        <span class="state-badge" id="state-badge">대기 중</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 메인 흐름 -->
+  <div class="flow-grid">
+    <!-- ① 상자 -->
+    <div class="panel panel-box">
+      <h3>① 모집단 상자</h3>
+      <div class="box-grid" id="box-grid"></div>
+      <div class="box-footer">
+        공 <strong id="pop-n">30</strong>개
+        &nbsp;|&nbsp;
+        <span id="mu-show">μ = <strong id="mu-val">—</strong></span>
+        <span id="mu-hidden" style="display:none;font-style:italic;color:#9ca3af">μ 숨김</span>
+      </div>
+      <label class="mu-toggle-row">
+        <input type="checkbox" id="mu-chk" checked /> μ 보이기
+      </label>
+    </div>
+
+    <!-- ② 표본 바구니 -->
+    <div class="panel panel-basket">
+      <h3>② 이번 표본 바구니</h3>
+      <div class="basket-slots" id="basket-slots"></div>
+      <div class="basket-footer" id="basket-footer">
+        합계: <strong id="bs-sum">—</strong><br>
+        <span id="bs-avg-label">현재 평균</span>: <strong id="bs-avg">—</strong>
+      </div>
+    </div>
+
+    <!-- ③ 계산판 -->
+    <div class="panel panel-calc">
+      <h3>③ 평균 계산판</h3>
+      <div id="calc-area">
+        <div class="calc-empty">표본이 완성되면<br>계산식이 표시됩니다.</div>
+      </div>
+    </div>
+
+    <!-- ④ 기록판 -->
+    <div class="panel panel-record">
+      <h3>④ 표본평균 기록판</h3>
+      <canvas class="record-canvas" id="record-canvas" width="300" height="160"></canvas>
+      <div class="record-footer">
+        기록된 x̄: <strong id="rec-m">0</strong>개
+        &nbsp;|&nbsp;
+        x̄들의 평균: <strong id="rec-mean">—</strong>
+        <span class="rec-diff" id="rec-diff"></span>
+      </div>
+      <div class="recent-wrap">
+        <div class="recent-title">최근 기록 (최대 10개)</div>
+        <ul class="recent-list" id="recent-list"></ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- 해석 -->
+  <div class="interp" id="interp">
+    상자 안 공들이 모집단입니다. 표본 1개를 뽑으면 공 n개가 바구니에 들어가고, 그 평균 x̄ 하나가 기록됩니다.
+  </div>
+</main>
+
+<script>
+(function () {
+  // ─── 모집단 데이터 ───
+  const POP_DATA = {
+    balanced: {
+      name: '균형 잡힌 상자',
+      values: [60,65,65,70,70,70,75,75,75,75,80,80,80,80,80,85,85,85,85,85,90,90,90,90,95,95,95,100,100,80]
+    },
+    low: {
+      name: '낮은 값이 많은 상자',
+      values: [60,60,60,65,65,65,65,70,70,70,70,75,75,75,75,75,80,80,80,80,85,85,90,90,95,60,65,70,75,80]
+    },
+    high: {
+      name: '높은 값이 많은 상자',
+      values: [75,80,80,85,85,85,85,90,90,90,90,90,90,95,95,95,95,95,100,100,100,100,85,90,95,100,90,85,95,100]
+    },
+    bimodal: {
+      name: '양쪽으로 나뉜 상자',
+      values: [60,60,62,65,65,65,68,70,70,70,70,92,95,95,95,95,98,100,100,100,62,65,70,95,98,100,60,65,100,95]
+    }
+  };
+
+  // ─── 속도 설정 ───
+  const SPEEDS = {
+    slow:   { highlight: 450, draw: 350, calc: 1100, record: 700 },
+    normal: { highlight: 250, draw: 180, calc:  700, record: 450 },
+    fast:   { highlight:  80, draw:  70, calc:  300, record: 200 }
+  };
+
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+  // ─── 상태 ───
+  let n = 5;
+  let speed = 'normal';
+  let showMu = true;
+  let population = [];     // {id, value, drawnThisSample}
+  let mu = 0, popMin = 0, popMax = 0;
+  let currentVals = [];    // 이번 표본에 뽑힌 값들
+  let drawnIds = new Set();
+  let sampleMeans = [];
+  let latestXbar = null;
+  let appState = 'idle';   // idle | drawing | manual | auto
+  let gen = 0;             // 리셋/정지마다 증가, async 중단 판별용
+  let shouldAutoRun = false;
+  let ballInProgress = false; // 공 1개 애니메이션 중 중복 클릭 방지
+
+  // ─── DOM ───
+  const boxSelect   = document.getElementById('box-select');
+  const nSlider     = document.getElementById('n-slider');
+  const nDisp       = document.getElementById('n-disp');
+  const boxGrid     = document.getElementById('box-grid');
+  const basketSlots = document.getElementById('basket-slots');
+  const calcArea    = document.getElementById('calc-area');
+  const recordCanvas = document.getElementById('record-canvas');
+  const recentList  = document.getElementById('recent-list');
+  const interpEl    = document.getElementById('interp');
+
+  const btnOne   = document.getElementById('btn-one');
+  const btnManual= document.getElementById('btn-manual');
+  const btnFive  = document.getElementById('btn-five');
+  const btnAuto  = document.getElementById('btn-auto');
+  const btnPause = document.getElementById('btn-pause');
+  const btnReset = document.getElementById('btn-reset');
+
+  // ─── 모집단 생성 ───
+  function createPopulation(type) {
+    const vals = POP_DATA[type].values;
+    population = vals.map((v, i) => ({ id: `${type}-${i}`, value: v, drawnThisSample: false }));
+    const s = vals.reduce((a, b) => a + b, 0);
+    mu     = s / vals.length;
+    popMin = vals.reduce((a, b) => Math.min(a, b), vals[0]);
+    popMax = vals.reduce((a, b) => Math.max(a, b), vals[0]);
+    document.getElementById('pop-n').textContent = population.length;
+    document.getElementById('mu-val').textContent = mu.toFixed(1);
+  }
+
+  // ─── 상자 렌더링 ───
+  function renderBox() {
+    boxGrid.innerHTML = '';
+    population.forEach(ball => {
+      const el = document.createElement('div');
+      el.className = 'ball' + (ball.drawnThisSample ? ' drawn' : '');
+      el.id = 'ball-' + ball.id;
+      el.textContent = ball.value;
+      boxGrid.appendChild(el);
+    });
+  }
+
+  // ─── 바구니 렌더링 ───
+  function renderBasket() {
+    basketSlots.innerHTML = '';
+    for (let i = 0; i < n; i++) {
+      const slot = document.createElement('div');
+      slot.className = 'basket-slot' + (i < currentVals.length ? ' filled' : '');
+      slot.id = 'slot-' + i;
+      if (i < currentVals.length) slot.textContent = currentVals[i];
+      basketSlots.appendChild(slot);
+    }
+    updateBasketFooter();
+  }
+
+  function updateBasketFooter() {
+    const sum = currentVals.reduce((a, b) => a + b, 0);
+    const avgLabel = document.getElementById('bs-avg-label');
+    const sumEl    = document.getElementById('bs-sum');
+    const avgEl    = document.getElementById('bs-avg');
+    if (currentVals.length === 0) {
+      sumEl.textContent = '—';
+      avgEl.textContent = '—';
+      avgLabel.textContent = '현재 평균';
+      avgLabel.className = '';
+    } else {
+      sumEl.textContent = sum;
+      const avg = sum / currentVals.length;
+      avgEl.textContent = avg.toFixed(1);
+      if (currentVals.length === n) {
+        avgLabel.textContent = '이번 표본평균 x̄';
+        avgLabel.className = 'label-xbar';
+      } else {
+        avgLabel.textContent = '현재 평균';
+        avgLabel.className = '';
+      }
+    }
+  }
+
+  // ─── 계산판 ───
+  function showCalcArea(xbar, sum) {
+    const vals = currentVals;
+    let formula;
+    if (n <= 5) {
+      formula = `(${vals.join(' + ')})`;
+    } else {
+      formula = `(${vals.slice(0, 4).join(' + ')} + … + ${vals[vals.length - 1]})`;
+    }
+    calcArea.innerHTML = `
+      <div class="calc-body">
+        x̄ = ${formula} ÷ ${n}<br>
+        &nbsp;&nbsp;&nbsp;= ${sum} ÷ ${n}<br>
+        &nbsp;&nbsp;&nbsp;= <span class="calc-xbar-big" id="xbar-big">${xbar.toFixed(1)}</span>
+      </div>
+      <p class="calc-hint">이 값 하나가 기록판에 추가됩니다 →</p>`;
+  }
+
+  function clearCalcArea() {
+    calcArea.innerHTML = '<div class="calc-empty">표본이 완성되면<br>계산식이 표시됩니다.</div>';
+  }
+
+  // ─── 상태 & 버튼 ───
+  function setAppState(st) {
+    appState = st;
+    const idle   = st === 'idle';
+    const manual = st === 'manual';
+    const drawing= st === 'drawing';
+    const auto   = st === 'auto';
+
+    btnOne.disabled    = !idle;
+    btnManual.disabled = drawing || auto;
+    btnFive.disabled   = !idle;
+    btnAuto.disabled   = !idle;
+    btnPause.disabled  = !auto;
+
+    const badge = document.getElementById('state-badge');
+    const labels = {
+      idle: '대기 중', drawing: '뽑는 중', manual: '수동 뽑기 중',
+      auto: '자동 반복 중'
+    };
+    badge.textContent = labels[st] || st;
+    badge.className = 'state-badge' + (auto ? ' running' : (manual || drawing ? ' active' : ''));
+  }
+
+  function updateStatus() {
+    document.getElementById('st-drawn').textContent = currentVals.length;
+    document.getElementById('st-n').textContent = n;
+    document.getElementById('st-m').textContent = sampleMeans.length;
+  }
+
+  // ─── 공 하나 뽑기 애니메이션 ───
+  async function drawOneBall(g) {
+    if (gen !== g) return;
+    const sp = SPEEDS[speed];
+    const available = population.filter(b => !b.drawnThisSample);
+    if (available.length === 0) return;
+    const ball = available[Math.floor(Math.random() * available.length)];
+
+    // 강조
+    const ballEl = document.getElementById('ball-' + ball.id);
+    if (ballEl) ballEl.classList.add('highlighted');
+    await sleep(sp.highlight);
+    if (gen !== g) return;
+
+    // 뽑음 처리
+    if (ballEl) { ballEl.classList.remove('highlighted'); ballEl.classList.add('drawn'); }
+    ball.drawnThisSample = true;
+    drawnIds.add(ball.id);
+    currentVals.push(ball.value);
+
+    // 바구니 슬롯 채우기
+    const idx  = currentVals.length - 1;
+    const slot = document.getElementById('slot-' + idx);
+    if (slot) { slot.textContent = ball.value; slot.classList.add('filled'); }
+
+    updateBasketFooter();
+    updateStatus();
+    await sleep(sp.draw);
+  }
+
+  // ─── 표본 완성 후 처리 ───
+  async function finishSample(g) {
+    if (gen !== g) return;
+    const sp  = SPEEDS[speed];
+    const sum = currentVals.reduce((a, b) => a + b, 0);
+    const xbar = +(sum / n).toFixed(10);
+    latestXbar = xbar;
+
+    showCalcArea(xbar, sum);
+    await sleep(sp.calc);
+    if (gen !== g) return;
+
+    // 계산값 플래시
+    const bigEl = document.getElementById('xbar-big');
+    if (bigEl) bigEl.classList.add('flash');
+    await sleep(400);
+    if (gen !== g) return;
+
+    // 기록
+    recordXbar(xbar);
+    drawRecordBoard();
+    await sleep(sp.record);
+    if (gen !== g) return;
+
+    // 복원
+    population.forEach(b => { b.drawnThisSample = false; });
+    drawnIds.clear();
+    currentVals = [];
+    renderBox();
+    renderBasket();
+    updateInterpretation();
+  }
+
+  // ─── 표본 1개 (전체 흐름) ───
+  async function runOneSample(g) {
+    if (gen !== g) return;
+    currentVals = [];
+    drawnIds.clear();
+    population.forEach(b => { b.drawnThisSample = false; });
+    renderBox();
+    renderBasket();
+    clearCalcArea();
+
+    for (let i = 0; i < n; i++) {
+      await drawOneBall(g);
+      if (gen !== g) return;
+    }
+    await finishSample(g);
+  }
+
+  // ─── 버튼: 표본 1개 뽑기 ───
+  btnOne.addEventListener('click', async () => {
+    if (appState !== 'idle') return;
+    const g = gen;
+    setAppState('drawing');
+    await runOneSample(g);
+    if (gen === g) setAppState('idle');
+  });
+
+  // ─── 버튼: 천천히 1개씩 ───
+  btnManual.addEventListener('click', async () => {
+    if (appState === 'drawing' || appState === 'auto') return;
+    if (ballInProgress) return; // 공 애니메이션 중 중복 클릭 차단
+    const g = gen;
+
+    if (appState === 'idle') {
+      // 새 표본 시작
+      currentVals = [];
+      drawnIds.clear();
+      population.forEach(b => { b.drawnThisSample = false; });
+      renderBox();
+      renderBasket();
+      clearCalcArea();
+      setAppState('manual');
+    }
+
+    if (appState !== 'manual') return;
+
+    // 공 1개 뽑기
+    ballInProgress = true;
+    await drawOneBall(g);
+    ballInProgress = false;
+
+    if (gen !== g) return;
+
+    if (currentVals.length >= n) {
+      // 표본 완성 → 처리 후 idle
+      setAppState('drawing');
+      await finishSample(g);
+      if (gen === g) setAppState('idle');
+    }
+    // else: 계속 manual 상태 유지
+  });
+
+  // ─── 버튼: 5개 연속 ───
+  btnFive.addEventListener('click', async () => {
+    if (appState !== 'idle') return;
+    const g = gen;
+    setAppState('drawing');
+    for (let s = 0; s < 5; s++) {
+      if (gen !== g) return;
+      await runOneSample(g);
+    }
+    if (gen === g) setAppState('idle');
+  });
+
+  // ─── 버튼: 자동 반복 ───
+  btnAuto.addEventListener('click', async () => {
+    if (appState !== 'idle' || shouldAutoRun) return;
+    shouldAutoRun = true;
+    const g = gen;
+    setAppState('auto');
+    while (shouldAutoRun && gen === g) {
+      await runOneSample(g);
+      if (gen !== g || !shouldAutoRun) break;
+      await sleep(200);
+    }
+    if (gen === g) setAppState('idle');
+  });
+
+  btnPause.addEventListener('click', () => {
+    shouldAutoRun = false;
+    gen++;               // 진행 중인 runOneSample/drawOneBall 즉시 취소
+    ballInProgress = false;
+    // 진행 중이던 부분 표본 초기화 (sampleMeans는 유지)
+    currentVals = [];
+    drawnIds.clear();
+    population.forEach(b => { b.drawnThisSample = false; });
+    renderBox();
+    renderBasket();
+    clearCalcArea();
+    updateStatus();         // "이번 표본: 0/n개" 갱신
+    updateInterpretation(); // 해석 문구 갱신
+    setAppState('idle');
+  });
+
+  // ─── 초기화 ───
+  btnReset.addEventListener('click', resetAll);
+
+  function resetAll() {
+    gen++;
+    shouldAutoRun = false;
+    ballInProgress = false;
+    currentVals = [];
+    drawnIds.clear();
+    sampleMeans = [];
+    latestXbar = null;
+    population.forEach(b => { b.drawnThisSample = false; });
+    renderBox();
+    renderBasket();
+    clearCalcArea();
+    drawRecordBoard();
+    recentList.innerHTML = '';
+    document.getElementById('rec-m').textContent    = '0';
+    document.getElementById('rec-mean').textContent = '—';
+    document.getElementById('rec-diff').textContent = '';
+    updateStatus();
+    updateInterpretation();
+    setAppState('idle');
+  }
+
+  // ─── n 변경 ───
+  function onNChange() {
+    n = parseInt(nSlider.value);
+    nDisp.textContent = n;
+    document.querySelectorAll('.n-btn').forEach(b =>
+      b.classList.toggle('active', parseInt(b.dataset.n) === n));
+    gen++;
+    shouldAutoRun = false;
+    ballInProgress = false;
+    currentVals = [];
+    drawnIds.clear();
+    sampleMeans = [];
+    latestXbar = null;
+    population.forEach(b => { b.drawnThisSample = false; });
+    renderBox();
+    renderBasket();
+    clearCalcArea();
+    drawRecordBoard();
+    recentList.innerHTML = '';
+    document.getElementById('rec-m').textContent    = '0';
+    document.getElementById('rec-mean').textContent = '—';
+    document.getElementById('rec-diff').textContent = '';
+    updateStatus();
+    updateInterpretation();
+    setAppState('idle');
+  }
+
+  nSlider.addEventListener('input', onNChange);
+  document.querySelectorAll('.n-btn').forEach(b => b.addEventListener('click', () => {
+    nSlider.value = b.dataset.n;
+    onNChange();
+  }));
+
+  // ─── 속도 ───
+  document.querySelectorAll('.speed-btn').forEach(b => b.addEventListener('click', () => {
+    speed = b.dataset.sp;
+    document.querySelectorAll('.speed-btn').forEach(x =>
+      x.classList.toggle('active', x === b));
+  }));
+
+  // ─── 모집단 변경 ───
+  boxSelect.addEventListener('change', () => {
+    gen++;
+    shouldAutoRun = false;
+    ballInProgress = false;
+    currentVals = [];
+    drawnIds.clear();
+    sampleMeans = [];
+    latestXbar = null;
+    createPopulation(boxSelect.value);
+    renderBox();
+    renderBasket();
+    clearCalcArea();
+    drawRecordBoard();
+    recentList.innerHTML = '';
+    document.getElementById('rec-m').textContent    = '0';
+    document.getElementById('rec-mean').textContent = '—';
+    document.getElementById('rec-diff').textContent = '';
+    updateStatus();
+    updateInterpretation();
+    setAppState('idle');
+  });
+
+  // ─── μ 토글 ───
+  document.getElementById('mu-chk').addEventListener('change', e => {
+    showMu = e.target.checked;
+    document.getElementById('mu-show').style.display   = showMu ? '' : 'none';
+    document.getElementById('mu-hidden').style.display = showMu ? 'none' : '';
+    drawRecordBoard();
+  });
+
+  // ─── xbar 기록 ───
+  function recordXbar(xbar) {
+    sampleMeans.push(xbar);
+    const m = sampleMeans.length;
+    const meanOfMeans = sampleMeans.reduce((a, b) => a + b, 0) / m;
+
+    document.getElementById('rec-m').textContent = m;
+    document.getElementById('rec-mean').textContent = meanOfMeans.toFixed(1);
+
+    const diff = Math.abs(meanOfMeans - mu);
+    document.getElementById('rec-diff').textContent =
+      m >= 3 ? `(μ와 차이: ${diff.toFixed(1)})` : '';
+
+    // 최근 목록
+    const li = document.createElement('li');
+    li.textContent = `${m}번째 x̄ = ${xbar.toFixed(1)}`;
+    li.className = 'new-entry';
+    recentList.insertBefore(li, recentList.firstChild);
+    [...recentList.querySelectorAll('li:not(:first-child)')]
+      .forEach(el => el.classList.remove('new-entry'));
+    while (recentList.children.length > 10) recentList.removeChild(recentList.lastChild);
+
+    updateStatus();
+  }
+
+  // ─── 기록판 Canvas 그리기 ───
+  function drawRecordBoard() {
+    const canvas = recordCanvas;
+    const ctx    = canvas.getContext('2d');
+    const W = canvas.width, H = canvas.height;
+    ctx.clearRect(0, 0, W, H);
+
+    const pad = { top: 20, right: 14, bottom: 26, left: 14 };
+    const cw  = W - pad.left - pad.right;
+    const ch  = H - pad.top  - pad.bottom;
+
+    // x축 선
+    ctx.beginPath();
+    ctx.strokeStyle = '#d1d5db';
+    ctx.lineWidth = 1;
+    ctx.moveTo(pad.left, H - pad.bottom);
+    ctx.lineTo(W - pad.right, H - pad.bottom);
+    ctx.stroke();
+
+    if (sampleMeans.length === 0) {
+      ctx.fillStyle = '#9ca3af';
+      ctx.font = '13px system-ui';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('아직 기록 없음', W / 2, H / 2);
+      return;
+    }
+
+    const xRange = popMax - popMin || 1;
+    const toX = v => pad.left + ((v - popMin) / xRange) * cw;
+
+    // x축 레이블
+    ctx.fillStyle = '#9ca3af';
+    ctx.font = '11px system-ui';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
+    ctx.fillText(popMin, pad.left, H - pad.bottom + 3);
+    ctx.textAlign = 'center';
+    ctx.fillText(Math.round((popMin + popMax) / 2), pad.left + cw / 2, H - pad.bottom + 3);
+    ctx.textAlign = 'right';
+    ctx.fillText(popMax, W - pad.right, H - pad.bottom + 3);
+
+    // μ 기준선
+    if (showMu) {
+      const mx = toX(mu);
+      ctx.save();
+      ctx.beginPath();
+      ctx.strokeStyle = '#ef4444';
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([4, 3]);
+      ctx.moveTo(mx, pad.top);
+      ctx.lineTo(mx, H - pad.bottom);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = '#ef4444';
+      ctx.font = 'bold 11px system-ui';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'bottom';
+      ctx.fillText('μ', mx, pad.top - 1);
+      ctx.restore();
+    }
+
+    // x̄들의 평균 기준선
+    if (sampleMeans.length >= 2) {
+      const mMean = sampleMeans.reduce((a, b) => a + b, 0) / sampleMeans.length;
+      const mx = toX(mMean);
+      ctx.save();
+      ctx.beginPath();
+      ctx.strokeStyle = '#2563eb';
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([3, 2]);
+      ctx.moveTo(mx, pad.top);
+      ctx.lineTo(mx, H - pad.bottom);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = '#2563eb';
+      ctx.font = 'bold 10px system-ui';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'bottom';
+      ctx.fillText('x̄평균', mx, pad.top - 1);
+      ctx.restore();
+    }
+
+    // 점 그래프 (같은 x 위치끼리 세로 누적)
+    const R = 5;
+    const STACK_GAP = R * 2 + 2;
+    const columnCount = {}; // 각 x좌표 버킷에 쌓인 점 개수
+
+    sampleMeans.forEach((xbar, idx) => {
+      const cx  = toX(xbar);
+      const bucket = Math.round(cx / (R * 1.5)) * Math.round(R * 1.5); // 가까운 점 묶기
+      columnCount[bucket] = (columnCount[bucket] || 0) + 1;
+      const row = columnCount[bucket] - 1;
+      const cy  = Math.max(pad.top + R, H - pad.bottom - R - row * STACK_GAP - 2);
+
+      const isLatest = (idx === sampleMeans.length - 1);
+      ctx.beginPath();
+      ctx.arc(cx, cy, R, 0, 2 * Math.PI);
+      ctx.fillStyle   = isLatest ? '#f59e0b' : '#16a34a';
+      ctx.fill();
+      if (isLatest) {
+        ctx.strokeStyle = '#d97706';
+        ctx.lineWidth   = 2;
+        ctx.stroke();
+      }
+    });
+  }
+
+  // ─── 해석 문구 ───
+  function updateInterpretation() {
+    const m = sampleMeans.length;
+    let msg;
+    if (m === 0) {
+      msg = `상자 안 공들이 모집단입니다. 표본 1개를 뽑으면 공 <strong>${n}개</strong>가 바구니에 들어가고, 그 평균 x̄ 하나가 기록됩니다.`;
+    } else if (m === 1) {
+      msg = `이번 표본의 <strong>${n}개</strong> 값을 평균 내어 x̄ = <strong>${latestXbar.toFixed(1)}</strong>을 만들었습니다. 이 값 하나가 오른쪽 기록판에 추가됩니다.`;
+    } else if (m < 5) {
+      msg = `기록판에는 원래 공들이 아니라 각 표본에서 나온 x̄ 값들이 쌓입니다. 이 값들의 평균을 보면 표본평균들의 평균을 확인할 수 있습니다.`;
+    } else {
+      const mMean = sampleMeans.reduce((a, b) => a + b, 0) / m;
+      const diff  = Math.abs(mMean - mu);
+      if (diff < 3) {
+        msg = `표본평균들의 평균(<strong>${mMean.toFixed(1)}</strong>)이 모집단 평균 μ = ${mu.toFixed(1)}에 가까워지고 있습니다. 표본을 반복해서 뽑으면 평균들이 μ 주변에 모이는 경향을 볼 수 있습니다.`;
+      } else {
+        msg = `아직 기록된 x̄가 많지 않아 표본평균들의 평균(<strong>${mMean.toFixed(1)}</strong>)이 μ = ${mu.toFixed(1)}와 차이 날 수 있습니다. 표본을 더 반복해 보며 어떻게 변하는지 관찰해 봅니다.`;
+      }
+    }
+    interpEl.innerHTML = msg;
+  }
+
+  // ─── 초기 실행 ───
+  createPopulation('balanced');
+  renderBox();
+  renderBasket();
+  drawRecordBoard();
+  updateStatus();
+  updateInterpretation();
+  setAppState('idle');
+})();
+</script>
+</body>
+</html>

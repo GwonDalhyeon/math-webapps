@@ -1,0 +1,891 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>표본으로 모평균 추정하기</title>
+  <link rel="stylesheet" href="../../assets/common.css" />
+  <style>
+    .app-wrap { max-width: 1100px; margin: 0 auto; padding: 24px 16px; }
+
+    .app-hero { margin-bottom: 16px; }
+    .app-hero h1 { font-size: clamp(22px, 4vw, 32px); margin: 0 0 6px; }
+    .app-hero .desc { font-size: 14px; color: #4b5563; margin: 4px 0; line-height: 1.5; }
+    .premise-box {
+      background: #fef9c3; border: 1px solid #fde68a; border-radius: 10px;
+      padding: 10px 14px; font-size: 13px; color: #78350f; margin-top: 10px;
+      line-height: 1.6;
+    }
+
+    .panel {
+      background: white; border: 1px solid #e5e7eb;
+      border-radius: 16px; padding: 16px 20px; margin-bottom: 14px;
+    }
+    .panel-title {
+      font-size: 13px; font-weight: 700; color: #374151;
+      margin: 0 0 12px; padding-bottom: 8px; border-bottom: 1px solid #f3f4f6;
+    }
+
+    /* control panel */
+    .ctrl-row { display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-start; }
+    .ctrl-group { flex: 1; min-width: 160px; }
+    .ctrl-label { font-size: 13px; font-weight: 700; color: #374151; margin-bottom: 6px; display: block; }
+    .ctrl-select {
+      width: 100%; padding: 7px 10px; border: 1px solid #d1d5db;
+      border-radius: 8px; font-size: 14px; background: white;
+    }
+    .slider-row { display: flex; align-items: center; gap: 8px; }
+    .slider-row input[type=range] { flex: 1; }
+    .slider-val { font-size: 20px; font-weight: 700; color: #2563eb; min-width: 36px; text-align: right; }
+    .quick-btns { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; }
+    .quick-btn {
+      padding: 3px 10px; border: 1px solid #9ca3af;
+      border-radius: 6px; background: white; font-size: 12px; cursor: pointer;
+    }
+    .quick-btn.active { background: #2563eb; color: white; border-color: #2563eb; }
+    .quick-btn:hover:not(.active) { background: #f3f4f6; }
+    .hint { font-size: 11px; color: #9ca3af; margin-top: 4px; }
+
+    .conf-btns { display: flex; gap: 6px; margin-top: 2px; }
+    .conf-btn {
+      padding: 6px 16px; border: 1px solid #9ca3af; border-radius: 8px;
+      background: white; font-size: 14px; font-weight: 600; cursor: pointer;
+    }
+    .conf-btn.active { background: #7c3aed; color: white; border-color: #7c3aed; }
+    .conf-btn:hover:not(.active) { background: #f3f4f6; }
+
+    .repeat-row { display: flex; align-items: center; gap: 8px; margin-top: 10px; font-size: 13px; color: #6b7280; }
+    .repeat-row select { padding: 4px 8px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px; }
+
+    .action-btns { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+    .btn {
+      padding: 10px 14px; border: none; border-radius: 10px;
+      font-size: 14px; font-weight: 700; cursor: pointer; white-space: nowrap;
+    }
+    .btn:disabled { opacity: 0.38; cursor: default; }
+    .btn:not(:disabled):hover { filter: brightness(1.08); }
+    .btn-blue   { background: #2563eb; color: white; }
+    .btn-green  { background: #16a34a; color: white; }
+    .btn-orange { background: #ea580c; color: white; }
+    .btn-violet { background: #7c3aed; color: white; }
+    .btn-cyan   { background: #0891b2; color: white; }
+    .btn-gray   { background: #6b7280; color: white; }
+
+    .state-row { display: flex; align-items: center; gap: 10px; margin-top: 10px; flex-wrap: wrap; }
+    .state-badge {
+      padding: 4px 12px; border-radius: 20px; font-size: 13px; font-weight: 700;
+      background: #dbeafe; color: #1e40af;
+    }
+    .status-note { font-size: 13px; color: #6b7280; }
+
+    /* viz row */
+    .viz-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+    @media (max-width: 640px) { .viz-row { grid-template-columns: 1fr; } }
+
+    /* sample canvas */
+    .canvas-wrap canvas { display: block; width: 100%; }
+
+    /* calc steps */
+    .calc-steps { display: flex; flex-direction: column; gap: 8px; }
+    .calc-step { background: #f9fafb; border-radius: 8px; padding: 8px 12px; }
+    .calc-step.hl { background: #dbeafe; }
+    .cs-label { font-size: 11px; font-weight: 700; color: #9ca3af; margin-bottom: 2px; }
+    .cs-val   { font-size: 16px; font-weight: 700; color: #111827; }
+    .cs-sub   { font-size: 11px; color: #6b7280; margin-top: 2px; }
+
+    /* interval result */
+    .iv-result {
+      margin-top: 8px; font-size: 14px; font-weight: 700;
+      padding: 8px 14px; border-radius: 8px; display: none;
+      background: #f0fdf4; color: #166534;
+    }
+    .iv-result.miss { background: #fef2f2; color: #991b1b; }
+
+    /* batch panel */
+    .batch-stats { display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 12px; }
+    .bstat { display: flex; flex-direction: column; }
+    .bstat-label { font-size: 11px; color: #9ca3af; }
+    .bstat-val   { font-size: 22px; font-weight: 700; color: #111827; }
+    .bstat-val.hit  { color: #16a34a; }
+    .bstat-val.miss { color: #dc2626; }
+
+    .batch-note {
+      background: #f0f9ff; border-radius: 8px; padding: 10px 14px;
+      font-size: 13px; color: #0c4a6e; margin-top: 10px; line-height: 1.6;
+    }
+
+    /* interpret */
+    .interpret {
+      background: #f0f9ff; border-left: 4px solid #0ea5e9;
+      border-radius: 0 10px 10px 0; padding: 12px 16px;
+      font-size: 14px; color: #0c4a6e; line-height: 1.6; margin-bottom: 14px;
+    }
+    .conf-note {
+      background: #fff7ed; border: 1px solid #fed7aa; border-radius: 10px;
+      padding: 10px 14px; font-size: 13px; color: #9a3412;
+      margin-bottom: 14px; line-height: 1.6; display: none;
+    }
+  </style>
+</head>
+<body>
+<div class="app-wrap">
+  <a class="back-link" href="../../probability-statistics/">← 확률과 통계</a>
+
+  <div class="app-hero">
+    <h1>표본으로 모평균 추정하기</h1>
+    <p class="desc">모집단 전체와 실제 μ는 보이지 않습니다. 표본에서 얻은 x̄와 s만으로 μ가 있을 만한 구간을 추정합니다.</p>
+    <div class="premise-box">
+      우리는 모집단 전체를 알 수 없습니다. 지금 볼 수 있는 것은 모집단에서 뽑은 표본뿐입니다.<br>
+      이 표본의 평균 x̄와 표준편차 s로 보이지 않는 모평균 μ의 위치를 추정합니다.
+    </div>
+  </div>
+
+  <!-- 조작 패널 -->
+  <div class="panel">
+    <div class="ctrl-row">
+      <div class="ctrl-group">
+        <label class="ctrl-label">모집단 상황</label>
+        <select class="ctrl-select" id="popSelect">
+          <option value="height">키 자료 (정규형, 평균 숨김)</option>
+          <option value="score">시험 점수 (40~100점, 약간 치우침)</option>
+          <option value="wait">대기 시간 (오른쪽 꼬리가 긴 자료)</option>
+        </select>
+        <div class="hint">모집단 이름은 보이지만, 실제 μ와 전체 분포는 추정 전까지 숨겨집니다.</div>
+      </div>
+      <div class="ctrl-group" style="min-width:200px;">
+        <label class="ctrl-label">표본 크기 n: <span id="nVal" style="color:#2563eb;font-size:20px;font-weight:700;">20</span></label>
+        <div class="slider-row">
+          <input type="range" id="nSlider" min="5" max="100" value="20" />
+        </div>
+        <div class="quick-btns" id="nQuickBtns">
+          <button class="quick-btn" data-n="5">n=5</button>
+          <button class="quick-btn" data-n="10">n=10</button>
+          <button class="quick-btn active" data-n="20">n=20</button>
+          <button class="quick-btn" data-n="30">n=30</button>
+          <button class="quick-btn" data-n="50">n=50</button>
+          <button class="quick-btn" data-n="100">n=100</button>
+        </div>
+        <div class="hint">n이 커지면 보통 s/√n이 작아져 신뢰구간이 좁아집니다.</div>
+      </div>
+      <div class="ctrl-group">
+        <label class="ctrl-label">신뢰수준(신뢰도)</label>
+        <div class="conf-btns" id="confBtns">
+          <button class="conf-btn" data-conf="90">90%</button>
+          <button class="conf-btn active" data-conf="95">95%</button>
+          <button class="conf-btn" data-conf="99">99%</button>
+        </div>
+        <div class="hint">신뢰수준을 높이면 더 조심스럽게 추정하므로 구간이 넓어집니다.</div>
+      </div>
+    </div>
+    <div class="repeat-row">
+      반복 횟수:
+      <select id="repeatCount">
+        <option value="50">50번</option>
+        <option value="100" selected>100번</option>
+        <option value="500">500번</option>
+      </select>
+    </div>
+    <div class="action-btns">
+      <button class="btn btn-blue"   id="btnDraw">표본 1개 추출</button>
+      <button class="btn btn-green"  id="btnBuildCI">신뢰구간 만들기</button>
+      <button class="btn btn-orange" id="btnRevealMu">μ 공개</button>
+      <button class="btn btn-violet" id="btnNewSample">새 표본으로 다시 추정</button>
+      <button class="btn btn-cyan"   id="btnBatch">100번 반복</button>
+      <button class="btn btn-gray"   id="btnReset">초기화</button>
+    </div>
+    <div class="state-row">
+      <span class="state-badge" id="stateBadge">표본 없음</span>
+      <span class="status-note" id="statusNote"></span>
+    </div>
+  </div>
+
+  <!-- 단일 표본 추정 -->
+  <div class="viz-row">
+    <div class="panel">
+      <div class="panel-title">표본 관찰 영역 <span id="sampleSizeNote" style="font-weight:400;color:#9ca3af;"></span></div>
+      <div class="canvas-wrap"><canvas id="sampleCanvas" height="100"></canvas></div>
+      <div class="hint" style="margin-top:6px;">이 영역에는 표본 원자료만 보입니다. 실제 μ는 표시되지 않습니다.</div>
+    </div>
+    <div class="panel">
+      <div class="panel-title">추정 계산판</div>
+      <div class="calc-steps" id="calcSteps">
+        <div style="font-size:13px;color:#9ca3af;">표본을 추출하면 계산이 시작됩니다.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 신뢰구간 숫자축 -->
+  <div class="panel">
+    <div class="panel-title">신뢰구간 숫자축</div>
+    <div class="canvas-wrap"><canvas id="intervalCanvas" height="90"></canvas></div>
+    <div class="iv-result" id="ivResult"></div>
+    <div class="hint" style="margin-top:6px;">실제 μ는 앱이 사후 확인할 때만 사용합니다. 추정할 때는 표본 정보만 사용합니다.</div>
+  </div>
+
+  <!-- 반복 포함률 확인 -->
+  <div class="panel" id="batchPanel" style="display:none;">
+    <div class="panel-title">반복 포함률 확인: 같은 방법으로 만든 여러 신뢰구간</div>
+    <div class="batch-stats">
+      <div class="bstat"><span class="bstat-label">만든 구간 수</span><span class="bstat-val" id="bTotal">0</span></div>
+      <div class="bstat"><span class="bstat-label">μ 포함</span><span class="bstat-val hit" id="bHit">0</span></div>
+      <div class="bstat"><span class="bstat-label">μ 미포함</span><span class="bstat-val miss" id="bMiss">0</span></div>
+      <div class="bstat"><span class="bstat-label">포함 비율</span><span class="bstat-val" id="bRate">—</span></div>
+      <div class="bstat"><span class="bstat-label">신뢰수준</span><span class="bstat-val" id="bConf">95%</span></div>
+    </div>
+    <div class="canvas-wrap"><canvas id="batchCanvas" height="300"></canvas></div>
+    <div class="batch-note">
+      매번 만든 구간 하나하나가 μ를 반드시 포함하는 것은 아닙니다.
+      하지만 같은 방법을 많이 반복하면 포함 비율은 선택한 신뢰수준 근처로 다가갑니다.
+    </div>
+  </div>
+
+  <!-- 해석 -->
+  <div class="interpret" id="interpretText">
+    모집단 전체와 실제 μ는 보이지 않습니다. 표본을 하나 뽑아 x̄와 s를 계산한 뒤 μ가 있을 만한 구간을 추정해 봅니다.
+  </div>
+
+  <!-- 오개념 방지 -->
+  <div class="conf-note" id="confNote">
+    <strong>신뢰수준의 의미:</strong>
+    "이번 구간 안에 μ가 95% 확률로 있다"는 뜻이 아닙니다.<br>
+    같은 방법으로 표본을 반복해 구간을 만들면, 그 구간들 중 약 95%가 실제 μ를 포함한다는 뜻입니다.<br>
+    아래 반복 실험을 통해 이 의미를 직접 확인해 보세요.
+  </div>
+
+  <!-- 적용 조건과 한계 -->
+  <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px;padding:10px 14px;font-size:12px;color:#6b7280;line-height:1.7;margin-bottom:14px;">
+    <strong style="color:#374151;">이 추정의 전제와 한계</strong><br>
+    이 추정은 모집단에서 표본이 <strong>무작위로</strong> 뽑혔다고 가정합니다.
+    표본이 편향되어 있으면 신뢰구간도 믿기 어렵습니다.<br>
+    표본 크기 n이 작을 때는 z 임계값 공식이 근사값이므로, 포함 비율이 신뢰수준과 약간 다를 수 있습니다.
+    반복 실험의 포함 비율은 무작위로 흔들리므로, 결과가 정확히 95%가 되지 않아도 정상입니다.<br>
+    좋은 추정은 좋은 표본에서 시작합니다.
+  </div>
+</div>
+
+<script>
+(() => {
+  'use strict';
+
+  // ── 난수 유틸 ──
+  function randNormal(mean, std) {
+    let u, v;
+    do { u = Math.random(); } while (u === 0);
+    do { v = Math.random(); } while (v === 0);
+    return mean + std * Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+  }
+
+  // ── 모집단 생성 (N=10000) ──
+  function generatePopulation(type) {
+    const data = [];
+    for (let i = 0; i < 10000; i++) {
+      if (type === 'height') {
+        data.push(Math.max(148, Math.min(198, randNormal(171.3, 8.2))));
+      } else if (type === 'score') {
+        const v = Math.round(randNormal(72, 12));
+        data.push(Math.max(40, Math.min(100, v)));
+      } else {
+        // 대기 시간: 지수분포 합, mean≈10, 오른쪽 꼬리
+        let u1, u2;
+        do { u1 = Math.random(); } while (u1 === 0);
+        do { u2 = Math.random(); } while (u2 === 0);
+        const v = -5 * Math.log(u1) - 5 * Math.log(u2);
+        data.push(Math.max(0.2, Math.min(50, v)));
+      }
+    }
+    return data;
+  }
+
+  function computeMu(pop) {
+    return pop.reduce((s, v) => s + v, 0) / pop.length;
+  }
+
+  // ── 교과서 z 임계값 ──
+  const Z = { 90: 1.645, 95: 1.960, 99: 2.576 };
+
+  // ── 통계 계산 ──
+  function calcStats(sample) {
+    const n = sample.length;
+    const xbar = sample.reduce((s, v) => s + v, 0) / n;
+    const s = Math.sqrt(sample.reduce((acc, v) => acc + (v - xbar) ** 2, 0) / (n - 1));
+    return { xbar, s, n };
+  }
+
+  function buildCI(xbar, s, n, cl) {
+    const z = Z[cl];
+    const se = s / Math.sqrt(n);
+    const margin = z * se;
+    return { xbar, s, n, z, se, margin, lower: xbar - margin, upper: xbar + margin };
+  }
+
+  // ── 축 범위 (모집단 유형별 고정) ──
+  function axisRange(type) {
+    if (type === 'height') return [148, 198];
+    if (type === 'score')  return [36,  104];
+    return [0, 52];
+  }
+
+  // ── 상태 ──
+  let popType = 'height';
+  let population = generatePopulation('height');
+  let trueMu = computeMu(population);
+  let n = 20;
+  let cl = 95;
+  let appState = 'no-sample'; // no-sample | sample-drawn | interval-built | mu-revealed | batch-running
+  let currentSample = null;
+  let rawStats = null;   // {xbar, s, n}
+  let currentCI = null;
+  let muRevealed = false;
+  let batchRaw = [];
+  let batchCIs = [];
+  let batchTimer = null;
+
+  // ── DOM ──
+  const $ = id => document.getElementById(id);
+  const popSelect    = $('popSelect');
+  const nSlider      = $('nSlider');
+  const nValEl       = $('nVal');
+  const nQuickBtns   = $('nQuickBtns');
+  const confBtns     = $('confBtns');
+  const repeatCount  = $('repeatCount');
+  const btnDraw      = $('btnDraw');
+  const btnBuildCI   = $('btnBuildCI');
+  const btnRevealMu  = $('btnRevealMu');
+  const btnNewSample = $('btnNewSample');
+  const btnBatch     = $('btnBatch');
+  const btnReset     = $('btnReset');
+  const stateBadge   = $('stateBadge');
+  const statusNote   = $('statusNote');
+  const sampleSizeNote = $('sampleSizeNote');
+  const sampleCanvas = $('sampleCanvas');
+  const calcSteps    = $('calcSteps');
+  const intervalCanvas = $('intervalCanvas');
+  const ivResult     = $('ivResult');
+  const batchPanel   = $('batchPanel');
+  const batchCanvas  = $('batchCanvas');
+  const bTotal = $('bTotal'); const bHit = $('bHit');
+  const bMiss  = $('bMiss'); const bRate = $('bRate'); const bConf = $('bConf');
+  const interpretText = $('interpretText');
+  const confNote = $('confNote');
+
+  // ── 상태 레이블 ──
+  const STATE_LABEL = {
+    'no-sample':     '표본 없음',
+    'sample-drawn':  '표본 추출됨',
+    'interval-built':'신뢰구간 생성됨',
+    'mu-revealed':   'μ 공개됨',
+    'batch-running': '반복 실험 중'
+  };
+
+  function setState(s) {
+    appState = s;
+    let label = STATE_LABEL[s] || s;
+    // 배치 완료 후에는 별도 레이블 표시
+    if (s === 'mu-revealed' && batchCIs.length > 0) label = '반복 실험 결과 표시 중';
+    stateBadge.textContent = label;
+    updateButtons();
+  }
+
+  function updateButtons() {
+    const s = appState;
+    const cnt = parseInt(repeatCount.value);
+    btnDraw.disabled      = s !== 'no-sample';
+    btnBuildCI.disabled   = s !== 'sample-drawn';
+    btnRevealMu.disabled  = s !== 'interval-built';
+    btnNewSample.disabled = s === 'no-sample' || s === 'batch-running';
+    btnBatch.disabled     = s === 'batch-running' || s === 'sample-drawn';
+    btnReset.disabled     = false;
+    btnBatch.textContent  = s === 'batch-running' ? '반복 실험 중...' : `${cnt}번 반복`;
+  }
+
+  // ── 표본 추출 ──
+  function doDrawSample() {
+    const sample = Array.from({ length: n }, () => population[Math.floor(Math.random() * population.length)]);
+    currentSample = sample;
+    rawStats = calcStats(sample);
+    currentCI = null;
+    muRevealed = false;
+    ivResult.style.display = 'none';
+    confNote.style.display = 'none';
+    setState('sample-drawn');
+    renderSamplePlot();
+    renderCalcSteps();
+    renderIntervalAxis();
+    updateInterpret();
+    statusNote.textContent = `이제 우리가 아는 것은 이 표본의 ${n}개 값, x̄, s뿐입니다.`;
+  }
+
+  // ── 신뢰구간 생성 ──
+  function doBuildCI() {
+    if (!rawStats) return;
+    currentCI = buildCI(rawStats.xbar, rawStats.s, rawStats.n, cl);
+    setState('interval-built');
+    renderCalcSteps();
+    renderIntervalAxis();
+    updateInterpret();
+    ivResult.style.display = 'none';
+    updateConfNote();
+    confNote.style.display = 'block';
+    statusNote.textContent = '이번 표본으로 만든 신뢰구간입니다. 아직 실제 μ는 보지 않았습니다.';
+  }
+
+  // ── μ 공개 ──
+  function doRevealMu() {
+    muRevealed = true;
+    setState('mu-revealed');
+    renderIntervalAxis();
+    const ci = currentCI;
+    const hit = ci.lower <= trueMu && trueMu <= ci.upper;
+    ivResult.style.display = 'block';
+    ivResult.className = 'iv-result' + (hit ? '' : ' miss');
+    ivResult.textContent = hit
+      ? `실제 μ = ${trueMu.toFixed(2)}는 이번 신뢰구간 안에 있습니다. 이번 구간은 μ를 포함했습니다.`
+      : `실제 μ = ${trueMu.toFixed(2)}는 이번 신뢰구간 밖에 있습니다. 신뢰구간은 항상 성공하지 않지만, 같은 방법을 반복하면 일정 비율로 μ를 포함합니다.`;
+    updateInterpret();
+    statusNote.textContent = hit ? '이번 구간 성공: μ를 포함했습니다.' : '이번 구간 실패: μ를 포함하지 못했습니다.';
+  }
+
+  // ── 새 표본 ──
+  function doNewSample() {
+    currentSample = null; rawStats = null; currentCI = null; muRevealed = false;
+    ivResult.style.display = 'none';
+    confNote.style.display = 'none';
+    setState('no-sample');
+    renderSamplePlot(); renderCalcSteps(); renderIntervalAxis();
+    updateInterpret();
+    statusNote.textContent = '';
+  }
+
+  // ── 반복 실험 ──
+  function doRunBatch() {
+    const total = parseInt(repeatCount.value);
+    batchRaw = []; batchCIs = [];
+    batchPanel.style.display = 'block';
+    muRevealed = true;
+    // CI가 이미 만들어진 상태라면 숫자축에 μ를 즉시 표시
+    if (currentCI) renderIntervalAxis();
+    setState('batch-running');
+    updateInterpret();
+
+    let done = 0;
+    const chunk = total <= 100 ? 10 : 50;
+
+    function step() {
+      if (appState !== 'batch-running') return;
+      const end = Math.min(done + chunk, total);
+      for (let i = done; i < end; i++) {
+        const sample = Array.from({ length: n }, () => population[Math.floor(Math.random() * population.length)]);
+        const raw = calcStats(sample);
+        batchRaw.push(raw);
+        const ci = buildCI(raw.xbar, raw.s, raw.n, cl);
+        ci.containsMu = ci.lower <= trueMu && trueMu <= ci.upper;
+        batchCIs.push(ci);
+      }
+      done = end;
+      renderBatchCanvas();
+      updateBatchStats();
+      if (done < total) {
+        batchTimer = setTimeout(step, 40);
+      } else {
+        setState('mu-revealed');
+        updateInterpret();
+        statusNote.textContent = `반복 완료: ${total}개 구간`;
+      }
+    }
+    step();
+  }
+
+  // ── 신뢰수준 변경 시 재계산 ──
+  function recalcCI() {
+    if (rawStats && (appState === 'interval-built' || appState === 'mu-revealed')) {
+      currentCI = buildCI(rawStats.xbar, rawStats.s, rawStats.n, cl);
+      renderCalcSteps();
+      renderIntervalAxis();
+      if (muRevealed) {
+        const hit = currentCI.lower <= trueMu && trueMu <= currentCI.upper;
+        ivResult.style.display = 'block';
+        ivResult.className = 'iv-result' + (hit ? '' : ' miss');
+        ivResult.textContent = hit
+          ? `실제 μ = ${trueMu.toFixed(2)}는 이번 신뢰구간 안에 있습니다.`
+          : `실제 μ = ${trueMu.toFixed(2)}는 이번 신뢰구간 밖에 있습니다.`;
+      }
+    }
+    if (batchRaw.length > 0) {
+      batchCIs = batchRaw.map(raw => {
+        const ci = buildCI(raw.xbar, raw.s, raw.n, cl);
+        ci.containsMu = ci.lower <= trueMu && trueMu <= ci.upper;
+        return ci;
+      });
+      renderBatchCanvas();
+      updateBatchStats();
+    }
+    // confNote 텍스트도 신뢰수준에 맞게 업데이트
+    if (confNote.style.display !== 'none') updateConfNote();
+    bConf.textContent = cl + '%';
+    statusNote.textContent = `신뢰수준이 ${cl}%로 바뀌었습니다. 구간이 다시 계산되었습니다.`;
+    updateInterpret();
+  }
+
+  // ── confNote 동적 업데이트 ──
+  function updateConfNote() {
+    confNote.innerHTML = `<strong>신뢰수준의 의미:</strong>
+      "이번 구간 안에 μ가 ${cl}% 확률로 있다"는 뜻이 아닙니다.<br>
+      같은 방법으로 표본을 반복해 구간을 만들면, 그 구간들 중 약 ${cl}%가 실제 μ를 포함한다는 뜻입니다.<br>
+      반복 실험 버튼을 눌러 이 의미를 직접 확인해 보세요.`;
+  }
+
+  // ── 초기화 ──
+  function doReset() {
+    if (batchTimer) { clearTimeout(batchTimer); batchTimer = null; }
+    currentSample = null; rawStats = null; currentCI = null; muRevealed = false;
+    batchRaw = []; batchCIs = [];
+    batchPanel.style.display = 'none';
+    ivResult.style.display = 'none';
+    confNote.style.display = 'none';
+    setState('no-sample');
+    renderSamplePlot(); renderCalcSteps(); renderIntervalAxis();
+    updateInterpret();
+    statusNote.textContent = '';
+  }
+
+  function resetSettings() {
+    if (batchTimer) { clearTimeout(batchTimer); batchTimer = null; }
+    currentSample = null; rawStats = null; currentCI = null; muRevealed = false;
+    batchRaw = []; batchCIs = [];
+    batchPanel.style.display = 'none';
+    ivResult.style.display = 'none';
+    confNote.style.display = 'none';
+    setState('no-sample');
+    renderSamplePlot(); renderCalcSteps(); renderIntervalAxis();
+    updateInterpret();
+    statusNote.textContent = '';
+  }
+
+  // ── 캔버스 공통 헬퍼 ──
+  function setupCanvas(canvas, cssW, cssH) {
+    const dpr = window.devicePixelRatio || 1;
+    canvas.style.width  = cssW + 'px';
+    canvas.style.height = cssH + 'px';
+    canvas.width  = cssW * dpr;
+    canvas.height = cssH * dpr;
+    const ctx = canvas.getContext('2d');
+    ctx.scale(dpr, dpr);
+    return ctx;
+  }
+
+  function getAxisTick(range) {
+    return range > 100 ? 20 : range > 50 ? 10 : range > 20 ? 5 : 2;
+  }
+
+  // ── 렌더: 표본 점 그림 ──
+  function renderSamplePlot() {
+    const W = sampleCanvas.parentElement.clientWidth || 300;
+    const H = 100;
+    const ctx = setupCanvas(sampleCanvas, W, H);
+    ctx.fillStyle = '#f9fafb'; ctx.fillRect(0, 0, W, H);
+
+    if (!currentSample) {
+      ctx.fillStyle = '#9ca3af'; ctx.font = '13px system-ui'; ctx.textAlign = 'center';
+      ctx.fillText('표본을 추출하면 여기에 표시됩니다.', W / 2, H / 2);
+      sampleSizeNote.textContent = ''; return;
+    }
+    sampleSizeNote.textContent = `(n = ${currentSample.length}개)`;
+
+    const [axMin, axMax] = axisRange(popType);
+    const pL = 30, pR = 20, pT = 14, pB = 22;
+    const w = W - pL - pR, h = H - pT - pB;
+    const toX = v => pL + (v - axMin) / (axMax - axMin) * w;
+
+    // x-axis
+    ctx.strokeStyle = '#9ca3af'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(pL, pT + h); ctx.lineTo(pL + w, pT + h); ctx.stroke();
+
+    // ticks
+    const tickStep = getAxisTick(axMax - axMin);
+    ctx.fillStyle = '#9ca3af'; ctx.font = '10px system-ui'; ctx.textAlign = 'center';
+    for (let v = Math.ceil(axMin / tickStep) * tickStep; v <= axMax; v += tickStep) {
+      const x = toX(v);
+      ctx.beginPath(); ctx.moveTo(x, pT + h); ctx.lineTo(x, pT + h + 4); ctx.stroke();
+      ctx.fillText(v, x, pT + h + 14);
+    }
+
+    // dots with jitter
+    const dotR = Math.max(2, Math.min(5, 160 / currentSample.length));
+    const counts = {};
+    currentSample.forEach(v => {
+      const key = Math.round(v * 2) / 2;
+      counts[key] = (counts[key] || 0) + 1;
+      const row = counts[key] - 1;
+      const cy = pT + h - dotR - row * (dotR * 2 + 1) - 1;
+      if (cy < pT) return;
+      ctx.beginPath(); ctx.arc(toX(v), cy, dotR, 0, Math.PI * 2);
+      ctx.fillStyle = '#93c5fd'; ctx.strokeStyle = '#2563eb'; ctx.lineWidth = 1;
+      ctx.fill(); ctx.stroke();
+    });
+
+    // x̄ ± s 옅은 띠 (s의 크기를 시각화)
+    if (rawStats) {
+      const { xbar, s } = rawStats;
+      const bandL = Math.max(pL, toX(xbar - s));
+      const bandR = Math.min(pL + w, toX(xbar + s));
+      ctx.fillStyle = 'rgba(219, 234, 254, 0.45)';
+      ctx.fillRect(bandL, pT, bandR - bandL, h);
+      // 띠 경계 점선
+      ctx.strokeStyle = 'rgba(96, 165, 250, 0.5)'; ctx.lineWidth = 1; ctx.setLineDash([3, 2]);
+      [bandL, bandR].forEach(x => {
+        ctx.beginPath(); ctx.moveTo(x, pT); ctx.lineTo(x, pT + h); ctx.stroke();
+      });
+      ctx.setLineDash([]);
+    }
+
+    // x̄ line
+    if (rawStats) {
+      const xbarX = toX(rawStats.xbar);
+      ctx.strokeStyle = '#dc2626'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(xbarX, pT); ctx.lineTo(xbarX, pT + h); ctx.stroke();
+      ctx.fillStyle = '#dc2626'; ctx.font = 'bold 11px system-ui'; ctx.textAlign = 'center';
+      ctx.fillText('x̄', xbarX, pT + 9);
+    }
+  }
+
+  // ── 렌더: 계산판 ──
+  function makeStep(label, title, val, sub, hl = false) {
+    return `<div class="calc-step${hl ? ' hl' : ''}">
+      <div class="cs-label">${label}: ${title}</div>
+      <div class="cs-val">${val}</div>
+      ${sub ? `<div class="cs-sub">${sub}</div>` : ''}
+    </div>`;
+  }
+
+  function renderCalcSteps() {
+    if (!rawStats) {
+      calcSteps.innerHTML = '<div style="font-size:13px;color:#9ca3af;">표본을 추출하면 계산이 시작됩니다.</div>';
+      return;
+    }
+    const { xbar, s, n: cn } = rawStats;
+    const se = s / Math.sqrt(cn);
+    let html = '';
+    html += makeStep('1단계', '표본평균 x̄', `x̄ = ${xbar.toFixed(3)}`, '표본평균은 모평균 μ의 점추정값입니다.');
+    html += makeStep('2단계', '표본표준편차 s', `s = ${s.toFixed(3)}`, '(n−1)로 나눈 표본표준편차 (분모 n−1)');
+    html += makeStep('3단계', '표준오차 추정값 s/√n', `${s.toFixed(3)} / √${cn} = ${se.toFixed(3)}`, 'n이 클수록 s/√n이 작아져 구간이 좁아집니다.');
+
+    if (currentCI) {
+      const { z, margin, lower, upper } = currentCI;
+      html += makeStep('4단계', `오차한계 (z = ${z})`, `${z} × ${se.toFixed(3)} = ${margin.toFixed(3)}`, `신뢰수준 ${cl}%에서 z = ${z} — 신뢰수준이 높을수록 z가 커져 구간이 넓어집니다.`);
+      html += makeStep('5단계', '신뢰구간 [L, U]', `[${lower.toFixed(2)}, ${upper.toFixed(2)}]`, `x̄ ± 오차한계 = ${xbar.toFixed(3)} ± ${margin.toFixed(3)}`, true);
+    }
+    calcSteps.innerHTML = html;
+  }
+
+  // ── 렌더: 신뢰구간 숫자축 ──
+  function renderIntervalAxis() {
+    const W = intervalCanvas.parentElement.clientWidth || 400;
+    const H = 90;
+    const ctx = setupCanvas(intervalCanvas, W, H);
+    ctx.fillStyle = '#f9fafb'; ctx.fillRect(0, 0, W, H);
+
+    if (!currentCI) {
+      ctx.fillStyle = '#9ca3af'; ctx.font = '13px system-ui'; ctx.textAlign = 'center';
+      ctx.fillText('신뢰구간을 만들면 여기에 표시됩니다.', W / 2, H / 2);
+      return;
+    }
+
+    const [axMin, axMax] = axisRange(popType);
+    const pL = 44, pR = 44, pT = 26, pB = 28;
+    const w = W - pL - pR;
+    const midY = pT + (H - pT - pB) / 2;
+    const toX = v => pL + (v - axMin) / (axMax - axMin) * w;
+
+    // x-axis line
+    ctx.strokeStyle = '#9ca3af'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(pL, midY + 20); ctx.lineTo(pL + w, midY + 20); ctx.stroke();
+
+    // ticks
+    const tickStep = getAxisTick(axMax - axMin);
+    ctx.fillStyle = '#6b7280'; ctx.font = '11px system-ui'; ctx.textAlign = 'center';
+    for (let v = Math.ceil(axMin / tickStep) * tickStep; v <= axMax; v += tickStep) {
+      const x = toX(v);
+      ctx.beginPath(); ctx.moveTo(x, midY + 20); ctx.lineTo(x, midY + 25); ctx.stroke();
+      ctx.fillText(v, x, midY + 36);
+    }
+
+    const { lower, upper, xbar } = currentCI;
+    const hit  = muRevealed && lower <= trueMu && trueMu <= upper;
+    const miss = muRevealed && !hit;
+    // 축 범위 클리핑: CI가 축 밖으로 나가도 캔버스 안에서만 그림
+    const rawLx = toX(lower), rawUx = toX(upper);
+    const lx = Math.max(pL + 1, rawLx);
+    const ux = Math.min(pL + w - 1, rawUx);
+    const xx = Math.max(pL + 1, Math.min(pL + w - 1, toX(xbar)));
+    const lClipped = rawLx < pL;     // lower가 축 왼쪽으로 잘린 경우
+    const uClipped = rawUx > pL + w; // upper가 축 오른쪽으로 잘린 경우
+
+    // CI bar
+    ctx.strokeStyle = miss ? '#dc2626' : '#2563eb';
+    ctx.lineWidth = 6;
+    ctx.beginPath(); ctx.moveTo(lx, midY); ctx.lineTo(ux, midY); ctx.stroke();
+    // 잘리지 않은 끝에만 끝캡 표시
+    if (!lClipped) {
+      ctx.beginPath(); ctx.moveTo(lx, midY - 9); ctx.lineTo(lx, midY + 9); ctx.stroke();
+    }
+    if (!uClipped) {
+      ctx.beginPath(); ctx.moveTo(ux, midY - 9); ctx.lineTo(ux, midY + 9); ctx.stroke();
+    }
+
+    // x̄ dot
+    ctx.fillStyle = miss ? '#dc2626' : '#1e40af';
+    ctx.beginPath(); ctx.arc(xx, midY, 5, 0, Math.PI * 2); ctx.fill();
+
+    // labels (잘린 경우 화살표로 표시)
+    ctx.font = '11px system-ui'; ctx.textAlign = 'center';
+    ctx.fillStyle = '#374151';
+    if (!lClipped) ctx.fillText('L = ' + lower.toFixed(2), lx, midY - 16);
+    else ctx.fillText('← L', pL + 18, midY - 16);
+    if (!uClipped) ctx.fillText('U = ' + upper.toFixed(2), ux, midY - 16);
+    else ctx.fillText('U →', pL + w - 18, midY - 16);
+    ctx.fillStyle = miss ? '#dc2626' : '#1e40af';
+    ctx.fillText('x̄', xx, midY - 16);
+
+    // μ (after reveal)
+    if (muRevealed) {
+      const muX = toX(trueMu);
+      ctx.strokeStyle = '#ef4444'; ctx.lineWidth = 2;
+      ctx.setLineDash([4, 3]);
+      ctx.beginPath(); ctx.moveTo(muX, pT); ctx.lineTo(muX, midY + 20); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = '#ef4444'; ctx.font = 'bold 12px system-ui'; ctx.textAlign = 'center';
+      ctx.fillText('μ = ' + trueMu.toFixed(2), muX, pT + 9);
+    }
+  }
+
+  // ── 반복 기록판 ──
+  function updateBatchStats() {
+    const total = batchCIs.length;
+    const hit   = batchCIs.filter(c => c.containsMu).length;
+    const miss  = total - hit;
+    bTotal.textContent = total;
+    bHit.textContent   = hit;
+    bMiss.textContent  = miss;
+    bRate.textContent  = total > 0 ? (hit / total * 100).toFixed(1) + '%' : '—';
+    bConf.textContent  = cl + '%';
+  }
+
+  function renderBatchCanvas() {
+    const total = batchCIs.length;
+    if (total === 0) return;
+
+    const W = batchCanvas.parentElement.clientWidth || 400;
+    const rowH = Math.max(3, Math.min(14, Math.floor(380 / total)));
+    const H = Math.max(80, total * rowH + 40);
+    const ctx = setupCanvas(batchCanvas, W, H);
+    ctx.fillStyle = '#f9fafb'; ctx.fillRect(0, 0, W, H);
+
+    const [axMin, axMax] = axisRange(popType);
+    const pL = 10, pR = 10, pT = 24;
+    const w = W - pL - pR;
+    const toX = v => pL + (v - axMin) / (axMax - axMin) * w;
+    const muX = toX(trueMu);
+
+    // μ line
+    ctx.strokeStyle = '#ef4444'; ctx.lineWidth = 1.5; ctx.setLineDash([3, 2]);
+    ctx.beginPath(); ctx.moveTo(muX, pT - 2); ctx.lineTo(muX, pT + total * rowH + 2); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = '#ef4444'; ctx.font = 'bold 11px system-ui'; ctx.textAlign = 'center';
+    ctx.fillText('μ', muX, pT - 6);
+
+    batchCIs.forEach((ci, i) => {
+      const y = pT + i * rowH + rowH / 2;
+      const lx = Math.max(pL, toX(ci.lower));
+      const ux = Math.min(pL + w, toX(ci.upper));
+      const cx = Math.max(pL, Math.min(pL + w, toX(ci.xbar)));
+
+      ctx.strokeStyle = ci.containsMu ? '#22c55e' : '#ef4444';
+      ctx.lineWidth   = Math.max(1.5, rowH - 1);
+      ctx.beginPath(); ctx.moveTo(lx, y); ctx.lineTo(ux, y); ctx.stroke();
+
+      if (rowH >= 6) {
+        ctx.fillStyle = ci.containsMu ? '#166534' : '#991b1b';
+        ctx.beginPath(); ctx.arc(cx, y, Math.max(1.5, rowH / 4), 0, Math.PI * 2); ctx.fill();
+      }
+    });
+  }
+
+  // ── 해석 문구 ──
+  function updateInterpret() {
+    const s = appState;
+    if (s === 'no-sample') {
+      interpretText.textContent = '모집단 전체와 실제 μ는 보이지 않습니다. 표본을 하나 뽑아 x̄와 s를 계산한 뒤 μ가 있을 만한 구간을 추정해 봅니다.';
+    } else if (s === 'sample-drawn') {
+      interpretText.textContent = `이제 우리가 아는 것은 이 표본의 ${n}개 값, x̄, s뿐입니다. 이 정보로 μ의 위치를 추정합니다.`;
+    } else if (s === 'interval-built') {
+      interpretText.textContent = '이번 표본으로 만든 신뢰구간입니다. 아직 실제 μ는 보지 않았습니다. 신뢰수준을 바꿔 구간 폭이 어떻게 달라지는지 관찰해 보세요.';
+    } else if (s === 'batch-running') {
+      interpretText.textContent = '반복 실험이 진행 중입니다. 신뢰구간들이 하나씩 쌓이는 것을 관찰해 보세요.';
+    } else if (s === 'mu-revealed') {
+      if (batchCIs.length > 0) {
+        const hit  = batchCIs.filter(c => c.containsMu).length;
+        const rate = (hit / batchCIs.length * 100).toFixed(1);
+        interpretText.textContent = `여러 표본으로 만든 신뢰구간들을 쌓아 보았습니다. 포함 비율(${rate}%)이 선택한 신뢰수준(${cl}%) 근처로 움직이는지 관찰해 보세요.`;
+      } else {
+        const hit = currentCI && currentCI.lower <= trueMu && trueMu <= currentCI.upper;
+        interpretText.textContent = hit
+          ? '실제 μ가 이번 신뢰구간 안에 있습니다. 매번 성공하지는 않습니다. 반복 실험을 통해 장기적 포함 비율을 확인해 보세요.'
+          : '실제 μ가 이번 신뢰구간 밖에 있습니다. 신뢰구간은 항상 성공하는 구간이 아니라, 같은 방법을 반복했을 때 일정 비율로 μ를 포함하는 방법입니다.';
+      }
+    }
+  }
+
+  // ── 이벤트 ──
+  popSelect.addEventListener('change', () => {
+    popType = popSelect.value;
+    population = generatePopulation(popType);
+    trueMu = computeMu(population);
+    resetSettings();
+  });
+
+  nSlider.addEventListener('input', () => {
+    n = parseInt(nSlider.value);
+    nValEl.textContent = n;
+    nQuickBtns.querySelectorAll('.quick-btn').forEach(b => b.classList.toggle('active', parseInt(b.dataset.n) === n));
+    resetSettings();
+  });
+
+  nQuickBtns.querySelectorAll('.quick-btn').forEach(b => {
+    b.addEventListener('click', () => {
+      n = parseInt(b.dataset.n);
+      nSlider.value = n; nValEl.textContent = n;
+      nQuickBtns.querySelectorAll('.quick-btn').forEach(q => q.classList.toggle('active', parseInt(q.dataset.n) === n));
+      resetSettings();
+    });
+  });
+
+  confBtns.querySelectorAll('.conf-btn').forEach(b => {
+    b.addEventListener('click', () => {
+      cl = parseInt(b.dataset.conf);
+      confBtns.querySelectorAll('.conf-btn').forEach(q => q.classList.remove('active'));
+      b.classList.add('active');
+      recalcCI();
+    });
+  });
+
+  repeatCount.addEventListener('change', updateButtons);
+
+  btnDraw.addEventListener('click', doDrawSample);
+  btnBuildCI.addEventListener('click', doBuildCI);
+  btnRevealMu.addEventListener('click', doRevealMu);
+  btnNewSample.addEventListener('click', doNewSample);
+  btnBatch.addEventListener('click', () => { if (appState !== 'batch-running') doRunBatch(); });
+  btnReset.addEventListener('click', doReset);
+
+  window.addEventListener('resize', () => {
+    renderSamplePlot();
+    renderIntervalAxis();
+    if (batchCIs.length > 0) renderBatchCanvas();
+  });
+
+  // ── 초기 실행 ──
+  doReset();
+})();
+</script>
+</body>
+</html>

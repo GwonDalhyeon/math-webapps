@@ -1,0 +1,934 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>표본평균의 분포 실험실</title>
+  <link rel="stylesheet" href="../../assets/common.css" />
+  <style>
+    .app-page {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 32px 16px;
+    }
+
+    .app-hero {
+      margin-bottom: 20px;
+    }
+    .app-hero h1 {
+      font-size: clamp(24px, 4vw, 36px);
+      margin: 0 0 8px;
+    }
+    .app-hero p {
+      font-size: 16px;
+      margin: 4px 0;
+      color: #4b5563;
+    }
+
+    /* ── 조작 패널 ── */
+    .control-panel {
+      background: white;
+      border: 1px solid #e5e7eb;
+      border-radius: 16px;
+      padding: 20px;
+      margin-bottom: 16px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+    @media (max-width: 640px) {
+      .control-panel { grid-template-columns: 1fr; }
+    }
+
+    .control-group label {
+      display: block;
+      font-weight: 700;
+      font-size: 15px;
+      margin-bottom: 6px;
+    }
+    .control-group select,
+    .control-group input[type="range"] {
+      width: 100%;
+    }
+    .control-group select {
+      padding: 8px 10px;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      font-size: 15px;
+      background: white;
+    }
+    .hint-text {
+      font-size: 13px;
+      color: #6b7280;
+      margin: 6px 0 0;
+    }
+
+    .n-quick-btns {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 8px;
+    }
+    .n-quick-btns button {
+      padding: 4px 12px;
+      border: 1px solid #9ca3af;
+      border-radius: 6px;
+      background: white;
+      font-size: 14px;
+      cursor: pointer;
+    }
+    .n-quick-btns button:hover { background: #f3f4f6; }
+    .n-quick-btns button.active {
+      background: #2563eb;
+      color: white;
+      border-color: #2563eb;
+    }
+
+    .slider-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .slider-row input[type="range"] { flex: 1; }
+    .slider-val {
+      font-size: 18px;
+      font-weight: 700;
+      color: #2563eb;
+      min-width: 38px;
+      text-align: right;
+    }
+
+    /* 실행 버튼 */
+    .btn-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: flex-end;
+    }
+    .btn {
+      padding: 10px 16px;
+      border: none;
+      border-radius: 10px;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      min-width: 80px;
+    }
+    .btn-primary   { background: #2563eb; color: white; }
+    .btn-secondary { background: #7c3aed; color: white; }
+    .btn-orange    { background: #ea580c; color: white; }
+    .btn-green     { background: #16a34a; color: white; }
+    .btn-auto      { background: #0891b2; color: white; }
+    .btn-pause     { background: #d97706; color: white; }
+    .btn-reset     { background: #6b7280; color: white; }
+    .btn:disabled  { opacity: 0.45; cursor: default; }
+    .btn:not(:disabled):hover { filter: brightness(1.1); }
+
+    /* ── 수치 그룹 (3열, 그래프와 컬럼 대응) ── */
+    .stat-groups {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+    @media (max-width: 760px) {
+      .stat-groups { grid-template-columns: 1fr; }
+    }
+
+    .stat-group {
+      background: white;
+      border: 1px solid #e5e7eb;
+      border-top: 3px solid transparent;
+      border-radius: 12px;
+      padding: 14px 16px;
+    }
+    .stat-group-pop    { border-top-color: #3b82f6; }
+    .stat-group-sample { border-top-color: #7c3aed; }
+    .stat-group-means  { border-top-color: #16a34a; }
+
+    .stat-group-title {
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      margin: 0 0 10px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid #f3f4f6;
+    }
+    .stat-group-pop    .stat-group-title { color: #2563eb; }
+    .stat-group-sample .stat-group-title { color: #6d28d9; }
+    .stat-group-means  .stat-group-title { color: #15803d; }
+
+    .stat-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 8px;
+      padding: 5px 0;
+      border-top: 1px solid #f9fafb;
+    }
+    .stat-row:first-of-type { border-top: none; }
+    .stat-row-label {
+      font-size: 13px;
+      color: #6b7280;
+    }
+    .stat-row-value {
+      font-size: 20px;
+      font-weight: 700;
+      color: #111827;
+      min-width: 54px;
+      text-align: right;
+    }
+    .stat-row-value.highlight { color: #2563eb; }
+
+    .stat-compare-section {
+      margin-top: 8px;
+      padding-top: 8px;
+      border-top: 1px dashed #d1fae5;
+    }
+    .stat-compare-label {
+      font-size: 11px;
+      color: #9ca3af;
+      margin-bottom: 4px;
+    }
+    .stat-row-theory .stat-row-label { color: #15803d; font-weight: 600; }
+    .stat-row-theory .stat-row-value { color: #15803d; }
+
+    /* ── 시각화 3분할 ── */
+    .viz-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+      margin-bottom: 16px;
+    }
+    @media (max-width: 760px) {
+      .viz-grid { grid-template-columns: 1fr; }
+    }
+
+    .viz-card {
+      background: white;
+      border: 1px solid #e5e7eb;
+      border-top: 3px solid transparent;
+      border-radius: 14px;
+      padding: 14px 14px 10px;
+    }
+    .viz-card-pop    { border-top-color: #3b82f6; }
+    .viz-card-sample { border-top-color: #7c3aed; }
+    .viz-card-means  { border-top-color: #16a34a; }
+    .viz-card h3 {
+      font-size: 15px;
+      font-weight: 700;
+      margin: 0 0 4px;
+    }
+    .viz-card-pop    h3 { color: #2563eb; }
+    .viz-card-sample h3 { color: #6d28d9; }
+    .viz-card-means  h3 { color: #15803d; }
+    .viz-sublabel {
+      font-size: 12px;
+      color: #6b7280;
+      margin: 0 0 8px;
+    }
+    .viz-card canvas {
+      width: 100%;
+      display: block;
+      border-radius: 6px;
+    }
+    .viz-mini-stats {
+      font-size: 13px;
+      color: #374151;
+      margin-top: 6px;
+      line-height: 1.6;
+    }
+
+    /* ── 흐름 표시 ── */
+    .flow-box {
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      border-radius: 12px;
+      padding: 12px 18px;
+      font-size: 15px;
+      color: #1d4ed8;
+      margin-bottom: 14px;
+      min-height: 42px;
+    }
+
+    /* ── 해석 패널 ── */
+    .interp-panel {
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      border-radius: 12px;
+      padding: 16px 20px;
+      font-size: 15px;
+      color: #166534;
+      line-height: 1.7;
+    }
+    .interp-panel strong { color: #15803d; }
+  </style>
+</head>
+<body>
+  <main class="app-page">
+    <a class="back-link" href="../">← 확률과 통계</a>
+
+    <header class="app-hero">
+      <p class="eyebrow">확률과 통계 · 표본평균</p>
+      <h1>표본평균의 분포 실험실</h1>
+      <p>모집단에서 표본을 반복해서 뽑고, 표본평균들이 어떤 분포를 만드는지 관찰합니다.</p>
+      <p>표본 크기가 커질수록 표본평균의 흔들림이 줄어드는지 확인해 보세요.</p>
+    </header>
+
+    <!-- 조작 패널 -->
+    <div class="control-panel">
+      <!-- 모집단 선택 + 표본크기 -->
+      <div>
+        <div class="control-group" style="margin-bottom:16px">
+          <label for="pop-dist">모집단 분포 선택</label>
+          <select id="pop-dist">
+            <option value="normal">정규분포 (평균 100, 표준편차 15)</option>
+            <option value="uniform">균등분포 (50 ~ 150)</option>
+            <option value="skewed">오른쪽으로 치우친 분포</option>
+            <option value="bimodal">두 봉우리 분포 (80 근처 + 120 근처)</option>
+          </select>
+        </div>
+        <div class="control-group">
+          <label>표본 크기 <em>n</em> <span id="n-display" class="slider-val">10</span></label>
+          <div class="slider-row">
+            <input type="range" id="sample-size" min="2" max="100" value="10" />
+          </div>
+          <div class="n-quick-btns">
+            <button class="n-btn" data-n="2">n = 2</button>
+            <button class="n-btn" data-n="5">n = 5</button>
+            <button class="n-btn active" data-n="10">n = 10</button>
+            <button class="n-btn" data-n="30">n = 30</button>
+            <button class="n-btn" data-n="50">n = 50</button>
+          </div>
+          <p class="hint-text">n은 한 번에 뽑는 값의 개수입니다. n을 바꾸면 표본평균의 흔들림이 달라집니다.</p>
+        </div>
+      </div>
+
+      <!-- 실행 버튼 -->
+      <div>
+        <div class="control-group" style="margin-bottom:10px">
+          <label>반복 추출</label>
+          <p class="hint-text" style="margin-top:0">반복 추출 횟수는 표본평균을 몇 개 쌓을지 정합니다. (표본 크기 n과 다릅니다)</p>
+        </div>
+        <div class="btn-group">
+          <button class="btn btn-primary" id="btn-1">1회 추출</button>
+          <button class="btn btn-secondary" id="btn-10">10회 추출</button>
+          <button class="btn btn-orange" id="btn-100">100회 추출</button>
+          <button class="btn btn-orange" id="btn-1000">1000회 추출</button>
+        </div>
+        <div class="btn-group" style="margin-top:10px">
+          <button class="btn btn-auto" id="btn-auto">자동 실행</button>
+          <button class="btn btn-pause" id="btn-pause" disabled>일시정지</button>
+          <button class="btn btn-reset" id="btn-reset">초기화</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 수치 요약 (그래프와 3열 대응) -->
+    <div class="stat-groups">
+
+      <!-- ① 모집단 -->
+      <div class="stat-group stat-group-pop">
+        <p class="stat-group-title">① 모집단</p>
+        <div class="stat-row">
+          <span class="stat-row-label">μ &nbsp;모평균</span>
+          <span class="stat-row-value" id="s-mu">—</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-row-label">σ &nbsp;모표준편차</span>
+          <span class="stat-row-value" id="s-sigma">—</span>
+        </div>
+      </div>
+
+      <!-- ② 최근 표본 -->
+      <div class="stat-group stat-group-sample">
+        <p class="stat-group-title">② 최근 표본</p>
+        <div class="stat-row">
+          <span class="stat-row-label">n &nbsp;표본 크기</span>
+          <span class="stat-row-value highlight" id="s-n">10</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-row-label">x̄ &nbsp;최근 표본평균</span>
+          <span class="stat-row-value" id="s-xbar">—</span>
+        </div>
+      </div>
+
+      <!-- ③ 표본평균의 분포 -->
+      <div class="stat-group stat-group-means">
+        <p class="stat-group-title">③ 표본평균의 분포</p>
+        <div class="stat-row">
+          <span class="stat-row-label">누적 표본 수</span>
+          <span class="stat-row-value highlight" id="s-count">0</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-row-label">표본평균들의 평균</span>
+          <span class="stat-row-value" id="s-means-mean">—</span>
+        </div>
+        <div class="stat-compare-section">
+          <p class="stat-compare-label">표준편차 비교</p>
+          <div class="stat-row" style="border-top:none">
+            <span class="stat-row-label">실험값</span>
+            <span class="stat-row-value" id="s-means-std">—</span>
+          </div>
+          <div class="stat-row stat-row-theory">
+            <span class="stat-row-label">이론값 σ/√n</span>
+            <span class="stat-row-value" id="s-theory">—</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- 3개 시각화 -->
+    <div class="viz-grid">
+      <div class="viz-card viz-card-pop">
+        <h3>① 모집단 분포</h3>
+        <p class="viz-sublabel">전체 값들의 분포</p>
+        <canvas id="pop-canvas" width="400" height="200"></canvas>
+        <div class="viz-mini-stats" id="pop-mini"></div>
+      </div>
+      <div class="viz-card viz-card-sample">
+        <h3>② 최근 추출된 표본</h3>
+        <p class="viz-sublabel">이번에 뽑은 원자료 <span id="n-label">n</span>개의 분포</p>
+        <canvas id="sample-canvas" width="400" height="200"></canvas>
+        <div class="viz-mini-stats" id="sample-mini">아직 추출하지 않았습니다.</div>
+      </div>
+      <div class="viz-card viz-card-means">
+        <h3>③ 표본평균의 분포</h3>
+        <p class="viz-sublabel">반복 추출로 얻은 x̄ 값들의 분포</p>
+        <canvas id="means-canvas" width="400" height="200"></canvas>
+        <div class="viz-mini-stats" id="means-mini">아직 추출하지 않았습니다.</div>
+      </div>
+    </div>
+
+    <!-- 추출 흐름 표시 -->
+    <div class="flow-box" id="flow-box">
+      왼쪽은 모집단 전체의 분포입니다. 가운데는 한 번 뽑은 표본 안의 값들이고, 오른쪽은 여러 번 얻은 표본평균 x̄들이 쌓일 자리입니다.
+    </div>
+
+    <!-- 해석 패널 -->
+    <div class="interp-panel" id="interp-panel">
+      왼쪽은 모집단 전체의 분포입니다. 가운데는 한 번 뽑은 표본 안의 값들이고, 오른쪽은 여러 번 얻은 표본평균 x̄들이 쌓일 자리입니다.
+    </div>
+  </main>
+
+  <script>
+  (function () {
+    // ── 상태 ──
+    const POPULATION_SIZE = 10000;
+    let population = [];
+    let popMu = 0, popSigma = 0;
+    let popMin = 0, popMax = 0; // 매 업데이트마다 spread 재계산 방지용 캐시
+    let sampleMeans = [];
+    let latestSample = [];
+    let latestMean = null;
+    let latestSampleStd = null;
+    let autoTimer = null;
+    let isRunning1000 = false; // 1000회 RAF 실행 중 중복 방지
+    let raf1000Gen = 0;        // 리셋 시 진행 중인 1000회 루프 취소용
+
+    // ── DOM ──
+    const popDistSel = document.getElementById('pop-dist');
+    const sampleSizeSlider = document.getElementById('sample-size');
+    const nDisplay = document.getElementById('n-display');
+    const nLabel = document.getElementById('n-label');
+    const nBtns = document.querySelectorAll('.n-btn');
+
+    const btn1 = document.getElementById('btn-1');
+    const btn10 = document.getElementById('btn-10');
+    const btn100 = document.getElementById('btn-100');
+    const btn1000 = document.getElementById('btn-1000');
+    const btnAuto = document.getElementById('btn-auto');
+    const btnPause = document.getElementById('btn-pause');
+    const btnReset = document.getElementById('btn-reset');
+
+    const popCanvas = document.getElementById('pop-canvas');
+    const sampleCanvas = document.getElementById('sample-canvas');
+    const meansCanvas = document.getElementById('means-canvas');
+
+    const flowBox = document.getElementById('flow-box');
+    const interpPanel = document.getElementById('interp-panel');
+
+    // ── 수학 ──
+    function randomNormal(mu, sigma) {
+      let u = 0, v = 0;
+      while (u === 0) u = Math.random();
+      while (v === 0) v = Math.random();
+      return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v) * sigma + mu;
+    }
+
+    function generatePopulation(type) {
+      population = [];
+      for (let i = 0; i < POPULATION_SIZE; i++) {
+        let v;
+        if (type === 'normal') {
+          v = randomNormal(100, 15);
+        } else if (type === 'uniform') {
+          v = 50 + Math.random() * 100;
+        } else if (type === 'skewed') {
+          // 지수분포 변환, 평균 100 근처
+          v = -Math.log(1 - Math.random()) * 30 + 55;
+        } else { // bimodal
+          v = Math.random() < 0.5 ? randomNormal(80, 10) : randomNormal(120, 10);
+        }
+        population.push(v);
+      }
+      const s = calcStats(population);
+      popMu = s.mean;
+      popSigma = s.std;
+      // min/max를 한 번만 계산해 캐시 (spread 재계산 방지)
+      popMin = population.reduce((a, b) => Math.min(a, b), population[0]);
+      popMax = population.reduce((a, b) => Math.max(a, b), population[0]);
+    }
+
+    function calcStats(data) {
+      if (data.length === 0) return { mean: 0, std: 0, sampleStd: 0 };
+      const n = data.length;
+      const mean = data.reduce((a, b) => a + b, 0) / n;
+      const sqd = data.reduce((a, x) => a + (x - mean) ** 2, 0);
+      const std = Math.sqrt(sqd / n);
+      const sampleStd = n > 1 ? Math.sqrt(sqd / (n - 1)) : 0;
+      return { mean, std, sampleStd };
+    }
+
+    function drawSample(size) {
+      const s = [];
+      for (let i = 0; i < size; i++) {
+        s.push(population[Math.floor(Math.random() * POPULATION_SIZE)]);
+      }
+      return s;
+    }
+
+    function runSampling(count) {
+      const n = parseInt(sampleSizeSlider.value);
+      let lastSample;
+      for (let i = 0; i < count; i++) {
+        const s = drawSample(n);
+        const st = calcStats(s);
+        sampleMeans.push(st.mean);
+        if (i === count - 1) {
+          lastSample = s;
+          latestMean = st.mean;
+          latestSampleStd = st.sampleStd;
+        }
+      }
+      latestSample = lastSample;
+      updateAll(count);
+    }
+
+    function drawHistogram(canvas, data, opts) {
+      // opts: { color, meanLine, extraLines, latestVal, noDataText, fixedMin, fixedMax }
+      // canvas.width/height는 HTML 속성값(논리 픽셀)을 그대로 사용
+      // (ctx.scale 미적용 상태이므로 dpr 나눗셈 없이 사용)
+      const ctx = canvas.getContext('2d');
+      const W = canvas.width;
+      const H = canvas.height;
+      ctx.clearRect(0, 0, W, H);
+
+      const pad = { top: 18, right: 16, bottom: 36, left: 46 };
+      const cw = W - pad.left - pad.right;
+      const ch = H - pad.top - pad.bottom;
+
+      // axes
+      ctx.beginPath();
+      ctx.strokeStyle = '#9ca3af';
+      ctx.lineWidth = 1;
+      ctx.moveTo(pad.left, pad.top);
+      ctx.lineTo(pad.left, H - pad.bottom);
+      ctx.lineTo(W - pad.right, H - pad.bottom);
+      ctx.stroke();
+
+      if (!data || data.length === 0) {
+        ctx.fillStyle = '#9ca3af';
+        ctx.font = '14px system-ui';
+        ctx.textAlign = 'center';
+        ctx.fillText(opts.noDataText || '아직 데이터 없음', W / 2, H / 2);
+        return;
+      }
+
+      // fixedMin/fixedMax가 제공되면 spread 재계산 생략 (대용량 배열 성능)
+      const dataMin = opts.fixedMin !== undefined
+        ? opts.fixedMin
+        : data.reduce((a, b) => Math.min(a, b), data[0]);
+      const dataMax = opts.fixedMax !== undefined
+        ? opts.fixedMax
+        : data.reduce((a, b) => Math.max(a, b), data[0]);
+      const range = dataMax - dataMin || 1;
+
+      const numBins = Math.min(Math.max(Math.ceil(Math.sqrt(data.length)), 10), 50);
+      const binW = range / numBins;
+      const bins = Array(numBins).fill(0);
+      data.forEach(v => {
+        let bi = Math.floor((v - dataMin) / binW);
+        if (bi >= numBins) bi = numBins - 1;
+        if (bi >= 0) bins[bi]++;
+      });
+      const maxFreq = Math.max(...bins, 1);
+
+      // bars
+      ctx.fillStyle = opts.color || '#3b82f6';
+      bins.forEach((freq, i) => {
+        const bh = (freq / maxFreq) * ch;
+        const x = pad.left + (i / numBins) * cw;
+        const bWidth = cw / numBins;
+        ctx.fillRect(x, H - pad.bottom - bh, bWidth - 1, bh);
+      });
+
+      // x-axis labels (좌/중/우 정렬로 캔버스 밖으로 잘리지 않게)
+      ctx.fillStyle = '#4b5563';
+      ctx.font = '12px system-ui';
+      ctx.textBaseline = 'top';
+      ctx.textAlign = 'left';
+      ctx.fillText(dataMin.toFixed(1), pad.left, H - pad.bottom + 4);
+      ctx.textAlign = 'center';
+      ctx.fillText(((dataMin + dataMax) / 2).toFixed(1), pad.left + cw / 2, H - pad.bottom + 4);
+      ctx.textAlign = 'right';
+      ctx.fillText(dataMax.toFixed(1), pad.left + cw, H - pad.bottom + 4);
+
+      // mean lines
+      function xPos(val) {
+        return pad.left + ((val - dataMin) / range) * cw;
+      }
+
+      if (opts.meanLine !== undefined) {
+        const x = xPos(opts.meanLine);
+        ctx.beginPath();
+        ctx.strokeStyle = '#ef4444';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([]);
+        ctx.moveTo(x, pad.top);
+        ctx.lineTo(x, H - pad.bottom);
+        ctx.stroke();
+        // label
+        ctx.fillStyle = '#ef4444';
+        ctx.font = 'bold 12px system-ui';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText('μ', x, pad.top);
+      }
+
+      if (opts.extraLines) {
+        opts.extraLines.forEach(line => {
+          const x = xPos(line.val);
+          ctx.beginPath();
+          ctx.strokeStyle = line.color || '#6b7280';
+          ctx.lineWidth = line.width || 1.5;
+          if (line.dash) ctx.setLineDash(line.dash);
+          else ctx.setLineDash([]);
+          ctx.moveTo(x, pad.top);
+          ctx.lineTo(x, H - pad.bottom);
+          ctx.stroke();
+          ctx.setLineDash([]);
+          if (line.label) {
+            ctx.fillStyle = line.color || '#6b7280';
+            ctx.font = 'bold 11px system-ui';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'bottom';
+            ctx.fillText(line.label, x, pad.top - 1);
+          }
+        });
+      }
+
+      // highlight latest xbar
+      if (opts.latestVal !== undefined && opts.latestVal !== null) {
+        const x = xPos(opts.latestVal);
+        ctx.beginPath();
+        ctx.strokeStyle = '#f59e0b';
+        ctx.lineWidth = 3;
+        ctx.setLineDash([3, 3]);
+        ctx.moveTo(x, pad.top);
+        ctx.lineTo(x, H - pad.bottom);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.beginPath();
+        ctx.arc(x, H - pad.bottom - 4, 5, 0, 2 * Math.PI);
+        ctx.fillStyle = '#f59e0b';
+        ctx.fill();
+      }
+
+      // optional normal curve
+      if (opts.normalCurve && data.length > 30 && opts.curveMean !== undefined && opts.curveStd > 0) {
+        const mu = opts.curveMean;
+        const sigma = opts.curveStd;
+        const totalArea = data.length * binW;
+        ctx.beginPath();
+        ctx.strokeStyle = 'rgba(22,163,74,0.7)';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([]);
+        let first = true;
+        for (let px = 0; px <= cw; px++) {
+          const xv = dataMin + (px / cw) * range;
+          const y = (1 / (sigma * Math.sqrt(2 * Math.PI))) * Math.exp(-0.5 * ((xv - mu) / sigma) ** 2);
+          const canvasY = H - pad.bottom - (y * totalArea / maxFreq) * ch;
+          if (first) { ctx.moveTo(pad.left + px, canvasY); first = false; }
+          else ctx.lineTo(pad.left + px, canvasY);
+        }
+        ctx.stroke();
+      }
+    }
+
+    // ── 업데이트 ──
+    function updateAll(batchCount) {
+      const n = parseInt(sampleSizeSlider.value);
+      const count = sampleMeans.length;
+
+      // summary stats
+      document.getElementById('s-n').textContent = n;
+      document.getElementById('s-count').textContent = count;
+      document.getElementById('s-mu').textContent = popMu.toFixed(2);
+      document.getElementById('s-sigma').textContent = popSigma.toFixed(2);
+      document.getElementById('s-xbar').textContent = latestMean !== null ? latestMean.toFixed(2) : '—';
+      document.getElementById('n-label').textContent = n;
+
+      const theory = popSigma / Math.sqrt(n);
+      document.getElementById('s-theory').textContent = theory.toFixed(2);
+
+      // ms 한 번만 계산해 아래 두 곳에서 재사용
+      let ms = null;
+      if (count > 0) {
+        ms = calcStats(sampleMeans);
+        document.getElementById('s-means-mean').textContent = ms.mean.toFixed(2);
+        document.getElementById('s-means-std').textContent = ms.std.toFixed(2);
+      } else {
+        document.getElementById('s-means-mean').textContent = '—';
+        document.getElementById('s-means-std').textContent = '—';
+      }
+
+      // pop canvas (캐시된 popMin/popMax 사용)
+      drawHistogram(popCanvas, population, {
+        color: '#3b82f6',
+        meanLine: popMu,
+        fixedMin: popMin,
+        fixedMax: popMax,
+      });
+      document.getElementById('pop-mini').innerHTML =
+        `μ = <strong>${popMu.toFixed(2)}</strong> &nbsp; σ = <strong>${popSigma.toFixed(2)}</strong>`;
+
+      // sample canvas
+      if (latestSample && latestSample.length > 0) {
+        drawHistogram(sampleCanvas, latestSample, {
+          color: '#7c3aed',
+          meanLine: latestMean,
+          fixedMin: popMin,
+          fixedMax: popMax,
+        });
+        document.getElementById('sample-mini').innerHTML =
+          `x̄ = <strong>${latestMean.toFixed(2)}</strong> &nbsp; s = <strong>${latestSampleStd.toFixed(2)}</strong>`;
+      } else {
+        drawHistogram(sampleCanvas, [], { noDataText: '아직 추출하지 않았습니다.' });
+        document.getElementById('sample-mini').textContent = '아직 추출하지 않았습니다.';
+      }
+
+      // means canvas
+      if (count > 0) {
+        drawHistogram(meansCanvas, sampleMeans, {
+          color: '#16a34a',
+          meanLine: popMu,
+          extraLines: [
+            { val: ms.mean, color: '#1d4ed8', width: 2, label: 'x̄평균' },
+            { val: popMu - theory, color: '#9ca3af', width: 1.5, dash: [4, 3] },
+            { val: popMu + theory, color: '#9ca3af', width: 1.5, dash: [4, 3] },
+          ],
+          latestVal: latestMean,
+          normalCurve: count >= 30,
+          curveMean: ms.mean,
+          curveStd: theory, // 이론 표준편차로 곡선 형태 고정
+        });
+        document.getElementById('means-mini').innerHTML =
+          `평균 = <strong>${ms.mean.toFixed(2)}</strong> &nbsp; 표준편차 = <strong>${ms.std.toFixed(2)}</strong> &nbsp; (이론값 σ/√n = <strong>${theory.toFixed(2)}</strong>)`;
+      } else {
+        drawHistogram(meansCanvas, [], { noDataText: '아직 추출하지 않았습니다.' });
+        document.getElementById('means-mini').textContent = '아직 추출하지 않았습니다.';
+      }
+
+      // flow box
+      if (latestMean !== null) {
+        const added = batchCount || 1;
+        flowBox.textContent = `이번 표본: ${n}개 값 → 이번 표본평균 x̄ = ${latestMean.toFixed(2)} → 표본평균 분포에 ${added}개 추가 (누적 ${count}개)`;
+      }
+
+      // interpretation
+      updateInterpretation(n, count, theory);
+    }
+
+    function updateInterpretation(n, count, theory) {
+      const msgs = [];
+      if (count === 0) {
+        msgs.push('왼쪽은 모집단 전체의 분포입니다. 가운데는 한 번 뽑은 표본 안의 값들이고, 오른쪽은 여러 번 얻은 표본평균 x̄들이 쌓일 자리입니다.');
+      } else {
+        msgs.push(`이번 표본에서 원자료 <strong>${n}개</strong>를 평균 내어 x̄ = <strong>${latestMean.toFixed(2)}</strong>을 구했습니다. 그 x̄ 하나가 오른쪽 분포에 새로 들어갑니다.`);
+        if (count < 50) {
+          msgs.push('아직 표본평균이 많이 쌓이지 않았습니다. 100회 이상 추출하면 분포 모양을 더 안정적으로 볼 수 있습니다.');
+        } else {
+          const ms = calcStats(sampleMeans);
+          const diffMean = Math.abs(ms.mean - popMu);
+          if (diffMean < popSigma * 0.1) {
+            msgs.push('표본평균들의 평균이 모평균에 가까워지고 있습니다. 여러 표본을 반복해서 뽑으면 중심이 모평균 주변에 놓입니다.');
+          }
+          const diffStd = Math.abs(ms.std - theory);
+          if (diffStd < theory * 0.2) {
+            msgs.push(`표본평균의 표준편차(<strong>${ms.std.toFixed(2)}</strong>)가 이론값 σ/√n = <strong>${theory.toFixed(2)}</strong>에 가까워지고 있습니다.`);
+          }
+        }
+        if (n >= 30) {
+          msgs.push('n이 충분히 커서 한 표본 안에 더 많은 값이 들어가므로, 표본평균의 흔들림이 줄어듭니다.');
+        }
+        const distType = popDistSel.value;
+        if ((distType === 'skewed' || distType === 'bimodal') && count >= 100) {
+          msgs.push('모집단 모양은 정규분포가 아니지만, 표본평균의 분포는 반복 추출이 쌓일수록 더 매끄러운 종 모양에 가까워집니다. (중심극한정리)');
+        }
+      }
+      interpPanel.innerHTML = msgs.join('<br><br>');
+    }
+
+    // ── 초기화 ──
+    function resetExperiment() {
+      pauseAutoRun();
+      raf1000Gen++;          // 진행 중인 1000회 RAF 루프 취소
+      isRunning1000 = false;
+      btn1000.disabled = false;
+      sampleMeans = [];
+      latestSample = [];
+      latestMean = null;
+      latestSampleStd = null;
+
+      generatePopulation(popDistSel.value);
+
+      document.getElementById('s-n').textContent = sampleSizeSlider.value;
+      document.getElementById('s-count').textContent = '0';
+      document.getElementById('s-mu').textContent = popMu.toFixed(2);
+      document.getElementById('s-sigma').textContent = popSigma.toFixed(2);
+      document.getElementById('s-xbar').textContent = '—';
+      document.getElementById('s-means-mean').textContent = '—';
+      document.getElementById('s-means-std').textContent = '—';
+      const n = parseInt(sampleSizeSlider.value);
+      document.getElementById('s-theory').textContent = (popSigma / Math.sqrt(n)).toFixed(2);
+
+      drawHistogram(popCanvas, population, {
+        color: '#3b82f6',
+        meanLine: popMu,
+        fixedMin: popMin,
+        fixedMax: popMax,
+      });
+      document.getElementById('pop-mini').innerHTML =
+        `μ = <strong>${popMu.toFixed(2)}</strong> &nbsp; σ = <strong>${popSigma.toFixed(2)}</strong>`;
+
+      drawHistogram(sampleCanvas, [], { noDataText: '아직 추출하지 않았습니다.' });
+      document.getElementById('sample-mini').textContent = '아직 추출하지 않았습니다.';
+      drawHistogram(meansCanvas, [], { noDataText: '아직 추출하지 않았습니다.' });
+      document.getElementById('means-mini').textContent = '아직 추출하지 않았습니다.';
+
+      flowBox.textContent = '왼쪽은 모집단 전체의 분포입니다. 가운데는 한 번 뽑은 표본 안의 값들이고, 오른쪽은 여러 번 얻은 표본평균 x̄들이 쌓일 자리입니다.';
+      interpPanel.innerHTML = '왼쪽은 모집단 전체의 분포입니다. 가운데는 한 번 뽑은 표본 안의 값들이고, 오른쪽은 여러 번 얻은 표본평균 x̄들이 쌓일 자리입니다.';
+    }
+
+    function startAutoRun() {
+      if (autoTimer !== null) return; // 중복 방지
+      btnAuto.disabled = true;
+      btnPause.disabled = false;
+      autoTimer = setInterval(() => {
+        runSampling(10);
+      }, 300);
+    }
+
+    function pauseAutoRun() {
+      if (autoTimer !== null) {
+        clearInterval(autoTimer);
+        autoTimer = null;
+      }
+      btnAuto.disabled = false;
+      btnPause.disabled = true;
+    }
+
+    // ── n 변경 시 누적 초기화 ──
+    function onNChange() {
+      pauseAutoRun();
+      raf1000Gen++;          // 진행 중인 1000회 RAF 루프 취소
+      isRunning1000 = false;
+      btn1000.disabled = false;
+      const n = parseInt(sampleSizeSlider.value);
+      nDisplay.textContent = n;
+      nLabel.textContent = n;
+      document.getElementById('s-n').textContent = n;
+      document.getElementById('s-theory').textContent = (popSigma / Math.sqrt(n)).toFixed(2);
+      // 이전 표본평균 분포 초기화
+      sampleMeans = [];
+      latestSample = [];
+      latestMean = null;
+      latestSampleStd = null;
+      document.getElementById('s-count').textContent = '0';
+      document.getElementById('s-xbar').textContent = '—';
+      document.getElementById('s-means-mean').textContent = '—';
+      document.getElementById('s-means-std').textContent = '—';
+      drawHistogram(sampleCanvas, [], { noDataText: '아직 추출하지 않았습니다.' });
+      document.getElementById('sample-mini').textContent = '아직 추출하지 않았습니다.';
+      drawHistogram(meansCanvas, [], { noDataText: '아직 추출하지 않았습니다.' });
+      document.getElementById('means-mini').textContent = '아직 추출하지 않았습니다.';
+      flowBox.textContent = '표본 크기 n이 바뀌었습니다. 표본평균 누적값이 초기화되었습니다.';
+      interpPanel.innerHTML = 'n = ' + n + '으로 설정되었습니다. 이제 추출 버튼을 눌러 실험을 시작하세요.';
+      // 빠른 선택 버튼 active 갱신
+      nBtns.forEach(b => b.classList.toggle('active', parseInt(b.dataset.n) === n));
+    }
+
+    // ── 이벤트 연결 ──
+    sampleSizeSlider.addEventListener('input', onNChange);
+
+    nBtns.forEach(b => b.addEventListener('click', () => {
+      sampleSizeSlider.value = b.dataset.n;
+      onNChange();
+    }));
+
+    popDistSel.addEventListener('change', resetExperiment);
+
+    btn1.addEventListener('click', () => runSampling(1));
+    btn10.addEventListener('click', () => runSampling(10));
+    btn100.addEventListener('click', () => runSampling(100));
+
+    // 1000회는 requestAnimationFrame으로 나눠 처리 (중복 실행 방지)
+    btn1000.addEventListener('click', () => {
+      if (isRunning1000) return;
+      isRunning1000 = true;
+      btn1000.disabled = true;
+      const g = ++raf1000Gen; // 리셋 시 취소용 세대 번호
+      let done = 0;
+      const total = 1000;
+      const chunk = 100;
+      function step() {
+        if (raf1000Gen !== g) {   // 리셋 등으로 취소된 경우
+          isRunning1000 = false;
+          btn1000.disabled = false;
+          return;
+        }
+        const toRun = Math.min(chunk, total - done);
+        runSampling(toRun);
+        done += toRun;
+        if (done < total) {
+          requestAnimationFrame(step);
+        } else {
+          isRunning1000 = false;
+          btn1000.disabled = false;
+          const n = parseInt(sampleSizeSlider.value);
+          flowBox.textContent = `이번 표본: ${n}개 값 → 표본평균 분포에 ${total}개 추가 (누적 ${sampleMeans.length}개)`;
+        }
+      }
+      step();
+    });
+
+    btnAuto.addEventListener('click', startAutoRun);
+    btnPause.addEventListener('click', pauseAutoRun);
+    btnReset.addEventListener('click', resetExperiment);
+
+    // canvas 표시 너비를 100%로 맞춤 (높이는 HTML attribute와 CSS로 일치)
+    function initCanvases() {
+      [popCanvas, sampleCanvas, meansCanvas].forEach(c => {
+        c.style.width = '100%';
+      });
+    }
+
+    // ── 초기 실행 ──
+    initCanvases();
+    resetExperiment();
+  })();
+  </script>
+</body>
+</html>
