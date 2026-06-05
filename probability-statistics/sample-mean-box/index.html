@@ -179,6 +179,7 @@
     .record-footer { font-size: 13px; color: #374151; margin-top: 6px; line-height: 1.7; }
     .record-footer strong { font-size: 15px; color: #111827; }
     .rec-diff { font-size: 12px; color: #9ca3af; }
+    .theory-val { color: #0891b2; }
 
     .recent-wrap { margin-top: 8px; }
     .recent-title { font-size: 12px; color: #9ca3af; margin-bottom: 3px; }
@@ -272,11 +273,11 @@
       <div class="box-footer">
         공 <strong id="pop-n">30</strong>개
         &nbsp;|&nbsp;
-        <span id="mu-show">μ = <strong id="mu-val">—</strong></span>
-        <span id="mu-hidden" style="display:none;font-style:italic;color:#9ca3af">μ 숨김</span>
+        <span id="mu-show">μ = <strong id="mu-val">—</strong>&nbsp;|&nbsp;σ = <strong id="sigma-val">—</strong></span>
+        <span id="mu-hidden" style="display:none;font-style:italic;color:#9ca3af">μ, σ 숨김</span>
       </div>
       <label class="mu-toggle-row">
-        <input type="checkbox" id="mu-chk" checked /> μ 보이기
+        <input type="checkbox" id="mu-chk" checked /> μ, σ 보이기
       </label>
     </div>
 
@@ -307,6 +308,10 @@
         &nbsp;|&nbsp;
         x̄들의 평균: <strong id="rec-mean">—</strong>
         <span class="rec-diff" id="rec-diff"></span>
+        <br>
+        x̄들의 표준편차: <strong id="rec-std">—</strong>
+        &nbsp;|&nbsp;
+        σ/√n = <strong id="rec-theory" class="theory-val">—</strong>
       </div>
       <div class="recent-wrap">
         <div class="recent-title">최근 기록 (최대 10개)</div>
@@ -357,7 +362,7 @@
   let speed = 'normal';
   let showMu = true;
   let population = [];     // {id, value, drawnThisSample}
-  let mu = 0, popMin = 0, popMax = 0;
+  let mu = 0, popSigma = 0, popMin = 0, popMax = 0;
   let currentVals = [];    // 이번 표본에 뽑힌 값들
   let drawnIds = new Set();
   let sampleMeans = [];
@@ -390,11 +395,20 @@
     const vals = POP_DATA[type].values;
     population = vals.map((v, i) => ({ id: `${type}-${i}`, value: v, drawnThisSample: false }));
     const s = vals.reduce((a, b) => a + b, 0);
-    mu     = s / vals.length;
-    popMin = vals.reduce((a, b) => Math.min(a, b), vals[0]);
-    popMax = vals.reduce((a, b) => Math.max(a, b), vals[0]);
-    document.getElementById('pop-n').textContent = population.length;
-    document.getElementById('mu-val').textContent = mu.toFixed(1);
+    mu       = s / vals.length;
+    popMin   = vals.reduce((a, b) => Math.min(a, b), vals[0]);
+    popMax   = vals.reduce((a, b) => Math.max(a, b), vals[0]);
+    popSigma = Math.sqrt(vals.reduce((sum, v) => sum + (v - mu) ** 2, 0) / vals.length);
+    document.getElementById('pop-n').textContent     = population.length;
+    document.getElementById('mu-val').textContent    = mu.toFixed(1);
+    document.getElementById('sigma-val').textContent = popSigma.toFixed(1);
+    updateSigmaDisplay();
+  }
+
+  // σ/√n (표본평균의 이론적 표준편차) 갱신
+  function updateSigmaDisplay() {
+    const theory = popSigma / Math.sqrt(n);
+    document.getElementById('rec-theory').textContent = theory.toFixed(2);
   }
 
   // ─── 상자 렌더링 ───
@@ -683,6 +697,7 @@
     document.getElementById('rec-m').textContent    = '0';
     document.getElementById('rec-mean').textContent = '—';
     document.getElementById('rec-diff').textContent = '';
+    document.getElementById('rec-std').textContent  = '—';
     updateStatus();
     updateInterpretation();
     setAppState('idle');
@@ -710,6 +725,8 @@
     document.getElementById('rec-m').textContent    = '0';
     document.getElementById('rec-mean').textContent = '—';
     document.getElementById('rec-diff').textContent = '';
+    document.getElementById('rec-std').textContent  = '—';
+    updateSigmaDisplay(); // n이 바뀌면 σ/√n도 바뀜
     updateStatus();
     updateInterpretation();
     setAppState('idle');
@@ -746,6 +763,7 @@
     document.getElementById('rec-m').textContent    = '0';
     document.getElementById('rec-mean').textContent = '—';
     document.getElementById('rec-diff').textContent = '';
+    document.getElementById('rec-std').textContent  = '—';
     updateStatus();
     updateInterpretation();
     setAppState('idle');
@@ -771,6 +789,12 @@
     const diff = Math.abs(meanOfMeans - mu);
     document.getElementById('rec-diff').textContent =
       m >= 3 ? `(μ와 차이: ${diff.toFixed(1)})` : '';
+
+    // x̄들의 표준편차 갱신 (2개 이상일 때)
+    if (m >= 2) {
+      const mStd = Math.sqrt(sampleMeans.reduce((sum, v) => sum + (v - meanOfMeans) ** 2, 0) / m);
+      document.getElementById('rec-std').textContent = mStd.toFixed(2);
+    }
 
     // 최근 목록
     const li = document.createElement('li');
@@ -903,10 +927,14 @@
     } else if (m < 5) {
       msg = `기록판에는 원래 공들이 아니라 각 표본에서 나온 x̄ 값들이 쌓입니다. 이 값들의 평균을 보면 표본평균들의 평균을 확인할 수 있습니다.`;
     } else {
-      const mMean = sampleMeans.reduce((a, b) => a + b, 0) / m;
-      const diff  = Math.abs(mMean - mu);
+      const mMean  = sampleMeans.reduce((a, b) => a + b, 0) / m;
+      const diff   = Math.abs(mMean - mu);
+      const theory = popSigma / Math.sqrt(n);
       if (diff < 3) {
         msg = `표본평균들의 평균(<strong>${mMean.toFixed(1)}</strong>)이 모집단 평균 μ = ${mu.toFixed(1)}에 가까워지고 있습니다. 표본을 반복해서 뽑으면 평균들이 μ 주변에 모이는 경향을 볼 수 있습니다.`;
+        if (m >= 10) {
+          msg += ` x̄들의 표준편차가 σ/√n = <strong>${theory.toFixed(2)}</strong>에 가까워지는지도 기록판 아래에서 확인해 보세요.`;
+        }
       } else {
         msg = `아직 기록된 x̄가 많지 않아 표본평균들의 평균(<strong>${mMean.toFixed(1)}</strong>)이 μ = ${mu.toFixed(1)}와 차이 날 수 있습니다. 표본을 더 반복해 보며 어떻게 변하는지 관찰해 봅니다.`;
       }
