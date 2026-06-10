@@ -1,12 +1,25 @@
 # math-webapps Claude Code 지침
 
 > 이 파일(CLAUDE.md)은 Claude Code용이다. Codex용 지침은 AGENTS.md에 별도로 관리한다.  
-> 섹션 14를 제외한 모든 내용은 두 파일에서 항상 동일하게 유지한다.
+> 공통 세부 지침은 `docs/agent-guides/`에 두며, 도구별 작업 방식처럼 역할이 다른 부분을 제외한 핵심 원칙은 두 파일에서 함께 유지한다.
 
 이 프로젝트는 고등학교 수학 개념을 시각화하고 탐구할 수 있는 수업용 웹앱 모음이다.  
 주요 사용자는 일반계 고등학교 평균 수준 학생과 수업 시연을 하는 교사이다.
 
 핵심 목표는 학생이 수학을 눈으로 보고 직접 조작하면서, 결과뿐 아니라 변화 과정, 누적, 수렴, 분포 형성을 직관적으로 이해하도록 돕는 것이다.
+
+---
+
+## 작업별 추가 지침
+
+상세 기준은 `docs/agent-guides/`에 나누어 둔다. 작업을 시작할 때 해당 문서를 먼저 읽고 적용한다.
+
+- 새 웹앱을 만들거나 핵심 기능을 수정할 때: `docs/agent-guides/webapp.md`
+- 학습지 Markdown을 만들거나 수정할 때: `docs/agent-guides/worksheet.md`
+- 학습지를 PDF로 변환하거나 페이지 수를 맞출 때: `docs/agent-guides/pdf-export.md`
+- 작업지시서를 작성할 때: `docs/agent-guides/task-spec.md`
+- 폴더, 경로, 목록 페이지, GitHub Pages 링크를 수정할 때: `docs/agent-guides/repo-structure.md`
+- 작업 완료 전 자체 점검을 할 때: `docs/agent-guides/verification.md`
 
 ---
 
@@ -255,6 +268,9 @@ math-webapps/
 
 - 복잡한 수식은 LaTeX 문법으로 작성하고, MathJax 또는 MathML로 브라우저에서 읽기 좋게 렌더링한다.
 - 단순한 인라인 수식은 텍스트 표기만으로 충분한지 먼저 판단한다.
+- 학습지 Markdown 파일(`worksheet.md`, `worksheet-*.md` 등)에 들어가는 모든 수식은 반드시 LaTeX 형식으로 작성한다.
+- 학습지 Markdown의 인라인 수식은 `$...$`, 별도 줄 수식은 `$$...$$` 형식을 사용한다.
+- 학습지 Markdown을 제작할 때는 학생용 학습지와 예시답안이 있는 교사용 학습지를 함께 제작한다.
 - 분수, 극한, 합, 적분, 확률식처럼 구조가 중요한 수식은 LaTeX 렌더링을 우선 고려한다.
 - MathJax를 사용할 때는 CDN 의존성이 생긴다는 점을 고려하고, 필요한 페이지에만 추가한다.
 - 변수, 매개변수, 함수 이름, 확률기호, 극한기호는 한 웹앱 안에서 일관되게 사용한다.
