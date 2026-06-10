@@ -402,7 +402,7 @@
     /* 수직선 + 계산 과정 나란히 — grid로 고정 너비 보장 */
     .step-card-body {
       display: grid;
-      grid-template-columns: 1fr 200px;
+      grid-template-columns: minmax(0, 1fr) minmax(260px, 330px);
       align-items: center;
       gap: 14px;
       margin-top: 6px;
@@ -414,7 +414,7 @@
       background: #f8fafc;
       border: 1px solid #e2e8f0;
       border-radius: 8px;
-      overflow: hidden;
+      overflow-x: auto;
     }
 
     .step-formula {
@@ -863,13 +863,13 @@
           variable: '\\(10Z\\)',
           value: 10 * z, mean: 0, sd: 10,
           title: '4단계: \\(10Z\\) — 표준편차를 10칸으로',
-          formula: `\\(10\\times ${fmt(z, 2)} = ${fmt(10 * z, 1)}\\)`
+          formula: `\\(10Z = 10\\times\\dfrac{X-m}{\\sigma} = 10\\times ${fmt(z, 2)} = ${fmt(10 * z, 1)}\\)`
         },
         {
           variable: '\\(T\\)',
           value: t, mean: 50, sd: 10,
           title: '5단계: \\(T\\) — 평균을 50으로',
-          formula: `\\(${fmt(10 * z, 1)} + 50 = ${fmt(t, 1)}\\)`
+          formula: `\\(T = 10Z + 50 = \\dfrac{10(X-m)}{\\sigma} + 50 = ${fmt(10 * z, 1)} + 50 = ${fmt(t, 1)}\\)`
         }
       ];
     }
