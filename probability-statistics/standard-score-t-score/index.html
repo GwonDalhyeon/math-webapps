@@ -1,0 +1,1097 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>점수가 올랐으면 성적도 올랐을까?</title>
+  <link rel="stylesheet" href="../../assets/common.css" />
+  <style>
+    :root {
+      --blue: #2563eb;
+      --blue-dark: #1d4ed8;
+      --green: #16a34a;
+      --orange: #ea580c;
+      --violet: #7c3aed;
+      --slate: #334155;
+      --muted: #64748b;
+      --line: #cbd5e1;
+      --panel: #ffffff;
+      --soft-blue: #eff6ff;
+      --soft-green: #f0fdf4;
+      --soft-orange: #fff7ed;
+      --soft-violet: #f5f3ff;
+    }
+
+    body { background: #f8fafc; }
+
+    .app-wrap {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 24px 16px 36px;
+    }
+
+    .app-hero {
+      margin-bottom: 16px;
+    }
+
+    .app-hero h1 {
+      margin: 0 0 8px;
+      font-size: clamp(25px, 4vw, 40px);
+      line-height: 1.15;
+    }
+
+    .app-hero p {
+      margin: 5px 0;
+      font-size: 16px;
+      color: #475569;
+      line-height: 1.55;
+    }
+
+    .mode-tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin: 14px 0;
+    }
+
+    .tab-btn,
+    .btn,
+    .small-btn {
+      border: 1px solid #cbd5e1;
+      background: white;
+      color: #1e293b;
+      border-radius: 8px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .tab-btn {
+      padding: 10px 16px;
+      font-size: 15px;
+    }
+
+    .tab-btn.active {
+      background: var(--blue);
+      color: white;
+      border-color: var(--blue);
+    }
+
+    .view { display: none; }
+    .view.active { display: block; }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 14px;
+      box-shadow: 0 8px 22px rgba(15, 23, 42, 0.06);
+    }
+
+    .panel h2,
+    .panel h3 {
+      margin: 0 0 10px;
+      color: #111827;
+    }
+
+    .panel h2 { font-size: 21px; }
+    .panel h3 { font-size: 17px; }
+
+    .question-panel {
+      display: grid;
+      grid-template-columns: 1.2fr 1fr;
+      gap: 12px;
+      align-items: center;
+      background: linear-gradient(135deg, #eff6ff, #f8fafc 62%, #fff7ed);
+      border-color: #bfdbfe;
+    }
+
+    .question-panel .big-question {
+      font-size: clamp(22px, 3vw, 31px);
+      font-weight: 900;
+      color: #0f172a;
+      line-height: 1.2;
+    }
+
+    .question-panel p {
+      margin: 0;
+      font-size: 15px;
+      color: #475569;
+    }
+
+    .summary-box {
+      background: white;
+      border: 1px solid #dbeafe;
+      border-radius: 8px;
+      padding: 12px;
+    }
+
+    .summary-box strong {
+      display: block;
+      color: var(--blue-dark);
+      font-size: 14px;
+      margin-bottom: 5px;
+    }
+
+    .input-table-wrap {
+      overflow-x: auto;
+    }
+
+    .input-table,
+    .result-table,
+    .step-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+
+    .input-table th,
+    .input-table td,
+    .result-table th,
+    .result-table td,
+    .step-table th,
+    .step-table td {
+      border-bottom: 1px solid #e5e7eb;
+      padding: 8px;
+      text-align: center;
+      vertical-align: middle;
+    }
+
+    .input-table th,
+    .result-table th,
+    .step-table th {
+      background: #f8fafc;
+      color: #334155;
+      font-weight: 800;
+    }
+
+    .input-table input {
+      width: 84px;
+      padding: 7px 8px;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      font-size: 15px;
+      text-align: right;
+    }
+
+    .input-table input.invalid {
+      border-color: #dc2626;
+      background: #fef2f2;
+    }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .btn {
+      padding: 9px 13px;
+      font-size: 14px;
+    }
+
+    .btn.primary {
+      background: var(--blue);
+      color: white;
+      border-color: var(--blue);
+    }
+
+    .btn.gray {
+      background: #475569;
+      color: white;
+      border-color: #475569;
+    }
+
+    .small-btn {
+      padding: 7px 10px;
+      font-size: 13px;
+    }
+
+    .small-btn.active {
+      color: white;
+      background: var(--violet);
+      border-color: var(--violet);
+    }
+
+    .notice {
+      font-size: 13px;
+      color: #b91c1c;
+      font-weight: 700;
+    }
+
+    .grid-two {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: 14px;
+    }
+
+    .line-card {
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 12px;
+      background: #ffffff;
+      margin-bottom: 10px;
+    }
+
+    .line-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: baseline;
+      margin-bottom: 8px;
+    }
+
+    .line-title {
+      font-weight: 900;
+      color: #111827;
+    }
+
+    .line-sub {
+      font-size: 13px;
+      color: #64748b;
+      text-align: right;
+    }
+
+    .number-line {
+      position: relative;
+      height: 96px;
+      margin: 4px 4px 2px;
+    }
+
+    .axis {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 55px;
+      height: 3px;
+      background: #cbd5e1;
+      border-radius: 999px;
+    }
+
+    .tick {
+      position: absolute;
+      top: 40px;
+      width: 1px;
+      height: 26px;
+      background: #94a3b8;
+      transform: translateX(-0.5px);
+    }
+
+    .tick.mean {
+      width: 3px;
+      height: 36px;
+      top: 33px;
+      background: #111827;
+    }
+
+    .tick-label {
+      position: absolute;
+      top: 70px;
+      transform: translateX(-50%);
+      font-size: 12px;
+      color: #475569;
+      white-space: nowrap;
+    }
+
+    .tick-label.mean-label {
+      color: #111827;
+      font-weight: 900;
+    }
+
+    .point {
+      position: absolute;
+      top: 43px;
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transform: translateX(-50%);
+      font-size: 11px;
+      font-weight: 900;
+      border: 3px solid white;
+      box-shadow: 0 2px 8px rgba(15, 23, 42, 0.25);
+      z-index: 3;
+    }
+
+    .point-label {
+      position: absolute;
+      top: 2px;
+      transform: translateX(-50%);
+      padding: 2px 6px;
+      border-radius: 6px;
+      background: #0f172a;
+      color: white;
+      font-size: 12px;
+      font-weight: 800;
+      white-space: nowrap;
+      z-index: 4;
+    }
+
+    .point.a, .legend-dot.a { background: var(--blue); }
+    .point.b, .legend-dot.b { background: var(--green); }
+    .point.c, .legend-dot.c { background: var(--orange); }
+    .point.y, .legend-dot.y { background: var(--violet); }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 14px;
+      margin-top: 8px;
+      font-size: 13px;
+      color: #334155;
+    }
+
+    .legend-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .legend-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+    }
+
+    .interpret {
+      border-left: 5px solid var(--blue);
+      background: #eff6ff;
+      color: #0f172a;
+      border-radius: 0 8px 8px 0;
+      padding: 13px 16px;
+      font-size: 16px;
+      line-height: 1.65;
+    }
+
+    .interpret strong {
+      color: var(--blue-dark);
+    }
+
+    .formula-strip {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .formula-chip {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 7px 10px;
+      font-size: 14px;
+      font-weight: 800;
+      color: #334155;
+    }
+
+    .select-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .step-controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin: 12px 0 4px;
+    }
+
+    .step-table tr.hidden-step,
+    .step-line.hidden-step {
+      display: none;
+    }
+
+    .step-table tr.current-step {
+      background: #fff7ed;
+      outline: 2px solid #fdba74;
+      outline-offset: -2px;
+    }
+
+    .calc-box {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 12px;
+      font-size: 15px;
+      line-height: 1.8;
+    }
+
+    .general-box {
+      background: #f5f3ff;
+      border: 1px solid #ddd6fe;
+      border-radius: 8px;
+      padding: 14px;
+      margin-top: 14px;
+    }
+
+    .general-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      align-items: end;
+      margin-top: 8px;
+    }
+
+    .general-grid label {
+      display: block;
+      font-size: 12px;
+      color: #5b21b6;
+      font-weight: 900;
+      margin-bottom: 4px;
+    }
+
+    .general-grid input {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #c4b5fd;
+      border-radius: 8px;
+      font-size: 15px;
+      text-align: right;
+    }
+
+    .general-result {
+      padding: 8px;
+      border-radius: 8px;
+      background: white;
+      font-weight: 900;
+      color: #4c1d95;
+      text-align: center;
+    }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    @media (max-width: 900px) {
+      .question-panel,
+      .grid-two,
+      .general-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .line-sub { text-align: left; }
+      .line-head { flex-direction: column; gap: 2px; }
+    }
+
+    @media (max-width: 620px) {
+      .app-wrap { padding: 18px 10px 28px; }
+      .panel { padding: 12px; }
+      .input-table,
+      .result-table,
+      .step-table { font-size: 13px; }
+      .input-table input { width: 70px; }
+      .tick-label { font-size: 10px; }
+      .point-label { font-size: 11px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="app-wrap">
+    <a class="back-link" href="../">← 확률과 통계</a>
+
+    <header class="app-hero">
+      <p class="eyebrow">표준점수 · T점수</p>
+      <h1>점수가 올랐으면 성적도 올랐을까?</h1>
+      <p>같은 과목이라도 시험마다 평균과 표준편차가 다르면 원점수만으로 상대적 위치를 비교하기 어렵습니다.</p>
+    </header>
+
+    <nav class="mode-tabs" aria-label="화면 선택">
+      <button class="tab-btn active" type="button" data-view="changeView">점수 변화 보기</button>
+      <button class="tab-btn" type="button" data-view="processView">표준화 과정 보기</button>
+    </nav>
+
+    <section id="changeView" class="view active" aria-labelledby="changeTitle">
+      <div class="panel question-panel">
+        <div>
+          <div class="big-question" id="changeTitle">점수가 올랐으면 정말 성적도 오른 것일까?</div>
+          <p>원점수 상승과 평균에서 표준편차 몇 칸 떨어져 있는지는 서로 다른 정보입니다.</p>
+        </div>
+        <div class="summary-box" id="mainSummary">
+          <strong>기본 예시</strong>
+          원점수는 72점에서 82점으로 올랐지만, T점수는 60점에서 55점으로 낮아집니다.
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>시험별 원점수, 평균, 표준편차</h2>
+        <div class="input-table-wrap">
+          <table class="input-table">
+            <thead>
+              <tr>
+                <th>시기</th>
+                <th>원점수 X</th>
+                <th>시험 평균 m</th>
+                <th>표준편차 σ</th>
+                <th>Z = (X-m)/σ</th>
+                <th>T = 10Z+50</th>
+              </tr>
+            </thead>
+            <tbody id="scoreInputBody"></tbody>
+          </table>
+        </div>
+        <div class="toolbar">
+          <button class="btn gray" type="button" id="resetDataBtn">기본 예시</button>
+          <span class="notice" id="inputNotice" role="status"></span>
+        </div>
+      </div>
+
+      <div class="grid-two">
+        <div class="panel">
+          <h2>원점수 변화</h2>
+          <div id="rawLine"></div>
+          <div class="legend" id="rawLegend"></div>
+        </div>
+
+        <div class="panel">
+          <h2>공통 T점수 수직선</h2>
+          <div id="tLine"></div>
+          <div class="legend" id="tLegend"></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>시험마다 달라지는 표준편차 눈금</h2>
+        <div id="standardLines"></div>
+      </div>
+
+      <div class="interpret" id="interpretText"></div>
+    </section>
+
+    <section id="processView" class="view" aria-labelledby="processTitle">
+      <div class="panel">
+        <h2 id="processTitle">선택한 시험의 표준화 과정</h2>
+        <div class="select-row" aria-label="시험 선택">
+          <span style="font-weight:900;color:#334155;">시험 선택</span>
+          <button class="small-btn active" type="button" data-exam="0">1차 시험</button>
+          <button class="small-btn" type="button" data-exam="1">2차 시험</button>
+          <button class="small-btn" type="button" data-exam="2">3차 시험</button>
+        </div>
+
+        <div class="step-controls">
+          <button class="btn gray" type="button" id="restartStepsBtn">처음부터</button>
+          <button class="btn primary" type="button" id="nextStepBtn">다음 단계</button>
+          <button class="btn" type="button" id="showAllStepsBtn">전체 보기</button>
+        </div>
+
+        <div class="formula-strip" aria-label="표준화 공식">
+          <span class="formula-chip">X</span>
+          <span class="formula-chip">X - m</span>
+          <span class="formula-chip">(X - m) / σ</span>
+          <span class="formula-chip">10(X - m) / σ</span>
+          <span class="formula-chip">10(X - m) / σ + 50</span>
+        </div>
+      </div>
+
+      <div class="grid-two">
+        <div class="panel">
+          <h2>단계별 평균과 표준편차</h2>
+          <div class="input-table-wrap">
+            <table class="step-table">
+              <thead>
+                <tr>
+                  <th>단계</th>
+                  <th>변수</th>
+                  <th>현재 값</th>
+                  <th>평균</th>
+                  <th>표준편차</th>
+                  <th>의미</th>
+                </tr>
+              </thead>
+              <tbody id="stepTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="panel">
+          <h2>계산 과정</h2>
+          <div class="calc-box" id="calcBox"></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>단계별 수직선</h2>
+        <div id="processLines"></div>
+      </div>
+
+      <div class="general-box">
+        <h3>원하는 평균과 표준편차로 바꾸기</h3>
+        <p style="margin:0;color:#4c1d95;font-size:15px;line-height:1.55;">
+          Z = (X - m) / σ로 표준화한 뒤, Y = aZ + b로 바꾸면 Y의 평균은 b, 표준편차는 a가 됩니다. T점수는 a = 10, b = 50인 경우입니다.
+        </p>
+        <div class="general-grid">
+          <div>
+            <label for="targetSdInput">목표 표준편차 a</label>
+            <input id="targetSdInput" type="number" min="0.1" step="0.1" value="10" />
+          </div>
+          <div>
+            <label for="targetMeanInput">목표 평균 b</label>
+            <input id="targetMeanInput" type="number" step="1" value="50" />
+          </div>
+          <div class="general-result" id="generalFormula">Y = 10Z + 50</div>
+          <div class="general-result" id="generalValue">Y = 60</div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const defaultExams = [
+      { label: '1차 시험', short: '1차', x: 72, mean: 60, sigma: 12, className: 'a' },
+      { label: '2차 시험', short: '2차', x: 78, mean: 72, sigma: 6, className: 'b' },
+      { label: '3차 시험', short: '3차', x: 82, mean: 80, sigma: 4, className: 'c' }
+    ];
+
+    let exams = defaultExams.map(item => ({ ...item }));
+    let selectedExamIndex = 0;
+    let visibleStepCount = 1;
+
+    const scoreInputBody = document.getElementById('scoreInputBody');
+    const inputNotice = document.getElementById('inputNotice');
+    const rawLine = document.getElementById('rawLine');
+    const tLine = document.getElementById('tLine');
+    const standardLines = document.getElementById('standardLines');
+    const interpretText = document.getElementById('interpretText');
+    const rawLegend = document.getElementById('rawLegend');
+    const tLegend = document.getElementById('tLegend');
+    const mainSummary = document.getElementById('mainSummary');
+    const stepTableBody = document.getElementById('stepTableBody');
+    const calcBox = document.getElementById('calcBox');
+    const processLines = document.getElementById('processLines');
+    const targetSdInput = document.getElementById('targetSdInput');
+    const targetMeanInput = document.getElementById('targetMeanInput');
+    const generalFormula = document.getElementById('generalFormula');
+    const generalValue = document.getElementById('generalValue');
+
+    function fmt(value, digits = 1) {
+      if (!Number.isFinite(value)) return '-';
+      if (Math.abs(value - Math.round(value)) < 1e-9) return String(Math.round(value));
+      return value.toFixed(digits);
+    }
+
+    function zScore(exam) {
+      return (exam.x - exam.mean) / exam.sigma;
+    }
+
+    function tScore(exam) {
+      return 10 * zScore(exam) + 50;
+    }
+
+    function clamp(value, min, max) {
+      return Math.min(max, Math.max(min, value));
+    }
+
+    function positionPercent(value, min, max) {
+      if (max === min) return 50;
+      return clamp(((value - min) / (max - min)) * 100, 0, 100);
+    }
+
+    function tickLabelsForCentered(mean, sd, extent) {
+      const ticks = [];
+      for (let k = -extent; k <= extent; k += 1) {
+        ticks.push({
+          value: mean + k * sd,
+          label: fmt(mean + k * sd, 1),
+          isMean: k === 0
+        });
+      }
+      return ticks;
+    }
+
+    function renderNumberLine({ title, subtitle, ticks, min, max, points, tickNote }) {
+      const tickHtml = ticks.map(tick => {
+        const left = positionPercent(tick.value, min, max);
+        return `
+          <div class="tick ${tick.isMean ? 'mean' : ''}" style="left:${left}%"></div>
+          <div class="tick-label ${tick.isMean ? 'mean-label' : ''}" style="left:${left}%">${tick.label}</div>
+        `;
+      }).join('');
+
+      const pointHtml = points.map((point, idx) => {
+        const left = positionPercent(point.value, min, max);
+        const top = point.labelTop == null ? 0 : point.labelTop;
+        return `
+          <div class="point-label" style="left:${left}%; top:${top}px;">${point.label}</div>
+          <div class="point ${point.className || 'a'}" style="left:${left}%;" aria-hidden="true">${point.short || idx + 1}</div>
+        `;
+      }).join('');
+
+      return `
+        <div class="line-card">
+          <div class="line-head">
+            <div class="line-title">${title}</div>
+            <div class="line-sub">${subtitle || ''}</div>
+          </div>
+          <div class="number-line">
+            <div class="axis"></div>
+            ${tickHtml}
+            ${pointHtml}
+          </div>
+          ${tickNote ? `<div class="line-sub" style="text-align:left;">${tickNote}</div>` : ''}
+        </div>
+      `;
+    }
+
+    function buildInputTable() {
+      scoreInputBody.innerHTML = exams.map((exam, idx) => `
+        <tr>
+          <th scope="row">${exam.label}</th>
+          <td><input type="number" data-field="x" data-index="${idx}" value="${exam.x}" step="1" aria-label="${exam.label} 원점수"></td>
+          <td><input type="number" data-field="mean" data-index="${idx}" value="${exam.mean}" step="1" aria-label="${exam.label} 평균"></td>
+          <td><input type="number" data-field="sigma" data-index="${idx}" value="${exam.sigma}" step="0.1" min="0.1" aria-label="${exam.label} 표준편차"></td>
+          <td id="cell-z-${idx}">-</td>
+          <td id="cell-t-${idx}">-</td>
+        </tr>
+      `).join('');
+      updateResultCells();
+    }
+
+    function updateResultCells() {
+      exams.forEach((exam, idx) => {
+        const invalid = exam.sigma <= 0;
+        const sigmaInput = scoreInputBody.querySelector(`input[data-field="sigma"][data-index="${idx}"]`);
+        if (sigmaInput) sigmaInput.classList.toggle('invalid', invalid);
+        const zCell = document.getElementById(`cell-z-${idx}`);
+        const tCell = document.getElementById(`cell-t-${idx}`);
+        if (zCell) zCell.textContent = invalid ? '-' : fmt(zScore(exam), 2);
+        if (tCell) tCell.textContent = invalid ? '-' : fmt(tScore(exam), 1);
+      });
+    }
+
+    function renderLegends() {
+      const items = exams.map(exam => `<span class="legend-item"><span class="legend-dot ${exam.className}"></span>${exam.label}</span>`).join('');
+      rawLegend.innerHTML = items;
+      tLegend.innerHTML = items;
+    }
+
+    function renderRawLine() {
+      const values = exams.map(exam => exam.x);
+      const min = Math.floor((Math.min(...values) - 8) / 5) * 5;
+      const max = Math.ceil((Math.max(...values) + 8) / 5) * 5;
+      const ticks = [];
+      const step = Math.max(5, Math.ceil((max - min) / 4 / 5) * 5);
+      for (let value = min; value <= max; value += step) {
+        ticks.push({ value, label: fmt(value), isMean: false });
+      }
+      rawLine.innerHTML = renderNumberLine({
+        title: '원점수만 보기',
+        subtitle: `${exams.map(exam => fmt(exam.x)).join(' → ')}`,
+        ticks,
+        min,
+        max,
+        points: exams.map((exam, idx) => ({
+          value: exam.x,
+          label: `${exam.short} X=${fmt(exam.x)}`,
+          short: String(idx + 1),
+          className: exam.className,
+          labelTop: idx % 2 === 0 ? 2 : 22
+        })),
+        tickNote: '원점수는 실제로 올랐습니다. 상대적 위치는 아직 판단하지 않습니다.'
+      });
+    }
+
+    function renderTLine() {
+      const values = exams.map(tScore);
+      const minTick = Math.floor(Math.min(30, ...values) / 10) * 10;
+      const maxTick = Math.ceil(Math.max(70, ...values) / 10) * 10;
+      const ticks = [];
+      for (let value = minTick; value <= maxTick; value += 10) {
+        ticks.push({ value, label: fmt(value), isMean: value === 50 });
+      }
+      const used = new Map();
+      tLine.innerHTML = renderNumberLine({
+        title: '같은 기준으로 바꾼 T점수',
+        subtitle: '평균 50, 표준편차 10',
+        ticks,
+        min: minTick,
+        max: maxTick,
+        points: exams.map((exam, idx) => {
+          const t = tScore(exam);
+          const key = fmt(t, 1);
+          const count = used.get(key) || 0;
+          used.set(key, count + 1);
+          return {
+            value: t,
+            label: `${exam.short} T=${fmt(t, 1)}`,
+            short: String(idx + 1),
+            className: exam.className,
+            labelTop: count * 20
+          };
+        }),
+        tickNote: 'T점수가 같으면 평균에서 표준편차 몇 칸 떨어졌는지가 같습니다.'
+      });
+    }
+
+    function renderStandardLines() {
+      standardLines.innerHTML = exams.map(exam => {
+        const z = zScore(exam);
+        const extent = Math.max(2, Math.ceil(Math.abs(z)));
+        const min = exam.mean - extent * exam.sigma;
+        const max = exam.mean + extent * exam.sigma;
+        const ticks = tickLabelsForCentered(exam.mean, exam.sigma, extent);
+        return renderNumberLine({
+          title: exam.label,
+          subtitle: `m=${fmt(exam.mean)}, σ=${fmt(exam.sigma)}, Z=${fmt(z, 2)}`,
+          ticks,
+          min,
+          max,
+          points: [{
+            value: exam.x,
+            label: `X=${fmt(exam.x)} · Z=${fmt(z, 2)}`,
+            short: exam.short,
+            className: exam.className
+          }],
+          tickNote: `눈금 한 칸은 이 시험의 표준편차 ${fmt(exam.sigma)}점입니다.`
+        });
+      }).join('');
+    }
+
+    function renderInterpretation() {
+      const rawFirst = exams[0].x;
+      const rawLast = exams[exams.length - 1].x;
+      const tFirst = tScore(exams[0]);
+      const tLast = tScore(exams[exams.length - 1]);
+      const zTexts = exams.map(exam => `${exam.short}: Z=${fmt(zScore(exam), 2)}, T=${fmt(tScore(exam), 1)}`).join(' · ');
+      let relation = '비교해 보아야 합니다';
+      if (tLast > tFirst) relation = '높아졌습니다';
+      if (tLast < tFirst) relation = '낮아졌습니다';
+      interpretText.innerHTML = `
+        <strong>해석</strong><br>
+        원점수는 ${fmt(rawFirst)}점에서 ${fmt(rawLast)}점으로 ${rawLast >= rawFirst ? '올랐습니다' : '내려갔습니다'}.
+        하지만 T점수는 ${fmt(tFirst, 1)}점에서 ${fmt(tLast, 1)}점으로 ${relation}.
+        평균과 표준편차가 다른 시험을 비교할 때는 원점수뿐 아니라 <strong>평균에서 표준편차 몇 칸 떨어졌는지</strong>를 함께 보아야 합니다.<br>
+        <span style="color:#475569;">${zTexts}</span>
+      `;
+      mainSummary.innerHTML = `
+        <strong>현재 데이터 요약</strong>
+        원점수: ${exams.map(exam => fmt(exam.x)).join(' → ')}<br>
+        T점수: ${exams.map(exam => fmt(tScore(exam), 1)).join(' → ')}
+      `;
+    }
+
+    function renderChangeView() {
+      renderLegends();
+      renderRawLine();
+      renderTLine();
+      renderStandardLines();
+      renderInterpretation();
+    }
+
+    function selectedExam() {
+      return exams[selectedExamIndex];
+    }
+
+    function stepData(exam) {
+      const z = zScore(exam);
+      const t = tScore(exam);
+      return [
+        {
+          variable: 'X',
+          value: exam.x,
+          mean: exam.mean,
+          sd: exam.sigma,
+          meaning: '원래 점수',
+          title: '1단계: X',
+          formula: `X = ${fmt(exam.x)}`
+        },
+        {
+          variable: 'X - m',
+          value: exam.x - exam.mean,
+          mean: 0,
+          sd: exam.sigma,
+          meaning: '평균을 0으로 옮김',
+          title: '2단계: X - m',
+          formula: `X - m = ${fmt(exam.x)} - ${fmt(exam.mean)} = ${fmt(exam.x - exam.mean)}`
+        },
+        {
+          variable: '(X - m) / σ',
+          value: z,
+          mean: 0,
+          sd: 1,
+          meaning: '표준편차를 1칸으로 맞춤',
+          title: '3단계: 표준점수 Z',
+          formula: `(X - m) / σ = ${fmt(exam.x - exam.mean)} / ${fmt(exam.sigma)} = ${fmt(z, 2)}`
+        },
+        {
+          variable: '10(X - m) / σ',
+          value: 10 * z,
+          mean: 0,
+          sd: 10,
+          meaning: '표준편차를 10칸으로 늘림',
+          title: '4단계: 10Z',
+          formula: `10 × ${fmt(z, 2)} = ${fmt(10 * z, 1)}`
+        },
+        {
+          variable: '10(X - m) / σ + 50',
+          value: t,
+          mean: 50,
+          sd: 10,
+          meaning: '평균을 50으로 옮김',
+          title: '5단계: T점수',
+          formula: `${fmt(10 * z, 1)} + 50 = ${fmt(t, 1)}`
+        }
+      ];
+    }
+
+    function renderStepTable(steps) {
+      stepTableBody.innerHTML = steps.map((step, idx) => {
+        const hidden = idx >= visibleStepCount ? 'hidden-step' : '';
+        const current = idx === visibleStepCount - 1 ? 'current-step' : '';
+        return `
+          <tr class="${hidden} ${current}">
+            <th scope="row">${idx + 1}</th>
+            <td>${step.variable}</td>
+            <td>${fmt(step.value, 2)}</td>
+            <td>${fmt(step.mean, 1)}</td>
+            <td>${fmt(step.sd, 1)}</td>
+            <td>${step.meaning}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function renderCalcBox(steps) {
+      const visible = steps.slice(0, visibleStepCount);
+      calcBox.innerHTML = visible.map(step => `<div>${step.formula}</div>`).join('');
+    }
+
+    function renderProcessLines(steps) {
+      processLines.innerHTML = steps.map((step, idx) => {
+        const extent = Math.max(2, Math.ceil(Math.abs((step.value - step.mean) / step.sd)));
+        const min = step.mean - extent * step.sd;
+        const max = step.mean + extent * step.sd;
+        const ticks = tickLabelsForCentered(step.mean, step.sd, extent);
+        const hidden = idx >= visibleStepCount ? ' hidden-step' : '';
+        return `
+          <div class="step-line${hidden}">
+            ${renderNumberLine({
+              title: step.title,
+              subtitle: `평균 ${fmt(step.mean, 1)}, 표준편차 ${fmt(step.sd, 1)}`,
+              ticks,
+              min,
+              max,
+              points: [{
+                value: step.value,
+                label: `${step.variable} = ${fmt(step.value, 2)}`,
+                short: String(idx + 1),
+                className: idx === 4 ? 'y' : selectedExam().className
+              }],
+              tickNote: `이 단계의 눈금 한 칸은 표준편차 ${fmt(step.sd, 1)}입니다.`
+            })}
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderGeneralization() {
+      const exam = selectedExam();
+      const z = zScore(exam);
+      const rawA = parseFloat(targetSdInput.value);
+      const rawB = parseFloat(targetMeanInput.value);
+      const a = (!isNaN(rawA) && rawA > 0) ? rawA : 10;
+      const b = !isNaN(rawB) ? rawB : 50;
+      const y = a * z + b;
+      generalFormula.textContent = `Y = ${fmt(a, 1)}Z + ${fmt(b, 1)}`;
+      generalValue.textContent = `Y = ${fmt(y, 1)}`;
+    }
+
+    function renderProcessView() {
+      const steps = stepData(selectedExam());
+      renderStepTable(steps);
+      renderCalcBox(steps);
+      renderProcessLines(steps);
+      renderGeneralization();
+    }
+
+    function renderAll(rebuildInputs) {
+      const invalid = exams.some(exam => exam.sigma <= 0);
+      inputNotice.textContent = invalid ? '표준편차 σ는 0보다 커야 합니다.' : '';
+      if (rebuildInputs) {
+        buildInputTable();
+      } else {
+        updateResultCells();
+      }
+      if (!invalid) {
+        renderChangeView();
+        renderProcessView();
+      }
+    }
+
+    function bindEvents() {
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('.tab-btn').forEach(item => item.classList.remove('active'));
+          document.querySelectorAll('.view').forEach(view => view.classList.remove('active'));
+          btn.classList.add('active');
+          document.getElementById(btn.dataset.view).classList.add('active');
+        });
+      });
+
+      scoreInputBody.addEventListener('input', event => {
+        const input = event.target;
+        if (!input.matches('input')) return;
+        const idx = Number(input.dataset.index);
+        const field = input.dataset.field;
+        exams[idx][field] = Number(input.value);
+        renderAll(false);
+      });
+
+      document.getElementById('resetDataBtn').addEventListener('click', () => {
+        exams = defaultExams.map(item => ({ ...item }));
+        selectedExamIndex = 0;
+        visibleStepCount = 1;
+        document.querySelectorAll('[data-exam]').forEach(btn => {
+          btn.classList.toggle('active', Number(btn.dataset.exam) === selectedExamIndex);
+        });
+        renderAll(true);
+      });
+
+      document.querySelectorAll('[data-exam]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          selectedExamIndex = Number(btn.dataset.exam);
+          visibleStepCount = 1;
+          document.querySelectorAll('[data-exam]').forEach(item => item.classList.remove('active'));
+          btn.classList.add('active');
+          renderProcessView();
+        });
+      });
+
+      document.getElementById('restartStepsBtn').addEventListener('click', () => {
+        visibleStepCount = 1;
+        renderProcessView();
+      });
+
+      document.getElementById('nextStepBtn').addEventListener('click', () => {
+        visibleStepCount = Math.min(5, visibleStepCount + 1);
+        renderProcessView();
+      });
+
+      document.getElementById('showAllStepsBtn').addEventListener('click', () => {
+        visibleStepCount = 5;
+        renderProcessView();
+      });
+
+      targetSdInput.addEventListener('input', renderGeneralization);
+      targetMeanInput.addEventListener('input', renderGeneralization);
+    }
+
+    bindEvents();
+    renderAll(true);
+  </script>
+</body>
+</html>
