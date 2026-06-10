@@ -533,11 +533,11 @@
             <thead>
               <tr>
                 <th>시기</th>
-                <th>원점수 X</th>
-                <th>시험 평균 m</th>
-                <th>표준편차 σ</th>
+                <th>원점수 \(X\)</th>
+                <th>시험 평균 \(m\)</th>
+                <th>표준편차 \(\sigma\)</th>
                 <th>\(Z = \dfrac{X-m}{\sigma}\)</th>
-                <th>T = 10Z + 50</th>
+                <th>\(T = 10Z + 50\)</th>
               </tr>
             </thead>
             <tbody>
@@ -599,8 +599,8 @@
         </div>
 
         <div class="formula-strip" aria-label="표준화 공식">
-          <span class="formula-chip">X</span>
-          <span class="formula-chip">X − m</span>
+          <span class="formula-chip">\(X\)</span>
+          <span class="formula-chip">\(X-m\)</span>
           <span class="formula-chip">\(\dfrac{X-m}{\sigma}\)</span>
           <span class="formula-chip">\(\dfrac{10(X-m)}{\sigma}\)</span>
           <span class="formula-chip">\(\dfrac{10(X-m)}{\sigma}+50\)</span>
@@ -613,19 +613,19 @@
         <h3>원하는 평균과 표준편차로 바꾸기</h3>
         <p style="margin:0;color:#4c1d95;font-size:15px;line-height:1.7;">
           \(Z = \dfrac{X-m}{\sigma}\) 로 표준화한 뒤, \(Y = aZ + b\) 로 바꾸면
-          Y의 평균은 b, 표준편차는 a가 됩니다. T점수는 a = 10, b = 50인 경우입니다.
+          \(Y\)의 평균은 \(b\), 표준편차는 \(a\)가 됩니다. T점수는 \(a = 10\), \(b = 50\)인 경우입니다.
         </p>
         <div class="general-grid">
           <div>
-            <label for="targetSdInput">목표 표준편차 a</label>
+            <label for="targetSdInput">목표 표준편차 \(a\)</label>
             <input id="targetSdInput" type="number" min="0.1" step="0.1" value="10" />
           </div>
           <div>
-            <label for="targetMeanInput">목표 평균 b</label>
+            <label for="targetMeanInput">목표 평균 \(b\)</label>
             <input id="targetMeanInput" type="number" step="1" value="50" />
           </div>
-          <div class="general-result" id="generalFormula">Y = 10Z + 50</div>
-          <div class="general-result" id="generalValue">Y = 70</div>
+          <div class="general-result" id="generalFormula">\(Y = 10Z + 50\)</div>
+          <div class="general-result" id="generalValue">\(Y = 70\)</div>
         </div>
       </div>
     </section>
@@ -719,9 +719,10 @@
         <button class="exam-btn${idx === selectedExamIndex ? ' active' : ''}"
                 type="button" data-exam="${idx}">
           <span class="exam-btn-name">${exam.label}</span>
-          <span class="exam-btn-info">X = ${fmt(exam.x)}, m = ${fmt(exam.mean)}, σ = ${fmt(exam.sigma)}</span>
+          <span class="exam-btn-info">\\(X = ${fmt(exam.x)},\\ m = ${fmt(exam.mean)},\\ \\sigma = ${fmt(exam.sigma)}\\)</span>
         </button>
       `).join('');
+      typesetMath(examSelectRow);
     }
 
     /* ── LaTeX 수식 후처리 ── */
@@ -752,7 +753,7 @@
         subtitle: exams.map(e => fmt(e.x)).join(' → '),
         ticks, min, max,
         points: exams.map((e, i) => ({
-          value: e.x, label: `${e.short} X=${fmt(e.x)}`,
+          value: e.x, label: `${e.short} \\(X=${fmt(e.x)}\\)`,
           short: String(i + 1), className: e.className,
           labelTop: i % 2 === 0 ? 2 : 22
         })),
@@ -770,14 +771,14 @@
       const used = new Map();
       tLine.innerHTML = renderNumberLine({
         title: '같은 기준으로 바꾼 T점수',
-        subtitle: '평균 50, 표준편차 10',
+        subtitle: '평균 \\(50\\), 표준편차 \\(10\\)',
         ticks, min: minTick, max: maxTick,
         points: exams.map((e, i) => {
           const t = tScore(e);
           const key = fmt(t, 1);
           const count = used.get(key) || 0;
           used.set(key, count + 1);
-          return { value: t, label: `${e.short} T=${fmt(t, 1)}`, short: String(i + 1), className: e.className, labelTop: count * 20 };
+          return { value: t, label: `${e.short} \\(T=${fmt(t, 1)}\\)`, short: String(i + 1), className: e.className, labelTop: count * 20 };
         }),
         tickNote: 'T점수가 같으면 평균에서 표준편차 몇 칸 떨어졌는지가 같습니다.'
       });
@@ -791,10 +792,10 @@
         const max = e.mean + extent * e.sigma;
         return renderNumberLine({
           title: e.label,
-          subtitle: `m=${fmt(e.mean)}, σ=${fmt(e.sigma)}, Z=${fmt(z, 2)}`,
+          subtitle: `\\(m=${fmt(e.mean)},\\ \\sigma=${fmt(e.sigma)},\\ Z=${fmt(z, 2)}\\)`,
           ticks: tickLabelsForCentered(e.mean, e.sigma, extent),
           min, max,
-          points: [{ value: e.x, label: `X=${fmt(e.x)} · Z=${fmt(z, 2)}`, short: e.short, className: e.className }],
+          points: [{ value: e.x, label: `\\(X=${fmt(e.x)}\\) · \\(Z=${fmt(z, 2)}\\)`, short: e.short, className: e.className }],
           tickNote: `눈금 한 칸은 이 시험의 표준편차 ${fmt(e.sigma)}점입니다.`
         });
       }).join('');
@@ -805,7 +806,7 @@
       const rawLast  = exams[exams.length - 1].x;
       const tFirst   = tScore(exams[0]);
       const tLast    = tScore(exams[exams.length - 1]);
-      const zTexts   = exams.map(e => `${e.short}: Z=${fmt(zScore(e), 2)}, T=${fmt(tScore(e), 1)}`).join(' · ');
+      const zTexts   = exams.map(e => `${e.short}: \\(Z=${fmt(zScore(e), 2)}\\), \\(T=${fmt(tScore(e), 1)}\\)`).join(' · ');
       const relation = tLast > tFirst ? '높아졌습니다' : tLast < tFirst ? '낮아졌습니다' : '같습니다';
       interpretText.innerHTML = `
         <strong>해석</strong><br>
@@ -818,8 +819,9 @@
       mainSummary.innerHTML = `
         <strong>현재 데이터 요약</strong>
         원점수: ${exams.map(e => fmt(e.x)).join(' → ')}<br>
-        T점수: ${exams.map(e => fmt(tScore(e), 1)).join(' → ')}
+        T점수: ${exams.map(e => `\\(${fmt(tScore(e), 1)}\\)`).join(' → ')}
       `;
+      typesetMath(document.getElementById('changeView'));
     }
 
     function renderChangeView() {
@@ -839,35 +841,35 @@
       const dev = exam.x - exam.mean;
       return [
         {
-          variable: 'X',
+          variable: '\\(X\\)',
           value: exam.x, mean: exam.mean, sd: exam.sigma,
-          title: '1단계: X — 원래 점수',
-          formula: `X = ${fmt(exam.x)}`
+          title: '1단계: \\(X\\) — 원래 점수',
+          formula: `\\(X = ${fmt(exam.x)}\\)`
         },
         {
-          variable: 'X − m',
+          variable: '\\(X-m\\)',
           value: dev, mean: 0, sd: exam.sigma,
-          title: '2단계: X − m — 평균을 0으로',
-          formula: `X − m = ${fmt(exam.x)} − ${fmt(exam.mean)} = ${fmt(dev)}`
+          title: '2단계: \\(X-m\\) — 평균을 0으로',
+          formula: `\\(X - m = ${fmt(exam.x)} - ${fmt(exam.mean)} = ${fmt(dev)}\\)`
         },
         {
-          variable: 'Z',
+          variable: '\\(Z\\)',
           value: z, mean: 0, sd: 1,
-          title: '3단계: Z — 표준편차를 1칸으로',
+          title: '3단계: \\(Z\\) — 표준편차를 1칸으로',
           // LaTeX 분수: 실제 숫자도 분수 형태로
           formula: `\\(\\dfrac{X-m}{\\sigma} = \\dfrac{${fmt(dev)}}{${fmt(exam.sigma)}} = ${fmt(z, 2)}\\)`
         },
         {
-          variable: '10Z',
+          variable: '\\(10Z\\)',
           value: 10 * z, mean: 0, sd: 10,
-          title: '4단계: 10Z — 표준편차를 10칸으로',
-          formula: `10 × ${fmt(z, 2)} = ${fmt(10 * z, 1)}`
+          title: '4단계: \\(10Z\\) — 표준편차를 10칸으로',
+          formula: `\\(10\\times ${fmt(z, 2)} = ${fmt(10 * z, 1)}\\)`
         },
         {
-          variable: 'T',
+          variable: '\\(T\\)',
           value: t, mean: 50, sd: 10,
-          title: '5단계: T — 평균을 50으로',
-          formula: `${fmt(10 * z, 1)} + 50 = ${fmt(t, 1)}`
+          title: '5단계: \\(T\\) — 평균을 50으로',
+          formula: `\\(${fmt(10 * z, 1)} + 50 = ${fmt(t, 1)}\\)`
         }
       ];
     }
@@ -899,15 +901,15 @@
                 <div class="number-line">
                   <div class="axis"></div>
                   ${tickHtml}
-                  <div class="point-label" style="left:${pointLeft}%; top:0px;">${step.variable} = ${fmt(step.value, 2)}</div>
+                  <div class="point-label" style="left:${pointLeft}%; top:0px;">${step.variable} \\(= ${fmt(step.value, 2)}\\)</div>
                   <div class="point ${pointClass}" style="left:${pointLeft}%;" aria-hidden="true">${idx + 1}</div>
                 </div>
                 <div class="step-calc">
                   <div class="step-formula">${step.formula}</div>
-                  <div class="step-stats">평균 ${fmt(step.mean, 1)}<br>표준편차 ${fmt(step.sd, 1)}</div>
+                  <div class="step-stats">평균 \\(${fmt(step.mean, 1)}\\)<br>표준편차 \\(${fmt(step.sd, 1)}\\)</div>
                 </div>
               </div>
-              <div class="line-sub" style="text-align:left; margin-top:4px;">눈금 한 칸 = 표준편차 ${fmt(step.sd, 1)}</div>
+              <div class="line-sub" style="text-align:left; margin-top:4px;">눈금 한 칸 \\(=\\) 표준편차 \\(${fmt(step.sd, 1)}\\)</div>
             </div>
           </div>
         `;
@@ -923,8 +925,9 @@
       const rawB = parseFloat(targetMeanInput.value);
       const a = (!isNaN(rawA) && rawA > 0) ? rawA : 10;
       const b = !isNaN(rawB) ? rawB : 50;
-      generalFormula.textContent = `Y = ${fmt(a, 1)}Z + ${fmt(b, 1)}`;
-      generalValue.textContent   = `Y = ${fmt(a * z + b, 1)}`;
+      generalFormula.innerHTML = `\\(Y = ${fmt(a, 1)}Z + ${fmt(b, 1)}\\)`;
+      generalValue.innerHTML   = `\\(Y = ${fmt(a * z + b, 1)}\\)`;
+      typesetMath(document.querySelector('.general-box'));
     }
 
     function renderProcessView() {
@@ -986,7 +989,7 @@
 
     // MathJax 로드 완료 후 processLines 재처리 (async 로드 대응)
     if (window.MathJax) {
-      MathJax.startup?.promise?.then(() => typesetMath(processLines));
+      MathJax.startup?.promise?.then(() => typesetMath(document.body));
     }
   </script>
 </body>
