@@ -137,25 +137,21 @@
       overflow-x: auto;
     }
 
-    .result-table,
-    .step-table {
+    .result-table {
       width: 100%;
       border-collapse: collapse;
       font-size: 14px;
     }
 
     .result-table th,
-    .result-table td,
-    .step-table th,
-    .step-table td {
+    .result-table td {
       border-bottom: 1px solid #e5e7eb;
       padding: 8px;
       text-align: center;
       vertical-align: middle;
     }
 
-    .result-table th,
-    .step-table th {
+    .result-table th {
       background: #f8fafc;
       color: #334155;
       font-weight: 800;
@@ -372,24 +368,46 @@
       margin: 12px 0 4px;
     }
 
-    .step-table tr.hidden-step,
-    .step-line.hidden-step {
-      display: none;
+    /* 컨트롤 패널 sticky 고정 */
+    .sticky-controls {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      box-shadow: 0 4px 12px rgba(15, 23, 42, 0.10);
     }
 
-    .step-table tr.current-step {
-      background: #fff7ed;
-      outline: 2px solid #fdba74;
-      outline-offset: -2px;
+    /* 수직선 + 계산 과정 나란히 */
+    .step-card-body {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-top: 6px;
     }
 
-    .calc-box {
+    .step-calc {
+      flex: 0 0 auto;
+      min-width: 150px;
+      padding: 10px 12px;
       background: #f8fafc;
       border: 1px solid #e2e8f0;
       border-radius: 8px;
-      padding: 12px;
+    }
+
+    .step-formula {
+      font-weight: 800;
       font-size: 15px;
-      line-height: 1.8;
+      margin-bottom: 6px;
+      color: #0f172a;
+    }
+
+    .step-stats {
+      font-size: 12px;
+      color: #64748b;
+      line-height: 1.6;
+    }
+
+    .step-line.hidden-step {
+      display: none;
     }
 
     .general-box {
@@ -460,10 +478,11 @@
     @media (max-width: 620px) {
       .app-wrap { padding: 18px 10px 28px; }
       .panel { padding: 12px; }
-      .result-table,
-      .step-table { font-size: 13px; }
+      .result-table { font-size: 13px; }
       .tick-label { font-size: 10px; }
       .point-label { font-size: 11px; }
+      .step-card-body { flex-direction: column; align-items: stretch; }
+      .step-calc { min-width: 0; }
     }
   </style>
 </head>
@@ -490,7 +509,7 @@
         </div>
         <div class="summary-box" id="mainSummary">
           <strong>데이터 요약</strong>
-          원점수는 70점에서 85점으로 올랐지만, T점수는 60점에서 55점으로 낮아집니다.
+          원점수는 70점에서 85점으로 올랐지만, T점수는 70점에서 55점으로 낮아집니다.
         </div>
       </div>
 
@@ -511,7 +530,7 @@
             <tbody>
               <tr>
                 <th scope="row">1차 시험</th>
-                <td>70</td><td>50</td><td>20</td><td>1.00</td><td>60</td>
+                <td>70</td><td>50</td><td>10</td><td>2.00</td><td>70</td>
               </tr>
               <tr>
                 <th scope="row">2차 시험</th>
@@ -549,7 +568,7 @@
     </section>
 
     <section id="processView" class="view" aria-labelledby="processTitle">
-      <div class="panel">
+      <div class="panel sticky-controls">
         <h2 id="processTitle">선택한 시험의 표준화 과정</h2>
         <div class="select-row" aria-label="시험 선택">
           <span style="font-weight:900;color:#334155;">시험 선택</span>
@@ -573,36 +592,7 @@
         </div>
       </div>
 
-      <div class="grid-two">
-        <div class="panel">
-          <h2>단계별 평균과 표준편차</h2>
-          <div class="input-table-wrap">
-            <table class="step-table">
-              <thead>
-                <tr>
-                  <th>단계</th>
-                  <th>변수</th>
-                  <th>현재 값</th>
-                  <th>평균</th>
-                  <th>표준편차</th>
-                  <th>의미</th>
-                </tr>
-              </thead>
-              <tbody id="stepTableBody"></tbody>
-            </table>
-          </div>
-        </div>
-
-        <div class="panel">
-          <h2>계산 과정</h2>
-          <div class="calc-box" id="calcBox"></div>
-        </div>
-      </div>
-
-      <div class="panel">
-        <h2>단계별 수직선</h2>
-        <div id="processLines"></div>
-      </div>
+      <div id="processLines"></div>
 
       <div class="general-box">
         <h3>원하는 평균과 표준편차로 바꾸기</h3>
@@ -619,7 +609,7 @@
             <input id="targetMeanInput" type="number" step="1" value="50" />
           </div>
           <div class="general-result" id="generalFormula">Y = 10Z + 50</div>
-          <div class="general-result" id="generalValue">Y = 60</div>
+          <div class="general-result" id="generalValue">Y = 70</div>
         </div>
       </div>
     </section>
@@ -627,7 +617,7 @@
 
   <script>
     const exams = [
-      { label: '1차 시험', short: '1차', x: 70, mean: 50, sigma: 20, className: 'a' },
+      { label: '1차 시험', short: '1차', x: 70, mean: 50, sigma: 10, className: 'a' },
       { label: '2차 시험', short: '2차', x: 80, mean: 60, sigma: 20, className: 'b' },
       { label: '3차 시험', short: '3차', x: 85, mean: 80, sigma: 10, className: 'c' }
     ];
@@ -642,8 +632,6 @@
     const rawLegend = document.getElementById('rawLegend');
     const tLegend = document.getElementById('tLegend');
     const mainSummary = document.getElementById('mainSummary');
-    const stepTableBody = document.getElementById('stepTableBody');
-    const calcBox = document.getElementById('calcBox');
     const processLines = document.getElementById('processLines');
     const targetSdInput = document.getElementById('targetSdInput');
     const targetMeanInput = document.getElementById('targetMeanInput');
@@ -851,8 +839,7 @@
           value: exam.x,
           mean: exam.mean,
           sd: exam.sigma,
-          meaning: '원래 점수',
-          title: '1단계: X',
+          title: '1단계: X — 원래 점수',
           formula: `X = ${fmt(exam.x)}`
         },
         {
@@ -860,8 +847,7 @@
           value: exam.x - exam.mean,
           mean: 0,
           sd: exam.sigma,
-          meaning: '평균을 0으로 옮김',
-          title: '2단계: X - m',
+          title: '2단계: X − m — 평균을 0으로',
           formula: `X - m = ${fmt(exam.x)} - ${fmt(exam.mean)} = ${fmt(exam.x - exam.mean)}`
         },
         {
@@ -869,8 +855,7 @@
           value: z,
           mean: 0,
           sd: 1,
-          meaning: '표준편차를 1칸으로 맞춤',
-          title: '3단계: 표준점수 Z',
+          title: '3단계: Z — 표준편차를 1칸으로',
           formula: `(X - m) / σ = ${fmt(exam.x - exam.mean)} / ${fmt(exam.sigma)} = ${fmt(z, 2)}`
         },
         {
@@ -878,8 +863,7 @@
           value: 10 * z,
           mean: 0,
           sd: 10,
-          meaning: '표준편차를 10칸으로 늘림',
-          title: '4단계: 10Z',
+          title: '4단계: 10Z — 표준편차를 10칸으로',
           formula: `10 × ${fmt(z, 2)} = ${fmt(10 * z, 1)}`
         },
         {
@@ -887,58 +871,49 @@
           value: t,
           mean: 50,
           sd: 10,
-          meaning: '평균을 50으로 옮김',
-          title: '5단계: T점수',
+          title: '5단계: T — 평균을 50으로',
           formula: `${fmt(10 * z, 1)} + 50 = ${fmt(t, 1)}`
         }
       ];
     }
 
-    function renderStepTable(steps) {
-      stepTableBody.innerHTML = steps.map((step, idx) => {
-        const hidden = idx >= visibleStepCount ? 'hidden-step' : '';
-        const current = idx === visibleStepCount - 1 ? 'current-step' : '';
-        return `
-          <tr class="${hidden} ${current}">
-            <th scope="row">${idx + 1}</th>
-            <td>${step.variable}</td>
-            <td>${fmt(step.value, 2)}</td>
-            <td>${fmt(step.mean, 1)}</td>
-            <td>${fmt(step.sd, 1)}</td>
-            <td>${step.meaning}</td>
-          </tr>
-        `;
-      }).join('');
-    }
-
-    function renderCalcBox(steps) {
-      const visible = steps.slice(0, visibleStepCount);
-      calcBox.innerHTML = visible.map(step => `<div>${step.formula}</div>`).join('');
-    }
-
     function renderProcessLines(steps) {
+      const exam = selectedExam();
       processLines.innerHTML = steps.map((step, idx) => {
         const extent = Math.max(2, Math.ceil(Math.abs((step.value - step.mean) / step.sd)));
         const min = step.mean - extent * step.sd;
         const max = step.mean + extent * step.sd;
         const ticks = tickLabelsForCentered(step.mean, step.sd, extent);
         const hidden = idx >= visibleStepCount ? ' hidden-step' : '';
+        const pointClass = idx === 4 ? 'y' : exam.className;
+        const pointLeft = positionPercent(step.value, min, max);
+
+        const tickHtml = ticks.map(tick => {
+          const left = positionPercent(tick.value, min, max);
+          return `
+            <div class="tick ${tick.isMean ? 'mean' : ''}" style="left:${left}%"></div>
+            <div class="tick-label ${tick.isMean ? 'mean-label' : ''}" style="left:${left}%">${tick.label}</div>
+          `;
+        }).join('');
+
         return `
           <div class="step-line${hidden}">
-            ${renderNumberLine({
-              title: step.title,
-              subtitle: `평균 ${fmt(step.mean, 1)}, 표준편차 ${fmt(step.sd, 1)}`,
-              ticks,
-              min,
-              max,
-              points: [{
-                value: step.value,
-                label: `${step.variable} = ${fmt(step.value, 2)}`,
-                short: String(idx + 1),
-                className: idx === 4 ? 'y' : selectedExam().className
-              }],
-              tickNote: `이 단계의 눈금 한 칸은 표준편차 ${fmt(step.sd, 1)}입니다.`
-            })}
+            <div class="line-card">
+              <div class="line-title" style="margin-bottom:8px;">${step.title}</div>
+              <div class="step-card-body">
+                <div class="number-line" style="flex:1 1 0; min-width:0;">
+                  <div class="axis"></div>
+                  ${tickHtml}
+                  <div class="point-label" style="left:${pointLeft}%; top:0px;">${step.variable} = ${fmt(step.value, 2)}</div>
+                  <div class="point ${pointClass}" style="left:${pointLeft}%;" aria-hidden="true">${idx + 1}</div>
+                </div>
+                <div class="step-calc">
+                  <div class="step-formula">${step.formula}</div>
+                  <div class="step-stats">평균 ${fmt(step.mean, 1)}<br>표준편차 ${fmt(step.sd, 1)}</div>
+                </div>
+              </div>
+              <div class="line-sub" style="text-align:left; margin-top:4px;">눈금 한 칸 = 표준편차 ${fmt(step.sd, 1)}</div>
+            </div>
           </div>
         `;
       }).join('');
@@ -958,8 +933,6 @@
 
     function renderProcessView() {
       const steps = stepData(selectedExam());
-      renderStepTable(steps);
-      renderCalcBox(steps);
       renderProcessLines(steps);
       renderGeneralization();
     }
