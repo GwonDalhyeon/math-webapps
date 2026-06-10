@@ -399,21 +399,22 @@
       box-shadow: 0 4px 12px rgba(15, 23, 42, 0.10);
     }
 
-    /* 수직선 + 계산 과정 나란히 */
+    /* 수직선 + 계산 과정 나란히 — grid로 고정 너비 보장 */
     .step-card-body {
-      display: flex;
+      display: grid;
+      grid-template-columns: 1fr 200px;
       align-items: center;
       gap: 14px;
       margin-top: 6px;
     }
 
     .step-calc {
-      flex: 0 0 auto;
-      min-width: 160px;
+      /* grid 열이 너비를 고정하므로 flex 속성 불필요 */
       padding: 10px 12px;
       background: #f8fafc;
       border: 1px solid #e2e8f0;
       border-radius: 8px;
+      overflow: hidden;
     }
 
     .step-formula {
@@ -491,8 +492,8 @@
       .result-table { font-size: 13px; }
       .tick-label { font-size: 10px; }
       .point-label { font-size: 11px; }
-      .step-card-body { flex-direction: column; align-items: stretch; }
-      .step-calc { min-width: 0; }
+      .step-card-body { display: flex; flex-direction: column; align-items: stretch; }
+      .step-calc { overflow: visible; }
       .exam-btn { min-width: 0; flex: 1 1 140px; }
     }
   </style>
@@ -895,7 +896,7 @@
             <div class="line-card">
               <div class="line-title" style="margin-bottom:8px;">${step.title}</div>
               <div class="step-card-body">
-                <div class="number-line" style="flex:1 1 0; min-width:0;">
+                <div class="number-line">
                   <div class="axis"></div>
                   ${tickHtml}
                   <div class="point-label" style="left:${pointLeft}%; top:0px;">${step.variable} = ${fmt(step.value, 2)}</div>
