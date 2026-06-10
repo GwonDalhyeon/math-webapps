@@ -83,3 +83,26 @@ p {
   font-weight: 700;
   text-decoration: none;
 }
+
+/* 카드 목록 단원 구분 */
+.section-label {
+  grid-column: 1 / -1;
+  margin-top: 20px;
+  padding-bottom: 8px;
+  font-size: 19px;
+  font-weight: 700;
+  color: #1e293b;
+  border-bottom: 2px solid #e2e8f0;
+}
+.section-label:first-child {
+  margin-top: 0;
+}
+.subsection-label {
+  grid-column: 1 / -1;
+  margin-top: 12px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
