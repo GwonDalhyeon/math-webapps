@@ -1,0 +1,909 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>정규분포와 표준정규분포: 같은 확률 보기</title>
+  <link rel="stylesheet" href="../../assets/common.css" />
+  <!-- MathJax: LaTeX 수식 렌더링 (CDN 의존, 인터넷 필요) -->
+  <script>
+    window.MathJax = {
+      tex: { inlineMath: [['\\(', '\\)']], displayMath: [['\\[', '\\]']] },
+      options: { skipHtmlTags: ['script','noscript','style','textarea'] }
+    };
+  </script>
+  <script id="MathJax-script" async
+    src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+  <style>
+    /* ── 페이지 레이아웃 ── */
+    .app-page {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 32px 16px 60px;
+    }
+    .app-header {
+      margin-bottom: 20px;
+    }
+    .app-header h1 {
+      font-size: clamp(20px, 4vw, 28px);
+      margin: 0 0 8px;
+      color: #1e293b;
+    }
+    .app-header p {
+      font-size: 15px;
+      color: #475569;
+      margin: 0;
+      line-height: 1.6;
+    }
+
+    /* ── 조작 패널 ── */
+    .control-panel {
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: 16px;
+      padding: 20px 24px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 8px rgba(15,23,42,0.06);
+    }
+    .control-panel h2 {
+      font-size: 15px;
+      font-weight: 700;
+      color: #64748b;
+      margin: 0 0 16px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .controls-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px 24px;
+    }
+    @media (max-width: 540px) {
+      .controls-grid { grid-template-columns: 1fr; }
+    }
+    .control-row {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .control-label {
+      font-size: 14px;
+      font-weight: 600;
+      color: #374151;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .control-label .computed-val {
+      font-weight: 400;
+      color: #6b7280;
+      font-size: 13px;
+    }
+    .control-input-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .ctrl-slider {
+      flex: 1;
+      height: 6px;
+      accent-color: #2563eb;
+      cursor: pointer;
+    }
+    .ctrl-slider.za { accent-color: #dc2626; }
+    .ctrl-slider.zb { accent-color: #16a34a; }
+    .ctrl-number {
+      width: 62px;
+      padding: 4px 6px;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      font-size: 14px;
+      text-align: right;
+    }
+    /* a, b 계산 결과 표시 */
+    .ab-display {
+      display: flex;
+      gap: 20px;
+      margin-top: 4px;
+      padding: 8px 12px;
+      background: #f8fafc;
+      border-radius: 8px;
+      border: 1px solid #e2e8f0;
+    }
+    .ab-item {
+      font-size: 14px;
+      color: #374151;
+    }
+    .ab-item strong { font-size: 15px; }
+    .ab-val-a { color: #dc2626; }
+    .ab-val-b { color: #16a34a; }
+
+    /* ── 프리셋 버튼 ── */
+    .preset-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 1px solid #e2e8f0;
+      align-items: center;
+    }
+    .preset-label {
+      font-size: 13px;
+      color: #64748b;
+      font-weight: 600;
+    }
+    .btn-preset {
+      padding: 6px 14px;
+      border-radius: 999px;
+      border: 1px solid #cbd5e1;
+      background: #fff;
+      font-size: 13px;
+      font-weight: 600;
+      color: #374151;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .btn-preset:hover { background: #f1f5f9; border-color: #94a3b8; }
+    .btn-preset.primary {
+      background: #2563eb;
+      color: #fff;
+      border-color: #2563eb;
+    }
+    .btn-preset.primary:hover { background: #1d4ed8; }
+
+    /* 확률 표시 토글 */
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-left: auto;
+    }
+    .toggle-label { font-size: 13px; color: #64748b; }
+    .toggle-switch {
+      position: relative;
+      width: 38px;
+      height: 22px;
+      cursor: pointer;
+    }
+    .toggle-switch input { opacity: 0; width: 0; height: 0; }
+    .toggle-track {
+      position: absolute;
+      inset: 0;
+      background: #cbd5e1;
+      border-radius: 999px;
+      transition: background 0.2s;
+    }
+    .toggle-switch input:checked + .toggle-track { background: #2563eb; }
+    .toggle-thumb {
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      width: 16px;
+      height: 16px;
+      background: #fff;
+      border-radius: 50%;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+      transition: left 0.2s;
+    }
+    .toggle-switch input:checked ~ .toggle-thumb { left: 19px; }
+
+    /* ── SVG 그래프 컨테이너 ── */
+    .graph-card {
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: 16px;
+      padding: 16px;
+      box-shadow: 0 2px 8px rgba(15,23,42,0.06);
+      margin-bottom: 16px;
+      overflow: hidden;
+    }
+    #main-svg {
+      width: 100%;
+      display: block;
+      user-select: none;
+      touch-action: none;
+    }
+
+    /* ── 확률 등식 패널 ── */
+    .prob-panel {
+      background: #eff6ff;
+      border: 1.5px solid #bfdbfe;
+      border-radius: 12px;
+      padding: 14px 20px;
+      margin-bottom: 16px;
+      text-align: center;
+    }
+    .prob-equation {
+      font-size: 17px;
+      color: #1e40af;
+      font-weight: 600;
+      line-height: 1.7;
+    }
+    .prob-approx {
+      font-size: 13px;
+      color: #64748b;
+      margin-top: 2px;
+    }
+
+    /* ── 해석 패널 ── */
+    .interp-panel {
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      border-radius: 12px;
+      padding: 14px 20px;
+    }
+    .interp-panel p {
+      margin: 0;
+      font-size: 15px;
+      color: #166534;
+      line-height: 1.7;
+    }
+
+    /* ── 드래그 핸들 커서 ── */
+    .drag-handle { cursor: ew-resize; }
+  </style>
+</head>
+<body>
+  <main class="app-page">
+    <a class="back-link" href="../">← 확률과 통계</a>
+
+    <header class="app-header">
+      <h1>정규분포와 표준정규분포: 같은 확률 보기</h1>
+      <p>
+        정규분포에서 구간의 확률을 구할 때는 각 경계값이 평균에서 표준편차 몇 개만큼 떨어져 있는지로 바꾸어 봅니다.
+      </p>
+    </header>
+
+    <!-- 조작 패널 -->
+    <div class="control-panel">
+      <h2>조작</h2>
+      <div class="controls-grid">
+        <!-- 평균 m -->
+        <div class="control-row">
+          <label class="control-label" for="slider-m">평균 \(m\)</label>
+          <div class="control-input-row">
+            <input type="range" id="slider-m" class="ctrl-slider" min="40" max="100" step="1" value="70" />
+            <input type="number" id="num-m" class="ctrl-number" min="40" max="100" step="1" value="70" />
+          </div>
+        </div>
+        <!-- 표준편차 sigma -->
+        <div class="control-row">
+          <label class="control-label" for="slider-sigma">표준편차 \(\sigma\)</label>
+          <div class="control-input-row">
+            <input type="range" id="slider-sigma" class="ctrl-slider" min="2" max="25" step="0.5" value="10" />
+            <input type="number" id="num-sigma" class="ctrl-number" min="2" max="25" step="0.5" value="10" />
+          </div>
+        </div>
+        <!-- z_a -->
+        <div class="control-row">
+          <label class="control-label" for="slider-za">
+            왼쪽 경계 \(z_a\)
+            <span class="computed-val" id="label-a"></span>
+          </label>
+          <div class="control-input-row">
+            <input type="range" id="slider-za" class="ctrl-slider za" min="-4" max="4" step="0.1" value="-1" />
+            <input type="number" id="num-za" class="ctrl-number" min="-4" max="4" step="0.1" value="-1" />
+          </div>
+        </div>
+        <!-- z_b -->
+        <div class="control-row">
+          <label class="control-label" for="slider-zb">
+            오른쪽 경계 \(z_b\)
+            <span class="computed-val" id="label-b"></span>
+          </label>
+          <div class="control-input-row">
+            <input type="range" id="slider-zb" class="ctrl-slider zb" min="-4" max="4" step="0.1" value="2" />
+            <input type="number" id="num-zb" class="ctrl-number" min="-4" max="4" step="0.1" value="2" />
+          </div>
+        </div>
+      </div>
+
+      <!-- a, b 계산 결과 -->
+      <div class="ab-display">
+        <div class="ab-item">
+          <span class="ab-val-a">
+            \(a\) = <strong id="val-a">60</strong>
+          </span>
+          &nbsp;(<span id="expr-a"></span>)
+        </div>
+        <div class="ab-item">
+          <span class="ab-val-b">
+            \(b\) = <strong id="val-b">90</strong>
+          </span>
+          &nbsp;(<span id="expr-b"></span>)
+        </div>
+      </div>
+
+      <!-- 프리셋 버튼 + 확률 토글 -->
+      <div class="preset-row">
+        <span class="preset-label">예시:</span>
+        <button class="btn-preset primary" id="btn-default">기본 예시</button>
+        <button class="btn-preset" id="btn-sym">대칭 구간</button>
+        <button class="btn-preset" id="btn-2sd">두 표준편차</button>
+        <label class="toggle-row" title="확률 표시 켜기/끄기">
+          <span class="toggle-label">확률 표시</span>
+          <span class="toggle-switch">
+            <input type="checkbox" id="toggle-prob" checked />
+            <span class="toggle-track"></span>
+            <span class="toggle-thumb"></span>
+          </span>
+        </label>
+      </div>
+    </div>
+
+    <!-- SVG 그래프 -->
+    <div class="graph-card">
+      <svg id="main-svg" viewBox="0 0 800 480" xmlns="http://www.w3.org/2000/svg">
+        <!-- 내용은 JavaScript로 렌더링 -->
+      </svg>
+    </div>
+
+    <!-- 확률 등식 패널 -->
+    <div class="prob-panel" id="prob-panel">
+      <div class="prob-equation" id="prob-eq"></div>
+      <div class="prob-approx">※ 확률값은 근사값입니다.</div>
+    </div>
+
+    <!-- 해석 문구 -->
+    <div class="interp-panel">
+      <p id="interp-text"></p>
+    </div>
+  </main>
+
+  <script>
+  // ── 상태 ──────────────────────────────────────────────────
+  const state = { m: 70, sigma: 10, za: -1, zb: 2 };
+
+  // ── SVG 레이아웃 상수 ──────────────────────────────────────
+  const SVG_W = 800;
+  const SVG_H = 480;
+  const PAD_L = 16, PAD_R = 16;
+  const GRAPH_X0 = 56, GRAPH_X1 = SVG_W - 40; // x축 시작·끝 px
+  const GRAPH_W  = GRAPH_X1 - GRAPH_X0;
+
+  // 위쪽 정규분포 그래프
+  const TOP_Y_TOP    = 20;   // 곡선 꼭대기
+  const TOP_Y_AXIS   = 168;  // x축 y좌표
+  const TOP_Y_TICK1  = 182;  // 눈금 첫째 줄 (실제 값)
+  const TOP_Y_TICK2  = 198;  // 눈금 둘째 줄 (m±nσ 표현)
+
+  // 두 그래프 사이 연결 구역
+  const MID_Y_TOP    = 216;  // 연결구역 시작
+  const MID_Y_BOT    = 264;  // 연결구역 끝
+
+  // 아래쪽 표준정규분포 그래프
+  const BOT_Y_TOP    = 264;
+  const BOT_Y_AXIS   = 412;  // z축 y좌표
+  const BOT_Y_TICK   = 428;  // z 눈금 레이블
+
+  // 색상
+  const COLOR_A      = '#dc2626'; // 왼쪽 경계선 (빨강)
+  const COLOR_B      = '#16a34a'; // 오른쪽 경계선 (초록)
+  const COLOR_FILL   = 'rgba(37,99,235,0.18)'; // 색칠 영역
+  const COLOR_FILL_S = 'rgba(37,99,235,0.28)'; // stroke용
+  const COLOR_CONN   = 'rgba(100,116,139,0.35)'; // 연결선
+  const COLOR_MEAN   = '#94a3b8'; // 평균 기준선
+
+  // ── 수학 유틸 ──────────────────────────────────────────────
+  function normalPDF(x, m, s) {
+    const d = (x - m) / s;
+    return Math.exp(-0.5 * d * d) / (s * Math.sqrt(2 * Math.PI));
+  }
+
+  // erf 근사 — Abramowitz & Stegun 7.1.26, |error| < 1.5e-7
+  function erf(x) {
+    const sign = x < 0 ? -1 : 1;
+    const t = 1 / (1 + 0.3275911 * Math.abs(x));
+    const poly = t * (0.254829592 + t * (-0.284496736 + t * (1.421413741 + t * (-1.453152027 + t * 1.061405429))));
+    return sign * (1 - poly * Math.exp(-x * x));
+  }
+
+  function Phi(z) { return 0.5 * (1 + erf(z / Math.SQRT2)); }
+
+  function fmt(v, d = 2) { return Number(v).toFixed(d); }
+
+  // ── 좌표 변환 ──────────────────────────────────────────────
+  // 표준화 위치 [-4, 4] → 화면 x (두 그래프 공통)
+  function zToX(z) { return GRAPH_X0 + (z + 4) / 8 * GRAPH_W; }
+
+  // 원래 분포: 실제 값 x → 화면 x
+  function xValToScreenX(xv) {
+    const z = (xv - state.m) / state.sigma;
+    return zToX(z);
+  }
+
+  // 위쪽 그래프: 밀도값 → 화면 y
+  const TOP_MAX_DENSITY = normalPDF(0, 0, 1); // 기준 최대
+  const TOP_CURVE_H = TOP_Y_AXIS - TOP_Y_TOP - 8;
+  function densityToY_top(d) {
+    return TOP_Y_AXIS - (d / (1 / (state.sigma * Math.sqrt(2 * Math.PI)))) * TOP_CURVE_H;
+  }
+
+  // 아래쪽 그래프: 밀도값 → 화면 y
+  const STD_MAX_D = normalPDF(0, 0, 1);
+  const BOT_CURVE_H = BOT_Y_AXIS - BOT_Y_TOP - 8;
+  function densityToY_bot(d) {
+    return BOT_Y_AXIS - (d / STD_MAX_D) * BOT_CURVE_H;
+  }
+
+  // ── SVG 생성 헬퍼 ──────────────────────────────────────────
+  const NS = 'http://www.w3.org/2000/svg';
+  function el(tag, attrs, text) {
+    const e = document.createElementNS(NS, tag);
+    for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v);
+    if (text !== undefined) e.textContent = text;
+    return e;
+  }
+
+  // ── 메인 SVG ──────────────────────────────────────────────
+  const svg = document.getElementById('main-svg');
+
+  // 레이어 그룹 (z순서 제어)
+  const gFill    = el('g', { id: 'g-fill' });
+  const gCurve   = el('g', { id: 'g-curve' });
+  const gAxes    = el('g', { id: 'g-axes' });
+  const gTicks   = el('g', { id: 'g-ticks' });
+  const gConn    = el('g', { id: 'g-conn' });   // 연결선
+  const gBound   = el('g', { id: 'g-bound' });  // 경계선
+  const gHandles = el('g', { id: 'g-handles' });// 드래그 핸들
+  const gLabels  = el('g', { id: 'g-labels' }); // 라벨
+  const gProbBadge = el('g', { id: 'g-prob-badge' });
+  [gFill, gCurve, gAxes, gTicks, gConn, gBound, gHandles, gLabels, gProbBadge].forEach(g => svg.appendChild(g));
+
+  // ── 그래프 렌더링 ──────────────────────────────────────────
+  function render() {
+    const { m, sigma, za, zb } = state;
+    const a = m + za * sigma;
+    const b = m + zb * sigma;
+    const prob = Phi(zb) - Phi(za);
+
+    // 각 레이어 초기화
+    [gFill, gCurve, gAxes, gTicks, gConn, gBound, gHandles, gLabels, gProbBadge]
+      .forEach(g => { while (g.firstChild) g.removeChild(g.firstChild); });
+
+    const showProb = document.getElementById('toggle-prob').checked;
+
+    renderAxes();
+    renderTopCurve(m, sigma, za, zb);
+    renderBotCurve(za, zb);
+    renderBoundaries(za, zb, showProb, prob);
+    renderConnectors(za, zb);
+    renderHandles(za, zb);
+    renderTopTicks(m, sigma);
+    renderBotTicks();
+    renderGraphLabels(m, sigma);
+
+    // 그래프 안 확률 배지
+    if (showProb) renderProbBadges(prob);
+
+    updatePanel(m, sigma, za, zb, a, b, prob, showProb);
+  }
+
+  // 축선 그리기
+  function renderAxes() {
+    // 위쪽 x축
+    gAxes.appendChild(el('line', {
+      x1: GRAPH_X0, y1: TOP_Y_AXIS, x2: GRAPH_X1, y2: TOP_Y_AXIS,
+      stroke: '#334155', 'stroke-width': 2
+    }));
+    // 아래쪽 z축
+    gAxes.appendChild(el('line', {
+      x1: GRAPH_X0, y1: BOT_Y_AXIS, x2: GRAPH_X1, y2: BOT_Y_AXIS,
+      stroke: '#334155', 'stroke-width': 2
+    }));
+    // 위쪽 평균 기준선
+    const mx = zToX(0);
+    gAxes.appendChild(el('line', {
+      x1: mx, y1: TOP_Y_TOP, x2: mx, y2: TOP_Y_AXIS,
+      stroke: COLOR_MEAN, 'stroke-width': 1.5, 'stroke-dasharray': '5,4'
+    }));
+    // 아래쪽 z=0 기준선
+    gAxes.appendChild(el('line', {
+      x1: mx, y1: BOT_Y_TOP, x2: mx, y2: BOT_Y_AXIS,
+      stroke: COLOR_MEAN, 'stroke-width': 1.5, 'stroke-dasharray': '5,4'
+    }));
+    // 그래프 제목
+    gAxes.appendChild(el('text', {
+      x: GRAPH_X0, y: TOP_Y_TOP + 2,
+      'font-size': 13, 'font-weight': 700, fill: '#334155',
+      'dominant-baseline': 'hanging'
+    }, 'X ~ N(m, σ²)'));
+    gAxes.appendChild(el('text', {
+      x: GRAPH_X0, y: BOT_Y_TOP + 4,
+      'font-size': 13, 'font-weight': 700, fill: '#334155',
+      'dominant-baseline': 'hanging'
+    }, 'Z ~ N(0, 1)'));
+  }
+
+  // 위쪽 정규분포 곡선 + 색칠
+  function renderTopCurve(m, sigma, za, zb) {
+    const steps = 200;
+    const zMin = -4, zMax = 4;
+    const points = [];
+    for (let i = 0; i <= steps; i++) {
+      const z = zMin + (zMax - zMin) * i / steps;
+      const xv = m + z * sigma;
+      const d = normalPDF(xv, m, sigma);
+      const sx = zToX(z);
+      const sy = densityToY_top(d);
+      points.push([sx, sy]);
+    }
+
+    // 색칠 영역
+    const fillPts = [];
+    fillPts.push([zToX(za), TOP_Y_AXIS]);
+    for (let i = 0; i <= steps; i++) {
+      const z = zMin + (zMax - zMin) * i / steps;
+      if (z < za || z > zb) continue;
+      const xv = m + z * sigma;
+      const d = normalPDF(xv, m, sigma);
+      fillPts.push([zToX(z), densityToY_top(d)]);
+    }
+    fillPts.push([zToX(zb), TOP_Y_AXIS]);
+    if (fillPts.length > 2) {
+      gFill.appendChild(el('polygon', {
+        points: fillPts.map(p => p.join(',')).join(' '),
+        fill: COLOR_FILL, stroke: COLOR_FILL_S, 'stroke-width': 0.5
+      }));
+    }
+
+    // 곡선
+    const d = 'M ' + points.map(p => p.join(' ')).join(' L ');
+    gCurve.appendChild(el('path', {
+      d, fill: 'none', stroke: '#2563eb', 'stroke-width': 2.5, 'stroke-linejoin': 'round'
+    }));
+  }
+
+  // 아래쪽 표준정규분포 곡선 + 색칠
+  function renderBotCurve(za, zb) {
+    const steps = 200;
+    const zMin = -4, zMax = 4;
+    const points = [];
+    for (let i = 0; i <= steps; i++) {
+      const z = zMin + (zMax - zMin) * i / steps;
+      const d = normalPDF(z, 0, 1);
+      points.push([zToX(z), densityToY_bot(d)]);
+    }
+
+    // 색칠 영역
+    const fillPts = [[zToX(za), BOT_Y_AXIS]];
+    for (let i = 0; i <= steps; i++) {
+      const z = zMin + (zMax - zMin) * i / steps;
+      if (z < za || z > zb) continue;
+      fillPts.push([zToX(z), densityToY_bot(normalPDF(z, 0, 1))]);
+    }
+    fillPts.push([zToX(zb), BOT_Y_AXIS]);
+    if (fillPts.length > 2) {
+      gFill.appendChild(el('polygon', {
+        points: fillPts.map(p => p.join(',')).join(' '),
+        fill: COLOR_FILL, stroke: COLOR_FILL_S, 'stroke-width': 0.5
+      }));
+    }
+
+    const pathD = 'M ' + points.map(p => p.join(' ')).join(' L ');
+    gCurve.appendChild(el('path', {
+      d: pathD, fill: 'none', stroke: '#2563eb', 'stroke-width': 2.5, 'stroke-linejoin': 'round'
+    }));
+  }
+
+  // 경계선 그리기 (위·아래 그래프)
+  function renderBoundaries(za, zb, showProb, prob) {
+    const pairs = [
+      { z: za, color: COLOR_A, labelZ: fmt(za, 1), isA: true },
+      { z: zb, color: COLOR_B, labelZ: fmt(zb, 1), isA: false }
+    ];
+    for (const { z, color, labelZ, isA } of pairs) {
+      const sx = zToX(z);
+      // 위쪽 그래프 경계선
+      gBound.appendChild(el('line', {
+        x1: sx, y1: TOP_Y_TOP, x2: sx, y2: TOP_Y_AXIS,
+        stroke: color, 'stroke-width': 2, 'stroke-dasharray': '6,3'
+      }));
+      // 아래쪽 그래프 경계선
+      gBound.appendChild(el('line', {
+        x1: sx, y1: BOT_Y_TOP, x2: sx, y2: BOT_Y_AXIS,
+        stroke: color, 'stroke-width': 2, 'stroke-dasharray': '6,3'
+      }));
+    }
+  }
+
+  // 위아래 그래프 연결선
+  function renderConnectors(za, zb) {
+    for (const z of [za, zb]) {
+      const sx = zToX(z);
+      gConn.appendChild(el('line', {
+        x1: sx, y1: MID_Y_TOP, x2: sx, y2: MID_Y_BOT,
+        stroke: z === za ? COLOR_A : COLOR_B,
+        'stroke-width': 1.5, 'stroke-dasharray': '4,3', opacity: 0.6
+      }));
+    }
+  }
+
+  // 드래그 핸들 (각 그래프에 원형 핸들)
+  function renderHandles(za, zb) {
+    const defs = [
+      { z: za, cy_top: TOP_Y_AXIS - 2, cy_bot: BOT_Y_AXIS - 2, color: COLOR_A, which: 'a' },
+      { z: zb, cy_top: TOP_Y_AXIS - 2, cy_bot: BOT_Y_AXIS - 2, color: COLOR_B, which: 'b' }
+    ];
+    for (const { z, cy_top, cy_bot, color, which } of defs) {
+      const sx = zToX(z);
+      // 위쪽 핸들
+      const htop = el('circle', {
+        cx: sx, cy: cy_top, r: 9,
+        fill: color, stroke: '#fff', 'stroke-width': 2,
+        'data-which': which, 'data-graph': 'top',
+        class: 'drag-handle', style: 'cursor:ew-resize'
+      });
+      gHandles.appendChild(htop);
+      // 아래쪽 핸들
+      const hbot = el('circle', {
+        cx: sx, cy: cy_bot, r: 9,
+        fill: color, stroke: '#fff', 'stroke-width': 2,
+        'data-which': which, 'data-graph': 'bot',
+        class: 'drag-handle', style: 'cursor:ew-resize'
+      });
+      gHandles.appendChild(hbot);
+    }
+  }
+
+  // 위쪽 그래프 x축 눈금 (실제값 + m±nσ)
+  function renderTopTicks(m, sigma) {
+    for (let n = -3; n <= 3; n++) {
+      const z = n;
+      const sx = zToX(z);
+      const xv = m + n * sigma;
+      // 눈금 선
+      gTicks.appendChild(el('line', {
+        x1: sx, y1: TOP_Y_AXIS, x2: sx, y2: TOP_Y_AXIS + 6,
+        stroke: '#334155', 'stroke-width': n === 0 ? 2 : 1
+      }));
+      // 실제 값
+      gTicks.appendChild(el('text', {
+        x: sx, y: TOP_Y_TICK1,
+        'text-anchor': 'middle', 'dominant-baseline': 'hanging',
+        'font-size': 11, fill: n === 0 ? '#1e40af' : '#475569',
+        'font-weight': n === 0 ? 700 : 400
+      }, fmt(xv, 0)));
+      // m ± nσ 표현
+      const sigmaLabel = n === 0 ? 'm'
+        : n > 0 ? `m+${n}σ`
+        : `m${n}σ`; // m-1σ, m-2σ 등
+      gTicks.appendChild(el('text', {
+        x: sx, y: TOP_Y_TICK2,
+        'text-anchor': 'middle', 'dominant-baseline': 'hanging',
+        'font-size': 10, fill: n === 0 ? '#1e40af' : '#94a3b8',
+        'font-weight': n === 0 ? 700 : 400
+      }, sigmaLabel));
+    }
+  }
+
+  // 아래쪽 z축 눈금
+  function renderBotTicks() {
+    for (let z = -3; z <= 3; z++) {
+      const sx = zToX(z);
+      gTicks.appendChild(el('line', {
+        x1: sx, y1: BOT_Y_AXIS, x2: sx, y2: BOT_Y_AXIS + 6,
+        stroke: '#334155', 'stroke-width': z === 0 ? 2 : 1
+      }));
+      gTicks.appendChild(el('text', {
+        x: sx, y: BOT_Y_TICK,
+        'text-anchor': 'middle', 'dominant-baseline': 'hanging',
+        'font-size': 11, fill: z === 0 ? '#1e40af' : '#475569',
+        'font-weight': z === 0 ? 700 : 400
+      }, String(z)));
+    }
+  }
+
+  // 경계선 라벨 (수직선 위)
+  function renderGraphLabels(m, sigma) {
+    const { za, zb } = state;
+    const a = m + za * sigma;
+    const b = m + zb * sigma;
+
+    const pairs = [
+      { z: za, val: a, color: COLOR_A, anchor: za < -1.5 ? 'start' : 'middle' },
+      { z: zb, val: b, color: COLOR_B, anchor: zb > 1.5 ? 'end' : 'middle' }
+    ];
+    for (const { z, val, color, anchor } of pairs) {
+      const sx = zToX(z);
+      // 위쪽 라벨: x = a = 값
+      gLabels.appendChild(el('text', {
+        x: sx + (z < 0 ? -6 : 6), y: TOP_Y_TOP + 16,
+        'text-anchor': z < 0 ? 'end' : 'start',
+        'font-size': 12, fill: color, 'font-weight': 700
+      }, `x=${fmt(val, 0)}`));
+      // 아래쪽 라벨: z = 값
+      gLabels.appendChild(el('text', {
+        x: sx + (z < 0 ? -6 : 6), y: BOT_Y_TOP + 16,
+        'text-anchor': z < 0 ? 'end' : 'start',
+        'font-size': 12, fill: color, 'font-weight': 700
+      }, `z=${fmt(z, 2)}`));
+    }
+  }
+
+  // 그래프 안 확률 배지
+  function renderProbBadges(prob) {
+    const cx = zToX((state.za + state.zb) / 2);
+    // 위쪽 배지
+    const ty = (TOP_Y_TOP + TOP_Y_AXIS) / 2 + 10;
+    const bg1 = el('rect', {
+      x: cx - 32, y: ty - 14, width: 64, height: 20,
+      rx: 5, fill: 'rgba(255,255,255,0.85)', stroke: '#bfdbfe', 'stroke-width': 1
+    });
+    gProbBadge.appendChild(bg1);
+    gProbBadge.appendChild(el('text', {
+      x: cx, y: ty - 1,
+      'text-anchor': 'middle', 'font-size': 12, fill: '#1e40af', 'font-weight': 700
+    }, fmt(prob, 4)));
+
+    // 아래쪽 배지
+    const by = (BOT_Y_TOP + BOT_Y_AXIS) / 2 + 10;
+    const bg2 = el('rect', {
+      x: cx - 32, y: by - 14, width: 64, height: 20,
+      rx: 5, fill: 'rgba(255,255,255,0.85)', stroke: '#bfdbfe', 'stroke-width': 1
+    });
+    gProbBadge.appendChild(bg2);
+    gProbBadge.appendChild(el('text', {
+      x: cx, y: by - 1,
+      'text-anchor': 'middle', 'font-size': 12, fill: '#1e40af', 'font-weight': 700
+    }, fmt(prob, 4)));
+  }
+
+  // ── 패널 텍스트 갱신 ─────────────────────────────────────
+  function sigmaExpr(z) {
+    if (z === 0) return 'm';
+    if (z > 0)  return `m + ${fmt(z, 1)}σ`;
+    return `m − ${fmt(-z, 1)}σ`;
+  }
+
+  function updatePanel(m, sigma, za, zb, a, b, prob, showProb) {
+    const af = fmt(a, 1), bf = fmt(b, 1);
+    const zaf = fmt(za, 2), zbf = fmt(zb, 2);
+    const pf = fmt(prob, 4);
+
+    // a, b 표시
+    document.getElementById('val-a').textContent = af;
+    document.getElementById('val-b').textContent = bf;
+    document.getElementById('expr-a').textContent = sigmaExpr(za).replace('σ', 'σ');
+    document.getElementById('expr-b').textContent = sigmaExpr(zb).replace('σ', 'σ');
+
+    // z_a 옆 라벨
+    document.getElementById('label-a').textContent = `→ a = ${af}`;
+    document.getElementById('label-b').textContent = `→ b = ${bf}`;
+
+    // 슬라이더·숫자입력 동기화 (루프 방지용 flag 없이, 값이 같으면 이벤트 없음)
+    setInputVal('slider-m', m); setInputVal('num-m', m);
+    setInputVal('slider-sigma', sigma); setInputVal('num-sigma', sigma);
+    setInputVal('slider-za', za); setInputVal('num-za', za);
+    setInputVal('slider-zb', zb); setInputVal('num-zb', zb);
+
+    // z_a 슬라이더 max, z_b 슬라이더 min 제한
+    document.getElementById('slider-za').max = Math.min(zb - 0.1, 4).toFixed(1);
+    document.getElementById('slider-zb').min = Math.max(za + 0.1, -4).toFixed(1);
+    document.getElementById('num-za').max   = Math.min(zb - 0.1, 4).toFixed(1);
+    document.getElementById('num-zb').min   = Math.max(za + 0.1, -4).toFixed(1);
+
+    // 확률 등식
+    const panel = document.getElementById('prob-panel');
+    panel.style.display = showProb ? '' : 'none';
+    if (showProb) {
+      document.getElementById('prob-eq').innerHTML =
+        `P(${af} ≤ X ≤ ${bf}) = P(${zaf} ≤ Z ≤ ${zbf}) ≈ ${pf}`;
+    }
+
+    // 해석 문구
+    const dirA = za < 0 ? `왼쪽` : za > 0 ? '오른쪽' : '위치';
+    const dirB = zb < 0 ? `왼쪽` : zb > 0 ? '오른쪽' : '위치';
+    const distA = Math.abs(za).toFixed(1);
+    const distB = Math.abs(zb).toFixed(1);
+    const sideA = za === 0 ? '평균과 같은 위치입니다' : `평균에서 표준편차 ${distA}개만큼 ${dirA}에 있습니다`;
+    const sideB = zb === 0 ? '평균과 같은 위치입니다' : `평균에서 표준편차 ${distB}개만큼 ${dirB}에 있습니다`;
+    document.getElementById('interp-text').textContent =
+      `a = ${af}은 ${sideA}. b = ${bf}은 ${sideB}. ` +
+      `두 그래프의 색칠된 영역은 축의 단위만 다를 뿐 같은 확률입니다.`;
+  }
+
+  let _updating = false;
+  function setInputVal(id, val) {
+    const el = document.getElementById(id);
+    if (el && parseFloat(el.value) !== val) el.value = val;
+  }
+
+  // ── 이벤트 바인딩 ─────────────────────────────────────────
+  function bindControls() {
+    // m
+    bindPair('slider-m', 'num-m', v => {
+      state.m = v; render();
+    }, 40, 100);
+    // sigma
+    bindPair('slider-sigma', 'num-sigma', v => {
+      state.sigma = Math.max(0.5, v); render();
+    }, 0.5, 25);
+    // za
+    bindPair('slider-za', 'num-za', v => {
+      state.za = Math.min(v, state.zb - 0.1); render();
+    }, -4, 4);
+    // zb
+    bindPair('slider-zb', 'num-zb', v => {
+      state.zb = Math.max(v, state.za + 0.1); render();
+    }, -4, 4);
+
+    // 프리셋
+    document.getElementById('btn-default').addEventListener('click', () => {
+      Object.assign(state, { m: 70, sigma: 10, za: -1, zb: 2 }); render();
+    });
+    document.getElementById('btn-sym').addEventListener('click', () => {
+      state.za = -1; state.zb = 1; render();
+    });
+    document.getElementById('btn-2sd').addEventListener('click', () => {
+      state.za = -2; state.zb = 2; render();
+    });
+
+    // 확률 토글
+    document.getElementById('toggle-prob').addEventListener('change', render);
+  }
+
+  function bindPair(sliderId, numId, onChange, min, max) {
+    const slider = document.getElementById(sliderId);
+    const num    = document.getElementById(numId);
+    slider.addEventListener('input', () => {
+      const v = parseFloat(slider.value);
+      if (!isNaN(v)) onChange(Math.min(Math.max(v, min), max));
+    });
+    num.addEventListener('change', () => {
+      const v = parseFloat(num.value);
+      if (!isNaN(v)) onChange(Math.min(Math.max(v, min), max));
+    });
+  }
+
+  // ── 드래그 ───────────────────────────────────────────────
+  let dragging = null; // { which: 'a'|'b', graph: 'top'|'bot' }
+
+  function svgClientToZ(clientX) {
+    const rect = svg.getBoundingClientRect();
+    const px = (clientX - rect.left) * (SVG_W / rect.width);
+    const z = (px - GRAPH_X0) / GRAPH_W * 8 - 4;
+    return Math.min(Math.max(z, -4), 4);
+  }
+
+  svg.addEventListener('pointerdown', e => {
+    const handle = e.target.closest('[data-which]');
+    if (!handle) return;
+    dragging = { which: handle.dataset.which, graph: handle.dataset.graph };
+    svg.setPointerCapture(e.pointerId);
+    e.preventDefault();
+  });
+
+  svg.addEventListener('pointermove', e => {
+    if (!dragging) return;
+    const z = svgClientToZ(e.clientX);
+    if (dragging.which === 'a') {
+      state.za = Math.min(z, state.zb - 0.1);
+    } else {
+      state.zb = Math.max(z, state.za + 0.1);
+    }
+    render();
+  });
+
+  svg.addEventListener('pointerup', () => { dragging = null; });
+  svg.addEventListener('pointercancel', () => { dragging = null; });
+
+  // ── MathJax 재렌더링 ─────────────────────────────────────
+  function typesetPanel() {
+    if (window.MathJax && MathJax.typesetPromise) {
+      MathJax.typesetPromise([document.querySelector('.control-panel')]).catch(console.error);
+    }
+  }
+
+  // ── 초기화 ───────────────────────────────────────────────
+  bindControls();
+  render();
+  if (window.MathJax) {
+    if (MathJax.startup?.promise) {
+      MathJax.startup.promise.then(typesetPanel);
+    }
+  }
+  </script>
+</body>
+</html>
