@@ -5,6 +5,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>점수가 올랐으면 성적도 올랐을까?</title>
   <link rel="stylesheet" href="../../assets/common.css" />
+  <!-- MathJax: 분수 수식(\frac{X-m}{\sigma} 등) LaTeX 렌더링 -->
+  <script>
+    window.MathJax = {
+      tex: { inlineMath: [['\\(', '\\)']], displayMath: [['\\[', '\\]']] },
+      options: { skipHtmlTags: ['script', 'noscript', 'style', 'textarea'] }
+    };
+  </script>
+  <script id="MathJax-script" async
+    src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
   <style>
     :root {
       --blue: #2563eb;
@@ -30,9 +39,7 @@
       padding: 24px 16px 36px;
     }
 
-    .app-hero {
-      margin-bottom: 16px;
-    }
+    .app-hero { margin-bottom: 16px; }
 
     .app-hero h1 {
       margin: 0 0 8px;
@@ -54,9 +61,7 @@
       margin: 14px 0;
     }
 
-    .tab-btn,
-    .btn,
-    .small-btn {
+    .tab-btn, .btn {
       border: 1px solid #cbd5e1;
       background: white;
       color: #1e293b;
@@ -88,8 +93,7 @@
       box-shadow: 0 8px 22px rgba(15, 23, 42, 0.06);
     }
 
-    .panel h2,
-    .panel h3 {
+    .panel h2, .panel h3 {
       margin: 0 0 10px;
       color: #111827;
     }
@@ -133,9 +137,7 @@
       margin-bottom: 5px;
     }
 
-    .input-table-wrap {
-      overflow-x: auto;
-    }
+    .input-table-wrap { overflow-x: auto; }
 
     .result-table {
       width: 100%;
@@ -143,8 +145,7 @@
       font-size: 14px;
     }
 
-    .result-table th,
-    .result-table td {
+    .result-table th, .result-table td {
       border-bottom: 1px solid #e5e7eb;
       padding: 8px;
       text-align: center;
@@ -174,17 +175,6 @@
       border-color: #475569;
     }
 
-    .small-btn {
-      padding: 7px 10px;
-      font-size: 13px;
-    }
-
-    .small-btn.active {
-      color: white;
-      background: var(--violet);
-      border-color: var(--violet);
-    }
-
     .grid-two {
       display: grid;
       grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
@@ -207,10 +197,7 @@
       margin-bottom: 8px;
     }
 
-    .line-title {
-      font-weight: 900;
-      color: #111827;
-    }
+    .line-title { font-weight: 900; color: #111827; }
 
     .line-sub {
       font-size: 13px;
@@ -226,9 +213,7 @@
 
     .axis {
       position: absolute;
-      left: 0;
-      right: 0;
-      top: 55px;
+      left: 0; right: 0; top: 55px;
       height: 3px;
       background: #cbd5e1;
       border-radius: 999px;
@@ -259,10 +244,7 @@
       white-space: nowrap;
     }
 
-    .tick-label.mean-label {
-      color: #111827;
-      font-weight: 900;
-    }
+    .tick-label.mean-label { color: #111827; font-weight: 900; }
 
     .point {
       position: absolute;
@@ -310,17 +292,9 @@
       color: #334155;
     }
 
-    .legend-item {
-      display: inline-flex;
-      align-items: center;
-      gap: 5px;
-    }
+    .legend-item { display: inline-flex; align-items: center; gap: 5px; }
 
-    .legend-dot {
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-    }
+    .legend-dot { width: 10px; height: 10px; border-radius: 50%; }
 
     .interpret {
       border-left: 5px solid var(--blue);
@@ -332,13 +306,12 @@
       line-height: 1.65;
     }
 
-    .interpret strong {
-      color: var(--blue-dark);
-    }
+    .interpret strong { color: var(--blue-dark); }
 
     .formula-strip {
       display: flex;
       flex-wrap: wrap;
+      align-items: center;
       gap: 8px;
       margin-top: 10px;
     }
@@ -347,25 +320,75 @@
       background: #f8fafc;
       border: 1px solid #e2e8f0;
       border-radius: 8px;
-      padding: 7px 10px;
+      padding: 7px 12px;
       font-size: 14px;
       font-weight: 800;
       color: #334155;
+      min-height: 36px;
+      display: flex;
+      align-items: center;
     }
 
     .select-row {
       display: flex;
       flex-wrap: wrap;
       gap: 8px;
-      align-items: center;
-      margin-bottom: 10px;
+      align-items: flex-start;
+      margin-bottom: 12px;
     }
+
+    .select-label {
+      font-weight: 900;
+      color: #334155;
+      padding-top: 11px;
+      flex-shrink: 0;
+    }
+
+    /* 시험 선택 카드형 버튼 */
+    .exam-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 3px;
+      padding: 8px 14px;
+      border: 2px solid #e2e8f0;
+      background: white;
+      border-radius: 8px;
+      cursor: pointer;
+      min-width: 130px;
+      text-align: left;
+      transition: border-color 0.15s, background 0.15s;
+    }
+
+    .exam-btn:hover { border-color: #a78bfa; background: #faf5ff; }
+
+    .exam-btn.active {
+      border-color: var(--violet);
+      background: var(--soft-violet);
+    }
+
+    .exam-btn-name {
+      font-size: 14px;
+      font-weight: 900;
+      color: #1e293b;
+    }
+
+    .exam-btn.active .exam-btn-name { color: var(--violet); }
+
+    .exam-btn-info {
+      font-size: 12px;
+      font-weight: 400;
+      color: #64748b;
+      line-height: 1.5;
+    }
+
+    .exam-btn.active .exam-btn-info { color: #5b21b6; }
 
     .step-controls {
       display: flex;
       flex-wrap: wrap;
       gap: 8px;
-      margin: 12px 0 4px;
+      margin: 10px 0 4px;
     }
 
     /* 컨트롤 패널 sticky 고정 */
@@ -386,7 +409,7 @@
 
     .step-calc {
       flex: 0 0 auto;
-      min-width: 150px;
+      min-width: 160px;
       padding: 10px 12px;
       background: #f8fafc;
       border: 1px solid #e2e8f0;
@@ -406,9 +429,7 @@
       line-height: 1.6;
     }
 
-    .step-line.hidden-step {
-      display: none;
-    }
+    .step-line.hidden-step { display: none; }
 
     .general-box {
       background: #f5f3ff;
@@ -453,24 +474,13 @@
     }
 
     .sr-only {
-      position: absolute;
-      width: 1px;
-      height: 1px;
-      padding: 0;
-      margin: -1px;
-      overflow: hidden;
-      clip: rect(0, 0, 0, 0);
-      white-space: nowrap;
-      border: 0;
+      position: absolute; width: 1px; height: 1px;
+      padding: 0; margin: -1px; overflow: hidden;
+      clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
     }
 
     @media (max-width: 900px) {
-      .question-panel,
-      .grid-two,
-      .general-grid {
-        grid-template-columns: 1fr;
-      }
-
+      .question-panel, .grid-two, .general-grid { grid-template-columns: 1fr; }
       .line-sub { text-align: left; }
       .line-head { flex-direction: column; gap: 2px; }
     }
@@ -483,6 +493,7 @@
       .point-label { font-size: 11px; }
       .step-card-body { flex-direction: column; align-items: stretch; }
       .step-calc { min-width: 0; }
+      .exam-btn { min-width: 0; flex: 1 1 140px; }
     }
   </style>
 </head>
@@ -501,6 +512,7 @@
       <button class="tab-btn" type="button" data-view="processView">표준화 과정 보기</button>
     </nav>
 
+    <!-- ── 점수 변화 보기 ──────────────────────────────── -->
     <section id="changeView" class="view active" aria-labelledby="changeTitle">
       <div class="panel question-panel">
         <div>
@@ -523,8 +535,8 @@
                 <th>원점수 X</th>
                 <th>시험 평균 m</th>
                 <th>표준편차 σ</th>
-                <th>Z = (X−m)/σ</th>
-                <th>T = 10Z+50</th>
+                <th>\(Z = \dfrac{X-m}{\sigma}\)</th>
+                <th>T = 10Z + 50</th>
               </tr>
             </thead>
             <tbody>
@@ -567,14 +579,16 @@
       <div class="interpret" id="interpretText"></div>
     </section>
 
+    <!-- ── 표준화 과정 보기 ──────────────────────────────── -->
     <section id="processView" class="view" aria-labelledby="processTitle">
+
+      <!-- sticky 컨트롤 패널 -->
       <div class="panel sticky-controls">
         <h2 id="processTitle">선택한 시험의 표준화 과정</h2>
+
         <div class="select-row" aria-label="시험 선택">
-          <span style="font-weight:900;color:#334155;">시험 선택</span>
-          <button class="small-btn active" type="button" data-exam="0">1차 시험</button>
-          <button class="small-btn" type="button" data-exam="1">2차 시험</button>
-          <button class="small-btn" type="button" data-exam="2">3차 시험</button>
+          <span class="select-label">시험 선택</span>
+          <div id="examSelectRow" style="display:flex;flex-wrap:wrap;gap:8px;"></div>
         </div>
 
         <div class="step-controls">
@@ -585,10 +599,10 @@
 
         <div class="formula-strip" aria-label="표준화 공식">
           <span class="formula-chip">X</span>
-          <span class="formula-chip">X - m</span>
-          <span class="formula-chip">(X - m) / σ</span>
-          <span class="formula-chip">10(X - m) / σ</span>
-          <span class="formula-chip">10(X - m) / σ + 50</span>
+          <span class="formula-chip">X − m</span>
+          <span class="formula-chip">\(\dfrac{X-m}{\sigma}\)</span>
+          <span class="formula-chip">\(\dfrac{10(X-m)}{\sigma}\)</span>
+          <span class="formula-chip">\(\dfrac{10(X-m)}{\sigma}+50\)</span>
         </div>
       </div>
 
@@ -596,8 +610,9 @@
 
       <div class="general-box">
         <h3>원하는 평균과 표준편차로 바꾸기</h3>
-        <p style="margin:0;color:#4c1d95;font-size:15px;line-height:1.55;">
-          Z = (X - m) / σ로 표준화한 뒤, Y = aZ + b로 바꾸면 Y의 평균은 b, 표준편차는 a가 됩니다. T점수는 a = 10, b = 50인 경우입니다.
+        <p style="margin:0;color:#4c1d95;font-size:15px;line-height:1.7;">
+          \(Z = \dfrac{X-m}{\sigma}\) 로 표준화한 뒤, \(Y = aZ + b\) 로 바꾸면
+          Y의 평균은 b, 표준편차는 a가 됩니다. T점수는 a = 10, b = 50인 경우입니다.
         </p>
         <div class="general-grid">
           <div>
@@ -625,18 +640,19 @@
     let selectedExamIndex = 0;
     let visibleStepCount = 1;
 
-    const rawLine = document.getElementById('rawLine');
-    const tLine = document.getElementById('tLine');
+    const rawLine       = document.getElementById('rawLine');
+    const tLine         = document.getElementById('tLine');
     const standardLines = document.getElementById('standardLines');
     const interpretText = document.getElementById('interpretText');
-    const rawLegend = document.getElementById('rawLegend');
-    const tLegend = document.getElementById('tLegend');
-    const mainSummary = document.getElementById('mainSummary');
-    const processLines = document.getElementById('processLines');
-    const targetSdInput = document.getElementById('targetSdInput');
+    const rawLegend     = document.getElementById('rawLegend');
+    const tLegend       = document.getElementById('tLegend');
+    const mainSummary   = document.getElementById('mainSummary');
+    const processLines  = document.getElementById('processLines');
+    const examSelectRow = document.getElementById('examSelectRow');
+    const targetSdInput   = document.getElementById('targetSdInput');
     const targetMeanInput = document.getElementById('targetMeanInput');
-    const generalFormula = document.getElementById('generalFormula');
-    const generalValue = document.getElementById('generalValue');
+    const generalFormula  = document.getElementById('generalFormula');
+    const generalValue    = document.getElementById('generalValue');
 
     function fmt(value, digits = 1) {
       if (!Number.isFinite(value)) return '-';
@@ -644,17 +660,10 @@
       return value.toFixed(digits);
     }
 
-    function zScore(exam) {
-      return (exam.x - exam.mean) / exam.sigma;
-    }
+    function zScore(exam) { return (exam.x - exam.mean) / exam.sigma; }
+    function tScore(exam) { return 10 * zScore(exam) + 50; }
 
-    function tScore(exam) {
-      return 10 * zScore(exam) + 50;
-    }
-
-    function clamp(value, min, max) {
-      return Math.min(max, Math.max(min, value));
-    }
+    function clamp(value, min, max) { return Math.min(max, Math.max(min, value)); }
 
     function positionPercent(value, min, max) {
       if (max === min) return 50;
@@ -663,12 +672,8 @@
 
     function tickLabelsForCentered(mean, sd, extent) {
       const ticks = [];
-      for (let k = -extent; k <= extent; k += 1) {
-        ticks.push({
-          value: mean + k * sd,
-          label: fmt(mean + k * sd, 1),
-          isMean: k === 0
-        });
+      for (let k = -extent; k <= extent; k++) {
+        ticks.push({ value: mean + k * sd, label: fmt(mean + k * sd, 1), isMean: k === 0 });
       }
       return ticks;
     }
@@ -684,7 +689,7 @@
 
       const pointHtml = points.map((point, idx) => {
         const left = positionPercent(point.value, min, max);
-        const top = point.labelTop == null ? 0 : point.labelTop;
+        const top = point.labelTop ?? 0;
         return `
           <div class="point-label" style="left:${left}%; top:${top}px;">${point.label}</div>
           <div class="point ${point.className || 'a'}" style="left:${left}%;" aria-hidden="true">${point.short || idx + 1}</div>
@@ -707,33 +712,48 @@
       `;
     }
 
+    /* ── 시험 선택 버튼 생성 (X, m, σ 표시) ── */
+    function buildExamButtons() {
+      examSelectRow.innerHTML = exams.map((exam, idx) => `
+        <button class="exam-btn${idx === selectedExamIndex ? ' active' : ''}"
+                type="button" data-exam="${idx}">
+          <span class="exam-btn-name">${exam.label}</span>
+          <span class="exam-btn-info">X = ${fmt(exam.x)}, m = ${fmt(exam.mean)}, σ = ${fmt(exam.sigma)}</span>
+        </button>
+      `).join('');
+    }
+
+    /* ── LaTeX 수식 후처리 ── */
+    function typesetMath(el) {
+      if (window.MathJax && MathJax.typesetPromise) {
+        MathJax.typesetPromise([el]).catch(console.error);
+      }
+    }
+
+    /* ── 점수 변화 보기 ── */
     function renderLegends() {
-      const items = exams.map(exam => `<span class="legend-item"><span class="legend-dot ${exam.className}"></span>${exam.label}</span>`).join('');
+      const items = exams.map(e =>
+        `<span class="legend-item"><span class="legend-dot ${e.className}"></span>${e.label}</span>`
+      ).join('');
       rawLegend.innerHTML = items;
-      tLegend.innerHTML = items;
+      tLegend.innerHTML   = items;
     }
 
     function renderRawLine() {
-      const values = exams.map(exam => exam.x);
+      const values = exams.map(e => e.x);
       const min = Math.floor((Math.min(...values) - 8) / 5) * 5;
       const max = Math.ceil((Math.max(...values) + 8) / 5) * 5;
-      const ticks = [];
       const step = Math.max(5, Math.ceil((max - min) / 4 / 5) * 5);
-      for (let value = min; value <= max; value += step) {
-        ticks.push({ value, label: fmt(value), isMean: false });
-      }
+      const ticks = [];
+      for (let v = min; v <= max; v += step) ticks.push({ value: v, label: fmt(v), isMean: false });
       rawLine.innerHTML = renderNumberLine({
         title: '원점수만 보기',
-        subtitle: `${exams.map(exam => fmt(exam.x)).join(' → ')}`,
-        ticks,
-        min,
-        max,
-        points: exams.map((exam, idx) => ({
-          value: exam.x,
-          label: `${exam.short} X=${fmt(exam.x)}`,
-          short: String(idx + 1),
-          className: exam.className,
-          labelTop: idx % 2 === 0 ? 2 : 22
+        subtitle: exams.map(e => fmt(e.x)).join(' → '),
+        ticks, min, max,
+        points: exams.map((e, i) => ({
+          value: e.x, label: `${e.short} X=${fmt(e.x)}`,
+          short: String(i + 1), className: e.className,
+          labelTop: i % 2 === 0 ? 2 : 22
         })),
         tickNote: '원점수는 실제로 올랐습니다. 상대적 위치는 아직 판단하지 않습니다.'
       });
@@ -744,77 +764,60 @@
       const minTick = Math.floor(Math.min(30, ...values) / 10) * 10;
       const maxTick = Math.ceil(Math.max(70, ...values) / 10) * 10;
       const ticks = [];
-      for (let value = minTick; value <= maxTick; value += 10) {
-        ticks.push({ value, label: fmt(value), isMean: value === 50 });
-      }
+      for (let v = minTick; v <= maxTick; v += 10)
+        ticks.push({ value: v, label: fmt(v), isMean: v === 50 });
       const used = new Map();
       tLine.innerHTML = renderNumberLine({
         title: '같은 기준으로 바꾼 T점수',
         subtitle: '평균 50, 표준편차 10',
-        ticks,
-        min: minTick,
-        max: maxTick,
-        points: exams.map((exam, idx) => {
-          const t = tScore(exam);
+        ticks, min: minTick, max: maxTick,
+        points: exams.map((e, i) => {
+          const t = tScore(e);
           const key = fmt(t, 1);
           const count = used.get(key) || 0;
           used.set(key, count + 1);
-          return {
-            value: t,
-            label: `${exam.short} T=${fmt(t, 1)}`,
-            short: String(idx + 1),
-            className: exam.className,
-            labelTop: count * 20
-          };
+          return { value: t, label: `${e.short} T=${fmt(t, 1)}`, short: String(i + 1), className: e.className, labelTop: count * 20 };
         }),
         tickNote: 'T점수가 같으면 평균에서 표준편차 몇 칸 떨어졌는지가 같습니다.'
       });
     }
 
     function renderStandardLines() {
-      standardLines.innerHTML = exams.map(exam => {
-        const z = zScore(exam);
+      standardLines.innerHTML = exams.map(e => {
+        const z = zScore(e);
         const extent = Math.max(2, Math.ceil(Math.abs(z)));
-        const min = exam.mean - extent * exam.sigma;
-        const max = exam.mean + extent * exam.sigma;
-        const ticks = tickLabelsForCentered(exam.mean, exam.sigma, extent);
+        const min = e.mean - extent * e.sigma;
+        const max = e.mean + extent * e.sigma;
         return renderNumberLine({
-          title: exam.label,
-          subtitle: `m=${fmt(exam.mean)}, σ=${fmt(exam.sigma)}, Z=${fmt(z, 2)}`,
-          ticks,
-          min,
-          max,
-          points: [{
-            value: exam.x,
-            label: `X=${fmt(exam.x)} · Z=${fmt(z, 2)}`,
-            short: exam.short,
-            className: exam.className
-          }],
-          tickNote: `눈금 한 칸은 이 시험의 표준편차 ${fmt(exam.sigma)}점입니다.`
+          title: e.label,
+          subtitle: `m=${fmt(e.mean)}, σ=${fmt(e.sigma)}, Z=${fmt(z, 2)}`,
+          ticks: tickLabelsForCentered(e.mean, e.sigma, extent),
+          min, max,
+          points: [{ value: e.x, label: `X=${fmt(e.x)} · Z=${fmt(z, 2)}`, short: e.short, className: e.className }],
+          tickNote: `눈금 한 칸은 이 시험의 표준편차 ${fmt(e.sigma)}점입니다.`
         });
       }).join('');
     }
 
     function renderInterpretation() {
       const rawFirst = exams[0].x;
-      const rawLast = exams[exams.length - 1].x;
-      const tFirst = tScore(exams[0]);
-      const tLast = tScore(exams[exams.length - 1]);
-      const zTexts = exams.map(exam => `${exam.short}: Z=${fmt(zScore(exam), 2)}, T=${fmt(tScore(exam), 1)}`).join(' · ');
-      let relation = '비교해 보아야 합니다';
-      if (tLast > tFirst) relation = '높아졌습니다';
-      if (tLast < tFirst) relation = '낮아졌습니다';
+      const rawLast  = exams[exams.length - 1].x;
+      const tFirst   = tScore(exams[0]);
+      const tLast    = tScore(exams[exams.length - 1]);
+      const zTexts   = exams.map(e => `${e.short}: Z=${fmt(zScore(e), 2)}, T=${fmt(tScore(e), 1)}`).join(' · ');
+      const relation = tLast > tFirst ? '높아졌습니다' : tLast < tFirst ? '낮아졌습니다' : '같습니다';
       interpretText.innerHTML = `
         <strong>해석</strong><br>
         원점수는 ${fmt(rawFirst)}점에서 ${fmt(rawLast)}점으로 ${rawLast >= rawFirst ? '올랐습니다' : '내려갔습니다'}.
         하지만 T점수는 ${fmt(tFirst, 1)}점에서 ${fmt(tLast, 1)}점으로 ${relation}.
-        평균과 표준편차가 다른 시험을 비교할 때는 원점수뿐 아니라 <strong>평균에서 표준편차 몇 칸 떨어졌는지</strong>를 함께 보아야 합니다.<br>
+        평균과 표준편차가 다른 시험을 비교할 때는 원점수뿐 아니라
+        <strong>평균에서 표준편차 몇 칸 떨어졌는지</strong>를 함께 보아야 합니다.<br>
         <span style="color:#475569;">${zTexts}</span>
       `;
       mainSummary.innerHTML = `
         <strong>현재 데이터 요약</strong>
-        원점수: ${exams.map(exam => fmt(exam.x)).join(' → ')}<br>
-        T점수: ${exams.map(exam => fmt(tScore(exam), 1)).join(' → ')}
+        원점수: ${exams.map(e => fmt(e.x)).join(' → ')}<br>
+        T점수: ${exams.map(e => fmt(tScore(e), 1)).join(' → ')}
       `;
     }
 
@@ -826,51 +829,42 @@
       renderInterpretation();
     }
 
-    function selectedExam() {
-      return exams[selectedExamIndex];
-    }
+    /* ── 표준화 과정 보기 ── */
+    function selectedExam() { return exams[selectedExamIndex]; }
 
     function stepData(exam) {
       const z = zScore(exam);
       const t = tScore(exam);
+      const dev = exam.x - exam.mean;
       return [
         {
           variable: 'X',
-          value: exam.x,
-          mean: exam.mean,
-          sd: exam.sigma,
+          value: exam.x, mean: exam.mean, sd: exam.sigma,
           title: '1단계: X — 원래 점수',
           formula: `X = ${fmt(exam.x)}`
         },
         {
-          variable: 'X - m',
-          value: exam.x - exam.mean,
-          mean: 0,
-          sd: exam.sigma,
+          variable: 'X − m',
+          value: dev, mean: 0, sd: exam.sigma,
           title: '2단계: X − m — 평균을 0으로',
-          formula: `X - m = ${fmt(exam.x)} - ${fmt(exam.mean)} = ${fmt(exam.x - exam.mean)}`
+          formula: `X − m = ${fmt(exam.x)} − ${fmt(exam.mean)} = ${fmt(dev)}`
         },
         {
-          variable: '(X - m) / σ',
-          value: z,
-          mean: 0,
-          sd: 1,
+          variable: 'Z',
+          value: z, mean: 0, sd: 1,
           title: '3단계: Z — 표준편차를 1칸으로',
-          formula: `(X - m) / σ = ${fmt(exam.x - exam.mean)} / ${fmt(exam.sigma)} = ${fmt(z, 2)}`
+          // LaTeX 분수: 실제 숫자도 분수 형태로
+          formula: `\\(\\dfrac{X-m}{\\sigma} = \\dfrac{${fmt(dev)}}{${fmt(exam.sigma)}} = ${fmt(z, 2)}\\)`
         },
         {
-          variable: '10(X - m) / σ',
-          value: 10 * z,
-          mean: 0,
-          sd: 10,
+          variable: '10Z',
+          value: 10 * z, mean: 0, sd: 10,
           title: '4단계: 10Z — 표준편차를 10칸으로',
           formula: `10 × ${fmt(z, 2)} = ${fmt(10 * z, 1)}`
         },
         {
-          variable: '10(X - m) / σ + 50',
-          value: t,
-          mean: 50,
-          sd: 10,
+          variable: 'T',
+          value: t, mean: 50, sd: 10,
           title: '5단계: T — 평균을 50으로',
           formula: `${fmt(10 * z, 1)} + 50 = ${fmt(t, 1)}`
         }
@@ -885,8 +879,8 @@
         const max = step.mean + extent * step.sd;
         const ticks = tickLabelsForCentered(step.mean, step.sd, extent);
         const hidden = idx >= visibleStepCount ? ' hidden-step' : '';
-        const pointClass = idx === 4 ? 'y' : exam.className;
-        const pointLeft = positionPercent(step.value, min, max);
+        const pointClass  = idx === 4 ? 'y' : exam.className;
+        const pointLeft   = positionPercent(step.value, min, max);
 
         const tickHtml = ticks.map(tick => {
           const left = positionPercent(tick.value, min, max);
@@ -917,18 +911,19 @@
           </div>
         `;
       }).join('');
+
+      // 동적으로 삽입된 LaTeX 수식 렌더링
+      typesetMath(processLines);
     }
 
     function renderGeneralization() {
-      const exam = selectedExam();
-      const z = zScore(exam);
+      const z = zScore(selectedExam());
       const rawA = parseFloat(targetSdInput.value);
       const rawB = parseFloat(targetMeanInput.value);
       const a = (!isNaN(rawA) && rawA > 0) ? rawA : 10;
       const b = !isNaN(rawB) ? rawB : 50;
-      const y = a * z + b;
       generalFormula.textContent = `Y = ${fmt(a, 1)}Z + ${fmt(b, 1)}`;
-      generalValue.textContent = `Y = ${fmt(y, 1)}`;
+      generalValue.textContent   = `Y = ${fmt(a * z + b, 1)}`;
     }
 
     function renderProcessView() {
@@ -943,23 +938,25 @@
     }
 
     function bindEvents() {
+      // 탭 전환
       document.querySelectorAll('.tab-btn').forEach(btn => {
         btn.addEventListener('click', () => {
-          document.querySelectorAll('.tab-btn').forEach(item => item.classList.remove('active'));
-          document.querySelectorAll('.view').forEach(view => view.classList.remove('active'));
+          document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+          document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
           btn.classList.add('active');
           document.getElementById(btn.dataset.view).classList.add('active');
         });
       });
 
-      document.querySelectorAll('[data-exam]').forEach(btn => {
-        btn.addEventListener('click', () => {
-          selectedExamIndex = Number(btn.dataset.exam);
-          visibleStepCount = 1;
-          document.querySelectorAll('[data-exam]').forEach(item => item.classList.remove('active'));
-          btn.classList.add('active');
-          renderProcessView();
-        });
+      // 시험 선택 (이벤트 위임)
+      examSelectRow.addEventListener('click', e => {
+        const btn = e.target.closest('[data-exam]');
+        if (!btn) return;
+        selectedExamIndex = Number(btn.dataset.exam);
+        visibleStepCount  = 1;
+        examSelectRow.querySelectorAll('[data-exam]').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        renderProcessView();
       });
 
       document.getElementById('restartStepsBtn').addEventListener('click', () => {
@@ -981,8 +978,15 @@
       targetMeanInput.addEventListener('input', renderGeneralization);
     }
 
+    // 초기화
+    buildExamButtons();
     bindEvents();
     renderAll();
+
+    // MathJax 로드 완료 후 processLines 재처리 (async 로드 대응)
+    if (window.MathJax) {
+      MathJax.startup?.promise?.then(() => typesetMath(processLines));
+    }
   </script>
 </body>
 </html>
