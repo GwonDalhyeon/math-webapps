@@ -28,7 +28,10 @@ math-webapps/
 │  ├─ index.html
 │  └─ app-name/
 │     ├─ index.html
-│     └─ worksheet.md
+│     ├─ worksheet.md
+│     ├─ worksheet-teacher.md
+│     ├─ worksheet.pdf
+│     └─ worksheet-teacher.pdf
 ├─ calculus/
 │  ├─ index.html
 │  └─ app-name/
@@ -45,12 +48,14 @@ math-webapps/
 - 한글, 공백, 특수문자를 URL 경로에 사용하지 않는다.
 - 새 웹앱 폴더에는 반드시 `index.html`을 둔다.
 - 학습지는 해당 웹앱 폴더 안에 `worksheet.md`, `worksheet-short.md`처럼 둔다.
+- 웹앱과 직접 연결되는 학습지를 제작한 경우 Markdown 원본과 PDF를 웹앱 폴더에 함께 두고, 웹앱에서 다운로드할 수 있게 연결한다.
 
 좋은 예:
 
 ```text
 probability-statistics/sample-proportion-event-readiness/index.html
 probability-statistics/sample-proportion-event-readiness/worksheet.md
+probability-statistics/sample-proportion-event-readiness/worksheet.pdf
 ```
 
 피할 예:
@@ -80,6 +85,13 @@ probability-statistics/sample proportion/index.html
 <link rel="stylesheet" href="../../assets/common.css">
 ```
 
+개별 웹앱에서 같은 폴더의 학습지를 연결할 때:
+
+```html
+<a href="./worksheet.pdf" download>학생용 PDF</a>
+<a href="./worksheet.md" download>학생용 MD</a>
+```
+
 절대 로컬 경로는 금지한다.
 
 ```html
@@ -93,8 +105,9 @@ probability-statistics/sample proportion/index.html
 
 1. 과목 폴더 아래에 새 웹앱 폴더를 만든다.
 2. 새 폴더 안에 `index.html`을 만든다.
-3. 과목별 `index.html` 목록에 카드를 추가한다.
-4. 실제 파일이 없는 항목은 링크하지 않는다.
+3. 학습지를 함께 제작한 경우 같은 폴더에 Markdown/PDF 파일을 두고 웹앱의 다운로드 영역에 연결한다.
+4. 과목별 `index.html` 목록에 카드를 추가한다.
+5. 실제 파일이 없는 항목은 링크하지 않는다.
 
 실제 페이지가 있을 때:
 

@@ -15,6 +15,8 @@ probability-statistics/sample-proportion-event-readiness/worksheet-short-teacher
 
 웹앱과 직접 연결되는 학습지는 `tasks/`가 아니라 웹앱 폴더에 둔다.
 
+웹앱에 맞는 학습지를 제작하는 경우, 사용자가 별도로 요청하지 않아도 웹앱 `index.html`에 학습지 다운로드 영역을 함께 연결한다. Markdown 원본과 PDF를 함께 만든 경우 둘 다 제공하고, 학생용과 교사용이 있으면 두 종류 모두 제공한다.
+
 파일명 규칙:
 
 - 기본 학생용: `worksheet.md`
@@ -192,3 +194,28 @@ ____________________________________________________________
 - Markdown 원본은 학습용 구조를 유지하고, PDF 레이아웃 압축은 변환 과정에서 처리한다.
 - PDF를 만들 때도 학생용 PDF와 교사용 PDF를 같은 형식 기준으로 함께 만든다. 페이지 수는 사용자가 지정한 목표를 우선하고, 교사용 답안 때문에 같은 페이지 수가 어려우면 최종 응답에 알린다.
 - PDF 변환이 예정된 경우 `pdf-export.md`도 읽는다.
+
+## 웹앱 연결
+
+학습지를 웹앱과 함께 배포할 때는 다음을 따른다.
+
+- 학습지 파일은 해당 웹앱 폴더 안에 둔다.
+- 웹앱 화면의 제목/짧은 설명 아래, 조작 영역 위에 다운로드 영역을 둔다.
+- 자료가 1~2개이면 작은 버튼으로 바로 노출한다.
+- 자료가 3개 이상이면 `<details>` 기반 접이식 영역으로 묶는다.
+- 다운로드 링크는 `./worksheet.pdf`, `./worksheet.md`처럼 상대경로로 작성한다.
+- 실제 파일이 없는 링크는 만들지 않는다.
+
+예:
+
+```html
+<details class="resource-menu">
+  <summary>자료 다운로드</summary>
+  <div class="resource-list">
+    <a href="./worksheet.pdf" download>학생용 PDF</a>
+    <a href="./worksheet-teacher.pdf" download>교사용 PDF</a>
+    <a href="./worksheet.md" download>학생용 MD</a>
+    <a href="./worksheet-teacher.md" download>교사용 MD</a>
+  </div>
+</details>
+```

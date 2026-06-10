@@ -206,6 +206,46 @@ math-webapps/
 
 ---
 
+## 6-1. 학습지와 다운로드 자료 탑재
+
+웹앱에 맞는 학습지를 함께 제작하거나 이미 함께 관리하는 경우, 사용자가 별도로 말하지 않아도 학습지 파일을 웹앱 폴더에 함께 두고 웹앱 화면에서 다운로드할 수 있게 연결한다.
+
+- 웹앱과 직접 연결되는 학습지 원본 Markdown은 `tasks/`가 아니라 해당 웹앱 폴더에 둔다.
+- PDF를 제작한 경우 PDF도 같은 웹앱 폴더에 두고 다운로드 링크를 만든다.
+- 학생용과 교사용을 함께 제작한 경우 두 종류 모두 웹앱에서 받을 수 있게 한다.
+- 다운로드 링크는 실제 존재하는 파일만 연결한다.
+- 파일명은 영어 소문자, 숫자, 하이픈만 사용한다.
+- 자료 다운로드 UI는 제목/짧은 설명 아래, 조작 영역 위에 얇게 배치한다.
+- 자료가 1~2개이면 버튼을 바로 노출하고, 3개 이상이면 `<details>` 기반의 접이식 "자료 다운로드" 영역으로 묶는다.
+- 자료 다운로드 영역이 핵심 시각화와 조작 영역을 밀어내지 않도록 작고 일관되게 유지한다.
+
+권장 파일 예:
+
+```text
+probability-statistics/sample-proportion-event-readiness/
+├─ index.html
+├─ worksheet.md
+├─ worksheet-teacher.md
+├─ worksheet.pdf
+└─ worksheet-teacher.pdf
+```
+
+권장 배치 예:
+
+```html
+<details class="resource-menu">
+  <summary>자료 다운로드</summary>
+  <div class="resource-list">
+    <a href="./worksheet.pdf" download>학생용 PDF</a>
+    <a href="./worksheet-teacher.pdf" download>교사용 PDF</a>
+    <a href="./worksheet.md" download>학생용 MD</a>
+    <a href="./worksheet-teacher.md" download>교사용 MD</a>
+  </div>
+</details>
+```
+
+---
+
 ## 7. 수학 웹앱 설계 원칙
 
 웹앱은 단순 계산기가 아니라 수학적 변화 과정을 보여주는 도구여야 한다.
@@ -452,8 +492,9 @@ Codex는 다음 방식으로 작업한다.
 2. 화면 구성을 간단히 설계한다.
 3. 필요한 파일을 생성하거나 수정한다.
 4. 개별 웹앱 `index.html`을 완성한다.
-5. 과목별 목록 페이지에 링크를 추가한다.
-6. 로컬 확인 방법과 GitHub Pages 주소 예시를 알려준다.
+5. 학습지를 함께 제작한 경우 웹앱 폴더에 Markdown/PDF를 함께 두고 다운로드 영역을 연결한다.
+6. 과목별 목록 페이지에 링크를 추가한다.
+7. 로컬 확인 방법과 GitHub Pages 주소 예시를 알려준다.
 
 ---
 
