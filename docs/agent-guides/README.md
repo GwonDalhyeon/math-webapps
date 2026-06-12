@@ -7,6 +7,7 @@
 ## 문서 목록
 
 - `repo-structure.md`: 저장소 구조, 경로, 목록 페이지, GitHub Pages 링크 규칙
+- `learning-agent-roles.md`: 수학 웹앱 제작 역할 체계와 학습가치 검토 기준
 - `webapp.md`: 새 수학 웹앱 제작 기준
 - `worksheet.md`: 학습지 Markdown 작성 기준
 - `pdf-export.md`: 학습지 PDF 변환 기준
@@ -15,7 +16,8 @@
 
 ## 사용 원칙
 
-- 새 웹앱을 만들 때는 `webapp.md`, `repo-structure.md`, `verification.md`를 읽는다.
+- 새 웹앱을 만들 때는 `learning-agent-roles.md`, `webapp.md`, `repo-structure.md`, `verification.md`를 읽는다.
+- 새 웹앱 아이디어를 바로 구현하지 말고, 작업지시서 작성과 사전 학습가치 검토를 먼저 거친다.
 - 학습지를 만들거나 수정할 때는 `worksheet.md`를 읽는다.
 - 학습지를 PDF로 변환할 때는 `pdf-export.md`를 읽는다.
 - Claude Code나 다른 도구에 구현을 맡길 작업지시서를 만들 때는 `task-spec.md`를 읽는다.
@@ -30,6 +32,7 @@
 - React, Vite, Next.js, TypeScript, 번들러, 서버, 데이터베이스, 로그인, 서버 API를 도입하지 않는다.
 - 모든 링크와 리소스 경로는 상대경로를 사용한다.
 - 실제 파일이 없는 링크를 만들지 않는다.
+- 새 웹앱은 사전 학습가치 검토를 통과한 뒤 구현한다.
 - 학습지 Markdown의 모든 수식은 LaTeX 형식으로 작성한다.
 - 학습지 Markdown을 제작할 때는 학생용과 예시답안이 있는 교사용을 함께 제작한다.
 - 웹앱에 맞는 학습지를 함께 제작한 경우 웹앱 폴더에 Markdown/PDF를 두고 다운로드 영역을 연결한다.
