@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>치환적분: 누적 속도와 가로폭</title>
-  <!-- MathJax: 수식 렌더링 -->
+  <!-- MathJax: 수식 렌더링. CDN 사용으로 인터넷 연결 필요. -->
   <script>
     MathJax = {
       tex: { inlineMath: [['\\(', '\\)']], displayMath: [['\\[', '\\]']] },
@@ -333,9 +333,9 @@
         <h1>치환적분: 같은 함수값, 다른 누적 속도</h1>
         <p class="lead">
           \(0 \le t \le 1\)에서 \(f(at)\)를 적분할 때
-          \(x = at\)로 치환하면 \(t\)가 1씩 움직이는 동안 \(x\)는 \(a\)씩 움직인다.
-          따라서 \(\Delta t = \Delta x / a\)이고,
-          같은 높이의 직사각형 폭이 \(\tfrac{1}{a}\)배로 줄어 넓이도 \(\tfrac{1}{a}\)배가 된다.
+          \(x = at\)로 치환하면 같은 순간의 함수값은 \(f(x)\)와 같지만,
+          \(t\)의 한 칸은 \(x\)의 한 칸보다 \(\tfrac{1}{a}\)배 좁다.
+          그래서 \(dt = dx/a\)가 붙고, 아래 누적값은 같은 \(x=at\)까지의 위 누적값을 \(a\)로 나눈 값이 된다.
         </p>
       </div>
       <div class="formula-card">\(x = at,\quad dt = \dfrac{dx}{a}\)</div>
@@ -365,12 +365,12 @@
           <div class="metric">
             <div class="name">위 그래프 누적</div>
             <div class="value" id="topArea">0.000</div>
-            <div class="note">\(\int_0^x f(x)\,dx\)</div>
+            <div class="note">현재 \(x=at\), \(\int_0^x f(u)\,du\)</div>
           </div>
           <div class="metric">
             <div class="name">아래 그래프 누적</div>
             <div class="value" id="bottomArea">0.000</div>
-            <div class="note">\(\int_0^t f(at)\,dt\)</div>
+            <div class="note">\(\int_0^t f(as)\,ds = \frac{1}{a}\int_0^{at} f(u)\,du\)</div>
           </div>
           <div class="metric">
             <div class="name">비율</div>
@@ -382,10 +382,10 @@
         <div class="canvas-wrap">
           <canvas id="graphCanvas" aria-label="치환적분에서 같은 스케일로 비교하는 시각화"></canvas>
           <div class="graph-label graph-label-top">
-            위 그래프&ensp;<i>x</i>축&ensp;[0,&thinsp;<span id="aTitleDyn">2</span>]&emsp;\(\int_0^x f(x)\,dx\)
+            위 그래프&ensp;<i>x</i>축&ensp;[0,&thinsp;<span id="aTitleDyn">2</span>]&emsp;\(\int_0^x f(u)\,du\)
           </div>
           <div class="graph-label graph-label-bot">
-            아래 그래프&ensp;<i>t</i>축&ensp;[0,&thinsp;1]&emsp;\(\int_0^t f(at)\,dt\)
+            아래 그래프&ensp;<i>t</i>축&ensp;[0,&thinsp;1]&emsp;\(\int_0^t f(as)\,ds\)
           </div>
         </div>
       </section>
@@ -419,11 +419,11 @@
           <h2>관찰 포인트</h2>
           <div class="keyline">
             <span class="swatch teal"></span>
-            <p><b>위 그래프</b>: 치환 후 \(\frac{1}{a}\int_0^a f(x)\,dx\). \(x\)축 \([0,\,a]\) 전체 폭 사용.</p>
+            <p><b>위 그래프</b>: \(x=at\)에 대응하는 \(x\)-변수 누적 \(\int_0^x f(u)\,du\). \(x\)축 \([0,\,a]\) 전체 폭 사용.</p>
           </div>
           <div class="keyline">
             <span class="swatch coral"></span>
-            <p><b>아래 그래프</b>: 원래 적분 \(\int_0^1 f(at)\,dt\). <b>같은 눈금 스케일</b>이므로 \(t=1\)에서 끝나고 오른쪽은 회색.</p>
+            <p><b>아래 그래프</b>: 원래 적분 \(\int_0^t f(as)\,ds\). 같은 함수값을 \(t\)-폭으로 누적하므로 위 누적의 \(\tfrac{1}{a}\)이다.</p>
           </div>
           <div class="keyline">
             <span class="swatch amber"></span>
@@ -443,7 +443,7 @@
         <article class="problem">
           <strong>1. 같은 함수값을 지나가는데 왜 넓이가 다를까?</strong>
           <ol>
-            <li>\(a = 2\)로 두고, 아래 그래프가 전체 폭의 어느 비율까지 채워지는지 확인하시오.</li>
+            <li>\(a = 2\)로 두고, 위 그래프와 같은 눈금으로 보았을 때 아래 그래프의 \(t \in [0,1]\) 폭이 전체 가로폭의 어느 비율인지 확인하시오.</li>
             <li>아래 그래프의 누적값이 위 그래프의 몇 배인지 쓰시오.</li>
             <li>그 이유를 "함수값의 높이"와 "가로폭"이라는 말을 사용하여 설명하시오.</li>
           </ol>
@@ -684,7 +684,7 @@
       ctx.lineTo(tRulerEnd, tRY);
       ctx.stroke();
 
-      // 점선 연장 (t=1 이후 – 실제로는 적분 없는 영역)
+      // 같은 눈금 비교를 위한 여백: 아래 적분에는 포함되지 않음
       if (tRulerEnd < rLeft + W - 4) {
         ctx.save();
         ctx.strokeStyle = "#d0d8e4"; ctx.lineWidth = 1.5; ctx.setLineDash([4, 4]);
@@ -848,7 +848,7 @@
       const botX   = (t) => L + (t / a) * PW;
       const botEnd = botX(1);   // t=1에서 끝나는 픽셀 x 좌표
 
-      // ━━ 위 그래프: (1/a)∫₀ᵃ f(x) dx ━━━━━━━━━━━━━━━━━━━━
+      // ━━ 위 그래프: x-변수 누적 ∫₀ˣ f(u) du ━━━━━━━━━━━━━━━━━━━━
 
       drawAxes(top, "x");
       shade(top, 0, xNow, yMax, topX, f, "rgba(15,118,110,0.15)");
@@ -906,9 +906,9 @@
           ctx.globalAlpha = 0.65;
           ctx.fillStyle = "#8899aa";
           ctx.font = "11px Malgun Gothic, sans-serif";
-          ctx.fillText("t=1 이후", botEnd + 5, bot.top + 20);
-          ctx.fillText("적분 없음", botEnd + 5, bot.top + 34);
-          if (gzW > 76) ctx.fillText(`x: 1~${a.toFixed(1)}`, botEnd + 5, bot.top + 48);
+          ctx.fillText("비교용 여백", botEnd + 5, bot.top + 20);
+          ctx.fillText("아래 적분 제외", botEnd + 5, bot.top + 34);
+          if (gzW > 86) ctx.fillText("같은 눈금 표시", botEnd + 5, bot.top + 48);
         }
         ctx.restore();
       }
