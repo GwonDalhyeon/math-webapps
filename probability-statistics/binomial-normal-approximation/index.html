@@ -26,18 +26,30 @@
       color: var(--ink);
     }
 
+    .page {
+      max-width: 1440px;
+      padding: 22px 18px 36px;
+    }
+
     .app-header {
-      margin-bottom: 22px;
+      margin-bottom: 14px;
     }
 
     .app-header p {
-      max-width: 920px;
+      max-width: 1120px;
+      margin-bottom: 0;
+      font-size: 17px;
+      line-height: 1.55;
+    }
+
+    .app-header h1 {
+      font-size: clamp(30px, 4vw, 44px);
     }
 
     .layout {
       display: grid;
-      grid-template-columns: 300px minmax(0, 1fr);
-      gap: 18px;
+      grid-template-columns: 320px minmax(0, 1fr);
+      gap: 16px;
       align-items: start;
     }
 
@@ -46,21 +58,21 @@
       border: 1px solid var(--line);
       border-radius: var(--radius);
       box-shadow: var(--shadow);
-      padding: 18px;
+      padding: 16px;
     }
 
     .panel h2 {
-      margin: 0 0 12px;
-      font-size: 20px;
+      margin: 0 0 10px;
+      font-size: 19px;
     }
 
     .control-stack {
       display: grid;
-      gap: 14px;
+      gap: 12px;
     }
 
     .control-box {
-      padding: 13px;
+      padding: 12px;
       border: 1px solid #e8eef7;
       border-radius: 14px;
       background: #f8fafc;
@@ -145,12 +157,13 @@
     .stat-grid {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 10px;
+      gap: 8px;
+      margin-top: 16px;
     }
 
     .stat {
-      padding: 12px;
-      border-radius: 14px;
+      padding: 10px;
+      border-radius: 12px;
       background: #f8fafc;
       border: 1px solid #e8eef7;
     }
@@ -163,7 +176,7 @@
 
     .stat .value {
       margin-top: 4px;
-      font-size: 22px;
+      font-size: 18px;
       font-weight: 900;
       color: #0f172a;
     }
@@ -174,11 +187,11 @@
 
     .main-stack {
       display: grid;
-      gap: 18px;
+      gap: 14px;
     }
 
     .chart-panel {
-      min-height: 520px;
+      min-height: 0;
     }
 
     .chart-toolbar {
@@ -227,7 +240,7 @@
     }
 
     #mainChart {
-      height: 390px;
+      height: 340px;
     }
 
     #compareChart {
@@ -235,15 +248,53 @@
     }
 
     .interpretation {
-      margin-top: 12px;
-      min-height: 92px;
-      padding: 14px;
+      margin-top: 10px;
+      min-height: 70px;
+      padding: 12px;
       border-radius: 14px;
       background: #eff6ff;
       border-left: 5px solid var(--blue);
       color: #1e3a8a;
-      line-height: 1.65;
-      font-size: 16px;
+      line-height: 1.55;
+      font-size: 15px;
+    }
+
+    .formula-strip {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .formula-card {
+      padding: 11px 12px;
+      border-radius: 14px;
+      background: #ffffff;
+      border: 1px solid var(--line);
+      box-shadow: 0 6px 18px rgba(15, 23, 42, 0.06);
+      min-height: 78px;
+    }
+
+    .formula-label {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+      margin-bottom: 4px;
+    }
+
+    math {
+      font-family: "Cambria Math", "STIX Two Math", "Times New Roman", serif;
+      font-size: 1.08em;
+    }
+
+    .formula-card math {
+      font-size: 1.26rem;
+    }
+
+    .math-inline {
+      display: inline-flex;
+      align-items: center;
+      vertical-align: middle;
+      margin: 0 2px;
     }
 
     .bottom-grid {
@@ -292,7 +343,8 @@
 
     @media (max-width: 980px) {
       .layout,
-      .bottom-grid {
+      .bottom-grid,
+      .formula-strip {
         grid-template-columns: 1fr;
       }
 
@@ -323,7 +375,7 @@
       }
 
       #mainChart {
-        height: 330px;
+        height: 320px;
       }
     }
   </style>
@@ -336,7 +388,7 @@
       <p class="eyebrow">Probability & Statistics · 이항분포와 정규근사</p>
       <h1>이항분포에서 정규분포로</h1>
       <p>
-        성공 횟수 X가 X ~ B(n, p)를 따를 때, n이 커지면 막대분포가 평균 np 주변에서
+        성공 횟수 <math><mi>X</mi></math>가 <math><mi>X</mi><mo>~</mo><mi>B</mi><mo>(</mo><mi>n</mi><mo>,</mo><mi>p</mi><mo>)</mo></math>를 따를 때, n이 커지면 막대분포가 평균 np 주변에서
         매끄러운 종 모양에 가까워집니다. 표준화 눈금으로 바꾸면 그 모양이 표준정규곡선과
         어떻게 겹쳐지는지 더 선명하게 볼 수 있습니다.
       </p>
@@ -393,36 +445,65 @@
 
           <button type="button" id="resetButton">초기화</button>
         </div>
+
+        <h2 style="margin-top:18px;">현재 값</h2>
+        <div class="stat-grid">
+          <div class="stat">
+            <div class="label">분포</div>
+            <div class="value" id="distValue">B(40, 0.50)</div>
+          </div>
+          <div class="stat">
+            <div class="label">평균 μ</div>
+            <div class="value" id="meanValue">20.00</div>
+          </div>
+          <div class="stat">
+            <div class="label">표준편차 σ</div>
+            <div class="value" id="sigmaValue">3.16</div>
+          </div>
+          <div class="stat">
+            <div class="label">np</div>
+            <div class="value" id="npValue">20.0</div>
+          </div>
+          <div class="stat">
+            <div class="label">n(1-p)</div>
+            <div class="value" id="nqValue">20.0</div>
+          </div>
+          <div class="stat">
+            <div class="label">최대 오차</div>
+            <div class="value" id="errorValue">0.000</div>
+          </div>
+        </div>
       </aside>
 
       <section class="main-stack">
-        <section class="panel">
-          <h2>현재 분포</h2>
-          <div class="stat-grid">
-            <div class="stat">
-              <div class="label">분포</div>
-              <div class="value" id="distValue">B(40, 0.50)</div>
-            </div>
-            <div class="stat">
-              <div class="label">평균 μ = np</div>
-              <div class="value" id="meanValue">20.00</div>
-            </div>
-            <div class="stat">
-              <div class="label">표준편차 σ</div>
-              <div class="value" id="sigmaValue">3.16</div>
-            </div>
-            <div class="stat">
-              <div class="label">np</div>
-              <div class="value" id="npValue">20.0</div>
-            </div>
-            <div class="stat">
-              <div class="label">n(1-p)</div>
-              <div class="value" id="nqValue">20.0</div>
-            </div>
-            <div class="stat wide">
-              <div class="label">정규근사 최대 오차</div>
-              <div class="value" id="errorValue">0.000</div>
-            </div>
+        <section class="formula-strip" aria-label="핵심 수식">
+          <div class="formula-card">
+            <div class="formula-label">분포</div>
+            <math display="block">
+              <mi>X</mi><mo>~</mo><mi>B</mi><mo>(</mo><mi>n</mi><mo>,</mo><mi>p</mi><mo>)</mo>
+            </math>
+          </div>
+          <div class="formula-card">
+            <div class="formula-label">평균</div>
+            <math display="block">
+              <mi>μ</mi><mo>=</mo><mi>n</mi><mi>p</mi>
+            </math>
+          </div>
+          <div class="formula-card">
+            <div class="formula-label">표준편차</div>
+            <math display="block">
+              <mi>σ</mi><mo>=</mo><msqrt><mrow><mi>n</mi><mi>p</mi><mo>(</mo><mn>1</mn><mo>-</mo><mi>p</mi><mo>)</mo></mrow></msqrt>
+            </math>
+          </div>
+          <div class="formula-card">
+            <div class="formula-label">표준화</div>
+            <math display="block">
+              <mi>Z</mi><mo>=</mo>
+              <mfrac>
+                <mrow><mi>X</mi><mo>-</mo><mi>n</mi><mi>p</mi></mrow>
+                <mi>σ</mi>
+              </mfrac>
+            </math>
           </div>
         </section>
 
@@ -730,7 +811,7 @@
 
         const xTicks = [-4, -3, -2, -1, 0, 1, 2, 3, 4].map(z => ({ x: xFor(z), label: String(z) }));
         const yTicks = [0, 0.1, 0.2, 0.3, 0.4].map(value => ({ y: yFor(value), label: value.toFixed(1) }));
-        drawAxes(ctx, plot, '표준화 값 z = (k - np) / σ', '밀도', xTicks, yTicks);
+        drawAxes(ctx, plot, '표준화 값 z', '밀도', xTicks, yTicks);
 
         if (state.showCorrection) {
           const center = Math.round(mu);
@@ -928,7 +1009,7 @@
         } else {
           message += '아직 np 또는 n(1-p)가 작아서 이항분포의 비대칭성이 뚜렷합니다. n을 더 키워 보세요.';
         }
-        message += '<br><br>핵심 관찰: n을 키워도 X 자체의 분포는 더 넓어지지만, Z=(X-np)/σ로 표준화하면 막대 간격이 좁아지고 표준정규곡선의 면적과 맞아갑니다.';
+        message += `<br><br>핵심 관찰: n을 키워도 X 자체의 분포는 더 넓어지지만, <span class="math-inline"><math><mi>Z</mi><mo>=</mo><mfrac><mrow><mi>X</mi><mo>-</mo><mi>n</mi><mi>p</mi></mrow><mi>σ</mi></mfrac></math></span>로 표준화하면 막대 간격이 좁아지고 표준정규곡선의 면적과 맞아갑니다.`;
         el.interpretation.innerHTML = message;
       }
 
