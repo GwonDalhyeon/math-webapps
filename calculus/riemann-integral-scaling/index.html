@@ -251,11 +251,11 @@
             <div class="m-val" id="m-sn">—</div>
           </div>
           <div class="metric">
-            <div class="m-label">정적분 값</div>
+            <div class="m-label" id="m-exact-label">정적분 값</div>
             <div class="m-val" id="m-exact">—</div>
           </div>
           <div class="metric">
-            <div class="m-label">오차 |Sₙ − 정적분|</div>
+            <div class="m-label" id="m-err-label">오차 |Sₙ − 정적분|</div>
             <div class="m-val" id="m-err">—</div>
           </div>
           <div class="metric">
@@ -678,6 +678,28 @@ function fmt(v) {
   return v.toFixed(2).replace(/\.?0+$/, '');
 }
 
+function getSampleLabel() {
+  return state.sample === 'right' ? '오른쪽 끝점' : state.sample === 'left' ? '왼쪽 끝점' : '중점';
+}
+
+function getSampleOffsetText(k) {
+  if (state.sample === 'right') return String(k);
+  if (state.sample === 'left') return String(k - 1);
+  return `${k}−½`;
+}
+
+function getSampleTkHtml(k) {
+  if (state.sample === 'right') return `${k}/${state.n}`;
+  if (state.sample === 'left') return `${k - 1}/${state.n}`;
+  return `(${k}−½)/${state.n}`;
+}
+
+function getSampleTkTex() {
+  if (state.sample === 'right') return '\\dfrac{k}{n}';
+  if (state.sample === 'left') return '\\dfrac{k-1}{n}';
+  return '\\dfrac{2k-1}{2n}';
+}
+
 // ─── Metrics strip ───────────────────────────────────────────────────────────
 function renderMetrics() {
   const sn = computeRiemannSum();
@@ -689,6 +711,8 @@ function renderMetrics() {
   document.getElementById('m-exact').textContent = exact.toFixed(4);
   document.getElementById('m-err').textContent   = Math.abs(sn - exact).toFixed(4);
   document.getElementById('m-dx').textContent    = fmt(dx);
+  document.getElementById('m-exact-label').textContent = mode === 'C' ? '정적분 값 ([0,1] 기준)' : '정적분 값';
+  document.getElementById('m-err-label').textContent = mode === 'C' ? '오차 ([0,1] 기준)' : '오차 |Sₙ − 정적분|';
 
   const ba = b - a;
   let note = '';
@@ -732,9 +756,10 @@ function renderRectInfo() {
       높이 = f(${fmt(xSample)}) = <strong>${fmt(h)}</strong><br>
       작은 넓이 = ${fmt(h)} × ${fmt(dx)} = <strong>${fmt(area)}</strong>`;
   } else {
+    const xkExpr = getSampleTkHtml(k);
     html = `<strong>k = ${k}</strong><br>
       Δx = 1/${n} = ${fmt(dx)}<br>
-      x<sub>${k}</sub> = ${k}/${n} = ${fmt(xSample)}<br>
+      x<sub>${k}</sub> = ${xkExpr} = ${fmt(xSample)}<br>
       높이 = f(${fmt(xSample)}) = <strong>${fmt(h)}</strong><br>
       작은 넓이 = ${fmt(h)} × ${fmt(dx)} = <strong>${fmt(area)}</strong><br>
       <em>이 직사각형은 [0,1] 안에 있습니다.</em>`;
@@ -766,8 +791,8 @@ function getStepsForMode() {
       case 'x2h': return `1+0.5\\left(${inner}\\right)^2`;
     }
   }
-  // x_k 표현 for rect (a=0, 오른쪽 끝점 특화)
-  const xkLabel = sample === 'right' ? '오른쪽 끝점' : sample === 'left' ? '왼쪽 끝점' : '중점';
+  // 표본점 방식에 맞는 x_k 표현
+  const xkLabel = getSampleLabel();
   const xkLatex = sample === 'right'
     ? (a === 0 ? `x_k = k\\cdot\\Delta x = \\frac{${fmt(ba)}k}{n}` : `x_k = ${fmt(a)} + k\\cdot\\Delta x`)
     : sample === 'left'
@@ -790,23 +815,20 @@ function getStepsForMode() {
   if (mode === 'B') {
     const intVal = fmt(getExactIntegral(a, b));
     // t_k 표현
-    const tkExpr = sample === 'right' ? '\\dfrac{k}{n}' : sample === 'left' ? '\\dfrac{k-1}{n}' : '\\dfrac{2k-1}{2n}';
+    const tkExpr = getSampleTkTex();
     // x_k = a + (b-a)·t_k
     const xkFromTk = a === 0
-      ? `${fmt(ba)}\\,t_k = \\frac{${fmt(ba)}k}{n}`
-      : `${fmt(a)} + ${fmt(ba)}\\,t_k`;
+      ? `${fmt(ba)}\\,t_k = ${fmt(ba)}\\cdot ${tkExpr}`
+      : `${fmt(a)} + ${fmt(ba)}\\,t_k = ${fmt(a)} + ${fmt(ba)}\\cdot ${tkExpr}`;
     // f(x_k) using t_k
     const fTkInner = a === 0 ? `${fmt(ba)}\\,t_k` : `${fmt(a)}+${fmt(ba)}\\,t_k`;
-    const fTkTex = func === 'x2' ? `(${fTkInner})^2`
-                 : func === 'x'  ? fTkInner
-                 : `1+0.5(${fTkInner})^2`;
     return [
       { tex: `t_k = ${tkExpr},\\quad \\Delta t = \\frac{1}{n}`, label: `t ∈ [0,1] n등분 (${xkLabel})` },
       { tex: a === 0 ? `x = ${fmt(ba)}\\,t` : `x = ${fmt(a)} + ${fmt(ba)}\\,t`, label: 'x와 t의 관계' },
       { tex: `x_k = ${xkFromTk}`, label: 'k번째 x 위치' },
       { tex: `\\Delta x = ${fmt(ba)}\\,\\Delta t = \\frac{${fmt(ba)}}{n}`, label: '폭도 함께 변환 ← 핵심!', highlight: true },
       { tex: `S_n = \\sum_{k=1}^{n} f\\!(${fTkInner})\\cdot ${fmt(ba)}\\,\\Delta t`, label: 't로 쓴 합' },
-      { tex: `\\lim_{n\\to\\infty} = \\int_0^1 f\\!(${fTkInner})\\cdot ${fmt(ba)}\\,dt`, label: 't-정적분으로 수렴', highlight: true },
+      { tex: `\\lim_{n\\to\\infty} S_n = \\int_0^1 f\\!(${fTkInner})\\cdot ${fmt(ba)}\\,dt`, label: 't-정적분으로 수렴', highlight: true },
       { tex: `= \\int_{${fmt(a)}}^{${fmt(b)}} f(x)\\,dx = ${intVal}`, label: '원래 정적분과 동일', highlight: true }
     ];
   }
@@ -814,13 +836,16 @@ function getStepsForMode() {
   // mode C
   const intVal01 = fmt(getExactIntegral(0, 1));
   const intValAB = fmt(getExactIntegral(a, b));
-  const tkC = sample === 'right' ? '\\dfrac{k}{n}' : sample === 'left' ? '\\dfrac{k-1}{n}' : '\\dfrac{2k-1}{2n}';
-  const fC = func === 'x2' ? `\\left(\\frac{k}{n}\\right)^2` : func === 'x' ? `\\frac{k}{n}` : `1+0.5\\left(\\frac{k}{n}\\right)^2`;
+  const tkC = getSampleTkTex();
+  const fC = func === 'x2' ? `\\left(${tkC}\\right)^2` : func === 'x' ? tkC : `1+0.5\\left(${tkC}\\right)^2`;
+  const compareStep = (a === 0 && b === 1)
+    ? { tex: `\\text{현재 선택 구간도 }[0,1]\\text{이므로 A/B와 같은 구간을 봅니다.}`, label: '비교 효과 없음' }
+    : { tex: `\\text{비교: }\\int_{${fmt(a)}}^{${fmt(b)}} f(x)\\,dx = ${intValAB} \\neq ${intVal01}`, label: `[0,1] ≠ [${fmt(a)},${fmt(b)}]` };
   return [
     { tex: `x_k = ${tkC},\\quad \\Delta x = \\frac{1}{n}`, label: `[0,1] n등분 (${xkLabel})` },
-    { tex: `S_n = \\sum_{k=1}^{n} f\\!\\left(\\frac{k}{n}\\right)\\cdot\\frac{1}{n}`, label: '합 식 (오른쪽 끝점 기준)' },
+    { tex: `S_n = \\sum_{k=1}^{n} ${fC}\\cdot\\frac{1}{n}`, label: `합 식 (${xkLabel} 기준)` },
     { tex: `\\lim_{n\\to\\infty} S_n = \\int_0^1 f(x)\\,dx = ${intVal01}`, label: '[0,1]의 정적분', highlight: true },
-    { tex: `\\text{비교: }\\int_{${fmt(a)}}^{${fmt(b)}} f(x)\\,dx = ${intValAB} \\neq ${intVal01}`, label: `[0,1] ≠ [${fmt(a)},${fmt(b)}]` }
+    compareStep
   ];
 }
 
@@ -863,30 +888,43 @@ function showAllSteps() {
 
 // ─── Interpretation text ──────────────────────────────────────────────────────
 function renderInterpret() {
-  const { mode, a, b, n } = state;
+  const { mode, a, b, n, sample } = state;
   const ba = b - a;
+  const sampleLabel = getSampleLabel();
+  const sampleOffset = sample === 'right' ? 'k' : sample === 'left' ? 'k−1' : 'k−½';
+  const xRelation = a === 0 ? `x = ${fmt(ba)}t` : `x = ${fmt(a)} + ${fmt(ba)}t`;
   let cls, html;
 
   if (mode === 'A') {
     cls = 'mode-A';
     html = `<strong>모드 A: [${fmt(a)}, ${fmt(b)}] 직접 분할</strong><br>
       [${fmt(a)},${fmt(b)}] 전체를 n등분했으므로 작은 폭은 <strong>${fmt(ba)}/n</strong>입니다.
-      k번째 오른쪽 끝점은 x<sub>k</sub> = ${fmt(ba)}k/n입니다.
+      ${sampleLabel}을 쓰면 x<sub>k</sub> = ${a === 0 ? `${fmt(ba)}(${sampleOffset})/n` : `${fmt(a)} + ${fmt(ba)}(${sampleOffset})/n`}입니다.
       n을 키울수록 S<sub>n</sub>이 ∫f(x)dx에 가까워집니다.`;
   } else if (mode === 'B') {
     cls = 'mode-B';
-    html = `<strong>모드 B: t ∈ [0,1], x = ${fmt(ba)}t</strong><br>
-      t는 0에서 1까지 움직이지만, 실제 x축 위치는 x = ${fmt(ba)}t입니다.
+    html = `<strong>모드 B: t ∈ [0,1], ${xRelation}</strong><br>
+      t는 0에서 1까지 움직이지만, 실제 x축 위치는 ${xRelation}입니다.
       그래서 폭도 <strong>Δx = ${fmt(ba)}Δt</strong>가 되어야 같은 넓이를 구합니다.
       모드 A와 직사각형·S<sub>n</sub> 값이 완전히 같습니다.`;
-    html += `<div class="compare-note">Δx = 1/n으로 두면 넓이가 1/${ba}배로 줄어듭니다. 변수 변환 시 Δx도 반드시 함께 바꿔야 합니다.</div>`;
+    if (Math.abs(ba - 1) < 1e-9) {
+      html += `<div class="compare-note">현재 구간 길이가 1이라 Δx와 Δt가 같습니다. 구간을 [0,3]이나 [1,4]로 바꾸면 폭 스케일링이 더 뚜렷하게 보입니다.</div>`;
+    } else {
+      html += `<div class="compare-note">Δx를 Δt와 같다고 두면 실제 x축 폭이 빠집니다. 변수 변환 시 폭도 반드시 함께 바꿔야 합니다.</div>`;
+    }
   } else {
     cls = 'mode-C';
-    html = `<strong>모드 C: x<sub>k</sub> = k/n, Δx = 1/n</strong><br>
-      x<sub>k</sub> = k/n, Δx = 1/n으로 두면 x축에서 실제로 <strong>[0,1]</strong>만 나눈 것입니다.
-      이 식은 틀린 식이 아니라 [${fmt(a)},${fmt(b)}]가 아닌 [0,1]의 넓이를 구하는 올바른 식입니다.
-      [${fmt(a)},${fmt(b)}]의 넓이를 구하려면 x<sub>k</sub> 또는 Δx에 구간 길이 ${fmt(ba)}이 반영되어야 합니다.`;
-    html += `<div class="compare-note">[0,1] 넓이: ${fmt(getExactIntegral(0,1))} · [${fmt(a)},${fmt(b)}] 넓이: ${fmt(getExactIntegral(a,b))}</div>`;
+    const tkHtml = sample === 'right' ? 'k/n' : sample === 'left' ? '(k−1)/n' : '(2k−1)/(2n)';
+    html = `<strong>모드 C: x<sub>k</sub> = ${tkHtml}, Δx = 1/n</strong><br>
+      x<sub>k</sub>와 Δx를 [0,1] 기준으로 두면 x축에서 실제로 <strong>[0,1]</strong>만 나눈 것입니다.`;
+    if (a === 0 && b === 1) {
+      html += ` 현재 선택 구간도 [0,1]이므로 A/B와 같은 구간을 보는 상태입니다.`;
+      html += `<div class="compare-note">비교 효과를 보려면 구간을 [0,3] 또는 [1,4]로 바꾸세요.</div>`;
+    } else {
+      html += ` 이 식은 틀린 식이 아니라 [${fmt(a)},${fmt(b)}]가 아닌 [0,1]의 넓이를 구하는 올바른 식입니다.
+        [${fmt(a)},${fmt(b)}]의 넓이를 구하려면 x<sub>k</sub> 또는 Δx에 구간 길이 ${fmt(ba)}이 반영되어야 합니다.`;
+      html += `<div class="compare-note">[0,1] 넓이: ${fmt(getExactIntegral(0,1))} · [${fmt(a)},${fmt(b)}] 넓이: ${fmt(getExactIntegral(a,b))}</div>`;
+    }
   }
 
   const box = document.getElementById('interpret-box');
