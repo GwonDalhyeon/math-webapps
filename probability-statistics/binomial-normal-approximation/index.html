@@ -1,0 +1,1011 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>이항분포에서 정규분포로</title>
+  <link rel="stylesheet" href="../../assets/common.css" />
+  <style>
+    :root {
+      --panel: #ffffff;
+      --ink: #111827;
+      --muted: #5b6475;
+      --line: #dbe3ef;
+      --blue: #2563eb;
+      --blue-soft: #dbeafe;
+      --red: #dc2626;
+      --amber: #f59e0b;
+      --green: #16a34a;
+      --slate: #334155;
+      --shadow: 0 10px 26px rgba(15, 23, 42, 0.08);
+      --radius: 18px;
+    }
+
+    body {
+      background: #f7f9fd;
+      color: var(--ink);
+    }
+
+    .app-header {
+      margin-bottom: 22px;
+    }
+
+    .app-header p {
+      max-width: 920px;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 300px minmax(0, 1fr);
+      gap: 18px;
+      align-items: start;
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 18px;
+    }
+
+    .panel h2 {
+      margin: 0 0 12px;
+      font-size: 20px;
+    }
+
+    .control-stack {
+      display: grid;
+      gap: 14px;
+    }
+
+    .control-box {
+      padding: 13px;
+      border: 1px solid #e8eef7;
+      border-radius: 14px;
+      background: #f8fafc;
+    }
+
+    .control-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+
+    .control-head strong {
+      font-size: 15px;
+    }
+
+    .control-value {
+      color: var(--blue);
+      font-size: 18px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--blue);
+      cursor: pointer;
+    }
+
+    .quick-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+      margin-top: 10px;
+    }
+
+    button,
+    .mode-btn {
+      border: 0;
+      border-radius: 12px;
+      padding: 10px 12px;
+      background: #e2e8f0;
+      color: #0f172a;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    button:hover,
+    .mode-btn:hover {
+      filter: brightness(0.98);
+      transform: translateY(-1px);
+    }
+
+    .quick-row button {
+      padding: 7px 10px;
+      font-size: 13px;
+    }
+
+    .quick-row button.active,
+    .mode-btn.active {
+      background: var(--blue);
+      color: white;
+    }
+
+    .mode-group {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .check-row {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      margin-top: 10px;
+      color: #334155;
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .stat-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .stat {
+      padding: 12px;
+      border-radius: 14px;
+      background: #f8fafc;
+      border: 1px solid #e8eef7;
+    }
+
+    .stat .label {
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .stat .value {
+      margin-top: 4px;
+      font-size: 22px;
+      font-weight: 900;
+      color: #0f172a;
+    }
+
+    .stat.wide {
+      grid-column: 1 / -1;
+    }
+
+    .main-stack {
+      display: grid;
+      gap: 18px;
+    }
+
+    .chart-panel {
+      min-height: 520px;
+    }
+
+    .chart-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
+    }
+
+    .legend {
+      display: flex;
+      gap: 14px;
+      flex-wrap: wrap;
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .legend-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .swatch {
+      width: 14px;
+      height: 14px;
+      border-radius: 4px;
+      display: inline-block;
+    }
+
+    .line-swatch {
+      width: 24px;
+      border-top: 3px solid var(--red);
+      display: inline-block;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      border: 1px solid #e6edf7;
+      border-radius: 16px;
+      background: #ffffff;
+    }
+
+    #mainChart {
+      height: 390px;
+    }
+
+    #compareChart {
+      height: 240px;
+    }
+
+    .interpretation {
+      margin-top: 12px;
+      min-height: 92px;
+      padding: 14px;
+      border-radius: 14px;
+      background: #eff6ff;
+      border-left: 5px solid var(--blue);
+      color: #1e3a8a;
+      line-height: 1.65;
+      font-size: 16px;
+    }
+
+    .bottom-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 310px;
+      gap: 18px;
+      align-items: stretch;
+    }
+
+    .condition-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .condition {
+      display: grid;
+      grid-template-columns: 96px 1fr;
+      gap: 10px;
+      align-items: center;
+      padding: 11px 12px;
+      border: 1px solid #e8eef7;
+      border-radius: 14px;
+      background: #f8fafc;
+      font-weight: 800;
+    }
+
+    .condition .badge {
+      display: inline-flex;
+      justify-content: center;
+      border-radius: 999px;
+      padding: 6px 9px;
+      font-size: 13px;
+      color: white;
+    }
+
+    .badge.good { background: var(--green); }
+    .badge.warn { background: var(--amber); color: #1f2937; }
+    .badge.bad { background: var(--red); }
+
+    .small-note {
+      margin: 10px 0 0;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    @media (max-width: 980px) {
+      .layout,
+      .bottom-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .stat-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
+      .stat.wide {
+        grid-column: auto;
+      }
+    }
+
+    @media (max-width: 650px) {
+      .page {
+        padding: 28px 14px;
+      }
+
+      .panel {
+        padding: 14px;
+      }
+
+      .stat-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .mode-group {
+        grid-template-columns: 1fr;
+      }
+
+      #mainChart {
+        height: 330px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <a class="back-link" href="../">← 확률과 통계 목록</a>
+
+    <header class="hero app-header">
+      <p class="eyebrow">Probability & Statistics · 이항분포와 정규근사</p>
+      <h1>이항분포에서 정규분포로</h1>
+      <p>
+        성공 횟수 X가 X ~ B(n, p)를 따를 때, n이 커지면 막대분포가 평균 np 주변에서
+        매끄러운 종 모양에 가까워집니다. 표준화 눈금으로 바꾸면 그 모양이 표준정규곡선과
+        어떻게 겹쳐지는지 더 선명하게 볼 수 있습니다.
+      </p>
+    </header>
+
+    <div class="layout">
+      <aside class="panel">
+        <h2>조작</h2>
+        <div class="control-stack">
+          <div class="control-box">
+            <div class="control-head">
+              <strong>시행 횟수 n</strong>
+              <span class="control-value" id="nValue">40</span>
+            </div>
+            <input id="nSlider" type="range" min="5" max="400" step="1" value="40" />
+            <div class="quick-row" id="nButtons">
+              <button type="button" data-n="10">10</button>
+              <button type="button" data-n="20">20</button>
+              <button type="button" data-n="50">50</button>
+              <button type="button" data-n="100">100</button>
+              <button type="button" data-n="200">200</button>
+              <button type="button" data-n="400">400</button>
+            </div>
+          </div>
+
+          <div class="control-box">
+            <div class="control-head">
+              <strong>성공확률 p</strong>
+              <span class="control-value" id="pValue">0.50</span>
+            </div>
+            <input id="pSlider" type="range" min="0.05" max="0.95" step="0.01" value="0.50" />
+            <div class="quick-row" id="pButtons">
+              <button type="button" data-p="0.20">0.20</button>
+              <button type="button" data-p="0.35">0.35</button>
+              <button type="button" data-p="0.50">0.50</button>
+              <button type="button" data-p="0.65">0.65</button>
+              <button type="button" data-p="0.80">0.80</button>
+            </div>
+          </div>
+
+          <div class="control-box">
+            <div class="control-head">
+              <strong>그래프 눈금</strong>
+            </div>
+            <div class="mode-group" role="group" aria-label="그래프 눈금 선택">
+              <button type="button" class="mode-btn active" data-mode="raw">원래 눈금</button>
+              <button type="button" class="mode-btn" data-mode="standard">표준화 눈금</button>
+            </div>
+            <label class="check-row">
+              <input id="correctionToggle" type="checkbox" checked />
+              연속성 보정 영역 표시
+            </label>
+          </div>
+
+          <button type="button" id="resetButton">초기화</button>
+        </div>
+      </aside>
+
+      <section class="main-stack">
+        <section class="panel">
+          <h2>현재 분포</h2>
+          <div class="stat-grid">
+            <div class="stat">
+              <div class="label">분포</div>
+              <div class="value" id="distValue">B(40, 0.50)</div>
+            </div>
+            <div class="stat">
+              <div class="label">평균 μ = np</div>
+              <div class="value" id="meanValue">20.00</div>
+            </div>
+            <div class="stat">
+              <div class="label">표준편차 σ</div>
+              <div class="value" id="sigmaValue">3.16</div>
+            </div>
+            <div class="stat">
+              <div class="label">np</div>
+              <div class="value" id="npValue">20.0</div>
+            </div>
+            <div class="stat">
+              <div class="label">n(1-p)</div>
+              <div class="value" id="nqValue">20.0</div>
+            </div>
+            <div class="stat wide">
+              <div class="label">정규근사 최대 오차</div>
+              <div class="value" id="errorValue">0.000</div>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel chart-panel">
+          <div class="chart-toolbar">
+            <h2 id="chartTitle">막대분포와 정규곡선</h2>
+            <div class="legend">
+              <span class="legend-item"><span class="swatch" style="background:#93c5fd;"></span>이항분포 막대</span>
+              <span class="legend-item"><span class="line-swatch"></span>정규근사 곡선</span>
+              <span class="legend-item"><span class="swatch" style="background:#fde68a;"></span>연속성 보정</span>
+            </div>
+          </div>
+          <canvas id="mainChart" width="1000" height="390" aria-label="이항분포와 정규근사 그래프"></canvas>
+          <div class="interpretation" id="interpretation"></div>
+        </section>
+
+        <div class="bottom-grid">
+          <section class="panel">
+            <h2>n을 키웠을 때의 변화</h2>
+            <canvas id="compareChart" width="760" height="240" aria-label="시행 횟수별 표준화 분포 비교"></canvas>
+            <p class="small-note">
+              네 작은 그래프는 모두 표준화 눈금입니다. p는 그대로 두고 n만 키우면, 막대 사이 간격이 좁아지며
+              표준정규곡선과 더 자연스럽게 겹칩니다.
+            </p>
+          </section>
+
+          <section class="panel">
+            <h2>근사 조건 점검</h2>
+            <div class="condition-list">
+              <div class="condition">
+                <span class="badge" id="npBadge">-</span>
+                <span id="npCondition">np = 20.0</span>
+              </div>
+              <div class="condition">
+                <span class="badge" id="nqBadge">-</span>
+                <span id="nqCondition">n(1-p) = 20.0</span>
+              </div>
+            </div>
+            <p class="small-note">
+              보통 np와 n(1-p)가 모두 충분히 크면 이항분포를 정규분포로 근사해도 모양이 잘 맞습니다.
+              p가 0이나 1에 가까우면 분포가 한쪽으로 치우쳐 더 큰 n이 필요합니다.
+            </p>
+          </section>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <script>
+    (() => {
+      'use strict';
+
+      const state = {
+        n: 40,
+        p: 0.5,
+        mode: 'raw',
+        showCorrection: true
+      };
+
+      const el = {
+        nSlider: document.getElementById('nSlider'),
+        pSlider: document.getElementById('pSlider'),
+        nValue: document.getElementById('nValue'),
+        pValue: document.getElementById('pValue'),
+        distValue: document.getElementById('distValue'),
+        meanValue: document.getElementById('meanValue'),
+        sigmaValue: document.getElementById('sigmaValue'),
+        npValue: document.getElementById('npValue'),
+        nqValue: document.getElementById('nqValue'),
+        errorValue: document.getElementById('errorValue'),
+        chartTitle: document.getElementById('chartTitle'),
+        interpretation: document.getElementById('interpretation'),
+        correctionToggle: document.getElementById('correctionToggle'),
+        mainChart: document.getElementById('mainChart'),
+        compareChart: document.getElementById('compareChart'),
+        npBadge: document.getElementById('npBadge'),
+        nqBadge: document.getElementById('nqBadge'),
+        npCondition: document.getElementById('npCondition'),
+        nqCondition: document.getElementById('nqCondition')
+      };
+
+      function clamp(value, min, max) {
+        return Math.max(min, Math.min(max, value));
+      }
+
+      function mean(n, p) {
+        return n * p;
+      }
+
+      function sigma(n, p) {
+        return Math.sqrt(n * p * (1 - p));
+      }
+
+      function normalPdf(z) {
+        return Math.exp(-0.5 * z * z) / Math.sqrt(2 * Math.PI);
+      }
+
+      function erf(x) {
+        const sign = x < 0 ? -1 : 1;
+        const a1 = 0.254829592;
+        const a2 = -0.284496736;
+        const a3 = 1.421413741;
+        const a4 = -1.453152027;
+        const a5 = 1.061405429;
+        const p = 0.3275911;
+        const ax = Math.abs(x);
+        const t = 1 / (1 + p * ax);
+        const y = 1 - (((((a5 * t + a4) * t) + a3) * t + a2) * t + a1) * t * Math.exp(-ax * ax);
+        return sign * y;
+      }
+
+      function normalCdf(z) {
+        return 0.5 * (1 + erf(z / Math.SQRT2));
+      }
+
+      function makeLogFactorials(n) {
+        const logs = new Array(n + 1).fill(0);
+        for (let k = 2; k <= n; k += 1) {
+          logs[k] = logs[k - 1] + Math.log(k);
+        }
+        return logs;
+      }
+
+      function binomialPmf(n, p) {
+        const q = 1 - p;
+        const logs = makeLogFactorials(n);
+        const logValues = [];
+        let maxLog = -Infinity;
+
+        for (let k = 0; k <= n; k += 1) {
+          const logP = logs[n] - logs[k] - logs[n - k] + k * Math.log(p) + (n - k) * Math.log(q);
+          logValues.push(logP);
+          if (logP > maxLog) maxLog = logP;
+        }
+
+        const scaled = logValues.map(value => Math.exp(value - maxLog));
+        const sum = scaled.reduce((acc, value) => acc + value, 0);
+        return scaled.map(value => value / sum);
+      }
+
+      function normalApproxMass(k, n, p) {
+        const mu = mean(n, p);
+        const sd = sigma(n, p);
+        const left = (k - 0.5 - mu) / sd;
+        const right = (k + 0.5 - mu) / sd;
+        return normalCdf(right) - normalCdf(left);
+      }
+
+      function maxApproxError(pmf, n, p) {
+        let maxError = 0;
+        for (let k = 0; k <= n; k += 1) {
+          const diff = Math.abs(pmf[k] - normalApproxMass(k, n, p));
+          if (diff > maxError) maxError = diff;
+        }
+        return maxError;
+      }
+
+      function setupCanvas(canvas, cssHeight) {
+        const dpr = window.devicePixelRatio || 1;
+        const width = canvas.clientWidth || canvas.width;
+        const height = cssHeight;
+        canvas.width = Math.round(width * dpr);
+        canvas.height = Math.round(height * dpr);
+        const ctx = canvas.getContext('2d');
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        return { ctx, width, height };
+      }
+
+      function drawAxes(ctx, plot, xLabel, yLabel, xTicks, yTicks) {
+        ctx.strokeStyle = '#cbd5e1';
+        ctx.lineWidth = 1.4;
+        ctx.beginPath();
+        ctx.moveTo(plot.left, plot.top);
+        ctx.lineTo(plot.left, plot.bottom);
+        ctx.lineTo(plot.right, plot.bottom);
+        ctx.stroke();
+
+        ctx.font = '13px system-ui, sans-serif';
+        ctx.fillStyle = '#64748b';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        ctx.fillText(xLabel, (plot.left + plot.right) / 2, plot.bottom + 30);
+
+        ctx.save();
+        ctx.translate(16, (plot.top + plot.bottom) / 2);
+        ctx.rotate(-Math.PI / 2);
+        ctx.textAlign = 'center';
+        ctx.fillText(yLabel, 0, 0);
+        ctx.restore();
+
+        ctx.strokeStyle = '#edf2f8';
+        ctx.lineWidth = 1;
+        ctx.textBaseline = 'middle';
+        yTicks.forEach(tick => {
+          const y = tick.y;
+          ctx.beginPath();
+          ctx.moveTo(plot.left, y);
+          ctx.lineTo(plot.right, y);
+          ctx.stroke();
+          ctx.textAlign = 'right';
+          ctx.fillStyle = '#64748b';
+          ctx.fillText(tick.label, plot.left - 8, y);
+        });
+
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        xTicks.forEach(tick => {
+          ctx.strokeStyle = '#edf2f8';
+          ctx.beginPath();
+          ctx.moveTo(tick.x, plot.top);
+          ctx.lineTo(tick.x, plot.bottom);
+          ctx.stroke();
+          ctx.fillStyle = '#64748b';
+          ctx.fillText(tick.label, tick.x, plot.bottom + 8);
+        });
+      }
+
+      function drawMainChart() {
+        const { ctx, width, height } = setupCanvas(el.mainChart, 390);
+        const n = state.n;
+        const p = state.p;
+        const mu = mean(n, p);
+        const sd = sigma(n, p);
+        const pmf = binomialPmf(n, p);
+        const rawMode = state.mode === 'raw';
+        const plot = { left: 62, right: width - 24, top: 24, bottom: height - 58 };
+
+        ctx.clearRect(0, 0, width, height);
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, width, height);
+
+        if (rawMode) {
+          drawRawDistribution(ctx, plot, n, p, mu, sd, pmf);
+        } else {
+          drawStandardDistribution(ctx, plot, n, p, mu, sd, pmf);
+        }
+      }
+
+      function drawRawDistribution(ctx, plot, n, p, mu, sd, pmf) {
+        const maxY = Math.max(...pmf, normalPdf(0) / sd) * 1.18;
+        const xMin = -0.5;
+        const xMax = n + 0.5;
+        const xFor = x => plot.left + ((x - xMin) / (xMax - xMin)) * (plot.right - plot.left);
+        const yFor = y => plot.bottom - (y / maxY) * (plot.bottom - plot.top);
+        const step = (plot.right - plot.left) / (n + 1);
+        const barWidth = Math.max(1, step * 0.82);
+
+        const xTicks = [];
+        const xStep = Math.max(1, Math.round(n / 8));
+        for (let k = 0; k <= n; k += xStep) {
+          xTicks.push({ x: xFor(k), label: String(k) });
+        }
+
+        const yTicks = [];
+        for (let i = 0; i <= 4; i += 1) {
+          const value = maxY * i / 4;
+          yTicks.push({ y: yFor(value), label: value.toFixed(3) });
+        }
+        drawAxes(ctx, plot, '성공 횟수 k', '확률', xTicks, yTicks);
+
+        if (state.showCorrection) {
+          const center = Math.round(mu);
+          ctx.fillStyle = 'rgba(245, 158, 11, 0.22)';
+          ctx.fillRect(xFor(center - 0.5), plot.top, xFor(center + 0.5) - xFor(center - 0.5), plot.bottom - plot.top);
+          ctx.fillStyle = '#92400e';
+          ctx.font = '13px system-ui, sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText(`k=${center}의 연속성 보정`, xFor(center), plot.top + 8);
+        }
+
+        for (let k = 0; k <= n; k += 1) {
+          const x = xFor(k) - barWidth / 2;
+          const y = yFor(pmf[k]);
+          ctx.fillStyle = '#93c5fd';
+          ctx.fillRect(x, y, barWidth, plot.bottom - y);
+        }
+
+        ctx.strokeStyle = '#dc2626';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        const samples = 520;
+        for (let i = 0; i <= samples; i += 1) {
+          const x = xMin + (xMax - xMin) * i / samples;
+          const y = normalPdf((x - mu) / sd) / sd;
+          const px = xFor(x);
+          const py = yFor(y);
+          if (i === 0) ctx.moveTo(px, py);
+          else ctx.lineTo(px, py);
+        }
+        ctx.stroke();
+
+        drawVerticalLine(ctx, xFor(mu), plot, '#111827', [], `μ=${mu.toFixed(1)}`);
+        drawVerticalLine(ctx, xFor(mu - sd), plot, '#475569', [5, 5], 'μ-σ');
+        drawVerticalLine(ctx, xFor(mu + sd), plot, '#475569', [5, 5], 'μ+σ');
+      }
+
+      function drawStandardDistribution(ctx, plot, n, p, mu, sd, pmf) {
+        const zMin = -4;
+        const zMax = 4;
+        const maxY = 0.46;
+        const deltaZ = 1 / sd;
+        const xFor = z => plot.left + ((z - zMin) / (zMax - zMin)) * (plot.right - plot.left);
+        const yFor = y => plot.bottom - (y / maxY) * (plot.bottom - plot.top);
+        const barWidth = Math.max(1, Math.abs(xFor(deltaZ) - xFor(0)) * 0.86);
+
+        const xTicks = [-4, -3, -2, -1, 0, 1, 2, 3, 4].map(z => ({ x: xFor(z), label: String(z) }));
+        const yTicks = [0, 0.1, 0.2, 0.3, 0.4].map(value => ({ y: yFor(value), label: value.toFixed(1) }));
+        drawAxes(ctx, plot, '표준화 값 z = (k - np) / σ', '밀도', xTicks, yTicks);
+
+        if (state.showCorrection) {
+          const center = Math.round(mu);
+          const leftZ = (center - 0.5 - mu) / sd;
+          const rightZ = (center + 0.5 - mu) / sd;
+          ctx.fillStyle = 'rgba(245, 158, 11, 0.22)';
+          ctx.fillRect(xFor(leftZ), plot.top, xFor(rightZ) - xFor(leftZ), plot.bottom - plot.top);
+          ctx.fillStyle = '#92400e';
+          ctx.font = '13px system-ui, sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText('한 막대의 폭 1을 정규분포 구간으로 본다', (xFor(leftZ) + xFor(rightZ)) / 2, plot.top + 8);
+        }
+
+        for (let k = 0; k <= n; k += 1) {
+          const z = (k - mu) / sd;
+          if (z < zMin - 0.5 || z > zMax + 0.5) continue;
+          const densityHeight = pmf[k] / deltaZ;
+          const x = xFor(z) - barWidth / 2;
+          const y = yFor(densityHeight);
+          ctx.fillStyle = '#93c5fd';
+          ctx.fillRect(x, y, barWidth, plot.bottom - y);
+        }
+
+        ctx.strokeStyle = '#dc2626';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        const samples = 520;
+        for (let i = 0; i <= samples; i += 1) {
+          const z = zMin + (zMax - zMin) * i / samples;
+          const px = xFor(z);
+          const py = yFor(normalPdf(z));
+          if (i === 0) ctx.moveTo(px, py);
+          else ctx.lineTo(px, py);
+        }
+        ctx.stroke();
+
+        drawVerticalLine(ctx, xFor(0), plot, '#111827', [], '0');
+        drawVerticalLine(ctx, xFor(-1), plot, '#475569', [5, 5], '-1');
+        drawVerticalLine(ctx, xFor(1), plot, '#475569', [5, 5], '1');
+      }
+
+      function drawVerticalLine(ctx, x, plot, color, dash, label) {
+        ctx.save();
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 1.5;
+        ctx.setLineDash(dash);
+        ctx.beginPath();
+        ctx.moveTo(x, plot.top);
+        ctx.lineTo(x, plot.bottom);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.fillStyle = color;
+        ctx.font = '12px system-ui, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(label, x, plot.top - 6);
+        ctx.restore();
+      }
+
+      function drawCompareChart() {
+        const { ctx, width, height } = setupCanvas(el.compareChart, 240);
+        const nValues = uniqueSorted([10, 30, 100, state.n].map(value => clamp(value, 5, 400)));
+        const panelGap = 14;
+        const panelWidth = (width - panelGap * (nValues.length - 1)) / nValues.length;
+
+        ctx.clearRect(0, 0, width, height);
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, width, height);
+
+        nValues.forEach((n, index) => {
+          const left = index * (panelWidth + panelGap);
+          const plot = {
+            left: left + 28,
+            right: left + panelWidth - 10,
+            top: 30,
+            bottom: height - 34
+          };
+          drawMiniStandard(ctx, plot, n, state.p, n === state.n);
+        });
+      }
+
+      function uniqueSorted(values) {
+        return Array.from(new Set(values)).sort((a, b) => a - b);
+      }
+
+      function drawMiniStandard(ctx, plot, n, p, highlight) {
+        const mu = mean(n, p);
+        const sd = sigma(n, p);
+        const pmf = binomialPmf(n, p);
+        const zMin = -3.5;
+        const zMax = 3.5;
+        const maxY = 0.46;
+        const deltaZ = 1 / sd;
+        const xFor = z => plot.left + ((z - zMin) / (zMax - zMin)) * (plot.right - plot.left);
+        const yFor = y => plot.bottom - (y / maxY) * (plot.bottom - plot.top);
+        const barWidth = Math.max(1, Math.abs(xFor(deltaZ) - xFor(0)) * 0.82);
+
+        ctx.fillStyle = highlight ? '#eff6ff' : '#f8fafc';
+        ctx.fillRect(plot.left - 18, plot.top - 20, plot.right - plot.left + 28, plot.bottom - plot.top + 46);
+        ctx.strokeStyle = highlight ? '#2563eb' : '#dbe3ef';
+        ctx.lineWidth = highlight ? 2 : 1;
+        ctx.strokeRect(plot.left - 18, plot.top - 20, plot.right - plot.left + 28, plot.bottom - plot.top + 46);
+
+        ctx.strokeStyle = '#e2e8f0';
+        ctx.beginPath();
+        ctx.moveTo(plot.left, plot.bottom);
+        ctx.lineTo(plot.right, plot.bottom);
+        ctx.stroke();
+
+        for (let k = 0; k <= n; k += 1) {
+          const z = (k - mu) / sd;
+          if (z < zMin || z > zMax) continue;
+          const densityHeight = pmf[k] / deltaZ;
+          ctx.fillStyle = '#93c5fd';
+          ctx.fillRect(xFor(z) - barWidth / 2, yFor(densityHeight), barWidth, plot.bottom - yFor(densityHeight));
+        }
+
+        ctx.strokeStyle = '#dc2626';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        for (let i = 0; i <= 160; i += 1) {
+          const z = zMin + (zMax - zMin) * i / 160;
+          const px = xFor(z);
+          const py = yFor(normalPdf(z));
+          if (i === 0) ctx.moveTo(px, py);
+          else ctx.lineTo(px, py);
+        }
+        ctx.stroke();
+
+        ctx.fillStyle = highlight ? '#1d4ed8' : '#334155';
+        ctx.font = 'bold 14px system-ui, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(`n=${n}`, (plot.left + plot.right) / 2, plot.top - 7);
+      }
+
+      function updateStats() {
+        const n = state.n;
+        const p = state.p;
+        const q = 1 - p;
+        const mu = mean(n, p);
+        const sd = sigma(n, p);
+        const pmf = binomialPmf(n, p);
+        const error = maxApproxError(pmf, n, p);
+
+        el.nValue.textContent = n;
+        el.pValue.textContent = p.toFixed(2);
+        el.distValue.textContent = `B(${n}, ${p.toFixed(2)})`;
+        el.meanValue.textContent = mu.toFixed(2);
+        el.sigmaValue.textContent = sd.toFixed(2);
+        el.npValue.textContent = (n * p).toFixed(1);
+        el.nqValue.textContent = (n * q).toFixed(1);
+        el.errorValue.textContent = error.toFixed(4);
+
+        updateCondition(el.npBadge, el.npCondition, 'np', n * p);
+        updateCondition(el.nqBadge, el.nqCondition, 'n(1-p)', n * q);
+
+        el.chartTitle.textContent = state.mode === 'raw'
+          ? '성공 횟수 눈금에서 본 막대분포와 정규곡선'
+          : '표준화 눈금에서 본 막대분포와 표준정규곡선';
+
+        updateQuickButtons();
+        updateModeButtons();
+        updateInterpretation(error);
+      }
+
+      function updateCondition(badge, textEl, label, value) {
+        textEl.textContent = `${label} = ${value.toFixed(1)}`;
+        badge.classList.remove('good', 'warn', 'bad');
+        if (value >= 10) {
+          badge.textContent = '충분';
+          badge.classList.add('good');
+        } else if (value >= 5) {
+          badge.textContent = '주의';
+          badge.classList.add('warn');
+        } else {
+          badge.textContent = '부족';
+          badge.classList.add('bad');
+        }
+      }
+
+      function updateInterpretation(error) {
+        const n = state.n;
+        const p = state.p;
+        const np = n * p;
+        const nq = n * (1 - p);
+        const skewed = Math.min(p, 1 - p) < 0.2;
+        const modeText = state.mode === 'raw'
+          ? '원래 눈금에서는 n이 커질수록 평균과 표준편차가 함께 커져 분포가 옆으로 넓어집니다.'
+          : '표준화 눈금에서는 평균을 0, 표준편차를 1로 맞추기 때문에 막대의 모양 자체가 정규곡선에 가까워지는지 볼 수 있습니다.';
+
+        let message = `${modeText} 현재 정규근사 최대 오차는 ${error.toFixed(4)}입니다. `;
+        if (np >= 10 && nq >= 10 && !skewed) {
+          message += 'np와 n(1-p)가 모두 충분하고 p도 0.5 근처라서 막대와 정규곡선이 잘 겹칩니다.';
+        } else if (np >= 10 && nq >= 10) {
+          message += 'np와 n(1-p)는 충분하지만 p가 한쪽으로 치우쳐 있어 꼬리 부분에서 차이가 남을 수 있습니다.';
+        } else {
+          message += '아직 np 또는 n(1-p)가 작아서 이항분포의 비대칭성이 뚜렷합니다. n을 더 키워 보세요.';
+        }
+        message += '<br><br>핵심 관찰: n을 키워도 X 자체의 분포는 더 넓어지지만, Z=(X-np)/σ로 표준화하면 막대 간격이 좁아지고 표준정규곡선의 면적과 맞아갑니다.';
+        el.interpretation.innerHTML = message;
+      }
+
+      function updateQuickButtons() {
+        document.querySelectorAll('#nButtons button').forEach(button => {
+          button.classList.toggle('active', Number(button.dataset.n) === state.n);
+        });
+        document.querySelectorAll('#pButtons button').forEach(button => {
+          button.classList.toggle('active', Math.abs(Number(button.dataset.p) - state.p) < 0.005);
+        });
+      }
+
+      function updateModeButtons() {
+        document.querySelectorAll('.mode-btn').forEach(button => {
+          button.classList.toggle('active', button.dataset.mode === state.mode);
+        });
+      }
+
+      function render() {
+        updateStats();
+        drawMainChart();
+        drawCompareChart();
+      }
+
+      el.nSlider.addEventListener('input', () => {
+        state.n = Number(el.nSlider.value);
+        render();
+      });
+
+      el.pSlider.addEventListener('input', () => {
+        state.p = Number(el.pSlider.value);
+        render();
+      });
+
+      document.querySelectorAll('#nButtons button').forEach(button => {
+        button.addEventListener('click', () => {
+          state.n = Number(button.dataset.n);
+          el.nSlider.value = state.n;
+          render();
+        });
+      });
+
+      document.querySelectorAll('#pButtons button').forEach(button => {
+        button.addEventListener('click', () => {
+          state.p = Number(button.dataset.p);
+          el.pSlider.value = state.p;
+          render();
+        });
+      });
+
+      document.querySelectorAll('.mode-btn').forEach(button => {
+        button.addEventListener('click', () => {
+          state.mode = button.dataset.mode;
+          render();
+        });
+      });
+
+      el.correctionToggle.addEventListener('change', () => {
+        state.showCorrection = el.correctionToggle.checked;
+        render();
+      });
+
+      document.getElementById('resetButton').addEventListener('click', () => {
+        state.n = 40;
+        state.p = 0.5;
+        state.mode = 'raw';
+        state.showCorrection = true;
+        el.nSlider.value = state.n;
+        el.pSlider.value = state.p;
+        el.correctionToggle.checked = true;
+        render();
+      });
+
+      window.addEventListener('resize', render);
+
+      render();
+    })();
+  </script>
+</body>
+</html>
