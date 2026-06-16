@@ -198,7 +198,8 @@
     .calc-hint { font-size: 12px; color: #9ca3af; margin-top: 6px; }
 
     /* ── 기록판 ── */
-    .record-canvas { width: 100%; display: block; border-radius: 6px; }
+    .record-canvas { width: 100%; display: block; border-radius: 6px; background: #f8fafc; }
+    .record-note { font-size: 12px; color: #6b7280; margin: 5px 0 0; }
     .record-footer { font-size: 13px; color: #374151; margin-top: 6px; line-height: 1.7; }
     .record-footer strong { font-size: 15px; color: #111827; }
     .rec-diff { font-size: 12px; color: #9ca3af; }
@@ -340,6 +341,7 @@
     <div class="panel panel-record">
       <h3>④ 표본평균 기록판</h3>
       <canvas class="record-canvas" id="record-canvas" width="300" height="160"></canvas>
+      <p class="record-note">막대 높이는 지금까지 기록된 x̄ 중 해당 구간에 들어간 비율입니다.</p>
       <div class="record-footer">
         기록된 x̄: <strong id="rec-m">0</strong>개
         &nbsp;|&nbsp;
@@ -878,14 +880,16 @@
     const W = canvas.width, H = canvas.height;
     ctx.clearRect(0, 0, W, H);
 
-    const pad = { top: 20, right: 14, bottom: 26, left: 14 };
+    const pad = { top: 24, right: 14, bottom: 30, left: 34 };
     const cw  = W - pad.left - pad.right;
     const ch  = H - pad.top  - pad.bottom;
 
-    // x축 선
+    // 축
     ctx.beginPath();
     ctx.strokeStyle = '#d1d5db';
     ctx.lineWidth = 1;
+    ctx.moveTo(pad.left, pad.top);
+    ctx.lineTo(pad.left, H - pad.bottom);
     ctx.moveTo(pad.left, H - pad.bottom);
     ctx.lineTo(W - pad.right, H - pad.bottom);
     ctx.stroke();
@@ -912,6 +916,63 @@
     ctx.fillText(Math.round((popMin + popMax) / 2), pad.left + cw / 2, H - pad.bottom + 3);
     ctx.textAlign = 'right';
     ctx.fillText(popMax, W - pad.right, H - pad.bottom + 3);
+
+    const binCount = 10;
+    const binWidth = xRange / binCount;
+    const bins = Array.from({ length: binCount }, () => ({ count: 0, latest: false }));
+    sampleMeans.forEach((xbar, idx) => {
+      const rawIndex = Math.floor((xbar - popMin) / binWidth);
+      const binIndex = Math.max(0, Math.min(binCount - 1, rawIndex));
+      bins[binIndex].count += 1;
+      if (idx === sampleMeans.length - 1) bins[binIndex].latest = true;
+    });
+
+    const total = sampleMeans.length;
+    const maxRatio = Math.max(0.1, ...bins.map(bin => bin.count / total));
+    const yMax = Math.min(1, Math.ceil(maxRatio * 10) / 10);
+
+    // y축 비율 눈금
+    ctx.save();
+    ctx.strokeStyle = '#e5e7eb';
+    ctx.fillStyle = '#9ca3af';
+    ctx.font = '10px system-ui';
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'middle';
+    for (let i = 1; i <= 2; i++) {
+      const ratio = yMax * i / 2;
+      const y = H - pad.bottom - (ratio / yMax) * ch;
+      ctx.beginPath();
+      ctx.moveTo(pad.left, y);
+      ctx.lineTo(W - pad.right, y);
+      ctx.stroke();
+      ctx.fillText(Math.round(ratio * 100) + '%', pad.left - 4, y);
+    }
+    ctx.restore();
+
+    // 히스토그램 막대: 누적 개수가 커져도 비율 스케일로 높이를 자동 조정한다.
+    const barGap = 2;
+    const barW = cw / binCount;
+    bins.forEach((bin, i) => {
+      if (bin.count === 0) return;
+      const ratio = bin.count / total;
+      const bh = Math.max(2, (ratio / yMax) * ch);
+      const x = pad.left + i * barW + barGap / 2;
+      const y = H - pad.bottom - bh;
+
+      ctx.fillStyle = bin.latest ? '#fbbf24' : '#86efac';
+      ctx.strokeStyle = bin.latest ? '#d97706' : '#16a34a';
+      ctx.lineWidth = bin.latest ? 2 : 1;
+      ctx.fillRect(x, y, barW - barGap, bh);
+      ctx.strokeRect(x, y, barW - barGap, bh);
+
+      if (bin.count >= 2 || bin.latest) {
+        ctx.fillStyle = '#166534';
+        ctx.font = 'bold 10px system-ui';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText(String(bin.count), x + (barW - barGap) / 2, y - 2);
+      }
+    });
 
     // μ 기준선
     if (showMu) {
@@ -954,29 +1015,11 @@
       ctx.restore();
     }
 
-    // 점 그래프 (같은 x 위치끼리 세로 누적)
-    const R = 5;
-    const STACK_GAP = R * 2 + 2;
-    const columnCount = {}; // 각 x좌표 버킷에 쌓인 점 개수
-
-    sampleMeans.forEach((xbar, idx) => {
-      const cx  = toX(xbar);
-      const bucket = Math.round(cx / (R * 1.5)) * Math.round(R * 1.5); // 가까운 점 묶기
-      columnCount[bucket] = (columnCount[bucket] || 0) + 1;
-      const row = columnCount[bucket] - 1;
-      const cy  = Math.max(pad.top + R, H - pad.bottom - R - row * STACK_GAP - 2);
-
-      const isLatest = (idx === sampleMeans.length - 1);
-      ctx.beginPath();
-      ctx.arc(cx, cy, R, 0, 2 * Math.PI);
-      ctx.fillStyle   = isLatest ? '#f59e0b' : '#16a34a';
-      ctx.fill();
-      if (isLatest) {
-        ctx.strokeStyle = '#d97706';
-        ctx.lineWidth   = 2;
-        ctx.stroke();
-      }
-    });
+    ctx.fillStyle = '#6b7280';
+    ctx.font = '10px system-ui';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
+    ctx.fillText('비율 히스토그램', pad.left + 4, pad.top + 3);
   }
 
   // ─── 해석 문구 ───
