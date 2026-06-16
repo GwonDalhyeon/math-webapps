@@ -130,7 +130,7 @@
 </head>
 <body>
 <div class="app-wrap">
-  <a class="back-link" href="../../probability-statistics/">← 확률과 통계</a>
+  <a class="back-link" href="../">← 확률과 통계</a>
 
   <div class="app-hero">
     <h1>표본으로 모평균 추정하기</h1>
@@ -448,7 +448,10 @@
 
   // ── 새 표본 ──
   function doNewSample() {
+    if (batchTimer) { clearTimeout(batchTimer); batchTimer = null; }
     currentSample = null; rawStats = null; currentCI = null; muRevealed = false;
+    batchRaw = []; batchCIs = [];
+    batchPanel.style.display = 'none';
     ivResult.style.display = 'none';
     confNote.style.display = 'none';
     setState('no-sample');
@@ -549,18 +552,7 @@
     statusNote.textContent = '';
   }
 
-  function resetSettings() {
-    if (batchTimer) { clearTimeout(batchTimer); batchTimer = null; }
-    currentSample = null; rawStats = null; currentCI = null; muRevealed = false;
-    batchRaw = []; batchCIs = [];
-    batchPanel.style.display = 'none';
-    ivResult.style.display = 'none';
-    confNote.style.display = 'none';
-    setState('no-sample');
-    renderSamplePlot(); renderCalcSteps(); renderIntervalAxis();
-    updateInterpret();
-    statusNote.textContent = '';
-  }
+  function resetSettings() { doReset(); }
 
   // ── 캔버스 공통 헬퍼 ──
   function setupCanvas(canvas, cssW, cssH) {
