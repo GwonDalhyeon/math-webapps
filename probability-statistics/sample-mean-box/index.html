@@ -163,6 +163,28 @@
     /* ── 계산판 ── */
     .calc-empty { font-size: 13px; color: #9ca3af; text-align: center; padding: 18px 0; }
     .calc-body  { font-size: 14px; color: #111827; line-height: 2; }
+    .math-formula {
+      display: block;
+      margin: 4px 0 8px;
+      padding: 8px 10px;
+      border-radius: 10px;
+      background: #fff7ed;
+      border: 1px solid #fed7aa;
+      overflow-x: auto;
+    }
+    .math-formula math {
+      font-size: clamp(1rem, 1.8vw, 1.24rem);
+    }
+    .math-inline {
+      display: inline-flex;
+      align-items: center;
+      vertical-align: middle;
+      color: #0891b2;
+      font-weight: 800;
+    }
+    .math-inline math {
+      font-size: 1.05em;
+    }
     .calc-xbar-big {
       display: inline-block; font-size: 24px; font-weight: 700; color: #ea580c;
       padding: 2px 10px; background: #fff7ed; border-radius: 8px;
@@ -196,6 +218,18 @@
       padding: 14px 18px; font-size: 15px; color: #166534; line-height: 1.7;
     }
     .interp strong { color: #15803d; }
+
+    .sampling-note {
+      margin-top: 8px;
+      padding: 8px 10px;
+      border-radius: 10px;
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      color: #1e40af;
+      font-size: 12px;
+      font-weight: 700;
+      line-height: 1.5;
+    }
   </style>
 </head>
 <body>
@@ -205,7 +239,7 @@
   <header class="app-hero">
     <p class="eyebrow">확률과 통계 · 표본평균</p>
     <h1>상자에서 뽑는 표본평균</h1>
-    <p>상자에서 번호 공을 뽑아 표본을 만들고, 그 표본의 평균이 하나의 값으로 기록되는 과정을 봅니다.</p>
+    <p>상자에서 번호 공을 하나 뽑아 값을 기록한 뒤 다시 넣습니다. 이 과정을 n번 반복해 표본을 만들고, 그 표본의 평균이 하나의 값으로 기록되는 과정을 봅니다.</p>
     <p>한 번의 표본 추출에서 x̄는 하나만 생깁니다.</p>
   </header>
 
@@ -251,7 +285,8 @@
         <div class="btn-row">
           <button class="btn btn-blue"   id="btn-one">표본 1개 뽑기</button>
           <button class="btn btn-violet" id="btn-manual">천천히 1개씩</button>
-          <button class="btn btn-orange" id="btn-five">5개 연속</button>
+          <button class="btn btn-orange" id="btn-ten" title="애니메이션 없이 표본평균 10개를 기록판에 빠르게 누적합니다.">분포 +10</button>
+          <button class="btn btn-orange" id="btn-hundred" title="애니메이션 없이 표본평균 100개를 기록판에 빠르게 누적합니다.">분포 +100</button>
           <button class="btn btn-cyan"   id="btn-auto">자동 반복</button>
           <button class="btn btn-amber"  id="btn-pause" disabled>일시정지</button>
           <button class="btn btn-gray"   id="btn-reset">초기화</button>
@@ -280,6 +315,7 @@
       <label class="mu-toggle-row">
         <input type="checkbox" id="mu-chk" checked /> μ, σ 보이기
       </label>
+      <div class="sampling-note">복원추출: 공을 뽑아 값을 기록한 뒤 다시 상자에 넣고 다음 공을 뽑습니다.</div>
     </div>
 
     <!-- ② 표본 바구니 -->
@@ -312,12 +348,19 @@
         <br>
         x̄들의 표준편차: <strong id="rec-std">—</strong>
         &nbsp;|&nbsp;
-        σ/√n = <strong id="rec-theory" class="theory-val">—</strong>
+        복원추출 기준
+        <span class="math-inline">
+          <math aria-label="sigma over square root of n">
+            <mfrac><mi>σ</mi><msqrt><mi>n</mi></msqrt></mfrac>
+          </math>
+        </span>
+        = <strong id="rec-theory" class="theory-val">—</strong>
       </div>
       <div class="recent-wrap">
         <div class="recent-title">최근 기록 (최대 10개)</div>
         <ul class="recent-list" id="recent-list"></ul>
       </div>
+      <p class="calc-hint">분포 +10, +100은 표본평균이 쌓이는 모양을 빠르게 보기 위한 버튼입니다.</p>
     </div>
   </div>
 
@@ -386,7 +429,8 @@
 
   const btnOne   = document.getElementById('btn-one');
   const btnManual= document.getElementById('btn-manual');
-  const btnFive  = document.getElementById('btn-five');
+  const btnTen   = document.getElementById('btn-ten');
+  const btnHundred = document.getElementById('btn-hundred');
   const btnAuto  = document.getElementById('btn-auto');
   const btnPause = document.getElementById('btn-pause');
   const btnReset = document.getElementById('btn-reset');
@@ -464,17 +508,22 @@
   // ─── 계산판 ───
   function showCalcArea(xbar, sum) {
     const vals = currentVals;
-    let formula;
-    if (n <= 5) {
-      formula = `(${vals.join(' + ')})`;
-    } else {
-      formula = `(${vals.slice(0, 4).join(' + ')} + … + ${vals[vals.length - 1]})`;
-    }
+    const mathTerms = values => values.map(value => `<mn>${value}</mn>`).join('<mo>+</mo>');
+    const formula = n <= 6
+      ? mathTerms(vals)
+      : `${mathTerms(vals.slice(0, 4))}<mo>+</mo><mo>⋯</mo><mo>+</mo>${mathTerms(vals.slice(-2))}`;
     calcArea.innerHTML = `
       <div class="calc-body">
-        x̄ = ${formula} ÷ ${n}<br>
-        &nbsp;&nbsp;&nbsp;= ${sum} ÷ ${n}<br>
-        &nbsp;&nbsp;&nbsp;= <span class="calc-xbar-big" id="xbar-big">${xbar.toFixed(1)}</span>
+        <span class="math-formula">
+          <math display="block" aria-label="sample mean calculation">
+            <mover><mi>x</mi><mo>¯</mo></mover>
+            <mo>=</mo>
+            <mfrac><mrow>${formula}</mrow><mn>${n}</mn></mfrac>
+            <mo>=</mo>
+            <mfrac><mn>${sum}</mn><mn>${n}</mn></mfrac>
+          </math>
+        </span>
+        이번 표본평균 <span class="calc-xbar-big" id="xbar-big">${xbar.toFixed(1)}</span>
       </div>
       <p class="calc-hint">이 값 하나가 기록판에 추가됩니다 →</p>`;
   }
@@ -493,7 +542,8 @@
 
     btnOne.disabled    = !idle;
     btnManual.disabled = drawing || auto;
-    btnFive.disabled   = !idle;
+    btnTen.disabled    = !idle;
+    btnHundred.disabled = !idle;
     btnAuto.disabled   = !idle;
     btnPause.disabled  = !auto;
 
@@ -516,9 +566,7 @@
   async function drawOneBall(g) {
     if (gen !== g) return;
     const sp = SPEEDS[speed];
-    const available = population.filter(b => !b.drawnThisSample);
-    if (available.length === 0) return;
-    const ball = available[Math.floor(Math.random() * available.length)];
+    const ball = population[Math.floor(Math.random() * population.length)];
 
     // 강조
     const ballEl = document.getElementById('ball-' + ball.id);
@@ -526,10 +574,8 @@
     await sleep(sp.highlight);
     if (gen !== g) return;
 
-    // 뽑음 처리
-    if (ballEl) { ballEl.classList.remove('highlighted'); ballEl.classList.add('drawn'); }
-    ball.drawnThisSample = true;
-    drawnIds.add(ball.id);
+    // 값을 기록한 뒤 공은 다시 상자에 남아 있으므로 흐리게 처리하지 않는다.
+    if (ballEl) ballEl.classList.remove('highlighted');
     currentVals.push(ball.value);
 
     // 바구니 슬롯 채우기
@@ -636,17 +682,33 @@
     // else: 계속 manual 상태 유지
   });
 
-  // ─── 버튼: 5개 연속 ───
-  btnFive.addEventListener('click', async () => {
-    if (appState !== 'idle') return;
-    const g = gen;
-    setAppState('drawing');
-    for (let s = 0; s < 5; s++) {
-      if (gen !== g) return;
-      await runOneSample(g);
+  function makeQuickSampleMean() {
+    let sum = 0;
+    for (let i = 0; i < n; i++) {
+      const ball = population[Math.floor(Math.random() * population.length)];
+      sum += ball.value;
     }
-    if (gen === g) setAppState('idle');
-  });
+    return +(sum / n).toFixed(10);
+  }
+
+  function runQuickSamples(count) {
+    if (appState !== 'idle') return;
+    currentVals = [];
+    drawnIds.clear();
+    population.forEach(b => { b.drawnThisSample = false; });
+    clearCalcArea();
+    for (let i = 0; i < count; i++) {
+      recordXbar(makeQuickSampleMean());
+    }
+    latestXbar = sampleMeans[sampleMeans.length - 1] ?? null;
+    renderBox();
+    renderBasket();
+    drawRecordBoard();
+    updateInterpretation();
+  }
+
+  btnTen.addEventListener('click', () => runQuickSamples(10));
+  btnHundred.addEventListener('click', () => runQuickSamples(100));
 
   // ─── 버튼: 자동 반복 ───
   btnAuto.addEventListener('click', async () => {
@@ -922,9 +984,9 @@
     const m = sampleMeans.length;
     let msg;
     if (m === 0) {
-      msg = `상자 안 공들이 모집단입니다. 표본 1개를 뽑으면 공 <strong>${n}개</strong>가 바구니에 들어가고, 그 평균 x̄ 하나가 기록됩니다.`;
+      msg = `상자 안 공들이 모집단입니다. 공을 뽑아 값을 기록하고 다시 넣는 일을 <strong>${n}번</strong> 반복하면 표본 하나가 만들어지고, 그 평균 x̄ 하나가 기록됩니다.`;
     } else if (m === 1) {
-      msg = `이번 표본의 <strong>${n}개</strong> 값을 평균 내어 x̄ = <strong>${latestXbar.toFixed(1)}</strong>을 만들었습니다. 이 값 하나가 오른쪽 기록판에 추가됩니다.`;
+      msg = `이번 표본의 <strong>${n}개</strong> 기록값을 평균 내어 x̄ = <strong>${latestXbar.toFixed(1)}</strong>을 만들었습니다. 이 값 하나가 오른쪽 기록판에 추가됩니다.`;
     } else if (m < 5) {
       msg = `기록판에는 원래 공들이 아니라 각 표본에서 나온 x̄ 값들이 쌓입니다. 이 값들의 평균을 보면 표본평균들의 평균을 확인할 수 있습니다.`;
     } else {
@@ -934,7 +996,7 @@
       if (diff < 3) {
         msg = `표본평균들의 평균(<strong>${mMean.toFixed(1)}</strong>)이 모집단 평균 μ = ${mu.toFixed(1)}에 가까워지고 있습니다. 표본을 반복해서 뽑으면 평균들이 μ 주변에 모이는 경향을 볼 수 있습니다.`;
         if (m >= 10) {
-          msg += ` x̄들의 표준편차가 σ/√n = <strong>${theory.toFixed(2)}</strong>에 가까워지는지도 기록판 아래에서 확인해 보세요.`;
+          msg += ` x̄들의 표준편차가 복원추출 기준 <span class="math-inline"><math aria-label="sigma over square root of n"><mfrac><mi>σ</mi><msqrt><mi>n</mi></msqrt></mfrac></math></span> = <strong>${theory.toFixed(2)}</strong>에 가까워지는지도 기록판 아래에서 확인해 보세요.`;
         }
       } else {
         msg = `아직 기록된 x̄가 많지 않아 표본평균들의 평균(<strong>${mMean.toFixed(1)}</strong>)이 μ = ${mu.toFixed(1)}와 차이 날 수 있습니다. 표본을 더 반복해 보며 어떻게 변하는지 관찰해 봅니다.`;
