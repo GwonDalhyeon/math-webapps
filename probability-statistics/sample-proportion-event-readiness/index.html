@@ -11,7 +11,7 @@
     .app-layout {
       display: grid;
       grid-template-columns: 272px 1fr;
-      gap: 20px;
+      gap: 16px;
       align-items: start;
     }
     @media (max-width: 900px) {
@@ -22,8 +22,8 @@
     .panel {
       background: white;
       border: 1px solid #e5e7eb;
-      border-radius: 16px;
-      padding: 20px;
+      border-radius: 12px;
+      padding: 16px;
       box-shadow: 0 4px 12px rgba(15,23,42,0.06);
     }
     .panel-title {
@@ -34,42 +34,61 @@
       border-bottom: 2px solid #f3f4f6;
       padding-bottom: 8px;
     }
+    .page { padding-top: 24px; }
+    .back-link {
+      display: inline-block;
+      margin-bottom: 8px;
+      font-size: 14px;
+    }
+    .hero {
+      padding: 6px 0 8px;
+      margin-bottom: 8px;
+    }
+    .hero .eyebrow {
+      margin: 0 0 4px;
+      font-size: 15px;
+    }
+    .hero h1 {
+      margin-bottom: 0;
+      font-size: clamp(34px, 4vw, 44px);
+      line-height: 1.08;
+    }
 
     /* ── 상단 배너 ── */
     .banner {
       background: #eff6ff;
       border: 1px solid #bfdbfe;
-      border-radius: 14px;
-      padding: 18px 22px;
-      margin-bottom: 20px;
+      border-radius: 12px;
+      padding: 10px 14px;
+      margin-bottom: 8px;
     }
     .banner-q {
-      font-size: 17px;
+      font-size: 14px;
       font-weight: 700;
       color: #1d4ed8;
-      margin: 0 0 8px;
+      margin: 0 0 4px;
       line-height: 1.4;
     }
     .banner-desc {
-      font-size: 14px;
+      font-size: 12px;
       color: #374151;
       margin: 0;
-      line-height: 1.65;
+      line-height: 1.45;
     }
 
     /* ── 학습지 자료 ── */
     .resource-menu {
       background: white;
       border: 1px solid #dbe4ef;
-      border-radius: 12px;
-      margin: -6px 0 20px;
+      border-radius: 10px;
+      margin: 0 0 12px;
       box-shadow: 0 2px 8px rgba(15,23,42,0.04);
     }
     .resource-menu summary {
       list-style: none;
       cursor: pointer;
-      padding: 12px 16px;
-      font-size: 14px;
+      padding: 8px 12px;
+      font-size: 13px;
       font-weight: 800;
       color: #1f2937;
     }
@@ -85,7 +104,7 @@
       display: flex;
       flex-wrap: wrap;
       gap: 8px;
-      padding: 0 16px 14px;
+      padding: 0 12px 10px;
     }
     .resource-link {
       display: inline-flex;
@@ -112,7 +131,7 @@
       border-radius: 12px;
       padding: 14px;
       text-align: center;
-      margin-bottom: 18px;
+      margin-bottom: 14px;
     }
     .shortage-label {
       font-size: 13px;
@@ -131,9 +150,16 @@
       color: #991b1b;
       margin-top: 5px;
     }
+    .shortage-note {
+      margin: 8px 0 0;
+      font-size: 12px;
+      color: #7f1d1d;
+      line-height: 1.45;
+      text-align: left;
+    }
 
     /* ── 슬라이더 그룹 ── */
-    .ctrl-group { margin-bottom: 16px; }
+    .ctrl-group { margin-bottom: 12px; }
     .ctrl-label {
       display: flex;
       justify-content: space-between;
@@ -149,7 +175,7 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 6px 0;
+      padding: 5px 0;
       border-bottom: 1px solid #f3f4f6;
       font-size: 14px;
     }
@@ -200,14 +226,14 @@
     .btn-gray:hover  { background: #f3f4f6; }
 
     /* ── 오른쪽 메인 ── */
-    .main-col { display: flex; flex-direction: column; gap: 20px; }
+    .main-col { display: flex; flex-direction: column; gap: 14px; }
 
     /* ── 차트 ── */
     .chart-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 10px;
+      margin-bottom: 6px;
     }
     .tab-row { display: flex; gap: 6px; }
     .tab-btn {
@@ -222,12 +248,18 @@
     }
     .tab-btn.active { background: #2563eb; color: white; border-color: #2563eb; }
     canvas { display: block; width: 100%; }
+    .chart-note {
+      margin: 0 0 6px;
+      font-size: 12px;
+      color: #4b5563;
+      line-height: 1.35;
+    }
 
     /* ── 하단 2열 ── */
     .bottom-row {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 20px;
+      gap: 14px;
     }
     @media (max-width: 640px) {
       .bottom-row { grid-template-columns: 1fr; }
@@ -238,9 +270,9 @@
       display: inline-block;
       padding: 6px 16px;
       border-radius: 8px;
-      font-size: 22px;
+      font-size: 18px;
       font-weight: 900;
-      margin-bottom: 12px;
+      margin-bottom: 8px;
     }
     .badge-ok       { background: #dbeafe; color: #1d4ed8; }
     .badge-shortage { background: #fee2e2; color: #dc2626; }
@@ -249,11 +281,11 @@
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 8px;
-      margin-bottom: 14px;
+      margin-bottom: 10px;
     }
-    .num-box { background: #f9fafb; border-radius: 10px; padding: 10px; text-align: center; }
+    .num-box { background: #f9fafb; border-radius: 8px; padding: 8px; text-align: center; }
     .num-label { font-size: 11px; color: #6b7280; margin-bottom: 3px; }
-    .num-val   { font-size: 22px; font-weight: 800; color: #111827; }
+    .num-val   { font-size: 19px; font-weight: 800; color: #111827; }
 
     /* ── 점 배열 ── */
     .dot-zones {
@@ -296,21 +328,21 @@
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 8px;
-      margin-bottom: 14px;
+      margin-bottom: 10px;
     }
-    .stat-box { background: #f9fafb; border-radius: 10px; padding: 12px; text-align: center; }
+    .stat-box { background: #f9fafb; border-radius: 8px; padding: 8px; text-align: center; }
     .stat-label { font-size: 11px; color: #6b7280; margin-bottom: 3px; }
-    .stat-val   { font-size: 22px; font-weight: 800; color: #111827; }
+    .stat-val   { font-size: 19px; font-weight: 800; color: #111827; }
     .stat-val.red { color: #dc2626; }
 
     .interp {
       background: #f0fdf4;
       border: 1px solid #bbf7d0;
-      border-radius: 10px;
-      padding: 12px 14px;
-      font-size: 14px;
+      border-radius: 8px;
+      padding: 9px 11px;
+      font-size: 13px;
       color: #166534;
-      line-height: 1.65;
+      line-height: 1.45;
     }
 
     .placeholder { font-size: 14px; color: #9ca3af; }
@@ -356,6 +388,9 @@
             <div class="shortage-label">준비 부족 확률 P(X &gt; c)</div>
             <div class="shortage-value" id="spValue">41.6%</div>
             <div class="shortage-sub"  id="spSub">10번 중 약 4번 부족</div>
+            <p class="shortage-note">
+              준비 부족 확률은 이항분포로 정확히 계산합니다. 표준편차 표시는 준비 기준이 평균에서 얼마나 떨어져 있는지 보여 줍니다.
+            </p>
           </div>
 
           <!-- 슬라이더 -->
@@ -394,8 +429,16 @@
               <span class="derived-val" id="dvC">14명</span>
             </div>
             <div class="derived-row">
-              <span class="derived-name">기댓값 E(X) = np</span>
-              <span class="derived-val" id="dvEX">14.0명</span>
+              <span class="derived-name">평균 μ = np</span>
+              <span class="derived-val" id="dvMu">14.0명</span>
+            </div>
+            <div class="derived-row">
+              <span class="derived-name">표준편차 σ</span>
+              <span class="derived-val" id="dvSigma">2.05명</span>
+            </div>
+            <div class="derived-row">
+              <span class="derived-name">c의 위치</span>
+              <span class="derived-val" id="dvSigmaGap">+0.00σ</span>
             </div>
           </div>
 
@@ -429,6 +472,7 @@
               <button class="tab-btn"        id="tabE" onclick="switchTab('experiment')">실험분포</button>
             </div>
           </div>
+          <p class="chart-note">붉은 막대는 X &gt; c인 부족 영역입니다. μ, μ±σ, μ±2σ 선은 분포의 퍼짐을 읽는 보조 기준입니다.</p>
           <canvas id="chart" height="240"></canvas>
         </div>
 
@@ -498,6 +542,8 @@
     // ── 파생값 ──────────────────────────────────────
     function getQ() { return Math.min(P + R, 1); }
     function getC() { return Math.ceil(N * getQ()); }
+    function getMu() { return N * P; }
+    function getSigma() { return Math.sqrt(N * P * (1 - P)); }
 
     // 이항분포 확률 배열 (재귀 비율, 오버플로 방지)
     function binomProbs(n, p) {
@@ -539,9 +585,15 @@
       document.getElementById('lbR').textContent = R.toFixed(2);
 
       const q = getQ(), c = getC();
+      const mu = getMu();
+      const sigma = getSigma();
+      const sigmaGap = sigma > 0 ? (c - mu) / sigma : 0;
       document.getElementById('dvQ').textContent  = q.toFixed(2);
       document.getElementById('dvC').textContent  = c + '명';
-      document.getElementById('dvEX').textContent = (N * P).toFixed(1) + '명';
+      document.getElementById('dvMu').textContent = mu.toFixed(1) + '명';
+      document.getElementById('dvSigma').textContent = sigma.toFixed(2) + '명';
+      document.getElementById('dvSigmaGap').textContent =
+        (sigmaGap >= 0 ? '+' : '') + sigmaGap.toFixed(2) + 'σ';
 
       const probs = binomProbs(N, P);
       const sp = shortageProb(probs, c);
@@ -573,7 +625,9 @@
       ctx.scale(dpr, dpr);
 
       const c = getC();
-      const pad = { top: 36, right: 16, bottom: 38, left: 44 };
+      const mu = getMu();
+      const sigma = getSigma();
+      const pad = { top: 42, right: 18, bottom: 38, left: 44 };
       const cw = W - pad.left - pad.right;
       const ch = H - pad.top - pad.bottom;
 
@@ -586,6 +640,10 @@
       while (xHi > xLo && probs[xHi] < thr) xHi--;
       xLo = Math.max(0, xLo - 1);
       xHi = Math.min(N, xHi + 1);
+      const markerValues = [mu, c + 0.5];
+      if (sigma > 0) markerValues.push(mu - sigma, mu + sigma, mu - 2 * sigma, mu + 2 * sigma);
+      xLo = Math.max(0, Math.min(xLo, Math.floor(Math.min(...markerValues)) - 1));
+      xHi = Math.min(N, Math.max(xHi, Math.ceil(Math.max(...markerValues)) + 1));
       const cnt = xHi - xLo + 1;
 
       // Y 최대값
@@ -623,6 +681,7 @@
       }
 
       const barW = cw / cnt;
+      const valueToX = value => pad.left + (value - xLo + 0.5) * barW;
 
       // 막대
       for (let k = xLo; k <= xHi; k++) {
@@ -664,7 +723,33 @@
         }
       }
 
-      // 준비 인원 c 기준선
+      function drawReferenceLine(value, label, color, dash, labelOffset) {
+        if (value < xLo - 0.5 || value > xHi + 0.5) return;
+        const lx = valueToX(value);
+        ctx.strokeStyle = color;
+        ctx.lineWidth = label === 'c=' + c ? 2 : 1.4;
+        ctx.setLineDash(dash);
+        ctx.beginPath();
+        ctx.moveTo(lx, pad.top - 4);
+        ctx.lineTo(lx, pad.top + ch);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        ctx.fillStyle = color;
+        ctx.font = label === 'c=' + c ? 'bold 12px system-ui' : '11px system-ui';
+        ctx.textAlign = 'center';
+        ctx.fillText(label, lx, pad.top - 10 - labelOffset);
+      }
+
+      if (sigma > 0) {
+        drawReferenceLine(mu - 2 * sigma, 'μ-2σ', '#9ca3af', [2, 4], 0);
+        drawReferenceLine(mu + 2 * sigma, 'μ+2σ', '#9ca3af', [2, 4], 0);
+        drawReferenceLine(mu - sigma, 'μ-σ', '#64748b', [4, 4], 13);
+        drawReferenceLine(mu + sigma, 'μ+σ', '#64748b', [4, 4], 13);
+      }
+      drawReferenceLine(mu, 'μ=' + mu.toFixed(1), '#111827', [], 26);
+
+      // 준비 인원 c 기준선: X > c가 붉은 부족 영역이다.
       if (c >= xLo && c <= xHi) {
         const lx = pad.left + (c - xLo + 1) * barW;
         ctx.strokeStyle = '#dc2626';
@@ -679,7 +764,8 @@
         ctx.fillStyle = '#dc2626';
         ctx.font = 'bold 12px system-ui';
         ctx.textAlign = 'center';
-        ctx.fillText('c=' + c, lx, pad.top - 10);
+        const cLabelY = Math.abs((c + 0.5) - mu) < 0.75 ? pad.top - 10 : pad.top - 34;
+        ctx.fillText('c=' + c, lx, cLabelY);
       }
 
       // P(X > c) 수치 표시
