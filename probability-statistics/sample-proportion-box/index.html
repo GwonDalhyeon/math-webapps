@@ -1,0 +1,991 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="성공과 실패를 1과 0으로 두면 표본비율이 표본평균이 된다는 점을 상자 추출 실험으로 확인하는 통계 웹앱입니다." />
+  <title>표본비율은 0과 1의 평균</title>
+  <link rel="stylesheet" href="../../assets/common.css" />
+  <style>
+    :root {
+      --panel: #ffffff;
+      --ink: #111827;
+      --muted: #64748b;
+      --line: #dbe3ef;
+      --blue: #2563eb;
+      --blue-soft: #dbeafe;
+      --green: #15803d;
+      --green-soft: #dcfce7;
+      --amber: #d97706;
+      --amber-soft: #fef3c7;
+      --red: #dc2626;
+      --red-soft: #fee2e2;
+      --slate-soft: #f1f5f9;
+      --shadow: 0 12px 28px rgba(15, 23, 42, 0.08);
+    }
+
+    body {
+      background: #f8fafc;
+    }
+
+    .app-wrap {
+      width: min(1260px, calc(100% - 28px));
+      margin: 24px auto 42px;
+    }
+
+    .app-hero {
+      margin-bottom: 14px;
+    }
+
+    .app-hero h1 {
+      margin-bottom: 8px;
+      font-size: clamp(2rem, 4vw, 3.5rem);
+    }
+
+    .app-hero p {
+      max-width: 980px;
+      margin: 0;
+      font-size: clamp(1rem, 1.8vw, 1.18rem);
+    }
+
+    .control-band,
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      box-shadow: var(--shadow);
+    }
+
+    .control-band {
+      display: grid;
+      grid-template-columns: minmax(260px, 0.8fr) minmax(360px, 1.2fr) minmax(280px, 0.9fr);
+      gap: 16px;
+      align-items: center;
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+
+    .control-group {
+      display: grid;
+      gap: 8px;
+    }
+
+    .range-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: baseline;
+      font-weight: 800;
+      color: #334155;
+    }
+
+    .range-value {
+      color: var(--blue);
+      font-size: 1.25rem;
+      font-weight: 950;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--blue);
+    }
+
+    .button-row,
+    .view-toggle {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+
+    button {
+      min-height: 42px;
+      border: 0;
+      border-radius: 10px;
+      padding: 10px 14px;
+      font-size: 0.98rem;
+      font-weight: 850;
+      cursor: pointer;
+      background: #e2e8f0;
+      color: #0f172a;
+    }
+
+    button:hover {
+      filter: brightness(0.98);
+    }
+
+    button:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    .primary {
+      background: var(--blue);
+      color: #ffffff;
+    }
+
+    .success {
+      background: var(--green);
+      color: #ffffff;
+    }
+
+    .warning {
+      background: var(--amber);
+      color: #ffffff;
+    }
+
+    .danger {
+      background: var(--red);
+      color: #ffffff;
+    }
+
+    .toggle-btn {
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      color: #475569;
+    }
+
+    .toggle-btn.active {
+      background: #0f172a;
+      border-color: #0f172a;
+      color: #ffffff;
+    }
+
+    .main-grid {
+      display: grid;
+      grid-template-columns: 310px minmax(350px, 1fr) 430px;
+      gap: 16px;
+      align-items: start;
+    }
+
+    .panel {
+      padding: 16px;
+    }
+
+    .panel-title {
+      margin: 0 0 10px;
+      font-size: 1.05rem;
+      font-weight: 950;
+      color: #1e293b;
+    }
+
+    .box-grid {
+      display: grid;
+      grid-template-columns: repeat(10, 1fr);
+      gap: 4px;
+      margin-bottom: 10px;
+    }
+
+    .box-cell,
+    .sample-chip {
+      display: grid;
+      place-items: center;
+      font-weight: 950;
+      user-select: none;
+    }
+
+    .box-cell {
+      aspect-ratio: 1;
+      border-radius: 6px;
+      font-size: 0.78rem;
+      border: 1px solid rgba(15, 23, 42, 0.08);
+    }
+
+    .success-cell {
+      background: var(--blue);
+      color: #ffffff;
+    }
+
+    .failure-cell {
+      background: #e5e7eb;
+      color: #475569;
+    }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 0.92rem;
+      font-weight: 750;
+    }
+
+    .legend-dot {
+      display: inline-block;
+      width: 13px;
+      height: 13px;
+      border-radius: 4px;
+      margin-right: 4px;
+      vertical-align: -1px;
+    }
+
+    .sample-area {
+      display: grid;
+      gap: 12px;
+    }
+
+    .sample-row {
+      min-height: 68px;
+      display: flex;
+      flex-wrap: wrap;
+      align-content: flex-start;
+      gap: 5px;
+      padding: 10px;
+      border-radius: 12px;
+      background: var(--slate-soft);
+      border: 1px dashed #cbd5e1;
+    }
+
+    .sample-chip {
+      width: 34px;
+      height: 34px;
+      border-radius: 9px;
+      font-size: 1rem;
+    }
+
+    .sample-chip.new {
+      outline: 3px solid #fbbf24;
+    }
+
+    .empty-sample {
+      color: #94a3b8;
+      font-weight: 800;
+      padding: 8px;
+    }
+
+    .stat-strip {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .stat-box {
+      min-width: 0;
+      padding: 10px;
+      border-radius: 12px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      text-align: center;
+    }
+
+    .stat-label {
+      display: block;
+      color: var(--muted);
+      font-size: 0.78rem;
+      font-weight: 800;
+      margin-bottom: 2px;
+    }
+
+    .stat-value {
+      color: var(--ink);
+      font-size: clamp(1.12rem, 2vw, 1.55rem);
+      font-weight: 950;
+    }
+
+    .formula-board {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .live-calc {
+      padding: 12px 14px;
+      border-radius: 12px;
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      overflow-x: auto;
+    }
+
+    .live-calc strong {
+      display: block;
+      margin-bottom: 8px;
+      color: #1d4ed8;
+    }
+
+    .live-calc .empty {
+      color: #64748b;
+      font-weight: 800;
+    }
+
+    .live-calc math {
+      font-size: clamp(1rem, 1.45vw, 1.24rem);
+    }
+
+    .formula-card {
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 12px;
+      background: #ffffff;
+    }
+
+    .formula-card strong {
+      display: block;
+      margin-bottom: 8px;
+      color: #334155;
+    }
+
+    math {
+      font-size: clamp(1.1rem, 2vw, 1.45rem);
+    }
+
+    .formula-note {
+      margin: 7px 0 0;
+      color: var(--muted);
+      font-size: 0.92rem;
+      line-height: 1.55;
+    }
+
+    .interpretation {
+      padding: 13px 14px;
+      border-radius: 12px;
+      background: var(--green-soft);
+      border: 1px solid #86efac;
+      color: #14532d;
+      font-size: 1rem;
+      font-weight: 750;
+      line-height: 1.65;
+    }
+
+    .chart-panel {
+      display: grid;
+      gap: 10px;
+    }
+
+    .chart-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: flex-start;
+      flex-wrap: wrap;
+    }
+
+    canvas {
+      width: 100%;
+      border: 1px solid #dbe3ef;
+      border-radius: 14px;
+      background: #ffffff;
+    }
+
+    .chart-note {
+      margin: 0;
+      font-size: 0.92rem;
+      color: var(--muted);
+      line-height: 1.55;
+    }
+
+    .key-line {
+      display: grid;
+      gap: 8px;
+      margin-top: 16px;
+    }
+
+    .key-card {
+      padding: 12px 14px;
+      border-radius: 12px;
+      background: var(--amber-soft);
+      border: 1px solid #fcd34d;
+      color: #78350f;
+      font-weight: 850;
+      line-height: 1.55;
+    }
+
+    @media (max-width: 1080px) {
+      .control-band,
+      .main-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .main-grid {
+        gap: 14px;
+      }
+    }
+
+    @media (max-width: 620px) {
+      .app-wrap {
+        width: min(100% - 16px, 1260px);
+        margin-top: 12px;
+      }
+
+      .control-band,
+      .panel {
+        padding: 12px;
+      }
+
+      .stat-strip,
+      .formula-board {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .sample-chip {
+        width: 30px;
+        height: 30px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="app-wrap">
+    <a class="back-link" href="../">← 확률과 통계</a>
+
+    <header class="app-hero">
+      <p class="eyebrow">확률과 통계 · 표본비율과 이항분포</p>
+      <h1>표본비율은 0과 1의 평균</h1>
+      <p>성공은 1, 실패는 0으로 보고 표본을 뽑습니다. 성공 횟수로 보면 이항분포이고, 그것을 n으로 나누면 표본비율의 분포가 됩니다.</p>
+    </header>
+
+    <section class="control-band" aria-label="실험 조작">
+      <div class="control-group">
+        <div class="range-head">
+          <label for="pSlider">모비율 p</label>
+          <span class="range-value" id="pLabel">0.40</span>
+        </div>
+        <input id="pSlider" type="range" min="0.05" max="0.95" step="0.05" value="0.40" />
+      </div>
+
+      <div class="control-group">
+        <div class="range-head">
+          <label for="nSlider">표본크기 n</label>
+          <span class="range-value" id="nLabel">20</span>
+        </div>
+        <input id="nSlider" type="range" min="5" max="60" step="1" value="20" />
+      </div>
+
+      <div class="control-group">
+        <div class="button-row" aria-label="실행 버튼">
+          <button class="primary" id="runOneBtn">1회 실행</button>
+          <button id="runTenBtn">10회</button>
+          <button id="runHundredBtn">100회</button>
+          <button class="success" id="autoBtn">자동 실행</button>
+          <button class="warning" id="pauseBtn" disabled>일시정지</button>
+          <button class="danger" id="resetBtn">초기화</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="main-grid">
+      <div class="panel">
+        <h2 class="panel-title">① 0과 1이 들어 있는 상자</h2>
+        <div class="box-grid" id="boxGrid" aria-label="모집단 상자"></div>
+        <div class="legend">
+          <span><span class="legend-dot success-cell"></span>성공 1</span>
+          <span><span class="legend-dot failure-cell"></span>실패 0</span>
+          <span id="boxSummary">100칸 중 성공 40칸</span>
+        </div>
+
+        <div class="key-line">
+          <div class="key-card">
+            상자에서 n개를 뽑아 1의 개수를 세면 성공 횟수 X가 되고, 1과 0을 평균 내면 표본비율 p̂가 됩니다.
+          </div>
+        </div>
+      </div>
+
+      <div class="panel sample-area">
+        <h2 class="panel-title">② 이번 표본과 계산</h2>
+        <div class="sample-row" id="sampleRow" aria-label="이번 표본의 0과 1"></div>
+
+        <div class="stat-strip">
+          <div class="stat-box">
+            <span class="stat-label">성공 횟수 X</span>
+            <span class="stat-value" id="currentX">—</span>
+          </div>
+          <div class="stat-box">
+            <span class="stat-label">표본크기 n</span>
+            <span class="stat-value" id="currentN">20</span>
+          </div>
+          <div class="stat-box">
+            <span class="stat-label">표본비율 p̂</span>
+            <span class="stat-value" id="currentPhat">—</span>
+          </div>
+          <div class="stat-box">
+            <span class="stat-label">누적 표본 수</span>
+            <span class="stat-value" id="totalSamples">0</span>
+          </div>
+        </div>
+
+        <div class="live-calc">
+          <strong>이번 표본의 평균 계산</strong>
+          <div id="liveFormula" class="empty">표본을 실행하면 0과 1의 평균 계산식이 나타납니다.</div>
+        </div>
+
+        <div class="formula-board">
+          <div class="formula-card">
+            <strong>0/1 평균으로 보기</strong>
+            <math display="block" aria-label="p hat equals sum of X_i over n">
+              <mover><mi>p</mi><mo>^</mo></mover>
+              <mo>=</mo>
+              <mfrac>
+                <mrow>
+                  <msub><mi>X</mi><mn>1</mn></msub>
+                  <mo>+</mo><mo>⋯</mo><mo>+</mo>
+                  <msub><mi>X</mi><mi>n</mi></msub>
+                </mrow>
+                <mi>n</mi>
+              </mfrac>
+            </math>
+            <p class="formula-note">각 Xi는 성공이면 1, 실패이면 0입니다.</p>
+          </div>
+          <div class="formula-card">
+            <strong>이항분포와 연결하기</strong>
+            <math display="block" aria-label="X follows binomial n p and p hat equals X over n">
+              <mi>X</mi><mo>∼</mo><mi>B</mi><mo stretchy="false">(</mo><mi>n</mi><mo>,</mo><mi>p</mi><mo stretchy="false">)</mo>
+              <mo>,</mo>
+              <mover><mi>p</mi><mo>^</mo></mover>
+              <mo>=</mo>
+              <mfrac><mi>X</mi><mi>n</mi></mfrac>
+            </math>
+            <p class="formula-note">같은 결과를 성공 횟수 눈금과 비율 눈금으로 바꿔 봅니다.</p>
+          </div>
+        </div>
+
+        <div class="interpretation" id="interpretation">
+          1회 실행을 누르면 표본 하나가 만들어집니다. 표본비율은 1의 개수를 n으로 나눈 값입니다.
+        </div>
+      </div>
+
+      <div class="panel chart-panel">
+        <div class="chart-head">
+          <div>
+            <h2 class="panel-title" id="chartTitle">③ 반복된 표본비율의 분포</h2>
+            <p class="chart-note" id="chartNote">막대는 실험 결과, 가는 선은 이항분포가 예측하는 모양입니다.</p>
+          </div>
+          <div class="view-toggle" aria-label="그래프 보기 전환">
+            <button class="toggle-btn active" id="ratioModeBtn">표본비율 보기</button>
+            <button class="toggle-btn" id="countModeBtn">성공 횟수 보기</button>
+          </div>
+        </div>
+        <canvas id="histogram" width="760" height="430" aria-label="반복 실험 히스토그램"></canvas>
+        <div class="stat-strip">
+          <div class="stat-box">
+            <span class="stat-label">p 기준선</span>
+            <span class="stat-value" id="pReference">0.40</span>
+          </div>
+          <div class="stat-box">
+            <span class="stat-label">np 기준선</span>
+            <span class="stat-value" id="npReference">8.0</span>
+          </div>
+          <div class="stat-box">
+            <span class="stat-label">p̂들의 평균</span>
+            <span class="stat-value" id="meanPhat">—</span>
+          </div>
+          <div class="stat-box">
+            <span class="stat-label">X들의 평균</span>
+            <span class="stat-value" id="meanX">—</span>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const state = {
+      p: 0.4,
+      n: 20,
+      viewMode: "ratio",
+      currentSample: [],
+      history: [],
+      autoTimer: null
+    };
+
+    const el = {
+      pSlider: document.getElementById("pSlider"),
+      nSlider: document.getElementById("nSlider"),
+      pLabel: document.getElementById("pLabel"),
+      nLabel: document.getElementById("nLabel"),
+      boxGrid: document.getElementById("boxGrid"),
+      boxSummary: document.getElementById("boxSummary"),
+      sampleRow: document.getElementById("sampleRow"),
+      currentX: document.getElementById("currentX"),
+      currentN: document.getElementById("currentN"),
+      currentPhat: document.getElementById("currentPhat"),
+      liveFormula: document.getElementById("liveFormula"),
+      totalSamples: document.getElementById("totalSamples"),
+      interpretation: document.getElementById("interpretation"),
+      histogram: document.getElementById("histogram"),
+      ratioModeBtn: document.getElementById("ratioModeBtn"),
+      countModeBtn: document.getElementById("countModeBtn"),
+      chartTitle: document.getElementById("chartTitle"),
+      chartNote: document.getElementById("chartNote"),
+      pReference: document.getElementById("pReference"),
+      npReference: document.getElementById("npReference"),
+      meanPhat: document.getElementById("meanPhat"),
+      meanX: document.getElementById("meanX"),
+      runOneBtn: document.getElementById("runOneBtn"),
+      runTenBtn: document.getElementById("runTenBtn"),
+      runHundredBtn: document.getElementById("runHundredBtn"),
+      autoBtn: document.getElementById("autoBtn"),
+      pauseBtn: document.getElementById("pauseBtn"),
+      resetBtn: document.getElementById("resetBtn")
+    };
+
+    function sampleOnce() {
+      const sample = [];
+      let x = 0;
+      for (let i = 0; i < state.n; i++) {
+        const value = Math.random() < state.p ? 1 : 0;
+        sample.push(value);
+        x += value;
+      }
+      state.currentSample = sample;
+      state.history.push(x);
+      if (state.history.length > 4000) {
+        state.history.splice(0, state.history.length - 4000);
+      }
+      render();
+    }
+
+    function runBatch(count) {
+      for (let i = 0; i < count; i++) {
+        sampleOnceWithoutRender();
+      }
+      render();
+    }
+
+    function sampleOnceWithoutRender() {
+      const sample = [];
+      let x = 0;
+      for (let i = 0; i < state.n; i++) {
+        const value = Math.random() < state.p ? 1 : 0;
+        sample.push(value);
+        x += value;
+      }
+      state.currentSample = sample;
+      state.history.push(x);
+      if (state.history.length > 4000) {
+        state.history.shift();
+      }
+    }
+
+    function setAutoRunning(running) {
+      if (running) {
+        if (state.autoTimer) return;
+        state.autoTimer = window.setInterval(() => runBatch(5), 180);
+        el.autoBtn.disabled = true;
+        el.pauseBtn.disabled = false;
+      } else {
+        if (state.autoTimer) {
+          window.clearInterval(state.autoTimer);
+          state.autoTimer = null;
+        }
+        el.autoBtn.disabled = false;
+        el.pauseBtn.disabled = true;
+      }
+    }
+
+    function resetExperiment(keepCurrentSample = false) {
+      setAutoRunning(false);
+      state.history = [];
+      if (!keepCurrentSample) state.currentSample = [];
+      render();
+    }
+
+    function binomialProbs(n, p) {
+      const probs = new Array(n + 1).fill(0);
+      if (p <= 0) {
+        probs[0] = 1;
+        return probs;
+      }
+      if (p >= 1) {
+        probs[n] = 1;
+        return probs;
+      }
+      probs[0] = Math.pow(1 - p, n);
+      for (let k = 0; k < n; k++) {
+        probs[k + 1] = probs[k] * ((n - k) / (k + 1)) * (p / (1 - p));
+      }
+      return probs;
+    }
+
+    function renderBox() {
+      const successCells = Math.round(state.p * 100);
+      el.boxGrid.innerHTML = "";
+      for (let i = 0; i < 100; i++) {
+        const cell = document.createElement("div");
+        cell.className = "box-cell " + (i < successCells ? "success-cell" : "failure-cell");
+        cell.textContent = i < successCells ? "1" : "0";
+        el.boxGrid.appendChild(cell);
+      }
+      el.boxSummary.textContent = `100칸 중 성공 ${successCells}칸`;
+    }
+
+    function renderSample() {
+      el.sampleRow.innerHTML = "";
+      if (state.currentSample.length === 0) {
+        const empty = document.createElement("div");
+        empty.className = "empty-sample";
+        empty.textContent = "아직 뽑은 표본이 없습니다.";
+        el.sampleRow.appendChild(empty);
+        return;
+      }
+
+      state.currentSample.forEach((value, index) => {
+        const chip = document.createElement("div");
+        chip.className = "sample-chip " + (value === 1 ? "success-cell" : "failure-cell");
+        if (index === state.currentSample.length - 1) chip.classList.add("new");
+        chip.textContent = value;
+        chip.title = value === 1 ? "성공" : "실패";
+        el.sampleRow.appendChild(chip);
+      });
+    }
+
+    function renderStats() {
+      const x = state.currentSample.reduce((sum, value) => sum + value, 0);
+      const hasSample = state.currentSample.length > 0;
+      const phat = hasSample ? x / state.n : null;
+      const total = state.history.length;
+
+      el.currentX.textContent = hasSample ? x : "—";
+      el.currentN.textContent = state.n;
+      el.currentPhat.textContent = hasSample ? phat.toFixed(3) : "—";
+      el.totalSamples.textContent = total.toLocaleString("ko-KR");
+      el.pReference.textContent = state.p.toFixed(2);
+      el.npReference.textContent = (state.n * state.p).toFixed(1);
+
+      if (total === 0) {
+        el.meanPhat.textContent = "—";
+        el.meanX.textContent = "—";
+      } else {
+        const sumX = state.history.reduce((sum, value) => sum + value, 0);
+        el.meanX.textContent = (sumX / total).toFixed(2);
+        el.meanPhat.textContent = (sumX / total / state.n).toFixed(3);
+      }
+    }
+
+    function renderLiveFormula() {
+      if (state.currentSample.length === 0) {
+        el.liveFormula.className = "empty";
+        el.liveFormula.textContent = "표본을 실행하면 0과 1의 평균 계산식이 나타납니다.";
+        return;
+      }
+
+      const x = state.currentSample.reduce((sum, value) => sum + value, 0);
+      const phat = x / state.n;
+      const mathTerms = values => values.map(value => `<mn>${value}</mn>`).join("<mo>+</mo>");
+      const fullSum = state.currentSample.length <= 14
+        ? mathTerms(state.currentSample)
+        : `${mathTerms(state.currentSample.slice(0, 6))}<mo>+</mo><mo>⋯</mo><mo>+</mo>${mathTerms(state.currentSample.slice(-4))}`;
+
+      el.liveFormula.className = "";
+      el.liveFormula.innerHTML = `
+        <math display="block" aria-label="current sample mean equals success count over n">
+          <mover><mi>p</mi><mo>^</mo></mover>
+          <mo>=</mo>
+          <mfrac><mrow>${fullSum}</mrow><mn>${state.n}</mn></mfrac>
+          <mo>=</mo>
+          <mfrac><mn>${x}</mn><mn>${state.n}</mn></mfrac>
+          <mo>=</mo>
+          <mn>${phat.toFixed(3)}</mn>
+        </math>
+        <p class="formula-note">성공 ${x}개를 n=${state.n}으로 나누면 이번 표본비율이 됩니다.</p>
+      `;
+    }
+
+    function renderInterpretation() {
+      if (state.history.length === 0) {
+        el.interpretation.textContent = "1회 실행을 누르면 표본 하나가 만들어집니다. 표본비율은 1의 개수를 n으로 나눈 값입니다.";
+        return;
+      }
+
+      const x = state.history[state.history.length - 1];
+      const phat = x / state.n;
+      const total = state.history.length;
+      const sumX = state.history.reduce((sum, value) => sum + value, 0);
+      const meanPhat = sumX / total / state.n;
+
+      if (state.viewMode === "ratio") {
+        el.interpretation.innerHTML =
+          `이번 표본은 성공 ${x}개이므로 p̂ = ${x}/${state.n} = <strong>${phat.toFixed(3)}</strong>입니다. ` +
+          `반복된 p̂들의 평균은 <strong>${meanPhat.toFixed(3)}</strong>이고, 기준선 p = ${state.p.toFixed(2)} 근처로 움직입니다.`;
+      } else {
+        el.interpretation.innerHTML =
+          `같은 결과를 성공 횟수로 보면 X = ${x}입니다. 성공 횟수 X는 B(n,p)를 따르고, ` +
+          `그 값을 n으로 나누면 p̂ = X/n이 됩니다.`;
+      }
+    }
+
+    function drawHistogram() {
+      const canvas = el.histogram;
+      const ctx = canvas.getContext("2d");
+      const width = canvas.width;
+      const height = canvas.height;
+      const pad = { left: 52, right: 22, top: 34, bottom: 54 };
+      const plotW = width - pad.left - pad.right;
+      const plotH = height - pad.top - pad.bottom;
+      const n = state.n;
+      const probs = binomialProbs(n, state.p);
+      const frequencies = new Array(n + 1).fill(0);
+      state.history.forEach(x => {
+        frequencies[x] += 1;
+      });
+
+      ctx.clearRect(0, 0, width, height);
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, width, height);
+
+      const maxObserved = state.history.length
+        ? Math.max(...frequencies.map(v => v / state.history.length))
+        : 0;
+      const maxTheory = Math.max(...probs);
+      const yMax = Math.max(maxObserved, maxTheory, 0.12) * 1.18;
+
+      drawAxes(ctx, pad, plotW, plotH, yMax);
+
+      const barW = plotW / (n + 1);
+      for (let k = 0; k <= n; k++) {
+        const x = pad.left + k * barW;
+        const observed = state.history.length ? frequencies[k] / state.history.length : 0;
+        const theory = probs[k];
+
+        if (observed > 0) {
+          const barH = (observed / yMax) * plotH;
+          ctx.fillStyle = state.viewMode === "ratio" ? "#93c5fd" : "#bbf7d0";
+          ctx.strokeStyle = state.viewMode === "ratio" ? "#2563eb" : "#15803d";
+          ctx.lineWidth = 1;
+          ctx.fillRect(x + 1, pad.top + plotH - barH, Math.max(1, barW - 2), barH);
+          ctx.strokeRect(x + 1, pad.top + plotH - barH, Math.max(1, barW - 2), barH);
+        }
+
+        const theoryH = (theory / yMax) * plotH;
+        ctx.fillStyle = "#f59e0b";
+        ctx.beginPath();
+        ctx.arc(x + barW / 2, pad.top + plotH - theoryH, Math.max(2, Math.min(4, barW / 4)), 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      drawReferenceLine(ctx, pad, plotW, plotH);
+      drawLabels(ctx, pad, plotW, plotH, n);
+
+      if (state.history.length === 0) {
+        ctx.fillStyle = "#64748b";
+        ctx.font = "26px system-ui, sans-serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText("반복 실행하면 분포가 쌓입니다.", width / 2, height / 2);
+      }
+    }
+
+    function drawAxes(ctx, pad, plotW, plotH, yMax) {
+      ctx.strokeStyle = "#cbd5e1";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(pad.left, pad.top);
+      ctx.lineTo(pad.left, pad.top + plotH);
+      ctx.lineTo(pad.left + plotW, pad.top + plotH);
+      ctx.stroke();
+
+      ctx.font = "18px system-ui, sans-serif";
+      ctx.fillStyle = "#64748b";
+      ctx.textAlign = "right";
+      ctx.textBaseline = "middle";
+      for (let i = 1; i <= 4; i++) {
+        const value = yMax * i / 4;
+        const y = pad.top + plotH - (value / yMax) * plotH;
+        ctx.strokeStyle = "#e2e8f0";
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(pad.left, y);
+        ctx.lineTo(pad.left + plotW, y);
+        ctx.stroke();
+        ctx.fillText(`${Math.round(value * 100)}%`, pad.left - 8, y);
+      }
+    }
+
+    function drawReferenceLine(ctx, pad, plotW, plotH) {
+      const n = state.n;
+      const rawPosition = state.viewMode === "ratio" ? state.p : state.n * state.p;
+      const categoryPosition = state.viewMode === "ratio" ? rawPosition * n : rawPosition;
+      const x = pad.left + ((categoryPosition + 0.5) / (n + 1)) * plotW;
+
+      ctx.strokeStyle = "#dc2626";
+      ctx.lineWidth = 3;
+      ctx.setLineDash([8, 6]);
+      ctx.beginPath();
+      ctx.moveTo(x, pad.top - 8);
+      ctx.lineTo(x, pad.top + plotH);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      ctx.fillStyle = "#dc2626";
+      ctx.font = "bold 20px system-ui, sans-serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "bottom";
+      ctx.fillText(state.viewMode === "ratio" ? "p" : "np", x, pad.top - 10);
+    }
+
+    function drawLabels(ctx, pad, plotW, plotH, n) {
+      const barW = plotW / (n + 1);
+      const step = n <= 20 ? 2 : n <= 40 ? 5 : 10;
+      ctx.fillStyle = "#475569";
+      ctx.font = "18px system-ui, sans-serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "top";
+
+      for (let k = 0; k <= n; k += step) {
+        const x = pad.left + k * barW + barW / 2;
+        const label = state.viewMode === "ratio" ? (k / n).toFixed(2) : String(k);
+        ctx.fillText(label, x, pad.top + plotH + 12);
+      }
+
+      ctx.font = "bold 20px system-ui, sans-serif";
+      ctx.fillText(
+        state.viewMode === "ratio" ? "표본비율 p̂ = X/n" : "성공 횟수 X",
+        pad.left + plotW / 2,
+        pad.top + plotH + 34
+      );
+
+      ctx.textAlign = "left";
+      ctx.textBaseline = "top";
+      ctx.fillStyle = "#2563eb";
+      ctx.fillText("실험 막대", pad.left + 8, pad.top + 8);
+      ctx.fillStyle = "#f59e0b";
+      ctx.fillText("이항분포 예측", pad.left + 104, pad.top + 8);
+    }
+
+    function renderChartText() {
+      const ratio = state.viewMode === "ratio";
+      el.ratioModeBtn.classList.toggle("active", ratio);
+      el.countModeBtn.classList.toggle("active", !ratio);
+      el.chartTitle.textContent = ratio ? "③ 반복된 표본비율의 분포" : "③ 성공 횟수 X의 분포";
+      el.chartNote.textContent = ratio
+        ? "이항분포의 성공 횟수 X를 n으로 나누어 비율 눈금으로 본 화면입니다."
+        : "같은 실험 결과를 성공 횟수 X 눈금으로 보면 이항분포 B(n,p)와 직접 연결됩니다.";
+    }
+
+    function render() {
+      el.pLabel.textContent = state.p.toFixed(2);
+      el.nLabel.textContent = state.n;
+      renderBox();
+      renderSample();
+      renderStats();
+      renderLiveFormula();
+      renderInterpretation();
+      renderChartText();
+      drawHistogram();
+    }
+
+    function handleParameterChange() {
+      state.p = Number(el.pSlider.value);
+      state.n = Number(el.nSlider.value);
+      resetExperiment(false);
+    }
+
+    el.pSlider.addEventListener("input", handleParameterChange);
+    el.nSlider.addEventListener("input", handleParameterChange);
+    el.runOneBtn.addEventListener("click", sampleOnce);
+    el.runTenBtn.addEventListener("click", () => runBatch(10));
+    el.runHundredBtn.addEventListener("click", () => runBatch(100));
+    el.autoBtn.addEventListener("click", () => setAutoRunning(true));
+    el.pauseBtn.addEventListener("click", () => setAutoRunning(false));
+    el.resetBtn.addEventListener("click", () => resetExperiment(false));
+    el.ratioModeBtn.addEventListener("click", () => {
+      state.viewMode = "ratio";
+      render();
+    });
+    el.countModeBtn.addEventListener("click", () => {
+      state.viewMode = "count";
+      render();
+    });
+
+    render();
+  </script>
+</body>
+</html>
