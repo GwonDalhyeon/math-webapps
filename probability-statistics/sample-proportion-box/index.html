@@ -189,6 +189,13 @@
       border-radius: 6px;
       font-size: 0.78rem;
       border: 1px solid rgba(15, 23, 42, 0.08);
+      transition: transform 0.18s ease, box-shadow 0.18s ease, opacity 0.18s ease;
+    }
+
+    .box-cell.highlighted {
+      transform: scale(1.22);
+      box-shadow: 0 0 0 3px #fbbf24, 0 0 12px rgba(251, 191, 36, 0.7);
+      z-index: 1;
     }
 
     .success-cell {
@@ -245,6 +252,13 @@
 
     .sample-chip.new {
       outline: 3px solid #fbbf24;
+      animation: chip-pop 0.22s ease;
+    }
+
+    @keyframes chip-pop {
+      0% { opacity: 0; transform: scale(0.4); }
+      70% { transform: scale(1.16); }
+      100% { opacity: 1; transform: scale(1); }
     }
 
     .empty-sample {
@@ -583,8 +597,12 @@
       viewMode: "ratio",
       currentSample: [],
       history: [],
-      autoTimer: null
+      autoTimer: null,
+      isDrawing: false,
+      drawToken: 0
     };
+
+    const sleep = ms => new Promise(resolve => window.setTimeout(resolve, ms));
 
     const el = {
       pSlider: document.getElementById("pSlider"),
@@ -617,23 +635,80 @@
       resetBtn: document.getElementById("resetBtn")
     };
 
-    function sampleOnce() {
-      const sample = [];
-      let x = 0;
-      for (let i = 0; i < state.n; i++) {
-        const value = Math.random() < state.p ? 1 : 0;
-        sample.push(value);
-        x += value;
-      }
-      state.currentSample = sample;
+    function setDrawingState(isDrawing) {
+      state.isDrawing = isDrawing;
+      el.runOneBtn.disabled = isDrawing;
+      el.runTenBtn.disabled = isDrawing;
+      el.runHundredBtn.disabled = isDrawing;
+      el.autoBtn.disabled = isDrawing || Boolean(state.autoTimer);
+      el.pauseBtn.disabled = isDrawing || !state.autoTimer;
+      el.resetBtn.disabled = false;
+      el.pSlider.disabled = isDrawing;
+      el.nSlider.disabled = isDrawing;
+    }
+
+    function makeRandomValue() {
+      return Math.random() < state.p ? 1 : 0;
+    }
+
+    function saveSampleResult(sample) {
+      const x = sample.reduce((sum, value) => sum + value, 0);
       state.history.push(x);
       if (state.history.length > 4000) {
         state.history.splice(0, state.history.length - 4000);
       }
+      return x;
+    }
+
+    async function sampleOnce() {
+      if (state.isDrawing) return;
+      setAutoRunning(false);
+      const token = ++state.drawToken;
+      state.currentSample = [];
+      setDrawingState(true);
+      render();
+
+      for (let i = 0; i < state.n; i++) {
+        if (token !== state.drawToken) return;
+        const value = makeRandomValue();
+        await animateOneDraw(value, token);
+        if (token !== state.drawToken) return;
+        state.currentSample.push(value);
+        renderSample();
+        renderStats();
+        renderLiveFormula();
+        renderInterpretation();
+        await sleep(70);
+      }
+
+      saveSampleResult(state.currentSample);
+      render();
+      if (token === state.drawToken) setDrawingState(false);
+    }
+
+    async function animateOneDraw(value, token) {
+      const selector = value === 1 ? ".box-cell.success-cell" : ".box-cell.failure-cell";
+      const cells = Array.from(el.boxGrid.querySelectorAll(selector));
+      const cell = cells[Math.floor(Math.random() * cells.length)];
+      if (cell) cell.classList.add("highlighted");
+      await sleep(105);
+      if (cell) cell.classList.remove("highlighted");
+      if (token !== state.drawToken) return;
+      await sleep(45);
+    }
+
+    function sampleOnceWithoutAnimation() {
+      const sample = [];
+      for (let i = 0; i < state.n; i++) {
+        sample.push(makeRandomValue());
+      }
+      state.currentSample = sample;
+      saveSampleResult(sample);
       render();
     }
 
     function runBatch(count) {
+      if (state.isDrawing) return;
       for (let i = 0; i < count; i++) {
         sampleOnceWithoutRender();
       }
@@ -642,36 +717,31 @@
 
     function sampleOnceWithoutRender() {
       const sample = [];
-      let x = 0;
       for (let i = 0; i < state.n; i++) {
-        const value = Math.random() < state.p ? 1 : 0;
+        const value = makeRandomValue();
         sample.push(value);
-        x += value;
       }
       state.currentSample = sample;
-      state.history.push(x);
-      if (state.history.length > 4000) {
-        state.history.shift();
-      }
+      saveSampleResult(sample);
     }
 
     function setAutoRunning(running) {
       if (running) {
+        if (state.isDrawing) return;
         if (state.autoTimer) return;
         state.autoTimer = window.setInterval(() => runBatch(5), 180);
-        el.autoBtn.disabled = true;
-        el.pauseBtn.disabled = false;
       } else {
         if (state.autoTimer) {
           window.clearInterval(state.autoTimer);
           state.autoTimer = null;
         }
-        el.autoBtn.disabled = false;
-        el.pauseBtn.disabled = true;
       }
+      setDrawingState(state.isDrawing);
     }
 
     function resetExperiment(keepCurrentSample = false) {
+      state.drawToken++;
+      state.isDrawing = false;
       setAutoRunning(false);
       state.history = [];
       if (!keepCurrentSample) state.currentSample = [];
@@ -702,6 +772,7 @@
         const cell = document.createElement("div");
         cell.className = "box-cell " + (i < successCells ? "success-cell" : "failure-cell");
         cell.textContent = i < successCells ? "1" : "0";
+        cell.title = i < successCells ? "성공 1" : "실패 0";
         el.boxGrid.appendChild(cell);
       }
       el.boxSummary.textContent = `100칸 중 성공 ${successCells}칸`;
@@ -730,12 +801,13 @@
     function renderStats() {
       const x = state.currentSample.reduce((sum, value) => sum + value, 0);
       const hasSample = state.currentSample.length > 0;
-      const phat = hasSample ? x / state.n : null;
+      const complete = state.currentSample.length === state.n;
+      const phat = complete ? x / state.n : null;
       const total = state.history.length;
 
-      el.currentX.textContent = hasSample ? x : "—";
+      el.currentX.textContent = hasSample ? `${x}개` : "—";
       el.currentN.textContent = state.n;
-      el.currentPhat.textContent = hasSample ? phat.toFixed(3) : "—";
+      el.currentPhat.textContent = complete ? phat.toFixed(3) : (hasSample ? "뽑는 중" : "—");
       el.totalSamples.textContent = total.toLocaleString("ko-KR");
       el.pReference.textContent = state.p.toFixed(2);
       el.npReference.textContent = (state.n * state.p).toFixed(1);
@@ -758,13 +830,20 @@
       }
 
       const x = state.currentSample.reduce((sum, value) => sum + value, 0);
-      const phat = x / state.n;
+      const complete = state.currentSample.length === state.n;
+      const phat = complete ? x / state.n : null;
       const mathTerms = values => values.map(value => `<mn>${value}</mn>`).join("<mo>+</mo>");
       const fullSum = state.currentSample.length <= 10
         ? mathTerms(state.currentSample)
         : `${mathTerms(state.currentSample.slice(0, 4))}<mo>+</mo><mo>⋯</mo><mo>+</mo>${mathTerms(state.currentSample.slice(-3))}`;
 
       el.liveFormula.className = "";
+      if (!complete) {
+        el.liveFormula.innerHTML = `
+          <p class="formula-note">현재 ${state.currentSample.length}/${state.n}개를 뽑았습니다. 지금까지 성공은 ${x}개입니다.</p>
+        `;
+        return;
+      }
       el.liveFormula.innerHTML = `
         <math display="block" aria-label="current sample mean equals success count over n">
           <mover><mi>p</mi><mo>^</mo></mover>
@@ -780,6 +859,12 @@
     }
 
     function renderInterpretation() {
+      if (state.isDrawing && state.currentSample.length > 0 && state.currentSample.length < state.n) {
+        const x = state.currentSample.reduce((sum, value) => sum + value, 0);
+        el.interpretation.textContent =
+          `상자에서 0 또는 1이 하나씩 표본으로 들어오고 있습니다. 현재 ${state.currentSample.length}개 중 성공은 ${x}개입니다.`;
+        return;
+      }
       if (state.history.length === 0) {
         el.interpretation.textContent = "1회 실행을 누르면 표본 하나가 만들어집니다. 표본비율은 1의 개수를 n으로 나눈 값입니다.";
         return;
