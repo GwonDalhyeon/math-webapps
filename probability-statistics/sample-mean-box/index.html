@@ -162,7 +162,34 @@
 
     /* ── 계산판 ── */
     .calc-empty { font-size: 13px; color: #9ca3af; text-align: center; padding: 18px 0; }
-    .calc-body  { font-size: 14px; color: #111827; line-height: 2; }
+    .calc-body  { font-size: 14px; color: #111827; line-height: 1.55; }
+    .calc-summary-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+    .calc-summary-box {
+      background: #f9fafb;
+      border: 1px solid #e5e7eb;
+      border-radius: 10px;
+      padding: 8px 9px;
+      text-align: center;
+    }
+    .calc-summary-label {
+      display: block;
+      font-size: 11px;
+      color: #6b7280;
+      margin-bottom: 2px;
+    }
+    .calc-summary-value {
+      display: block;
+      font-size: 18px;
+      font-weight: 800;
+      color: #111827;
+    }
+    .calc-summary-value.accent { color: #ea580c; }
+    .calc-summary-value.compare { color: #0891b2; }
     .math-formula {
       display: block;
       margin: 4px 0 8px;
@@ -170,10 +197,10 @@
       border-radius: 10px;
       background: #fff7ed;
       border: 1px solid #fed7aa;
-      overflow-x: auto;
+      text-align: center;
     }
     .math-formula math {
-      font-size: clamp(1rem, 1.8vw, 1.24rem);
+      font-size: clamp(1rem, 1.6vw, 1.18rem);
     }
     .math-inline {
       display: inline-flex;
@@ -509,25 +536,39 @@
 
   // ─── 계산판 ───
   function showCalcArea(xbar, sum) {
-    const vals = currentVals;
-    const mathTerms = values => values.map(value => `<mn>${value}</mn>`).join('<mo>+</mo>');
-    const formula = n <= 6
-      ? mathTerms(vals)
-      : `${mathTerms(vals.slice(0, 4))}<mo>+</mo><mo>⋯</mo><mo>+</mo>${mathTerms(vals.slice(-2))}`;
+    const diff = xbar - mu;
+    const diffText = (diff >= 0 ? '+' : '') + diff.toFixed(1);
     calcArea.innerHTML = `
       <div class="calc-body">
+        <div class="calc-summary-grid" aria-label="이번 표본평균 계산 요약">
+          <div class="calc-summary-box">
+            <span class="calc-summary-label">표본값 합계</span>
+            <span class="calc-summary-value">${sum}</span>
+          </div>
+          <div class="calc-summary-box">
+            <span class="calc-summary-label">표본 크기 n</span>
+            <span class="calc-summary-value">${n}</span>
+          </div>
+          <div class="calc-summary-box">
+            <span class="calc-summary-label">이번 표본평균 x̄</span>
+            <span class="calc-summary-value accent calc-xbar-big" id="xbar-big">${xbar.toFixed(1)}</span>
+          </div>
+          <div class="calc-summary-box">
+            <span class="calc-summary-label">μ와 차이</span>
+            <span class="calc-summary-value compare">${diffText}</span>
+          </div>
+        </div>
         <span class="math-formula">
           <math display="block" aria-label="sample mean calculation">
             <mover><mi>x</mi><mo>¯</mo></mover>
             <mo>=</mo>
-            <mfrac><mrow>${formula}</mrow><mn>${n}</mn></mfrac>
-            <mo>=</mo>
             <mfrac><mn>${sum}</mn><mn>${n}</mn></mfrac>
+            <mo>=</mo>
+            <mn>${xbar.toFixed(1)}</mn>
           </math>
         </span>
-        이번 표본평균 <span class="calc-xbar-big" id="xbar-big">${xbar.toFixed(1)}</span>
       </div>
-      <p class="calc-hint">이 값 하나가 기록판에 추가됩니다 →</p>`;
+      <p class="calc-hint">표본값은 왼쪽 바구니에 있고, 계산판은 합계와 평균 결과만 요약합니다.</p>`;
   }
 
   function clearCalcArea() {
