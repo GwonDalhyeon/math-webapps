@@ -760,9 +760,9 @@
       const x = state.currentSample.reduce((sum, value) => sum + value, 0);
       const phat = x / state.n;
       const mathTerms = values => values.map(value => `<mn>${value}</mn>`).join("<mo>+</mo>");
-      const fullSum = state.currentSample.length <= 14
+      const fullSum = state.currentSample.length <= 10
         ? mathTerms(state.currentSample)
-        : `${mathTerms(state.currentSample.slice(0, 6))}<mo>+</mo><mo>⋯</mo><mo>+</mo>${mathTerms(state.currentSample.slice(-4))}`;
+        : `${mathTerms(state.currentSample.slice(0, 4))}<mo>+</mo><mo>⋯</mo><mo>+</mo>${mathTerms(state.currentSample.slice(-3))}`;
 
       el.liveFormula.className = "";
       el.liveFormula.innerHTML = `
