@@ -1,0 +1,896 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="회전체의 원판 단면적을 한 장씩 누적하여 부피, 리만 합, 정적분, V'=A의 관계를 탐구하는 미적분 웹앱입니다." />
+  <title>단면적을 누적해 부피 만들기</title>
+  <link rel="stylesheet" href="../../assets/common.css" />
+  <style>
+    :root {
+      --bg: #f3f6fa;
+      --panel: #ffffff;
+      --ink: #172033;
+      --muted: #5b687b;
+      --line: #d7dee9;
+      --grid: #e8edf4;
+      --blue: #1769aa;
+      --blue-soft: #dcecf8;
+      --teal: #087f6d;
+      --teal-soft: #d8f1eb;
+      --accent: #d94f28;
+      --accent-soft: #ffe2d7;
+      --shadow: 0 7px 22px rgba(28, 43, 64, 0.08);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: linear-gradient(180deg, #fbfcfe 0, var(--bg) 100%);
+      font-family: "Malgun Gothic", "Apple SD Gothic Neo", system-ui, sans-serif;
+    }
+
+    button, select, input { font: inherit; }
+
+    .wrap {
+      width: min(1240px, calc(100% - 24px));
+      margin: 0 auto;
+      padding: 14px 0 28px;
+    }
+
+    .back-link {
+      margin: 0 0 8px;
+      font-size: 14px;
+    }
+
+    .hero {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      align-items: end;
+      margin-bottom: 10px;
+    }
+
+    h1 {
+      margin: 0 0 4px;
+      font-size: clamp(26px, 3.3vw, 40px);
+      line-height: 1.15;
+    }
+
+    .hero p {
+      margin: 0;
+      max-width: 760px;
+      color: var(--muted);
+      font-size: 15px;
+      line-height: 1.45;
+    }
+
+    .concept-chip {
+      flex: 0 0 auto;
+      padding: 9px 12px;
+      border: 1px solid #bcd5e8;
+      border-radius: 10px;
+      background: #edf7ff;
+      color: #174d78;
+      font-size: 15px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .panel {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: var(--panel);
+      box-shadow: var(--shadow);
+    }
+
+    .controls {
+      display: grid;
+      grid-template-columns: minmax(190px, 1.35fr) minmax(180px, 1fr) minmax(180px, 1fr) minmax(310px, 1.5fr);
+      gap: 10px 14px;
+      align-items: end;
+      padding: 11px 14px;
+      margin-bottom: 10px;
+    }
+
+    .control {
+      display: grid;
+      gap: 5px;
+      min-width: 0;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .range-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      align-items: baseline;
+    }
+
+    .range-value {
+      color: var(--ink);
+      font-size: 17px;
+      font-weight: 900;
+    }
+
+    select, button {
+      min-height: 39px;
+      border: 1px solid #bdc8d6;
+      border-radius: 8px;
+      color: var(--ink);
+      background: #fff;
+    }
+
+    select { width: 100%; padding: 0 10px; }
+
+    input[type="range"] {
+      width: 100%;
+      min-height: 26px;
+      margin: 0;
+      accent-color: var(--accent);
+    }
+
+    .buttons {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 6px;
+    }
+
+    button {
+      padding: 0 8px;
+      cursor: pointer;
+      font-weight: 800;
+    }
+
+    button:hover { border-color: var(--blue); }
+    button:focus-visible, select:focus-visible, input:focus-visible, [tabindex="0"]:focus-visible {
+      outline: 3px solid rgba(23, 105, 170, 0.35);
+      outline-offset: 2px;
+    }
+
+    button.primary {
+      border-color: var(--teal);
+      color: #fff;
+      background: var(--teal);
+    }
+
+    button.pause {
+      border-color: #a7492e;
+      color: #8d341c;
+      background: #fff5f1;
+    }
+
+    .visual-grid {
+      display: grid;
+      grid-template-columns: 1.15fr 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .viz {
+      min-width: 0;
+      overflow: hidden;
+    }
+
+    .panel-title {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      align-items: center;
+      min-height: 39px;
+      padding: 8px 11px;
+      border-bottom: 1px solid var(--line);
+      background: #fafbfd;
+      font-size: 14px;
+      font-weight: 900;
+    }
+
+    .panel-title small {
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    svg {
+      display: block;
+      width: 100%;
+      height: 300px;
+      touch-action: manipulation;
+    }
+
+    .svg-label {
+      fill: #4a596e;
+      font: 12px "Malgun Gothic", system-ui, sans-serif;
+    }
+
+    .svg-small {
+      fill: #69768a;
+      font: 10px "Malgun Gothic", system-ui, sans-serif;
+    }
+
+    .selectable { cursor: pointer; }
+    .selectable:hover { filter: brightness(0.95); }
+
+    .result-strip {
+      display: grid;
+      grid-template-columns: 1.05fr 1.05fr 1.15fr 1.75fr;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .metric {
+      min-width: 0;
+      padding: 10px 12px;
+    }
+
+    .metric-label {
+      margin-bottom: 3px;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 800;
+    }
+
+    .metric-value {
+      font-size: clamp(17px, 2vw, 23px);
+      font-weight: 900;
+      line-height: 1.25;
+    }
+
+    .metric-note {
+      margin-top: 2px;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.35;
+    }
+
+    .selected-metric {
+      border-color: #efaa93;
+      background: var(--accent-soft);
+    }
+
+    .selected-metric .metric-value { color: #a93618; }
+
+    .interpret {
+      display: grid;
+      grid-template-columns: minmax(0, 1.35fr) minmax(330px, 1fr);
+      gap: 10px;
+      align-items: stretch;
+    }
+
+    .reading {
+      padding: 11px 14px;
+      border-left: 5px solid var(--teal);
+      font-size: 14px;
+      line-height: 1.55;
+    }
+
+    .reading strong { color: #086654; }
+
+    .formula-flow {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      justify-content: center;
+      flex-wrap: wrap;
+      padding: 9px 12px;
+      overflow-x: auto;
+      font-size: 16px;
+      font-weight: 800;
+    }
+
+    .formula-flow .arrow { color: var(--muted); }
+    .formula-flow math { font-size: 1.02em; }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    @media (max-width: 980px) {
+      .controls {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+      .control.buttons-control { grid-column: 1 / -1; }
+      .visual-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+      .solid-panel { grid-column: 1 / -1; }
+      .solid-panel svg { height: 280px; }
+      .result-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+
+    @media (max-width: 700px) {
+      .wrap { width: min(100% - 16px, 1240px); }
+      .hero { display: block; }
+      .concept-chip { display: inline-block; margin-top: 8px; white-space: normal; }
+      .controls { grid-template-columns: 1fr; }
+      .control.buttons-control { grid-column: auto; }
+      .buttons { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .visual-grid { grid-template-columns: 1fr; }
+      .solid-panel { grid-column: auto; }
+      svg, .solid-panel svg { height: 280px; }
+      .result-strip, .interpret { grid-template-columns: 1fr; }
+      .formula-flow { justify-content: flex-start; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      * { scroll-behavior: auto !important; }
+    }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <a class="back-link" href="../">← 미적분 웹앱</a>
+
+    <header class="hero">
+      <div>
+        <h1>단면적을 누적해 부피 만들기</h1>
+        <p>함수 <b>y = f(x)</b>를 x축 둘레로 회전합니다. 원판 한 장의 부피를 더해 가며 단면적, 리만 합, 누적부피의 관계를 읽어 보세요.</p>
+      </div>
+      <div class="concept-chip">
+        <math aria-label="A of x equals pi times f of x squared">
+          <mi>A</mi><mo>(</mo><mi>x</mi><mo>)</mo><mo>=</mo><mi>π</mi><mo>⁢</mo><msup><mrow><mo>[</mo><mi>f</mi><mo>(</mo><mi>x</mi><mo>)</mo><mo>]</mo></mrow><mn>2</mn></msup>
+        </math>
+      </div>
+    </header>
+
+    <section class="panel controls" aria-label="조작 패널">
+      <label class="control">
+        함수 예시
+        <select id="functionSelect">
+          <option value="sqrt" selected>f(x) = √x, 0 ≤ x ≤ 3 (포물면)</option>
+          <option value="linear">f(x) = 1 + x/2, 0 ≤ x ≤ 2</option>
+          <option value="sphere">f(x) = √(4 − x²), 0 ≤ x ≤ 2 (반구)</option>
+        </select>
+      </label>
+
+      <label class="control">
+        <span class="range-head"><span>분할 수 n</span><output class="range-value" id="nValue">12</output></span>
+        <input id="nSlider" type="range" min="4" max="30" step="1" value="12" />
+      </label>
+
+      <label class="control">
+        <span class="range-head"><span>선택 조각 k</span><output class="range-value" id="kValue">1</output></span>
+        <input id="kSlider" type="range" min="1" max="12" step="1" value="1" />
+      </label>
+
+      <div class="control buttons-control">
+        누적 실행
+        <div class="buttons">
+          <button id="stepButton" type="button">+ 한 장</button>
+          <button id="autoButton" class="primary" type="button" aria-pressed="false">자동 누적</button>
+          <button id="pauseButton" class="pause" type="button">일시정지</button>
+          <button id="resetButton" type="button">초기화</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="visual-grid" aria-label="연결된 시각화">
+      <article class="panel viz solid-panel">
+        <div class="panel-title">
+          <span>① 회전체와 원판</span>
+          <small>원판을 클릭해 k 선택</small>
+        </div>
+        <svg id="solidSvg" viewBox="0 0 420 300" role="group" aria-label="함수를 회전해 만든 입체와 선택 가능한 원판 단면"></svg>
+      </article>
+
+      <article class="panel viz">
+        <div class="panel-title">
+          <span>② 단면적 A(x)</span>
+          <small>막대 높이 = 원판 넓이(단위²)</small>
+        </div>
+        <svg id="areaSvg" viewBox="0 0 360 300" role="group" aria-label="단면적 함수와 선택 가능한 원판 단면적 막대 그래프"></svg>
+      </article>
+
+      <article class="panel viz">
+        <div class="panel-title">
+          <span>③ 누적부피 V(x)</span>
+          <small>기울기 V′(x) = A(x)</small>
+        </div>
+        <svg id="volumeSvg" viewBox="0 0 360 300" role="group" aria-label="선택 가능한 원판 부피 점과 누적부피 그래프"></svg>
+      </article>
+    </section>
+
+    <section class="result-strip" aria-label="현재 계산 결과">
+      <div class="panel metric selected-metric">
+        <div class="metric-label">선택한 k번째 항</div>
+        <div class="metric-value" id="termValue">—</div>
+        <div class="metric-note" id="termNote">—</div>
+      </div>
+      <div class="panel metric">
+        <div class="metric-label">현재 누적 Vₘ</div>
+        <div class="metric-value" id="sumValue">0</div>
+        <div class="metric-note" id="sumNote">m = 0장 누적</div>
+      </div>
+      <div class="panel metric">
+        <div class="metric-label">전체 부피와 근사 오차</div>
+        <div class="metric-value" id="exactValue">—</div>
+        <div class="metric-note" id="errorValue">—</div>
+      </div>
+      <div class="panel metric">
+        <div class="metric-label">같은 강조색이 가리키는 것</div>
+        <div class="metric-value" style="font-size:16px;color:var(--accent)">원판 ↔ 단면적 ↔ 합의 항 ↔ 누적점</div>
+        <div class="metric-note">주황색은 모두 같은 x<sub>k</sub>에서 나온 한 조각입니다. 색뿐 아니라 k 라벨과 테두리로도 표시합니다.</div>
+      </div>
+    </section>
+
+    <section class="interpret">
+      <div class="panel reading" id="reading" aria-live="polite"></div>
+      <div class="panel formula-flow" aria-label="원판법 수식의 흐름">
+        <math>
+          <mi>Δ</mi><msub><mi>V</mi><mi>k</mi></msub><mo>≈</mo><mi>A</mi><mo>(</mo><msub><mi>x</mi><mi>k</mi></msub><mo>)</mo><mi>Δ</mi><mi>x</mi>
+        </math>
+        <span class="arrow">→</span>
+        <math>
+          <msub><mi>V</mi><mi>k</mi></msub><mo>=</mo><munderover><mo>∑</mo><mrow><mi>i</mi><mo>=</mo><mn>1</mn></mrow><mi>k</mi></munderover><mi>A</mi><mo>(</mo><msub><mi>x</mi><mi>i</mi></msub><mo>)</mo><mi>Δ</mi><mi>x</mi>
+        </math>
+        <span class="arrow">→</span>
+        <math>
+          <munder><mo>lim</mo><mrow><mi>n</mi><mo>→</mo><mi>∞</mi></mrow></munder><munderover><mo>∑</mo><mrow><mi>i</mi><mo>=</mo><mn>1</mn></mrow><mi>n</mi></munderover><mi>A</mi><mo>(</mo><msub><mi>x</mi><mi>i</mi></msub><mo>)</mo><mi>Δ</mi><mi>x</mi>
+          <mo>=</mo><msubsup><mo>∫</mo><mi>a</mi><mi>b</mi></msubsup><mi>A</mi><mo>(</mo><mi>x</mi><mo>)</mo><mi>d</mi><mi>x</mi>
+        </math>
+      </div>
+    </section>
+
+    <p class="sr-only" id="statusText" aria-live="polite"></p>
+  </main>
+
+  <script>
+    const SVG_NS = "http://www.w3.org/2000/svg";
+    const COLORS = {
+      ink: "#172033", muted: "#5b687b", line: "#aeb9c8", grid: "#e8edf4",
+      blue: "#1769aa", blueSoft: "#dcecf8", teal: "#087f6d",
+      tealSoft: "#d8f1eb", accent: "#d94f28", accentSoft: "#ffe2d7"
+    };
+
+    const examples = {
+      sqrt: {
+        label: "f(x) = √x",
+        a: 0, b: 3,
+        f: x => Math.sqrt(Math.max(0, x)),
+        area: x => Math.PI * x,
+        volume: x => Math.PI * x * x / 2,
+        exactText: "9π/2",
+        exactNumerator: "9π",
+        exactDenominator: "2",
+        solidName: "포물면"
+      },
+      linear: {
+        label: "f(x) = 1 + x/2",
+        a: 0, b: 2,
+        f: x => 1 + x / 2,
+        area: x => Math.PI * Math.pow(1 + x / 2, 2),
+        volume: x => Math.PI * (x + x * x / 2 + x * x * x / 12),
+        exactText: "14π/3",
+        exactNumerator: "14π",
+        exactDenominator: "3",
+        solidName: "원뿔대 모양"
+      },
+      sphere: {
+        label: "f(x) = √(4 − x²)",
+        a: 0, b: 2,
+        f: x => Math.sqrt(Math.max(0, 4 - x * x)),
+        area: x => Math.PI * (4 - x * x),
+        volume: x => Math.PI * (4 * x - x * x * x / 3),
+        exactText: "16π/3",
+        exactNumerator: "16π",
+        exactDenominator: "3",
+        solidName: "반구"
+      }
+    };
+
+    const state = {
+      example: "sqrt",
+      n: 12,
+      k: 1,
+      accumulated: 0,
+      timer: null
+    };
+
+    const functionSelect = document.getElementById("functionSelect");
+    const nSlider = document.getElementById("nSlider");
+    const kSlider = document.getElementById("kSlider");
+    const nValue = document.getElementById("nValue");
+    const kValue = document.getElementById("kValue");
+    const statusText = document.getElementById("statusText");
+
+    function svgEl(name, attrs = {}, text = "") {
+      const element = document.createElementNS(SVG_NS, name);
+      Object.entries(attrs).forEach(([key, value]) => element.setAttribute(key, value));
+      if (text) element.textContent = text;
+      return element;
+    }
+
+    function append(parent, name, attrs, text) {
+      const element = svgEl(name, attrs, text);
+      parent.appendChild(element);
+      return element;
+    }
+
+    function clearSvg(svg) {
+      while (svg.firstChild) svg.removeChild(svg.firstChild);
+    }
+
+    function format(value, digits = 3) {
+      if (Math.abs(value) < 1e-10) return "0";
+      return value.toFixed(digits).replace(/\.?0+$/, "");
+    }
+
+    function currentExample() {
+      return examples[state.example];
+    }
+
+    function deltaX() {
+      const ex = currentExample();
+      return (ex.b - ex.a) / state.n;
+    }
+
+    function sampleX(index) {
+      return currentExample().a + index * deltaX();
+    }
+
+    function diskArea(index) {
+      return currentExample().area(sampleX(index));
+    }
+
+    function diskVolume(index) {
+      return diskArea(index) * deltaX();
+    }
+
+    function partialSum(count) {
+      let total = 0;
+      for (let i = 1; i <= count; i++) total += diskVolume(i);
+      return total;
+    }
+
+    function stopAuto() {
+      if (state.timer !== null) {
+        window.clearInterval(state.timer);
+        state.timer = null;
+      }
+      document.getElementById("autoButton").setAttribute("aria-pressed", "false");
+    }
+
+    function selectPiece(index, announce = true, focusKind = null) {
+      state.k = Math.max(1, Math.min(state.n, index));
+      kSlider.value = state.k;
+      render();
+      if (focusKind) {
+        window.requestAnimationFrame(() => {
+          const target = document.querySelector(
+            `[data-piece-kind="${focusKind}"][data-piece-index="${state.k}"]`
+          );
+          if (target) target.focus();
+        });
+      }
+      if (announce) {
+        statusText.textContent = `${state.k}번째 원판을 선택했습니다.`;
+      }
+    }
+
+    function makeSelectable(element, index, label, kind) {
+      element.classList.add("selectable");
+      element.setAttribute("tabindex", index === state.k ? "0" : "-1");
+      element.setAttribute("role", "button");
+      element.setAttribute("aria-label", label);
+      element.dataset.pieceKind = kind;
+      element.dataset.pieceIndex = index;
+      element.addEventListener("click", () => selectPiece(index, true, kind));
+      element.addEventListener("keydown", event => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          selectPiece(index, true, kind);
+        }
+        if (event.key === "ArrowRight" || event.key === "ArrowUp") {
+          event.preventDefault();
+          selectPiece(index + 1, true, kind);
+        }
+        if (event.key === "ArrowLeft" || event.key === "ArrowDown") {
+          event.preventDefault();
+          selectPiece(index - 1, true, kind);
+        }
+      });
+    }
+
+    function drawAxes(svg, box, xMax, yMax, yLabel) {
+      const xMap = x => box.left + (x / xMax) * box.width;
+      const yMap = y => box.bottom - (y / yMax) * box.height;
+
+      for (let i = 0; i <= 4; i++) {
+        const y = box.top + box.height * i / 4;
+        append(svg, "line", { x1: box.left, y1: y, x2: box.left + box.width, y2: y, stroke: COLORS.grid });
+      }
+      append(svg, "line", { x1: box.left, y1: box.top, x2: box.left, y2: box.bottom, stroke: COLORS.line, "stroke-width": 1.4 });
+      append(svg, "line", { x1: box.left, y1: box.bottom, x2: box.left + box.width, y2: box.bottom, stroke: COLORS.line, "stroke-width": 1.4 });
+      append(svg, "text", { x: box.left - 5, y: box.top + 3, "text-anchor": "end", class: "svg-small" }, yLabel);
+      append(svg, "text", { x: box.left + box.width + 7, y: box.bottom + 4, class: "svg-label" }, "x");
+      append(svg, "text", { x: box.left - 8, y: box.bottom + 15, class: "svg-small" }, "0");
+      append(svg, "text", { x: box.left + box.width, y: box.bottom + 16, "text-anchor": "middle", class: "svg-small" }, format(xMax, 1));
+      return { xMap, yMap };
+    }
+
+    function drawSolid() {
+      const svg = document.getElementById("solidSvg");
+      clearSvg(svg);
+      const ex = currentExample();
+      const x0 = 55;
+      const x1 = 382;
+      const axisY = 151;
+      const width = x1 - x0;
+      const dxPixels = width / state.n;
+      let maxRadius = 0;
+      for (let i = 0; i <= 100; i++) maxRadius = Math.max(maxRadius, ex.f(ex.b * i / 100));
+      const radiusScale = 78 / maxRadius;
+
+      append(svg, "line", { x1: 28, y1: axisY, x2: 401, y2: axisY, stroke: "#7d899a", "stroke-width": 1.4 });
+      append(svg, "text", { x: 395, y: axisY - 8, class: "svg-label" }, "x축");
+      append(svg, "text", { x: 18, y: 24, class: "svg-label", "font-weight": "700" }, `${ex.label} 회전 → ${ex.solidName}`);
+      append(svg, "text", { x: 400, y: 24, "text-anchor": "end", class: "svg-small" }, `채운 원판 ${state.accumulated}/${state.n}`);
+
+      const topPoints = [];
+      const bottomPoints = [];
+      for (let s = 0; s <= 120; s++) {
+        const x = ex.a + (ex.b - ex.a) * s / 120;
+        const px = x0 + (x - ex.a) / (ex.b - ex.a) * width;
+        const radius = ex.f(x) * radiusScale;
+        topPoints.push(`${px},${axisY - radius * 0.54}`);
+        bottomPoints.unshift(`${px},${axisY + radius * 0.54}`);
+      }
+      append(svg, "polygon", {
+        points: topPoints.concat(bottomPoints).join(" "),
+        fill: "#eaf1f7",
+        stroke: "#8292a5",
+        "stroke-width": 1.2
+      });
+
+      for (let i = state.n; i >= 1; i--) {
+        const x = sampleX(i);
+        const px = x0 + i * dxPixels;
+        const radius = Math.max(2, ex.f(x) * radiusScale);
+        const isSelected = i === state.k;
+        const isAccumulated = i <= state.accumulated;
+        const fill = isSelected ? COLORS.accentSoft : isAccumulated ? COLORS.tealSoft : "rgba(255,255,255,0.55)";
+        const stroke = isSelected ? COLORS.accent : isAccumulated ? COLORS.teal : "#9aa8b8";
+        const disk = append(svg, "ellipse", {
+          cx: px - dxPixels * 0.5,
+          cy: axisY,
+          rx: Math.max(2.8, dxPixels * 0.45),
+          ry: radius,
+          fill,
+          stroke,
+          "stroke-width": isSelected ? 3 : 1.25,
+          opacity: isSelected ? 1 : 0.83
+        });
+        makeSelectable(disk, i, `${i}번째 원판 선택`, "solid");
+      }
+
+      const selectedX = x0 + (state.k - 0.5) * dxPixels;
+      append(svg, "line", { x1: selectedX, y1: 43, x2: selectedX, y2: 260, stroke: COLORS.accent, "stroke-dasharray": "4 4" });
+      append(svg, "rect", { x: Math.max(8, selectedX - 38), y: 265, width: 76, height: 24, rx: 6, fill: COLORS.accent });
+      append(svg, "text", { x: selectedX, y: 282, "text-anchor": "middle", fill: "#fff", "font-size": 12, "font-weight": "800" }, `k = ${state.k} 원판`);
+
+    }
+
+    function drawAreaGraph() {
+      const svg = document.getElementById("areaSvg");
+      clearSvg(svg);
+      const ex = currentExample();
+      const box = { left: 46, top: 25, width: 292, height: 220, bottom: 245 };
+      let maxArea = 0;
+      for (let i = 0; i <= 120; i++) maxArea = Math.max(maxArea, ex.area(ex.b * i / 120));
+      maxArea *= 1.12;
+      const { xMap, yMap } = drawAxes(svg, box, ex.b, maxArea, "단면적");
+      const barWidth = box.width / state.n;
+
+      for (let i = 1; i <= state.n; i++) {
+        const area = diskArea(i);
+        const x = xMap(sampleX(i)) - barWidth;
+        const y = yMap(area);
+        const isSelected = i === state.k;
+        const bar = append(svg, "rect", {
+          x: x + 0.7, y, width: Math.max(1, barWidth - 1.4), height: box.bottom - y,
+          fill: isSelected ? COLORS.accentSoft : i <= state.accumulated ? COLORS.tealSoft : COLORS.blueSoft,
+          stroke: isSelected ? COLORS.accent : i <= state.accumulated ? COLORS.teal : "#78a8cb",
+          "stroke-width": isSelected ? 2.7 : 1
+        });
+        makeSelectable(bar, i, `${i}번째 단면적 막대 선택`, "area");
+      }
+
+      let path = "";
+      for (let s = 0; s <= 180; s++) {
+        const x = ex.b * s / 180;
+        path += `${s === 0 ? "M" : "L"}${xMap(x)},${yMap(ex.area(x))} `;
+      }
+      append(svg, "path", { d: path, fill: "none", stroke: COLORS.blue, "stroke-width": 2.5 });
+
+      const xk = sampleX(state.k);
+      const yk = diskArea(state.k);
+      append(svg, "circle", { cx: xMap(xk), cy: yMap(yk), r: 5.5, fill: COLORS.accent, stroke: "#fff", "stroke-width": 2 });
+      append(svg, "text", { x: xMap(xk), y: Math.max(16, yMap(yk) - 9), "text-anchor": "middle", fill: COLORS.accent, "font-size": 11, "font-weight": "800" }, `A(x${state.k})`);
+      append(svg, "text", { x: 51, y: 274, class: "svg-label", "font-weight": "700" }, "A(xᵢ) × Δx ≈ 원래 입체의 얇은 부분 부피");
+    }
+
+    function drawVolumeGraph() {
+      const svg = document.getElementById("volumeSvg");
+      clearSvg(svg);
+      const ex = currentExample();
+      const box = { left: 46, top: 25, width: 292, height: 220, bottom: 245 };
+      const exactTotal = ex.volume(ex.b);
+      const approxTotal = partialSum(state.n);
+      const yMax = Math.max(exactTotal, approxTotal) * 1.12;
+      const { xMap, yMap } = drawAxes(svg, box, ex.b, yMax, "부피");
+
+      let exactPath = "";
+      for (let s = 0; s <= 180; s++) {
+        const x = ex.b * s / 180;
+        exactPath += `${s === 0 ? "M" : "L"}${xMap(x)},${yMap(ex.volume(x))} `;
+      }
+      append(svg, "path", { d: exactPath, fill: "none", stroke: "#8fa1b6", "stroke-width": 2, "stroke-dasharray": "5 4" });
+
+      let sumPath = `M${xMap(0)},${yMap(0)} `;
+      for (let i = 1; i <= state.n; i++) {
+        sumPath += `L${xMap(sampleX(i))},${yMap(partialSum(i))} `;
+      }
+      append(svg, "path", { d: sumPath, fill: "none", stroke: COLORS.teal, "stroke-width": 2.5, opacity: 0.32 });
+
+      for (let i = 1; i <= state.n; i++) {
+        const isSelected = i === state.k;
+        const isAccumulated = i <= state.accumulated;
+        const point = append(svg, "circle", {
+          cx: xMap(sampleX(i)),
+          cy: yMap(partialSum(i)),
+          r: isSelected ? 6.5 : 4,
+          fill: isSelected ? COLORS.accent : isAccumulated ? COLORS.teal : "#fff",
+          stroke: isSelected ? COLORS.accent : isAccumulated ? COLORS.teal : "#8ca0b5",
+          "stroke-width": isSelected ? 2.5 : 1.5
+        });
+        makeSelectable(point, i, `${i}번째 누적부피 점 선택`, "volume");
+      }
+
+      if (state.accumulated > 0) {
+        let activePath = `M${xMap(0)},${yMap(0)} `;
+        for (let i = 1; i <= state.accumulated; i++) {
+          activePath += `L${xMap(sampleX(i))},${yMap(partialSum(i))} `;
+        }
+        append(svg, "path", { d: activePath, fill: "none", stroke: COLORS.teal, "stroke-width": 3 });
+      }
+
+      const selectedSum = partialSum(state.k);
+      append(svg, "line", {
+        x1: xMap(sampleX(state.k)), y1: yMap(selectedSum),
+        x2: xMap(sampleX(state.k)), y2: box.bottom,
+        stroke: COLORS.accent, "stroke-dasharray": "4 4"
+      });
+      append(svg, "text", { x: 51, y: 267, fill: "#69768a", "font-size": 10 }, "점선: 정확한 V(x)");
+      append(svg, "text", { x: 168, y: 267, fill: COLORS.teal, "font-size": 10 }, "실선: 원판 합 Vₖ");
+      append(svg, "text", { x: 51, y: 286, class: "svg-label", "font-weight": "700" }, "A(x)가 클수록 V(x)가 더 가파르게 증가");
+    }
+
+    function renderResults() {
+      const ex = currentExample();
+      const dx = deltaX();
+      const xk = sampleX(state.k);
+      const area = diskArea(state.k);
+      const term = diskVolume(state.k);
+      const sum = partialSum(state.accumulated);
+      const fullApprox = partialSum(state.n);
+      const exact = ex.volume(ex.b);
+      const error = Math.abs(fullApprox - exact);
+
+      document.getElementById("termValue").innerHTML = `ΔV<sub>${state.k}</sub> ≈ ${format(term)} 단위³`;
+      document.getElementById("termNote").innerHTML =
+        `x<sub>${state.k}</sub> = ${format(xk)}, A(x<sub>${state.k}</sub>) = ${format(area)} 단위², Δx = ${format(dx)} 단위`;
+      document.getElementById("sumValue").textContent = `${format(sum)} 단위³`;
+      document.getElementById("sumNote").innerHTML =
+        `m = ${state.accumulated}장 누적 · V<sub>m</sub> = Σ A(x<sub>i</sub>)Δx`;
+      document.getElementById("exactValue").innerHTML =
+        `<math aria-label="${ex.exactText}"><mfrac><mrow><mn>${ex.exactNumerator.replace("π", "")}</mn><mi>π</mi></mrow><mn>${ex.exactDenominator}</mn></mfrac></math> ≈ ${format(exact)} 단위³`;
+      document.getElementById("errorValue").textContent =
+        `n=${state.n} 오른쪽 끝점 합: ${format(fullApprox)} · 오차 ${format(error)}`;
+
+      const relation = state.accumulated === 0
+        ? "아직 누적한 원판이 없습니다. ‘+ 한 장’을 누르면 첫 단면적이 부피로 바뀌어 더해집니다."
+        : state.accumulated < state.n
+          ? `${state.accumulated}장까지 더했습니다. 다음 원판의 단면적에 Δx를 곱하면 누적부피가 한 단계 증가합니다.`
+          : `모든 원판을 더했습니다. n을 키우면 원판은 얇아지고 합은 정확한 정적분 ${ex.exactText}에 가까워집니다.`;
+      document.getElementById("reading").innerHTML =
+        `<strong>읽기:</strong> ${relation} 선택한 ${state.k}번째 조각에서는 ` +
+        `<b>A(x<sub>${state.k}</sub>) = ${format(area)} 단위²</b>이고, 원래 입체의 얇은 부분을 근사하는 원판 기둥의 부피는 ` +
+        `<b>ΔV ≈ A(x<sub>${state.k}</sub>)Δx = ${format(term)} 단위³</b>입니다. ` +
+        `누적함수의 순간 변화율은 단면적이므로 <b>V′(x) = A(x)</b>입니다.`;
+    }
+
+    function render() {
+      state.k = Math.min(state.k, state.n);
+      state.accumulated = Math.min(state.accumulated, state.n);
+      nValue.textContent = state.n;
+      kValue.textContent = state.k;
+      kSlider.max = state.n;
+      kSlider.value = state.k;
+      drawSolid();
+      drawAreaGraph();
+      drawVolumeGraph();
+      renderResults();
+    }
+
+    function resetAccumulation() {
+      stopAuto();
+      state.accumulated = 0;
+      state.k = 1;
+      render();
+      statusText.textContent = "누적을 초기화했습니다.";
+    }
+
+    function addOneDisk() {
+      if (state.accumulated >= state.n) {
+        stopAuto();
+        statusText.textContent = "모든 원판을 누적했습니다.";
+        return;
+      }
+      state.accumulated += 1;
+      state.k = state.accumulated;
+      render();
+      if (state.accumulated >= state.n) {
+        stopAuto();
+        statusText.textContent = `${state.accumulated}번째 원판을 더해 모든 원판의 누적을 마쳤습니다.`;
+      } else {
+        statusText.textContent = `${state.accumulated}번째 원판을 더했습니다.`;
+      }
+    }
+
+    function startAuto() {
+      if (state.timer !== null) return;
+      if (state.accumulated >= state.n) {
+        state.accumulated = 0;
+        state.k = 1;
+        render();
+      }
+      document.getElementById("autoButton").setAttribute("aria-pressed", "true");
+      state.timer = window.setInterval(addOneDisk, 520);
+    }
+
+    functionSelect.addEventListener("change", () => {
+      stopAuto();
+      state.example = functionSelect.value;
+      state.accumulated = 0;
+      state.k = 1;
+      render();
+    });
+
+    nSlider.addEventListener("input", () => {
+      stopAuto();
+      state.n = Number(nSlider.value);
+      state.accumulated = 0;
+      state.k = Math.min(state.k, state.n);
+      render();
+    });
+
+    kSlider.addEventListener("input", () => {
+      selectPiece(Number(kSlider.value), false);
+    });
+
+    document.getElementById("stepButton").addEventListener("click", addOneDisk);
+    document.getElementById("autoButton").addEventListener("click", startAuto);
+    document.getElementById("pauseButton").addEventListener("click", () => {
+      stopAuto();
+      statusText.textContent = "자동 누적을 일시정지했습니다.";
+    });
+    document.getElementById("resetButton").addEventListener("click", resetAccumulation);
+
+    window.addEventListener("pagehide", stopAuto);
+    new ResizeObserver(() => render()).observe(document.querySelector(".visual-grid"));
+    render();
+  </script>
+</body>
+</html>
