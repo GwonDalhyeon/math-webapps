@@ -166,7 +166,7 @@
 
     .visual-grid {
       display: grid;
-      grid-template-columns: 1.15fr 1fr 1fr;
+      grid-template-columns: 1.4fr 1fr 1fr;
       gap: 10px;
       margin-bottom: 10px;
     }
@@ -379,10 +379,10 @@
     <section class="visual-grid" aria-label="연결된 시각화">
       <article class="panel viz solid-panel">
         <div class="panel-title">
-          <span>① 회전체와 원판</span>
-          <small>원판을 클릭해 k 선택</small>
+          <span>① 함수 그래프를 회전해 만든 입체</span>
+          <small>곡선·반지름·원판이 같은 x 위치</small>
         </div>
-        <svg id="solidSvg" viewBox="0 0 420 300" role="group" aria-label="함수를 회전해 만든 입체와 선택 가능한 원판 단면"></svg>
+        <svg id="solidSvg" viewBox="0 0 460 300" role="group" aria-label="함수 그래프를 회전해 만든 입체와 선택 가능한 원판 단면"></svg>
       </article>
 
       <article class="panel viz">
@@ -624,61 +624,183 @@
       const svg = document.getElementById("solidSvg");
       clearSvg(svg);
       const ex = currentExample();
-      const x0 = 55;
-      const x1 = 382;
-      const axisY = 151;
+      const x0 = 62;
+      const x1 = 424;
+      const axisStartY = 151;
+      const perspectiveDrop = 18;
       const width = x1 - x0;
       const dxPixels = width / state.n;
       let maxRadius = 0;
       for (let i = 0; i <= 100; i++) maxRadius = Math.max(maxRadius, ex.f(ex.b * i / 100));
-      const radiusScale = 78 / maxRadius;
+      const radiusScale = 76 / maxRadius;
+      const centerY = ratio => axisStartY + perspectiveDrop * ratio;
+      const xAt = ratio => x0 + width * ratio;
 
-      append(svg, "line", { x1: 28, y1: axisY, x2: 401, y2: axisY, stroke: "#7d899a", "stroke-width": 1.4 });
-      append(svg, "text", { x: 395, y: axisY - 8, class: "svg-label" }, "x축");
-      append(svg, "text", { x: 18, y: 24, class: "svg-label", "font-weight": "700" }, `${ex.label} 회전 → ${ex.solidName}`);
-      append(svg, "text", { x: 400, y: 24, "text-anchor": "end", class: "svg-small" }, `채운 원판 ${state.accumulated}/${state.n}`);
+      const defs = append(svg, "defs");
+      const bodyGradient = append(defs, "linearGradient", { id: "solid-body-gradient", x1: "0", y1: "0", x2: "0", y2: "1" });
+      append(bodyGradient, "stop", { offset: "0%", "stop-color": "#eef8ff", "stop-opacity": "0.92" });
+      append(bodyGradient, "stop", { offset: "48%", "stop-color": "#cfe5f3", "stop-opacity": "0.72" });
+      append(bodyGradient, "stop", { offset: "100%", "stop-color": "#86adc8", "stop-opacity": "0.45" });
+      const diskGradient = append(defs, "linearGradient", { id: "disk-side-gradient", x1: "0", y1: "0", x2: "1", y2: "0" });
+      append(diskGradient, "stop", { offset: "0%", "stop-color": "#f7fbff" });
+      append(diskGradient, "stop", { offset: "58%", "stop-color": "#b9d8ea" });
+      append(diskGradient, "stop", { offset: "100%", "stop-color": "#7ca9c6" });
+      const activeGradient = append(defs, "linearGradient", { id: "active-disk-gradient", x1: "0", y1: "0", x2: "1", y2: "0" });
+      append(activeGradient, "stop", { offset: "0%", "stop-color": "#e9faf5" });
+      append(activeGradient, "stop", { offset: "100%", "stop-color": "#68bca9" });
+      const selectedGradient = append(defs, "linearGradient", { id: "selected-disk-gradient", x1: "0", y1: "0", x2: "1", y2: "0" });
+      append(selectedGradient, "stop", { offset: "0%", "stop-color": "#fff0e9" });
+      append(selectedGradient, "stop", { offset: "100%", "stop-color": "#e87955" });
+
+      append(svg, "text", { x: 18, y: 22, class: "svg-label", "font-weight": "700" }, `${ex.label} 회전 → ${ex.solidName}`);
+      append(svg, "text", { x: 442, y: 22, "text-anchor": "end", class: "svg-small" }, `채운 원판 ${state.accumulated}/${state.n}`);
 
       const topPoints = [];
       const bottomPoints = [];
-      for (let s = 0; s <= 120; s++) {
-        const x = ex.a + (ex.b - ex.a) * s / 120;
-        const px = x0 + (x - ex.a) / (ex.b - ex.a) * width;
+      let upperProfile = "";
+      let lowerProfile = "";
+      for (let s = 0; s <= 160; s++) {
+        const ratio = s / 160;
+        const x = ex.a + (ex.b - ex.a) * ratio;
+        const px = xAt(ratio);
+        const cy = centerY(ratio);
         const radius = ex.f(x) * radiusScale;
-        topPoints.push(`${px},${axisY - radius * 0.54}`);
-        bottomPoints.unshift(`${px},${axisY + radius * 0.54}`);
+        topPoints.push(`${px},${cy - radius}`);
+        bottomPoints.unshift(`${px},${cy + radius}`);
+        upperProfile += `${s === 0 ? "M" : "L"}${px},${cy - radius} `;
+        lowerProfile += `${s === 0 ? "M" : "L"}${px},${cy + radius} `;
       }
+
       append(svg, "polygon", {
         points: topPoints.concat(bottomPoints).join(" "),
-        fill: "#eaf1f7",
-        stroke: "#8292a5",
+        fill: "url(#solid-body-gradient)",
+        stroke: "#6f91aa",
         "stroke-width": 1.2
       });
 
-      for (let i = state.n; i >= 1; i--) {
+      [0.28, 0.52, 0.76].forEach(level => {
+        let meridian = "";
+        for (let s = 0; s <= 100; s++) {
+          const ratio = s / 100;
+          const x = ex.a + (ex.b - ex.a) * ratio;
+          const radius = ex.f(x) * radiusScale * level;
+          meridian += `${s === 0 ? "M" : "L"}${xAt(ratio)},${centerY(ratio) - radius} `;
+        }
+        append(svg, "path", {
+          d: meridian,
+          fill: "none",
+          stroke: "#8eb1c8",
+          "stroke-width": 0.8,
+          opacity: 0.46
+        });
+      });
+
+      append(svg, "path", { d: lowerProfile, fill: "none", stroke: "#789ab1", "stroke-width": 1.2, opacity: 0.65 });
+      append(svg, "path", { d: upperProfile, fill: "none", stroke: COLORS.blue, "stroke-width": 3 });
+      append(svg, "line", {
+        x1: x0 - 18, y1: centerY(0),
+        x2: x1 + 18, y2: centerY(1),
+        stroke: "#59697d", "stroke-width": 1.6
+      });
+      append(svg, "text", { x: x1 + 8, y: centerY(1) - 8, class: "svg-label", "font-weight": "700" }, "x축");
+      append(svg, "text", { x: x0 + 12, y: 57, fill: COLORS.blue, "font-size": 11, "font-weight": "800" }, "파란 곡선 y = f(x)");
+
+      const diskOrder = [];
+      for (let i = 1; i <= state.n; i++) {
+        if (i !== state.k) diskOrder.push(i);
+      }
+      diskOrder.push(state.k);
+
+      for (const i of diskOrder) {
         const x = sampleX(i);
-        const px = x0 + i * dxPixels;
+        const leftRatio = (i - 1) / state.n;
+        const rightRatio = i / state.n;
+        const xLeft = xAt(leftRatio);
+        const xRight = xAt(rightRatio);
+        const yLeft = centerY(leftRatio);
+        const yRight = centerY(rightRatio);
         const radius = Math.max(2, ex.f(x) * radiusScale);
         const isSelected = i === state.k;
         const isAccumulated = i <= state.accumulated;
-        const fill = isSelected ? COLORS.accentSoft : isAccumulated ? COLORS.tealSoft : "rgba(255,255,255,0.55)";
+        const fill = isSelected ? "url(#selected-disk-gradient)" : isAccumulated ? "url(#active-disk-gradient)" : "url(#disk-side-gradient)";
         const stroke = isSelected ? COLORS.accent : isAccumulated ? COLORS.teal : "#9aa8b8";
-        const disk = append(svg, "ellipse", {
-          cx: px - dxPixels * 0.5,
-          cy: axisY,
-          rx: Math.max(2.8, dxPixels * 0.45),
-          ry: radius,
+        const faceRx = Math.max(2.6, Math.min(9, dxPixels * 0.28));
+        const group = append(svg, "g", {
+          opacity: isSelected ? 1 : isAccumulated ? 0.9 : 0.48
+        });
+
+        append(group, "path", {
+          d: `M ${xLeft} ${yLeft - radius}
+              L ${xRight} ${yRight - radius}
+              L ${xRight} ${yRight + radius}
+              L ${xLeft} ${yLeft + radius} Z`,
           fill,
           stroke,
-          "stroke-width": isSelected ? 3 : 1.25,
-          opacity: isSelected ? 1 : 0.83
+          "stroke-width": isSelected ? 2.4 : 0.8
         });
-        makeSelectable(disk, i, `${i}번째 원판 선택`, "solid");
+        append(group, "ellipse", {
+          cx: xLeft, cy: yLeft, rx: faceRx, ry: radius,
+          fill: isSelected ? "#ffd7c8" : isAccumulated ? "#bcebdd" : "#e7f1f7",
+          stroke, "stroke-width": isSelected ? 2.2 : 0.8
+        });
+        append(group, "ellipse", {
+          cx: xRight, cy: yRight, rx: faceRx, ry: radius,
+          fill: isSelected ? "#ffb99f" : isAccumulated ? "#84d0bd" : "#c3dce9",
+          stroke, "stroke-width": isSelected ? 3 : 1.1
+        });
+        append(group, "path", {
+          d: `M ${xRight - faceRx * 0.72} ${yRight - radius * 0.72}
+              A ${faceRx} ${radius} 0 0 1 ${xRight - faceRx * 0.72} ${yRight + radius * 0.72}`,
+          fill: "none",
+          stroke: "#ffffff",
+          "stroke-width": isSelected ? 1.6 : 0.8,
+          opacity: 0.72
+        });
+        makeSelectable(group, i, `${i}번째 원판 기둥 선택`, "solid");
       }
 
-      const selectedX = x0 + (state.k - 0.5) * dxPixels;
-      append(svg, "line", { x1: selectedX, y1: 43, x2: selectedX, y2: 260, stroke: COLORS.accent, "stroke-dasharray": "4 4" });
-      append(svg, "rect", { x: Math.max(8, selectedX - 38), y: 265, width: 76, height: 24, rx: 6, fill: COLORS.accent });
-      append(svg, "text", { x: selectedX, y: 282, "text-anchor": "middle", fill: "#fff", "font-size": 12, "font-weight": "800" }, `k = ${state.k} 원판`);
+      const selectedRatio = state.k / state.n;
+      const selectedLeftRatio = (state.k - 1) / state.n;
+      const selectedX = xAt(selectedRatio);
+      const selectedLeftX = xAt(selectedLeftRatio);
+      const selectedY = centerY(selectedRatio);
+      const selectedRadius = ex.f(sampleX(state.k)) * radiusScale;
+      append(svg, "path", {
+        d: upperProfile,
+        fill: "none",
+        stroke: "#ffffff",
+        "stroke-width": 5.5,
+        opacity: 0.86
+      });
+      append(svg, "path", {
+        d: upperProfile,
+        fill: "none",
+        stroke: COLORS.blue,
+        "stroke-width": 3
+      });
+      append(svg, "line", {
+        x1: selectedX, y1: selectedY,
+        x2: selectedX, y2: selectedY - selectedRadius,
+        stroke: COLORS.accent, "stroke-width": 3
+      });
+      append(svg, "circle", { cx: selectedX, cy: selectedY - selectedRadius, r: 4, fill: COLORS.accent, stroke: "#fff", "stroke-width": 1.5 });
+      append(svg, "text", {
+        x: selectedX + 8,
+        y: selectedY - selectedRadius / 2,
+        fill: COLORS.accent,
+        "font-size": 11,
+        "font-weight": "800"
+      }, `반지름 f(x${state.k})`);
+
+      const bracketY = 260;
+      append(svg, "line", { x1: selectedLeftX, y1: bracketY, x2: selectedX, y2: bracketY, stroke: COLORS.accent, "stroke-width": 1.8 });
+      append(svg, "line", { x1: selectedLeftX, y1: bracketY - 4, x2: selectedLeftX, y2: bracketY + 4, stroke: COLORS.accent, "stroke-width": 1.8 });
+      append(svg, "line", { x1: selectedX, y1: bracketY - 4, x2: selectedX, y2: bracketY + 4, stroke: COLORS.accent, "stroke-width": 1.8 });
+      append(svg, "text", { x: (selectedLeftX + selectedX) / 2, y: bracketY - 7, "text-anchor": "middle", fill: COLORS.accent, "font-size": 11, "font-weight": "800" }, "두께 Δx");
+
+      const labelX = Math.max(10, Math.min(374, selectedX - 43));
+      append(svg, "rect", { x: labelX, y: 270, width: 86, height: 23, rx: 6, fill: COLORS.accent });
+      append(svg, "text", { x: labelX + 43, y: 286, "text-anchor": "middle", fill: "#fff", "font-size": 11, "font-weight": "800" }, `k = ${state.k} 원판 기둥`);
 
     }
 
