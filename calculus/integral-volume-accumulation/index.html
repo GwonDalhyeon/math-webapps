@@ -6,6 +6,13 @@
   <meta name="description" content="회전체의 원판 단면적을 한 장씩 누적하여 부피, 리만 합, 정적분, V'=A의 관계를 탐구하는 미적분 웹앱입니다." />
   <title>단면적을 누적해 부피 만들기</title>
   <link rel="stylesheet" href="../../assets/common.css" />
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "../../assets/vendor/three/three.core.js"
+    }
+  }
+  </script>
   <style>
     :root {
       --bg: #f3f6fa;
@@ -202,6 +209,52 @@
       touch-action: manipulation;
     }
 
+    .three-solid {
+      position: relative;
+      width: 100%;
+      height: 300px;
+      overflow: hidden;
+      background:
+        radial-gradient(circle at 52% 42%, rgba(220, 236, 248, 0.72), transparent 42%),
+        linear-gradient(180deg, #fbfdff 0%, #edf3f8 100%);
+      touch-action: none;
+    }
+
+    .three-solid canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+      cursor: grab;
+    }
+
+    .three-solid canvas:active { cursor: grabbing; }
+
+    .three-hint {
+      position: absolute;
+      right: 8px;
+      top: 7px;
+      z-index: 2;
+      padding: 4px 7px;
+      border: 1px solid rgba(148, 163, 184, 0.48);
+      border-radius: 6px;
+      background: rgba(255, 255, 255, 0.86);
+      color: #64748b;
+      font-size: 10px;
+      font-weight: 700;
+      pointer-events: none;
+    }
+
+    .three-fallback {
+      display: grid;
+      place-items: center;
+      height: 100%;
+      padding: 24px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.55;
+      text-align: center;
+    }
+
     .svg-label {
       fill: #4a596e;
       font: 12px "Malgun Gothic", system-ui, sans-serif;
@@ -306,7 +359,7 @@
         grid-template-columns: 1fr 1fr;
       }
       .solid-panel { grid-column: 1 / -1; }
-      .solid-panel svg { height: 280px; }
+      .solid-panel svg, .solid-panel .three-solid { height: 280px; }
       .result-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     }
 
@@ -319,7 +372,7 @@
       .buttons { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .visual-grid { grid-template-columns: 1fr; }
       .solid-panel { grid-column: auto; }
-      svg, .solid-panel svg { height: 280px; }
+      svg, .solid-panel svg, .solid-panel .three-solid { height: 280px; }
       .result-strip, .interpret { grid-template-columns: 1fr; }
       .formula-flow { justify-content: flex-start; }
     }
@@ -382,15 +435,19 @@
           <span>① 함수 그래프를 회전해 만든 입체</span>
           <small>곡선·반지름·원판이 같은 x 위치</small>
         </div>
-        <svg id="solidSvg" viewBox="0 0 460 300" role="group" aria-label="함수 그래프를 회전해 만든 입체와 선택 가능한 원판 단면"></svg>
+        <div id="solid3d" class="three-solid" role="group" tabindex="0"
+          aria-label="동일한 좌표 축척으로 그린 회전체와 원판. 좌우 화살표로 원판을 선택하고 드래그하여 시점을 조금 회전할 수 있습니다.">
+          <div class="three-fallback">3D 화면을 준비하고 있습니다.<br>로컬에서는 HTTP 서버로 열어야 Three.js 모듈이 실행됩니다.</div>
+          <div class="three-hint">드래그: 시점 회전 · ← →: 원판 선택</div>
+        </div>
       </article>
 
       <article class="panel viz">
         <div class="panel-title">
-          <span>② 단면적 A(x)</span>
-          <small>막대 높이 = 원판 넓이(단위²)</small>
+          <span>② 막대 넓이 = 한 조각의 부피</span>
+          <small>높이 A(xᵢ) × 폭 Δx ≈ ΔVᵢ</small>
         </div>
-        <svg id="areaSvg" viewBox="0 0 360 300" role="group" aria-label="단면적 함수와 선택 가능한 원판 단면적 막대 그래프"></svg>
+        <svg id="areaSvg" viewBox="0 0 360 300" role="group" aria-label="높이가 단면적이고 넓이가 원판 한 조각의 부피인 선택 가능한 막대 그래프"></svg>
       </article>
 
       <article class="panel viz">
@@ -703,6 +760,32 @@
         stroke: "#59697d", "stroke-width": 1.6
       });
       append(svg, "text", { x: x1 + 8, y: centerY(1) - 8, class: "svg-label", "font-weight": "700" }, "x축");
+      const addAxisTick = (x, y, label, color = "#59697d", selected = false) => {
+        append(svg, "line", {
+          x1: x, y1: y - 5, x2: x, y2: y + 5,
+          stroke: color, "stroke-width": selected ? 2.4 : 1.5
+        });
+        const labelWidth = Math.max(22, label.length * 7 + 8);
+        append(svg, "rect", {
+          x: x - labelWidth / 2,
+          y: y + 7,
+          width: labelWidth,
+          height: 17,
+          rx: 5,
+          fill: selected ? "#fff0e9" : "#ffffff",
+          stroke: selected ? COLORS.accent : "#c8d2de",
+          "stroke-width": selected ? 1.4 : 0.8,
+          opacity: 0.96
+        });
+        append(svg, "text", {
+          x,
+          y: y + 19,
+          "text-anchor": "middle",
+          fill: color,
+          "font-size": 10,
+          "font-weight": selected ? "800" : "700"
+        }, label);
+      };
       append(svg, "text", { x: x0 + 12, y: 57, fill: COLORS.blue, "font-size": 11, "font-weight": "800" }, "파란 곡선 y = f(x)");
 
       const diskOrder = [];
@@ -765,6 +848,9 @@
       const selectedLeftX = xAt(selectedLeftRatio);
       const selectedY = centerY(selectedRatio);
       const selectedRadius = ex.f(sampleX(state.k)) * radiusScale;
+      addAxisTick(x0, centerY(0), "0");
+      if (state.k !== state.n) addAxisTick(x1, centerY(1), format(ex.b, 1));
+      addAxisTick(selectedX, selectedY, `x${state.k}=${format(sampleX(state.k))}`, COLORS.accent, true);
       append(svg, "path", {
         d: upperProfile,
         fill: "none",
@@ -804,6 +890,43 @@
 
     }
 
+    function getSolidState() {
+      const ex = currentExample();
+      return {
+        example: state.example,
+        n: state.n,
+        k: state.k,
+        accumulated: state.accumulated,
+        a: ex.a,
+        b: ex.b,
+        label: ex.label,
+        solidName: ex.solidName,
+        values: Array.from({ length: 161 }, (_, index) => {
+          const x = ex.a + (ex.b - ex.a) * index / 160;
+          return { x, radius: ex.f(x) };
+        }),
+        disks: Array.from({ length: state.n }, (_, index) => {
+          const i = index + 1;
+          return {
+            index: i,
+            left: ex.a + index * deltaX(),
+            right: ex.a + i * deltaX(),
+            sample: sampleX(i),
+            radius: ex.f(sampleX(i))
+          };
+        })
+      };
+    }
+
+    function drawSolid() {
+      if (typeof window.updateThreeSolid === "function") {
+        window.updateThreeSolid(getSolidState());
+      }
+    }
+
+    window.getVolumeSolidState = getSolidState;
+    window.selectVolumePiece = index => selectPiece(index, true);
+
     function drawAreaGraph() {
       const svg = document.getElementById("areaSvg");
       clearSvg(svg);
@@ -840,7 +963,8 @@
       const yk = diskArea(state.k);
       append(svg, "circle", { cx: xMap(xk), cy: yMap(yk), r: 5.5, fill: COLORS.accent, stroke: "#fff", "stroke-width": 2 });
       append(svg, "text", { x: xMap(xk), y: Math.max(16, yMap(yk) - 9), "text-anchor": "middle", fill: COLORS.accent, "font-size": 11, "font-weight": "800" }, `A(x${state.k})`);
-      append(svg, "text", { x: 51, y: 274, class: "svg-label", "font-weight": "700" }, "A(xᵢ) × Δx ≈ 원래 입체의 얇은 부분 부피");
+      append(svg, "text", { x: 51, y: 277, class: "svg-label", "font-weight": "700" }, "막대 하나의 넓이: A(xᵢ)Δx ≈ ΔVᵢ");
+      append(svg, "text", { x: 51, y: 293, fill: COLORS.teal, "font-size": 11, "font-weight": "800" }, "분할을 잘게 할수록 막대 넓이의 합 → ∫A(x)dx");
     }
 
     function drawVolumeGraph() {
@@ -1013,6 +1137,365 @@
     window.addEventListener("pagehide", stopAuto);
     new ResizeObserver(() => render()).observe(document.querySelector(".visual-grid"));
     render();
+  </script>
+  <script type="module">
+    import { WebGLRenderer } from "../../assets/vendor/three/three.module.js";
+    import {
+      AmbientLight,
+      BufferGeometry,
+      CanvasTexture,
+      Color,
+      CylinderGeometry,
+      DirectionalLight,
+      DoubleSide,
+      Float32BufferAttribute,
+      Group,
+      Line,
+      LineBasicMaterial,
+      Mesh,
+      MeshPhongMaterial,
+      OrthographicCamera,
+      Raycaster,
+      Scene,
+      Sprite,
+      SpriteMaterial,
+      SRGBColorSpace,
+      Vector2,
+      Vector3
+    } from "../../assets/vendor/three/three.core.js";
+    import { OrbitControls } from "../../assets/vendor/three/OrbitControls.js";
+
+    const mount = document.getElementById("solid3d");
+    const fallback = mount.querySelector(".three-fallback");
+    const scene = new Scene();
+    scene.background = new Color(0xf6f9fc);
+
+    const camera = new OrthographicCamera(-4, 4, 3, -3, 0.01, 100);
+    const renderer = new WebGLRenderer({ antialias: true, alpha: false });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    renderer.outputColorSpace = SRGBColorSpace;
+    renderer.domElement.setAttribute("aria-hidden", "true");
+    mount.insertBefore(renderer.domElement, fallback);
+    fallback.remove();
+
+    scene.add(new AmbientLight(0xffffff, 1.7));
+    const keyLight = new DirectionalLight(0xffffff, 2.7);
+    keyLight.position.set(3, 5, 7);
+    scene.add(keyLight);
+    const fillLight = new DirectionalLight(0x8ec5e8, 1.2);
+    fillLight.position.set(-4, -2, 3);
+    scene.add(fillLight);
+
+    const solidRoot = new Group();
+    scene.add(solidRoot);
+
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enablePan = false;
+    controls.enableZoom = false;
+    controls.enableDamping = false;
+    controls.minAzimuthAngle = -0.42;
+    controls.maxAzimuthAngle = 0.42;
+    controls.minPolarAngle = Math.PI * 0.30;
+    controls.maxPolarAngle = Math.PI * 0.48;
+    controls.addEventListener("change", renderThree);
+
+    const raycaster = new Raycaster();
+    const pointer = new Vector2();
+    let selectableDisks = [];
+    let latestState = null;
+    let lastGeometrySignature = "";
+    let pointerStart = null;
+
+    function disposeObject(object) {
+      object.traverse(child => {
+        if (child.geometry) child.geometry.dispose();
+        if (child.material) {
+          const materials = Array.isArray(child.material) ? child.material : [child.material];
+          materials.forEach(material => {
+            if (material.map) material.map.dispose();
+            material.dispose();
+          });
+        }
+      });
+      object.clear();
+    }
+
+    function makeLine(points, color, width = 1, opacity = 1) {
+      const geometry = new BufferGeometry().setFromPoints(points);
+      return new Line(geometry, new LineBasicMaterial({
+        color,
+        linewidth: width,
+        transparent: opacity < 1,
+        opacity
+      }));
+    }
+
+    function makeTextSprite(text, color = "#334155", background = "rgba(255,255,255,0.92)") {
+      const canvas = document.createElement("canvas");
+      const context = canvas.getContext("2d");
+      const fontSize = 30;
+      context.font = `700 ${fontSize}px "Malgun Gothic", sans-serif`;
+      const textWidth = Math.ceil(context.measureText(text).width);
+      canvas.width = Math.max(96, textWidth + 28);
+      canvas.height = 52;
+      context.font = `700 ${fontSize}px "Malgun Gothic", sans-serif`;
+      context.fillStyle = background;
+      context.strokeStyle = "rgba(148,163,184,0.72)";
+      context.lineWidth = 2;
+      context.beginPath();
+      context.roundRect(1, 1, canvas.width - 2, canvas.height - 2, 10);
+      context.fill();
+      context.stroke();
+      context.fillStyle = color;
+      context.textAlign = "center";
+      context.textBaseline = "middle";
+      context.fillText(text, canvas.width / 2, canvas.height / 2 + 1);
+
+      const texture = new CanvasTexture(canvas);
+      texture.colorSpace = SRGBColorSpace;
+      const sprite = new Sprite(new SpriteMaterial({ map: texture, transparent: true, depthTest: false }));
+      const scale = 0.0067;
+      sprite.scale.set(canvas.width * scale, canvas.height * scale, 1);
+      sprite.renderOrder = 10;
+      return sprite;
+    }
+
+    function createSurfaceGeometry(values, radialSegments = 56) {
+      const positions = [];
+      const indices = [];
+      const ringSize = radialSegments + 1;
+
+      values.forEach(({ x, radius }) => {
+        for (let segment = 0; segment <= radialSegments; segment++) {
+          const theta = 2 * Math.PI * segment / radialSegments;
+          positions.push(x, radius * Math.cos(theta), radius * Math.sin(theta));
+        }
+      });
+
+      for (let ring = 0; ring < values.length - 1; ring++) {
+        for (let segment = 0; segment < radialSegments; segment++) {
+          const a = ring * ringSize + segment;
+          const b = a + ringSize;
+          const c = b + 1;
+          const d = a + 1;
+          indices.push(a, b, d, b, c, d);
+        }
+      }
+
+      const geometry = new BufferGeometry();
+      geometry.setAttribute("position", new Float32BufferAttribute(positions, 3));
+      geometry.setIndex(indices);
+      geometry.computeVertexNormals();
+      return geometry;
+    }
+
+    function addAxes(state, maxRadius) {
+      const axisPadding = Math.max(0.22, (state.b - state.a) * 0.07);
+      const axis = makeLine([
+        new Vector3(state.a - axisPadding, 0, 0),
+        new Vector3(state.b + axisPadding, 0, 0)
+      ], 0x475569);
+      solidRoot.add(axis);
+
+      const selected = state.disks[state.k - 1];
+      const tickLength = Math.max(0.08, maxRadius * 0.08);
+      const labelY = -Math.max(0.22, maxRadius * 0.14);
+      const tickValues = [
+        { x: state.a, label: formatThree(state.a), color: "#475569", selected: false },
+        { x: selected.sample, label: `x${state.k}=${formatThree(selected.sample)}`, color: "#d94f28", selected: true },
+        { x: state.b, label: formatThree(state.b), color: "#475569", selected: false }
+      ];
+
+      tickValues.forEach((tick, index) => {
+        if (index === 2 && Math.abs(tick.x - selected.sample) < 1e-8) return;
+        const tickLine = makeLine([
+          new Vector3(tick.x, -tickLength, 0),
+          new Vector3(tick.x, tickLength, 0)
+        ], tick.color);
+        solidRoot.add(tickLine);
+        const label = makeTextSprite(tick.label, tick.color, tick.selected ? "rgba(255,240,233,0.96)" : undefined);
+        const tickLabelY = tick.selected ? Math.max(0.18, maxRadius * 0.12) : labelY;
+        label.position.set(tick.x, tickLabelY, 0);
+        solidRoot.add(label);
+      });
+
+      const axisLabel = makeTextSprite("x축 (모든 방향 1칸 = 1단위)", "#334155");
+      axisLabel.position.set((state.a + state.b) / 2, -maxRadius - Math.max(0.52, maxRadius * 0.28), 0);
+      solidRoot.add(axisLabel);
+    }
+
+    function addProfileAndGuides(state, maxRadius) {
+      const profilePoints = state.values.map(value => new Vector3(value.x, value.radius, 0.025));
+      const profile = makeLine(profilePoints, 0x1769aa, 2);
+      profile.renderOrder = 4;
+      solidRoot.add(profile);
+
+      const selected = state.disks[state.k - 1];
+      const radiusLine = makeLine([
+        new Vector3(selected.sample, 0, 0.04),
+        new Vector3(selected.sample, selected.radius, 0.04)
+      ], 0xd94f28, 2);
+      radiusLine.renderOrder = 6;
+      solidRoot.add(radiusLine);
+
+      const radiusLabel = makeTextSprite(`반지름 f(x${state.k})=${formatThree(selected.radius)}`, "#b43d1e", "rgba(255,240,233,0.96)");
+      radiusLabel.position.set(selected.sample, selected.radius * 0.55, 0.28);
+      solidRoot.add(radiusLabel);
+
+      const bracketY = -maxRadius - Math.max(0.08, maxRadius * 0.05);
+      const bracket = makeLine([
+        new Vector3(selected.left, bracketY, 0.02),
+        new Vector3(selected.right, bracketY, 0.02)
+      ], 0xd94f28, 2);
+      solidRoot.add(bracket);
+      const capLeft = makeLine([
+        new Vector3(selected.left, bracketY - 0.08, 0.02),
+        new Vector3(selected.left, bracketY + 0.08, 0.02)
+      ], 0xd94f28, 2);
+      const capRight = makeLine([
+        new Vector3(selected.right, bracketY - 0.08, 0.02),
+        new Vector3(selected.right, bracketY + 0.08, 0.02)
+      ], 0xd94f28, 2);
+      solidRoot.add(capLeft, capRight);
+      const widthLabel = makeTextSprite(`두께 Δx=${formatThree(selected.right - selected.left)}`, "#b43d1e", "rgba(255,240,233,0.96)");
+      widthLabel.position.set((selected.left + selected.right) / 2, bracketY - Math.max(0.2, maxRadius * 0.11), 0.08);
+      solidRoot.add(widthLabel);
+    }
+
+    function addSurfaceAndDisks(state) {
+      const surfaceMaterial = new MeshPhongMaterial({
+        color: 0x76a9c9,
+        transparent: true,
+        opacity: 0.24,
+        side: DoubleSide,
+        shininess: 55,
+        depthWrite: false
+      });
+      const surface = new Mesh(createSurfaceGeometry(state.values), surfaceMaterial);
+      surface.renderOrder = 0;
+      solidRoot.add(surface);
+
+      selectableDisks = [];
+      state.disks.forEach(disk => {
+        const selected = disk.index === state.k;
+        const accumulated = disk.index <= state.accumulated;
+        const geometry = new CylinderGeometry(disk.radius, disk.radius, disk.right - disk.left, 48, 1, false);
+        geometry.rotateZ(-Math.PI / 2);
+        const material = new MeshPhongMaterial({
+          color: selected ? 0xe8663d : accumulated ? 0x35a98e : 0x8eb6ce,
+          emissive: selected ? 0x3c0b02 : 0x000000,
+          transparent: true,
+          opacity: selected ? 0.96 : accumulated ? 0.62 : 0.12,
+          shininess: selected ? 90 : 45,
+          side: DoubleSide,
+          depthWrite: selected || accumulated
+        });
+        const mesh = new Mesh(geometry, material);
+        mesh.position.x = (disk.left + disk.right) / 2;
+        mesh.userData.pieceIndex = disk.index;
+        mesh.renderOrder = selected ? 5 : accumulated ? 3 : 1;
+        solidRoot.add(mesh);
+        selectableDisks.push(mesh);
+      });
+    }
+
+    function formatThree(value) {
+      if (Math.abs(value) < 1e-10) return "0";
+      return value.toFixed(2).replace(/\.?0+$/, "");
+    }
+
+    function fitCamera(state, maxRadius, resetView) {
+      const rect = mount.getBoundingClientRect();
+      const aspect = Math.max(0.5, rect.width / Math.max(1, rect.height));
+      const span = state.b - state.a;
+      const halfWidthNeeded = span / 2 + Math.max(0.8, span * 0.18);
+      const halfHeightNeeded = maxRadius + Math.max(0.8, maxRadius * 0.42);
+      const halfHeight = Math.max(halfHeightNeeded, halfWidthNeeded / aspect);
+      camera.left = -halfHeight * aspect;
+      camera.right = halfHeight * aspect;
+      camera.top = halfHeight;
+      camera.bottom = -halfHeight;
+      camera.near = 0.01;
+      camera.far = 100;
+      camera.updateProjectionMatrix();
+
+      const centerX = (state.a + state.b) / 2;
+      controls.target.set(centerX, 0, 0);
+      if (resetView) {
+        const distance = Math.max(5, span * 1.5, maxRadius * 4);
+        camera.position.set(centerX, distance * 0.28, distance);
+        camera.lookAt(centerX, 0, 0);
+        controls.update();
+      }
+    }
+
+    function renderThree() {
+      renderer.render(scene, camera);
+    }
+
+    function rebuildSolid(state) {
+      latestState = state;
+      const signature = `${state.example}:${state.n}`;
+      const resetView = signature !== lastGeometrySignature;
+      lastGeometrySignature = signature;
+      disposeObject(solidRoot);
+
+      const maxRadius = Math.max(...state.values.map(value => value.radius), 0.01);
+      addSurfaceAndDisks(state);
+      addAxes(state, maxRadius);
+      addProfileAndGuides(state, maxRadius);
+      fitCamera(state, maxRadius, resetView);
+      resizeRenderer();
+      renderThree();
+    }
+
+    function resizeRenderer() {
+      const rect = mount.getBoundingClientRect();
+      const width = Math.max(1, Math.round(rect.width));
+      const height = Math.max(1, Math.round(rect.height));
+      renderer.setSize(width, height, false);
+      if (latestState) {
+        const maxRadius = Math.max(...latestState.values.map(value => value.radius), 0.01);
+        fitCamera(latestState, maxRadius, false);
+      }
+      renderThree();
+    }
+
+    renderer.domElement.addEventListener("pointerdown", event => {
+      pointerStart = { x: event.clientX, y: event.clientY };
+    });
+
+    renderer.domElement.addEventListener("pointerup", event => {
+      if (!pointerStart || Math.hypot(event.clientX - pointerStart.x, event.clientY - pointerStart.y) > 5) {
+        pointerStart = null;
+        return;
+      }
+      pointerStart = null;
+      const rect = renderer.domElement.getBoundingClientRect();
+      pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+      pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+      raycaster.setFromCamera(pointer, camera);
+      const hit = raycaster.intersectObjects(selectableDisks, false)[0];
+      if (hit && Number.isInteger(hit.object.userData.pieceIndex)) {
+        window.selectVolumePiece(hit.object.userData.pieceIndex);
+      }
+    });
+
+    mount.addEventListener("keydown", event => {
+      if (!latestState) return;
+      if (event.key === "ArrowRight" || event.key === "ArrowUp") {
+        event.preventDefault();
+        window.selectVolumePiece(Math.min(latestState.n, latestState.k + 1));
+      }
+      if (event.key === "ArrowLeft" || event.key === "ArrowDown") {
+        event.preventDefault();
+        window.selectVolumePiece(Math.max(1, latestState.k - 1));
+      }
+    });
+
+    new ResizeObserver(resizeRenderer).observe(mount);
+    window.updateThreeSolid = rebuildSolid;
+    rebuildSolid(window.getVolumeSolidState());
   </script>
 </body>
 </html>
