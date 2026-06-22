@@ -3,23 +3,24 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="같은 높이의 단면을 비교하고 층을 정렬하며 카발리에리의 원리를 직관적으로 탐구하는 수학 웹앱입니다." />
-  <title>카발리에리의 원리: 단면으로 부피 보기</title>
+  <meta name="description" content="같은 원판 층을 높이별로 평행이동해도 부피가 변하지 않는 카발리에리의 원리를 탐구하는 수학 웹앱입니다." />
+  <title>카발리에리의 원리: 원판 층을 옆으로 밀어 보기</title>
   <link rel="stylesheet" href="../../assets/common.css" />
   <style>
     :root {
       --ink: #172033;
       --muted: #526075;
-      --line: #d6deea;
+      --line: #d5deea;
       --panel: #ffffff;
       --blue: #1769aa;
-      --blue-soft: #dcecf8;
-      --orange: #d75b28;
-      --orange-soft: #ffe7dc;
+      --blue-dark: #0e4f82;
+      --blue-soft: #e5f2fb;
+      --orange: #d65a24;
+      --orange-soft: #fff0e8;
       --teal: #087f6d;
-      --teal-soft: #d9f2ec;
+      --teal-soft: #e2f5f0;
       --violet: #6d55a6;
-      --warning: #9b4c19;
+      --violet-soft: #f0ecfb;
       --shadow: 0 8px 24px rgba(30, 48, 73, 0.09);
     }
 
@@ -35,48 +36,48 @@
     button, input { font: inherit; }
 
     .app {
-      width: min(1180px, calc(100% - 24px));
+      width: min(1180px, calc(100% - 20px));
       margin: 0 auto;
-      padding: 12px 0 26px;
+      padding: 8px 0 20px;
     }
 
     .back-link {
-      margin: 0 0 6px;
+      margin-bottom: 3px;
       font-size: 14px;
     }
 
     .hero {
       display: flex;
-      align-items: end;
+      align-items: center;
       justify-content: space-between;
       gap: 18px;
-      margin-bottom: 9px;
+      margin-bottom: 7px;
     }
 
     h1 {
-      margin: 0 0 4px;
-      font-size: clamp(26px, 3.3vw, 40px);
-      line-height: 1.14;
+      margin: 0 0 3px;
+      font-size: clamp(25px, 3vw, 37px);
+      line-height: 1.12;
     }
 
     .hero p {
-      max-width: 780px;
+      max-width: 760px;
       margin: 0;
       color: var(--muted);
-      font-size: 15px;
-      line-height: 1.45;
+      font-size: 14px;
+      line-height: 1.42;
     }
 
-    .principle-chip {
+    .concept-chip {
       flex: 0 0 auto;
-      max-width: 330px;
-      padding: 9px 12px;
-      border: 1px solid #9bcac0;
-      border-radius: 10px;
+      padding: 8px 12px;
+      border: 1px solid #a8d2c9;
+      border-radius: 11px;
       background: var(--teal-soft);
       color: #075f52;
       font-size: 14px;
-      font-weight: 800;
+      font-weight: 900;
+      text-align: center;
       line-height: 1.35;
     }
 
@@ -87,61 +88,75 @@
       box-shadow: var(--shadow);
     }
 
-    .control-bar {
+    .controls {
       display: grid;
-      grid-template-columns: minmax(220px, 0.9fr) minmax(280px, 1.25fr) minmax(390px, 1.7fr);
-      gap: 12px;
+      grid-template-columns: minmax(310px, 1.15fr) minmax(230px, 0.9fr) minmax(230px, 0.9fr) minmax(260px, 1fr);
+      gap: 11px;
       align-items: center;
-      padding: 10px 12px;
-      margin-bottom: 9px;
+      padding: 9px 11px;
+      margin-bottom: 8px;
     }
 
-    .control-block {
-      min-width: 0;
-    }
+    .control-block { min-width: 0; }
 
-    .control-label, .range-head {
+    .control-label,
+    .range-head {
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 8px;
-      margin-bottom: 5px;
+      min-height: 21px;
+      margin-bottom: 4px;
       color: var(--muted);
       font-size: 12px;
-      font-weight: 800;
+      font-weight: 900;
     }
 
     .range-head output {
       color: var(--orange);
-      font-size: 17px;
+      font-size: 15px;
       font-weight: 900;
     }
 
-    .button-row {
+    .preset-row,
+    .action-row {
       display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
+      gap: 5px;
     }
 
     button {
-      min-height: 40px;
-      padding: 7px 11px;
-      border: 1px solid #b9c5d4;
+      min-height: 42px;
+      padding: 7px 10px;
+      border: 1px solid #b8c5d5;
       border-radius: 9px;
       background: #fff;
       color: var(--ink);
       cursor: pointer;
-      font-weight: 800;
+      font-weight: 850;
+      line-height: 1.2;
+    }
+
+    .preset-row button {
+      flex: 1 1 0;
+      padding-inline: 6px;
+      font-size: 13px;
+    }
+
+    .action-row button {
+      flex: 1 1 0;
+      font-size: 13px;
     }
 
     button:hover { border-color: var(--blue); }
 
-    button:focus-visible, input:focus-visible {
+    button:focus-visible,
+    input:focus-visible {
       outline: 3px solid rgba(23, 105, 170, 0.34);
       outline-offset: 2px;
     }
 
-    button[aria-pressed="true"], button.primary {
+    button[aria-pressed="true"],
+    button.primary {
       border-color: var(--blue);
       background: var(--blue);
       color: #fff;
@@ -153,26 +168,24 @@
       color: #94401d;
     }
 
+    button:disabled {
+      cursor: not-allowed;
+      opacity: 0.52;
+    }
+
     input[type="range"] {
       width: 100%;
-      min-height: 29px;
+      min-height: 31px;
       margin: 0;
       accent-color: var(--orange);
+      cursor: pointer;
     }
-
-    .mode-tabs {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 6px;
-    }
-
-    .mode-tabs button { width: 100%; }
 
     .stage {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) 270px;
-      gap: 9px;
-      margin-bottom: 9px;
+      grid-template-columns: minmax(0, 1fr) 310px;
+      gap: 8px;
+      margin-bottom: 8px;
     }
 
     .visual-panel {
@@ -182,21 +195,23 @@
 
     .panel-head {
       display: flex;
-      justify-content: space-between;
-      gap: 10px;
       align-items: center;
+      justify-content: space-between;
+      gap: 12px;
       min-height: 42px;
-      padding: 8px 12px;
+      padding: 7px 12px;
       border-bottom: 1px solid var(--line);
       background: #fafbfd;
-      font-size: 15px;
-      font-weight: 900;
     }
 
-    .panel-head small {
+    .panel-head strong {
+      font-size: 15px;
+    }
+
+    .panel-head span {
       color: var(--muted);
-      font-size: 11px;
-      font-weight: 700;
+      font-size: 12px;
+      font-weight: 800;
       text-align: right;
     }
 
@@ -205,135 +220,133 @@
       width: 100%;
       height: 390px;
       background:
-        radial-gradient(circle at 50% 38%, rgba(220, 236, 248, 0.55), transparent 46%),
+        radial-gradient(circle at 52% 42%, rgba(220, 236, 248, 0.64), transparent 48%),
         linear-gradient(180deg, #ffffff, #f6f9fc);
     }
 
     .side-panel {
       display: grid;
       align-content: start;
-      gap: 9px;
-      padding: 11px;
+      gap: 8px;
+      padding: 10px;
     }
 
-    .question-card {
-      padding: 11px;
-      border: 1px solid var(--line);
-      border-radius: 11px;
-      background: #f8fafc;
-    }
-
-    .question-card h2 {
-      margin: 0 0 7px;
-      font-size: 17px;
-    }
-
-    .question-card p {
-      margin: 5px 0 0;
-      color: var(--muted);
-      font-size: 13px;
-      line-height: 1.45;
-    }
-
-    .prediction-result {
-      min-height: 40px;
-      margin-top: 8px;
-      padding: 8px 9px;
-      border-radius: 8px;
-      background: var(--blue-soft);
-      color: #154f7b;
-      font-size: 13px;
-      font-weight: 800;
-      line-height: 1.4;
-    }
-
-    .metric {
+    .track-card {
       padding: 10px 11px;
-      border: 1px solid var(--line);
+      border: 2px solid #efae8f;
       border-radius: 11px;
-      background: #fff;
+      background: var(--orange-soft);
     }
 
-    .metric-label {
-      color: var(--muted);
-      font-size: 11px;
-      font-weight: 800;
+    .track-card h2,
+    .invariants h2 {
+      margin: 0 0 5px;
+      font-size: 16px;
     }
 
-    .metric-value {
-      margin-top: 3px;
-      font-size: 20px;
+    .track-value {
+      color: #923f1d;
+      font-size: 19px;
       font-weight: 900;
-      line-height: 1.25;
     }
 
-    .metric-note {
-      margin-top: 3px;
-      color: var(--muted);
+    .track-card p {
+      margin: 3px 0 0;
+      color: #74432e;
       font-size: 12px;
       line-height: 1.4;
     }
 
-    .equal-metric {
-      border-color: #8dc9bc;
+    .invariants {
+      display: grid;
+      gap: 6px;
+    }
+
+    .invariant {
+      display: grid;
+      grid-template-columns: 31px 1fr;
+      gap: 8px;
+      align-items: center;
+      min-height: 54px;
+      padding: 7px 9px;
+      border: 2px solid var(--teal);
+      border-radius: 10px;
       background: var(--teal-soft);
     }
 
-    .different-metric {
-      border-color: #efae8f;
-      background: var(--orange-soft);
-    }
-
-    .reading {
-      padding: 11px 13px;
-      border-left: 5px solid var(--teal);
-      font-size: 14px;
-      line-height: 1.55;
-    }
-
-    .reading strong { color: #076456; }
-
-    .closing {
+    .invariant-number {
       display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 9px;
+      place-items: center;
+      width: 29px;
+      height: 29px;
+      border: 2px solid #075f52;
+      border-radius: 50%;
+      background: #fff;
+      color: #075f52;
+      font-weight: 900;
     }
 
-    .closing > div {
-      padding: 11px 14px;
+    .invariant strong {
+      display: block;
+      color: #075f52;
+      font-size: 14px;
     }
 
-    .closing .bridge {
+    .invariant small {
+      display: block;
+      margin-top: 1px;
+      color: #316d64;
+      font-size: 11px;
+      line-height: 1.3;
+    }
+
+    .misconception {
+      padding: 9px 10px;
       border-left: 5px solid var(--violet);
-      font-size: 16px;
+      border-radius: 8px;
+      background: var(--violet-soft);
+      color: #4e3b83;
+      font-size: 12px;
       font-weight: 800;
       line-height: 1.45;
     }
 
-    .closing .accumulation {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 12px;
+    .takeaway {
+      display: grid;
+      grid-template-columns: minmax(0, 1.55fr) minmax(240px, 0.75fr);
+      gap: 8px;
+    }
+
+    .main-reading,
+    .bridge {
+      padding: 10px 13px;
+    }
+
+    .main-reading {
+      border-left: 6px solid var(--teal);
+      font-size: 15px;
+      font-weight: 850;
+      line-height: 1.5;
+    }
+
+    .main-reading strong { color: #076456; }
+
+    .bridge {
+      display: grid;
+      place-content: center;
+      gap: 2px;
       background: #f8f6ff;
       color: #4e3b83;
-      font-size: 20px;
-      font-weight: 900;
       text-align: center;
     }
 
-    .stack-icon {
-      display: inline-grid;
-      gap: 2px;
-      width: 42px;
+    .bridge strong {
+      font-size: 19px;
     }
 
-    .stack-icon i {
-      display: block;
-      height: 5px;
-      border: 2px solid var(--violet);
-      border-radius: 50%;
-      background: #e8e2ff;
+    .bridge span {
+      font-size: 13px;
+      font-weight: 800;
     }
 
     .sr-only {
@@ -348,30 +361,67 @@
       border: 0;
     }
 
-    @media (max-width: 960px) {
-      .control-bar {
-        grid-template-columns: 1fr 1fr;
+    @media (max-width: 1020px) {
+      .controls {
+        grid-template-columns: 1.15fr 0.85fr 0.85fr;
       }
-      .layer-controls { grid-column: 1 / -1; }
-      .stage { grid-template-columns: 1fr; }
-      .side-panel {
-        grid-template-columns: 1.25fr 1fr 1fr;
-        align-items: stretch;
+
+      .animation-controls {
+        grid-column: 1 / -1;
       }
-      .side-panel .reading { grid-column: 1 / -1; }
-      svg { height: 370px; }
+
+      .animation-controls .control-label { display: none; }
+
+      .action-row {
+        max-width: 520px;
+        margin: 0 auto;
+      }
     }
 
-    @media (max-width: 700px) {
-      .app { width: min(100% - 14px, 1180px); }
+    @media (max-width: 840px) {
+      .hero { align-items: flex-start; }
+      .concept-chip { font-size: 12px; }
+      .controls { grid-template-columns: 1fr 1fr; }
+      .preset-controls,
+      .animation-controls { grid-column: 1 / -1; }
+      .stage { grid-template-columns: 1fr; }
+      svg { height: 400px; }
+      .side-panel {
+        grid-template-columns: 1fr 1.35fr;
+        align-items: start;
+      }
+      .invariants { grid-template-columns: repeat(3, 1fr); }
+      .invariants h2 { grid-column: 1 / -1; }
+      .misconception { grid-column: 1 / -1; }
+    }
+
+    @media (max-width: 620px) {
+      .app { width: min(100% - 12px, 1180px); }
       .hero { display: block; }
-      .principle-chip { margin-top: 8px; max-width: none; }
-      .control-bar { grid-template-columns: 1fr; }
-      .layer-controls { grid-column: auto; }
-      .button-row button { flex: 1 1 42%; }
-      .side-panel { grid-template-columns: 1fr; }
-      .closing { grid-template-columns: 1fr; }
-      svg { height: 350px; }
+      .concept-chip {
+        margin-top: 6px;
+        padding: 6px 9px;
+        text-align: left;
+      }
+      .controls { grid-template-columns: 1fr; }
+      .preset-controls,
+      .animation-controls { grid-column: auto; }
+      .preset-row { flex-wrap: wrap; }
+      .preset-row button { flex: 1 1 30%; }
+      .panel-head {
+        display: block;
+      }
+      .panel-head span {
+        display: block;
+        margin-top: 2px;
+        text-align: left;
+      }
+      svg { height: 355px; }
+      .side-panel,
+      .invariants,
+      .takeaway { grid-template-columns: 1fr; }
+      .invariants h2,
+      .misconception { grid-column: auto; }
     }
 
     @media (prefers-reduced-motion: reduce) {
@@ -389,39 +439,43 @@
 
     <header class="hero">
       <div>
-        <h1>카발리에리의 원리: 단면으로 부피 보기</h1>
-        <p>입체의 겉모양보다 같은 높이에서 잘라 본 단면을 비교해 보세요. 계산 공식보다 먼저, 부피를 읽는 관점을 바꾸는 5분 탐구입니다.</p>
+        <h1>카발리에리의 원리: 원판 층을 옆으로 밀어 보기</h1>
+        <p>많은 얇은 원판을 높이별로 옆으로 밀어 보세요. 전체 모양은 달라져도 각 수평 단면에서 보존되는 것을 추적합니다.</p>
       </div>
-      <div class="principle-chip">카발리에리의 원리<br>높이가 같고 모든 같은 높이의 단면적이 같으면 두 입체의 부피는 같다.</div>
+      <div class="concept-chip">핵심 관찰<br>모양의 변화 ≠ 부피의 변화</div>
     </header>
 
-    <section class="panel control-bar" aria-label="탐구 조작">
-      <div class="control-block">
-        <div class="control-label">비교 장면</div>
-        <div class="mode-tabs" role="group" aria-label="비교 모드 선택">
-          <button id="principleMode" type="button" aria-pressed="true">원리 보기</button>
-          <button id="conditionMode" type="button" aria-pressed="false">조건 확인</button>
+    <section class="panel controls" aria-label="원판 더미 변형 조작">
+      <div class="control-block preset-controls">
+        <div class="control-label">변형 프리셋</div>
+        <div class="preset-row" role="group" aria-label="원판 더미 모양 선택">
+          <button id="straightPreset" type="button" aria-pressed="true">곧게 쌓기</button>
+          <button id="slantPreset" type="button" aria-pressed="false">비스듬히 밀기</button>
+          <button id="wavePreset" type="button" aria-pressed="false">S자로 밀기</button>
         </div>
       </div>
 
-      <label class="control-block" for="heightSlider">
+      <label class="control-block" for="morphSlider">
         <span class="range-head">
-          <span>같은 높이로 절단</span>
-          <output id="heightValue">높이 50%</output>
+          <span>변형 정도</span>
+          <output id="morphValue">0%</output>
         </span>
-        <input id="heightSlider" type="range" min="0" max="100" step="1" value="50" />
+        <input id="morphSlider" type="range" min="0" max="100" step="1" value="0" />
       </label>
 
-      <div class="control-block layer-controls">
-        <div class="control-label">
-          <span>얇은 층 비교</span>
-          <span id="progressLabel">정렬 0%</span>
-        </div>
-        <div class="button-row">
-          <button id="layersButton" type="button" aria-pressed="false">층 펼쳐 보기</button>
-          <button id="stepButton" type="button">한 단계</button>
-          <button id="autoButton" class="primary" type="button" aria-pressed="false">자동 정렬</button>
-          <button id="pauseButton" class="pause" type="button">일시정지</button>
+      <label class="control-block" for="layerSlider">
+        <span class="range-head">
+          <span>선택 층 추적</span>
+          <output id="layerValue">18번 층</output>
+        </span>
+        <input id="layerSlider" type="range" min="1" max="36" step="1" value="18" />
+      </label>
+
+      <div class="control-block animation-controls">
+        <div class="control-label">변형 재생</div>
+        <div class="action-row">
+          <button id="autoButton" class="primary" type="button" aria-pressed="false">자동 변형</button>
+          <button id="pauseButton" class="pause" type="button" disabled>일시정지</button>
           <button id="resetButton" type="button">초기화</button>
         </div>
       </div>
@@ -430,48 +484,51 @@
     <section class="stage">
       <article class="panel visual-panel">
         <div class="panel-head">
-          <span id="sceneTitle">곧은 기둥과 옆으로 밀린 기둥</span>
-          <small id="sceneHint">주황 절단면 두 개가 같은 높이에서 함께 움직입니다.</small>
+          <strong id="sceneTitle">곧게 쌓은 36개의 수평 원판</strong>
+          <span>점선은 원래 중심 · 주황색은 선택한 같은 층</span>
         </div>
-        <svg id="solidSvg" viewBox="0 0 860 390" role="img" aria-labelledby="svgTitle svgDesc">
-          <title id="svgTitle">카발리에리 원리 입체 비교</title>
-          <desc id="svgDesc">곧은 기둥과 옆으로 밀린 기둥을 같은 높이로 자른 단면을 비교하는 그림</desc>
+        <svg id="stackSvg" viewBox="0 0 840 390" role="img" aria-labelledby="svgTitle svgDesc">
+          <title id="svgTitle">높이별로 좌우 평행이동하는 원판 더미</title>
+          <desc id="svgDesc">36개의 얇은 수평 원판이 곧은 모양, 비스듬한 모양, S자 모양으로 바뀝니다. 선택 층은 원래 위치의 잔상과 현재 위치를 화살표로 연결합니다.</desc>
         </svg>
       </article>
 
-      <aside class="panel side-panel" aria-label="예상과 현재 해석">
-        <section class="question-card" id="predictionCard">
-          <h2>부피가 같을까?</h2>
-          <div class="button-row" role="group" aria-label="부피 예상">
-            <button id="samePrediction" type="button" aria-pressed="false">같다</button>
-            <button id="differentPrediction" type="button" aria-pressed="false">다르다</button>
+      <aside class="panel side-panel" aria-label="선택 층과 고정 불변량">
+        <section class="track-card">
+          <h2>선택 층 추적</h2>
+          <div class="track-value" id="trackValue">18번 층 · 이동 0</div>
+          <p id="trackNote">반투명 잔상과 현재 원판의 번호가 같습니다.</p>
+        </section>
+
+        <section class="invariants" aria-label="변하지 않는 세 가지">
+          <h2>고정 불변량 3개</h2>
+          <div class="invariant">
+            <span class="invariant-number">1</span>
+            <span><strong>층의 개수 그대로</strong><small>36개 층을 빠뜨리거나 더하지 않음</small></span>
           </div>
-          <div class="prediction-result" id="predictionResult">먼저 예상한 뒤, 높이를 움직여 단면을 확인하세요.</div>
+          <div class="invariant">
+            <span class="invariant-number">2</span>
+            <span><strong>각 층의 넓이 그대로</strong><small>모든 원판의 반지름과 단면적이 같음</small></span>
+          </div>
+          <div class="invariant">
+            <span class="invariant-number">3</span>
+            <span><strong>각 층의 두께 그대로</strong><small>수평 원판의 얇은 두께가 변하지 않음</small></span>
+          </div>
         </section>
 
-        <section class="metric equal-metric" id="leftMetric">
-          <div class="metric-label" id="leftMetricLabel">곧은 기둥의 단면</div>
-          <div class="metric-value" id="leftArea">12.6 단위²</div>
-          <div class="metric-note">주황색 실선 단면</div>
-        </section>
-
-        <section class="metric equal-metric" id="rightMetric">
-          <div class="metric-label" id="rightMetricLabel">밀린 기둥의 단면</div>
-          <div class="metric-value" id="rightArea">12.6 단위²</div>
-          <div class="metric-note" id="rightMetricNote">같은 모양 · 같은 넓이</div>
-        </section>
-
-        <div class="reading" id="reading" aria-live="polite">
-          <strong>읽기:</strong> 기둥이 옆으로 밀려도, 같은 높이의 수평 단면은 언제나 같은 원입니다.
+        <div class="misconception">
+          실제로 늘이거나 구부린 호스가 아니라, 같은 원판 층을 높이별로 평행이동한 모습입니다. 호스처럼 보이는 겉선의 길이는 부피를 재는 길이가 아닙니다.
         </div>
       </aside>
     </section>
 
-    <section class="closing">
-      <div class="panel bridge">단면적이 높이에 따라 계속 달라진다면 전체 부피는 어떻게 구할까?</div>
-      <div class="panel accumulation">
-        <span class="stack-icon" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
-        <span>부피 = 단면들의 누적</span>
+    <section class="takeaway">
+      <div class="panel main-reading" id="reading" aria-live="polite">
+        <strong>해석:</strong> 각 층은 옆으로 이동했을 뿐, 넓이와 두께는 변하지 않았습니다. 따라서 층들을 모두 모은 부피도 변하지 않습니다.
+      </div>
+      <div class="panel bridge">
+        <strong>부피 = 단면들의 누적</strong>
+        <span>단면적이 높이에 따라 달라진다면?</span>
       </div>
     </section>
 
@@ -480,35 +537,35 @@
 
   <script>
     const SVG_NS = "http://www.w3.org/2000/svg";
-    const svg = document.getElementById("solidSvg");
-    const heightSlider = document.getElementById("heightSlider");
+    const LAYER_COUNT = 36;
+    const STACK_CENTER_X = 420;
+    const STACK_TOP_Y = 42;
+    const LAYER_GAP = 8.35;
+    const DISK_RADIUS_X = 92;
+    const DISK_RADIUS_Y = 8;
+    const DISK_THICKNESS = 5;
+
+    const svg = document.getElementById("stackSvg");
+    const morphSlider = document.getElementById("morphSlider");
+    const layerSlider = document.getElementById("layerSlider");
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
 
-    const COLORS = {
-      ink: "#172033",
-      muted: "#526075",
-      line: "#9cabbc",
-      grid: "#dce4ed",
-      blue: "#1769aa",
-      blueLight: "#b9d9ec",
-      blueFill: "#dcecf8",
-      orange: "#d75b28",
-      orangeFill: "#ffd8c6",
-      teal: "#087f6d",
-      tealFill: "#d9f2ec",
-      violet: "#6d55a6",
-      warning: "#9b4c19"
-    };
-
     const state = {
-      mode: "principle",
-      height: 0.5,
-      showLayers: false,
-      alignProgress: 0,
+      shape: "straight",
+      morph: 0,
+      selectedLayer: 18,
       animationFrame: null,
       lastTime: null,
-      prediction: null
+      autoPhase: 0,
+      autoProgress: 0
     };
+
+    const autoSequence = [
+      { shape: "straight", morph: 0, label: "곧게 쌓기" },
+      { shape: "slant", morph: 1, label: "비스듬히 밀기" },
+      { shape: "wave", morph: 1, label: "S자로 밀기" },
+      { shape: "straight", morph: 0, label: "곧게 쌓기" }
+    ];
 
     function svgElement(name, attributes = {}, text = "") {
       const element = document.createElementNS(SVG_NS, name);
@@ -523,285 +580,303 @@
       return element;
     }
 
-    function clearSvg() {
-      while (svg.firstChild) svg.removeChild(svg.firstChild);
-      add(svg, "title", { id: "svgTitle" }, state.mode === "principle"
-        ? "곧은 기둥과 옆으로 밀린 기둥의 같은 높이 단면 비교"
-        : "원기둥과 가운데가 잘록한 입체의 같은 높이 단면 비교");
-      add(svg, "desc", { id: "svgDesc" }, "높이 슬라이더에 따라 두 입체의 절단면 위치와 단면적 표시가 함께 바뀝니다.");
+    function clamp(value, min, max) {
+      return Math.min(max, Math.max(min, value));
+    }
+
+    function easeInOut(value) {
+      const t = clamp(value, 0, 1);
+      return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+    }
+
+    function shapeOffset(shape, normalizedHeight) {
+      if (shape === "slant") {
+        return (normalizedHeight - 0.5) * 230;
+      }
+      if (shape === "wave") {
+        return 112 * Math.sin((normalizedHeight - 0.5) * Math.PI * 2);
+      }
+      return 0;
+    }
+
+    function layerOffset(layerNumber) {
+      const normalizedHeight = (layerNumber - 1) / (LAYER_COUNT - 1);
+      return shapeOffset(state.shape, normalizedHeight) * state.morph;
+    }
+
+    function layerY(layerNumber) {
+      return STACK_TOP_Y + (LAYER_COUNT - layerNumber) * LAYER_GAP;
     }
 
     function ellipsePath(cx, cy, rx, ry) {
       return `M ${cx - rx} ${cy} A ${rx} ${ry} 0 1 0 ${cx + rx} ${cy} A ${rx} ${ry} 0 1 0 ${cx - rx} ${cy}`;
     }
 
-    function bodyPath(centerAt, radiusAt, topY, bottomY) {
-      const steps = 28;
-      const left = [];
-      const right = [];
-      for (let i = 0; i <= steps; i += 1) {
-        const t = i / steps;
-        const y = bottomY - t * (bottomY - topY);
-        const center = centerAt(t);
-        const radius = radiusAt(t);
-        left.push(`${center - radius},${y}`);
-        right.unshift(`${center + radius},${y}`);
-      }
-      return `M ${left.join(" L ")} L ${right.join(" L ")} Z`;
+    function diskSidePath(cx, cy) {
+      return [
+        `M ${cx - DISK_RADIUS_X} ${cy}`,
+        `A ${DISK_RADIUS_X} ${DISK_RADIUS_Y} 0 0 0 ${cx + DISK_RADIUS_X} ${cy}`,
+        `L ${cx + DISK_RADIUS_X} ${cy + DISK_THICKNESS}`,
+        `A ${DISK_RADIUS_X} ${DISK_RADIUS_Y} 0 0 1 ${cx - DISK_RADIUS_X} ${cy + DISK_THICKNESS}`,
+        "Z"
+      ].join(" ");
     }
 
-    function areaText(value) {
-      return `${value.toFixed(1)} 단위²`;
-    }
-
-    function pinchedRadius(t) {
-      const distanceFromMiddle = Math.abs(2 * t - 1);
-      return 26 + 20 * distanceFromMiddle * distanceFromMiddle;
-    }
-
-    function drawGuide(y, leftX, rightX) {
-      add(svg, "line", {
-        x1: 36, y1: y, x2: 824, y2: y,
-        stroke: COLORS.orange, "stroke-width": 2, "stroke-dasharray": "7 6", opacity: 0.65
-      });
-      add(svg, "text", {
-        x: 42, y: y - 8, fill: COLORS.orange, "font-size": 12, "font-weight": 800
-      }, `같은 높이 ${Math.round(state.height * 100)}%`);
-      add(svg, "path", {
-        d: `M ${leftX + 67} ${y - 5} L ${rightX - 67} ${y - 5}`,
-        stroke: COLORS.orange, "stroke-width": 2.5, fill: "none", "marker-end": "url(#arrow)"
-      });
+    function clearSvg() {
+      while (svg.firstChild) svg.removeChild(svg.firstChild);
+      add(svg, "title", { id: "svgTitle" }, "높이별로 좌우 평행이동하는 원판 더미");
+      add(svg, "desc", { id: "svgDesc" }, "36개의 얇은 수평 원판이 선택한 모양으로 변형됩니다. 각 원판은 기울지 않고 중심만 좌우로 이동합니다.");
     }
 
     function drawDefs() {
       const defs = add(svg, "defs", {});
-      const gradient = add(defs, "linearGradient", { id: "solidGradient", x1: "0", y1: "0", x2: "1", y2: "0" });
-      add(gradient, "stop", { offset: "0%", "stop-color": "#c5e2f2", "stop-opacity": "0.9" });
-      add(gradient, "stop", { offset: "55%", "stop-color": "#edf7fc", "stop-opacity": "0.72" });
-      add(gradient, "stop", { offset: "100%", "stop-color": "#8bbbd6", "stop-opacity": "0.86" });
+      const diskGradient = add(defs, "linearGradient", { id: "diskGradient", x1: "0", y1: "0", x2: "1", y2: "0" });
+      add(diskGradient, "stop", { offset: "0%", "stop-color": "#b9dced" });
+      add(diskGradient, "stop", { offset: "52%", "stop-color": "#f1f9fd" });
+      add(diskGradient, "stop", { offset: "100%", "stop-color": "#8dbfd9" });
 
-      const orangeGradient = add(defs, "linearGradient", { id: "cutGradient", x1: "0", y1: "0", x2: "0", y2: "1" });
-      add(orangeGradient, "stop", { offset: "0%", "stop-color": "#fff1e9" });
-      add(orangeGradient, "stop", { offset: "100%", "stop-color": "#ffc7aa" });
+      const selectedGradient = add(defs, "linearGradient", { id: "selectedGradient", x1: "0", y1: "0", x2: "1", y2: "0" });
+      add(selectedGradient, "stop", { offset: "0%", "stop-color": "#ffc4a7" });
+      add(selectedGradient, "stop", { offset: "50%", "stop-color": "#fff1e9" });
+      add(selectedGradient, "stop", { offset: "100%", "stop-color": "#f49b72" });
 
-      const marker = add(defs, "marker", {
-        id: "arrow", viewBox: "0 0 10 10", refX: 8, refY: 5,
-        markerWidth: 6, markerHeight: 6, orient: "auto-start-reverse"
+      const arrow = add(defs, "marker", {
+        id: "arrowHead",
+        viewBox: "0 0 10 10",
+        refX: 8,
+        refY: 5,
+        markerWidth: 7,
+        markerHeight: 7,
+        orient: "auto-start-reverse"
       });
-      add(marker, "path", { d: "M 0 0 L 10 5 L 0 10 Z", fill: COLORS.orange });
+      add(arrow, "path", { d: "M 0 0 L 10 5 L 0 10 Z", fill: "#d65a24" });
     }
 
-    function drawFloor() {
-      add(svg, "ellipse", { cx: 226, cy: 344, rx: 100, ry: 17, fill: "#dbe4ee", opacity: 0.58 });
-      add(svg, "ellipse", { cx: 634, cy: 344, rx: 112, ry: 17, fill: "#dbe4ee", opacity: 0.58 });
-    }
-
-    function drawSolid(options) {
-      const { centerAt, radiusAt, topY, bottomY, label, labelX, cutT, layerSide } = options;
-      const cutY = bottomY - cutT * (bottomY - topY);
-      const cutCenter = centerAt(cutT);
-      const cutRadius = radiusAt(cutT);
-      const topCenter = centerAt(1);
-      const bottomCenter = centerAt(0);
-      const topRadius = radiusAt(1);
-      const bottomRadius = radiusAt(0);
-
-      add(svg, "path", {
-        d: bodyPath(centerAt, radiusAt, topY, bottomY),
-        fill: "url(#solidGradient)", stroke: COLORS.blue, "stroke-width": 2
-      });
-
-      add(svg, "path", {
-        d: ellipsePath(bottomCenter, bottomY, bottomRadius, 13),
-        fill: "#b5d6e8", stroke: COLORS.blue, "stroke-width": 2
-      });
-      add(svg, "path", {
-        d: ellipsePath(topCenter, topY, topRadius, 13),
-        fill: "#eaf5fb", stroke: COLORS.blue, "stroke-width": 2
-      });
-
-      if (state.showLayers && state.mode === "principle") {
-        for (let index = 1; index < 12; index += 1) {
-          const t = index / 12;
-          const y = bottomY - t * (bottomY - topY);
-          const center = centerAt(t);
-          const radius = radiusAt(t);
-          add(svg, "path", {
-            d: ellipsePath(center, y, radius, 9),
-            fill: index % 2 ? "rgba(220,236,248,0.38)" : "rgba(185,217,236,0.36)",
-            stroke: layerSide === "right" ? COLORS.violet : COLORS.blue,
-            "stroke-width": 1.25,
-            "stroke-dasharray": layerSide === "right" ? "5 3" : "none",
-            opacity: 0.9
-          });
-        }
-      }
-
-      add(svg, "path", {
-        d: ellipsePath(cutCenter, cutY, cutRadius, 11),
-        fill: "url(#cutGradient)", stroke: COLORS.orange, "stroke-width": 4
-      });
+    function drawBackgroundGuides() {
       add(svg, "line", {
-        x1: cutCenter - cutRadius + 5, y1: cutY,
-        x2: cutCenter + cutRadius - 5, y2: cutY,
-        stroke: COLORS.orange, "stroke-width": 2
-      });
-
-      add(svg, "text", {
-        x: labelX, y: 374, "text-anchor": "middle",
-        fill: COLORS.ink, "font-size": 16, "font-weight": 900
-      }, label);
-
-      return { cutY, cutCenter, cutRadius };
-    }
-
-    function drawAreaBadge(x, y, value, equal) {
-      add(svg, "rect", {
-        x: x - 72, y: y - 18, width: 144, height: 36, rx: 9,
-        fill: equal ? COLORS.tealFill : "#fff0e8",
-        stroke: equal ? COLORS.teal : COLORS.warning, "stroke-width": 1.5
+        x1: STACK_CENTER_X,
+        y1: 24,
+        x2: STACK_CENTER_X,
+        y2: 354,
+        stroke: "#8291a5",
+        "stroke-width": 2,
+        "stroke-dasharray": "7 7",
+        opacity: 0.7
       });
       add(svg, "text", {
-        x, y: y + 5, "text-anchor": "middle",
-        fill: equal ? COLORS.teal : COLORS.warning, "font-size": 14, "font-weight": 900
-      }, `단면적 ${areaText(value)}`);
+        x: STACK_CENTER_X,
+        y: 18,
+        "text-anchor": "middle",
+        fill: "#526075",
+        "font-size": 12,
+        "font-weight": 800
+      }, "원래 중심선");
+
+      add(svg, "line", {
+        x1: 170,
+        y1: 354,
+        x2: 670,
+        y2: 354,
+        stroke: "#bdc8d5",
+        "stroke-width": 2
+      });
+      add(svg, "text", {
+        x: 676,
+        y: 358,
+        fill: "#526075",
+        "font-size": 12,
+        "font-weight": 800
+      }, "높이");
+      add(svg, "path", {
+        d: "M 690 340 L 690 55",
+        stroke: "#526075",
+        "stroke-width": 2,
+        fill: "none",
+        "marker-end": "url(#arrowHead)"
+      });
     }
 
-    function renderPrinciple() {
-      const topY = 53;
-      const bottomY = 330;
-      const radius = 52;
-      const leftBase = 226;
-      const rightBase = 596;
-      const shear = 76 * (1 - state.alignProgress);
-      const leftCenter = () => leftBase;
-      const rightCenter = t => rightBase + shear * t;
-      const constantRadius = () => radius;
-
-      const left = drawSolid({
-        centerAt: leftCenter, radiusAt: constantRadius, topY, bottomY,
-        label: "곧은 기둥", labelX: leftBase, cutT: state.height, layerSide: "left"
-      });
-      const right = drawSolid({
-        centerAt: rightCenter, radiusAt: constantRadius, topY, bottomY,
-        label: state.alignProgress > 0.96 ? "층을 정렬한 기둥" : "옆으로 밀린 기둥",
-        labelX: rightBase + shear / 2, cutT: state.height, layerSide: "right"
+    function drawDisk(layerNumber) {
+      const selected = layerNumber === state.selectedLayer;
+      const y = layerY(layerNumber);
+      const x = STACK_CENTER_X + layerOffset(layerNumber);
+      const group = add(svg, "g", {
+        "aria-label": `${layerNumber}번 원판 층`,
+        "data-layer": layerNumber
       });
 
-      drawGuide(left.cutY, left.cutCenter, right.cutCenter);
-      drawAreaBadge(left.cutCenter, left.cutY - 33, Math.PI * 4, true);
-      drawAreaBadge(right.cutCenter, right.cutY - 33, Math.PI * 4, true);
+      add(group, "path", {
+        d: diskSidePath(x, y),
+        fill: selected ? "#e98151" : "#77aac6",
+        stroke: selected ? "#a93e17" : "#1769aa",
+        "stroke-width": selected ? 2.5 : 1.15
+      });
+      add(group, "path", {
+        d: ellipsePath(x, y, DISK_RADIUS_X, DISK_RADIUS_Y),
+        fill: selected ? "url(#selectedGradient)" : "url(#diskGradient)",
+        stroke: selected ? "#a93e17" : "#1769aa",
+        "stroke-width": selected ? 3 : 1.25
+      });
 
-      if (state.showLayers) {
-        add(svg, "text", {
-          x: 430, y: 28, "text-anchor": "middle",
-          fill: COLORS.violet, "font-size": 13, "font-weight": 900
-        }, state.alignProgress < 0.98
-          ? "각 층의 넓이는 그대로, 위치만 옆으로 이동합니다."
-          : "모든 층을 포개면 곧은 기둥과 정확히 같은 층 묶음입니다.");
+      if (selected) {
+        add(group, "text", {
+          x,
+          y: y + 4,
+          "text-anchor": "middle",
+          fill: "#7d2f12",
+          "font-size": 13,
+          "font-weight": 900
+        }, `${layerNumber}번 층`);
       }
     }
 
-    function renderCondition() {
-      const topY = 53;
-      const bottomY = 330;
-      const leftBase = 226;
-      const rightBase = 634;
-      const constantRadius = () => 46;
-      const pinched = t => pinchedRadius(t);
+    function drawSelectedLayerTrace() {
+      const layerNumber = state.selectedLayer;
+      const y = layerY(layerNumber);
+      const currentX = STACK_CENTER_X + layerOffset(layerNumber);
+      const displacement = currentX - STACK_CENTER_X;
 
-      const left = drawSolid({
-        centerAt: () => leftBase, radiusAt: constantRadius, topY, bottomY,
-        label: "원기둥", labelX: leftBase, cutT: state.height, layerSide: "left"
+      add(svg, "path", {
+        d: diskSidePath(STACK_CENTER_X, y),
+        fill: "#ffd7c5",
+        stroke: "#d65a24",
+        "stroke-width": 2,
+        "stroke-dasharray": "6 4",
+        opacity: 0.24
       });
-      const right = drawSolid({
-        centerAt: () => rightBase, radiusAt: pinched, topY, bottomY,
-        label: "가운데가 잘록한 입체", labelX: rightBase, cutT: state.height, layerSide: "right"
+      add(svg, "path", {
+        d: ellipsePath(STACK_CENTER_X, y, DISK_RADIUS_X, DISK_RADIUS_Y),
+        fill: "#fff0e8",
+        stroke: "#d65a24",
+        "stroke-width": 2.5,
+        "stroke-dasharray": "6 4",
+        opacity: 0.45
       });
-
-      const leftArea = Math.PI * 4;
-      const rightRadiusModel = pinchedRadius(state.height) / 23;
-      const rightArea = Math.PI * rightRadiusModel * rightRadiusModel;
-      const equal = Math.abs(leftArea - rightArea) < 0.12;
-
-      drawGuide(left.cutY, left.cutCenter, right.cutCenter);
-      drawAreaBadge(left.cutCenter, left.cutY - 33, leftArea, true);
-      drawAreaBadge(right.cutCenter, right.cutY - 33, rightArea, equal);
-
       add(svg, "text", {
-        x: 430, y: 28, "text-anchor": "middle",
-        fill: COLORS.warning, "font-size": 13, "font-weight": 900
-      }, "높이와 밑면이 같아도 중간 단면적이 다르면 원리를 적용할 수 없습니다.");
+        x: STACK_CENTER_X,
+        y: y + 4,
+        "text-anchor": "middle",
+        fill: "#923f1d",
+        "font-size": 12,
+        "font-weight": 900,
+        opacity: 0.72
+      }, `${layerNumber}번 잔상`);
+
+      if (Math.abs(displacement) > 3) {
+        const direction = displacement > 0 ? 1 : -1;
+        const startX = STACK_CENTER_X + direction * (DISK_RADIUS_X + 7);
+        const endX = currentX - direction * (DISK_RADIUS_X + 7);
+        add(svg, "line", {
+          x1: startX,
+          y1: y - 17,
+          x2: endX,
+          y2: y - 17,
+          stroke: "#d65a24",
+          "stroke-width": 3,
+          "marker-start": "url(#arrowHead)",
+          "marker-end": "url(#arrowHead)"
+        });
+        add(svg, "text", {
+          x: (startX + endX) / 2,
+          y: y - 24,
+          "text-anchor": "middle",
+          fill: "#923f1d",
+          "font-size": 12,
+          "font-weight": 900
+        }, "좌우 평행이동");
+      } else {
+        add(svg, "text", {
+          x: STACK_CENTER_X + DISK_RADIUS_X + 18,
+          y: y + 4,
+          fill: "#923f1d",
+          "font-size": 12,
+          "font-weight": 900
+        }, "원래 위치와 일치");
+      }
+    }
+
+    function drawLayerLabels() {
+      [1, 12, 24, 36].forEach(layerNumber => {
+        const y = layerY(layerNumber);
+        const x = STACK_CENTER_X + layerOffset(layerNumber);
+        const labelX = x < STACK_CENTER_X ? x - DISK_RADIUS_X - 13 : x + DISK_RADIUS_X + 13;
+        add(svg, "text", {
+          x: labelX,
+          y: y + 4,
+          "text-anchor": x < STACK_CENTER_X ? "end" : "start",
+          fill: "#526075",
+          "font-size": 11,
+          "font-weight": 800
+        }, `${layerNumber}층`);
+      });
     }
 
     function renderSvg() {
       clearSvg();
       drawDefs();
-      drawFloor();
-      if (state.mode === "principle") renderPrinciple();
-      else renderCondition();
-    }
+      drawBackgroundGuides();
+      drawSelectedLayerTrace();
 
-    function updateText(announce = false) {
-      const percent = Math.round(state.height * 100);
-      document.getElementById("heightValue").textContent = `높이 ${percent}%`;
-      document.getElementById("progressLabel").textContent = `정렬 ${Math.round(state.alignProgress * 100)}%`;
-      document.getElementById("layersButton").setAttribute("aria-pressed", String(state.showLayers));
-      document.getElementById("autoButton").setAttribute("aria-pressed", String(state.animationFrame !== null));
-
-      const principle = state.mode === "principle";
-      document.getElementById("principleMode").setAttribute("aria-pressed", String(principle));
-      document.getElementById("conditionMode").setAttribute("aria-pressed", String(!principle));
-      document.getElementById("sceneTitle").textContent = principle
-        ? "곧은 기둥과 옆으로 밀린 기둥"
-        : "조건 확인: 높이와 밑면만 같다면?";
-      document.getElementById("sceneHint").textContent = principle
-        ? "주황 절단면 두 개가 같은 높이에서 함께 움직입니다."
-        : "잘록한 입체의 단면 수치가 높이에 따라 달라집니다.";
-      document.getElementById("predictionCard").hidden = !principle;
-      document.getElementById("layersButton").disabled = !principle;
-      document.getElementById("stepButton").disabled = !principle;
-      document.getElementById("autoButton").disabled = !principle;
-      document.getElementById("pauseButton").disabled = !principle;
-
-      document.getElementById("leftMetricLabel").textContent = principle ? "곧은 기둥의 단면" : "원기둥의 단면";
-      document.getElementById("rightMetricLabel").textContent = principle ? "밀린 기둥의 단면" : "잘록한 입체의 단면";
-      document.getElementById("leftArea").textContent = areaText(Math.PI * 4);
-
-      const rightMetric = document.getElementById("rightMetric");
-      if (principle) {
-        document.getElementById("rightArea").textContent = areaText(Math.PI * 4);
-        document.getElementById("rightMetricNote").textContent = "같은 모양 · 같은 넓이";
-        rightMetric.className = "metric equal-metric";
-        document.getElementById("reading").innerHTML =
-          state.showLayers
-            ? `<strong>읽기:</strong> ${Math.round(state.alignProgress * 100)}% 정렬했습니다. 층의 위치는 바뀌지만 각 층의 넓이는 변하지 않습니다. 같은 층들을 모두 쌓은 양도 같습니다.`
-            : "<strong>읽기:</strong> 기둥이 옆으로 밀려도, 같은 높이의 수평 단면은 언제나 같은 원입니다.";
-      } else {
-        const modelRadius = pinchedRadius(state.height) / 23;
-        const rightArea = Math.PI * modelRadius * modelRadius;
-        const difference = Math.abs(Math.PI * 4 - rightArea);
-        const nearlyEqual = difference < 0.12;
-        document.getElementById("rightArea").textContent = areaText(rightArea);
-        document.getElementById("rightMetricNote").textContent = nearlyEqual
-          ? "끝 높이에서는 밑면 넓이가 같음"
-          : `원기둥보다 ${difference.toFixed(1)} 단위² 작음`;
-        rightMetric.className = nearlyEqual ? "metric equal-metric" : "metric different-metric";
-        document.getElementById("reading").innerHTML = nearlyEqual
-          ? "<strong>조건 확인:</strong> 밑면과 높이는 같습니다. 하지만 슬라이더를 가운데로 옮기면 중간 단면적이 달라집니다."
-          : `<strong>조건 확인:</strong> 높이 ${percent}%에서 두 단면적이 다릅니다. 카발리에리의 원리는 <b>모든 높이</b>에서 단면적이 같을 때만 적용됩니다.`;
+      for (let layerNumber = 1; layerNumber <= LAYER_COUNT; layerNumber += 1) {
+        drawDisk(layerNumber);
       }
 
+      drawLayerLabels();
+      add(svg, "text", {
+        x: 420,
+        y: 382,
+        "text-anchor": "middle",
+        fill: "#0e4f82",
+        "font-size": 13,
+        "font-weight": 900
+      }, "모든 원판은 끝까지 수평 · 각 층의 중심만 좌우로 이동");
+    }
+
+    function shapeLabel(shape) {
+      if (shape === "slant") return "비스듬히 민";
+      if (shape === "wave") return "S자로 민";
+      return "곧게 쌓은";
+    }
+
+    function updateInterface(announce = false) {
+      const percent = Math.round(state.morph * 100);
+      const displacement = layerOffset(state.selectedLayer);
+      const roundedDisplacement = Math.round(Math.abs(displacement));
+      const direction = displacement > 1 ? "오른쪽" : displacement < -1 ? "왼쪽" : "";
+
+      morphSlider.value = String(percent);
+      layerSlider.value = String(state.selectedLayer);
+      document.getElementById("morphValue").textContent = `${percent}%`;
+      document.getElementById("layerValue").textContent = `${state.selectedLayer}번 층`;
+      document.getElementById("sceneTitle").textContent =
+        `${shapeLabel(state.shape)} 36개의 수평 원판 · 변형 ${percent}%`;
+
+      document.getElementById("straightPreset").setAttribute("aria-pressed", String(state.shape === "straight"));
+      document.getElementById("slantPreset").setAttribute("aria-pressed", String(state.shape === "slant"));
+      document.getElementById("wavePreset").setAttribute("aria-pressed", String(state.shape === "wave"));
+
+      const isAnimating = state.animationFrame !== null;
+      document.getElementById("autoButton").setAttribute("aria-pressed", String(isAnimating));
+      document.getElementById("autoButton").textContent = isAnimating ? "자동 변형 중" : "자동 변형";
+      document.getElementById("pauseButton").disabled = !isAnimating;
+
+      document.getElementById("trackValue").textContent = direction
+        ? `${state.selectedLayer}번 층 · ${direction} ${roundedDisplacement}`
+        : `${state.selectedLayer}번 층 · 이동 0`;
+      document.getElementById("trackNote").textContent = direction
+        ? `같은 번호의 잔상에서 현재 위치까지 ${direction}으로 평행이동했습니다.`
+        : "반투명 잔상과 현재 원판의 번호가 같고 위치도 일치합니다.";
+
       if (announce) {
-        document.getElementById("liveStatus").textContent = principle
-          ? `높이 ${percent}퍼센트. 두 단면적은 모두 ${areaText(Math.PI * 4)}입니다.`
-          : `높이 ${percent}퍼센트. 원기둥과 잘록한 입체의 단면적을 비교했습니다.`;
+        document.getElementById("liveStatus").textContent = direction
+          ? `${state.selectedLayer}번 층이 원래 위치에서 ${direction}으로 ${roundedDisplacement}만큼 평행이동했습니다. 원판의 넓이와 두께는 그대로입니다.`
+          : `${state.selectedLayer}번 층은 원래 위치에 있습니다. 원판의 넓이와 두께는 그대로입니다.`;
       }
     }
 
     function render(announce = false) {
       renderSvg();
-      updateText(announce);
+      updateInterface(announce);
     }
 
     function stopAnimation(message = "") {
@@ -810,104 +885,117 @@
         state.animationFrame = null;
       }
       state.lastTime = null;
-      updateText();
+      updateInterface();
       if (message) document.getElementById("liveStatus").textContent = message;
+    }
+
+    function setPreset(shape, announce = true) {
+      stopAnimation();
+      state.shape = shape;
+      state.morph = shape === "straight" ? 0 : 1;
+      render(announce);
+    }
+
+    function interpolationState(phaseIndex, progress) {
+      const from = autoSequence[phaseIndex];
+      const to = autoSequence[phaseIndex + 1];
+      const eased = easeInOut(progress);
+
+      if (from.shape === to.shape) {
+        return { shape: to.shape, morph: from.morph + (to.morph - from.morph) * eased };
+      }
+      if (from.shape === "straight") {
+        return { shape: to.shape, morph: eased };
+      }
+      if (to.shape === "straight") {
+        return { shape: from.shape, morph: 1 - eased };
+      }
+      return progress < 0.5
+        ? { shape: from.shape, morph: 1 - easeInOut(progress * 2) }
+        : { shape: to.shape, morph: easeInOut((progress - 0.5) * 2) };
     }
 
     function animationTick(time) {
       if (state.animationFrame === null) return;
       if (state.lastTime === null) state.lastTime = time;
+
       const elapsed = time - state.lastTime;
       state.lastTime = time;
-      state.alignProgress = Math.min(1, state.alignProgress + elapsed / 2400);
-      render();
+      state.autoProgress += elapsed / 1900;
 
-      if (state.alignProgress >= 1) {
-        stopAnimation("밀린 층을 모두 정렬했습니다. 각 층의 넓이는 그대로입니다.");
-        return;
+      if (state.autoProgress >= 1) {
+        state.autoProgress = 0;
+        state.autoPhase += 1;
+        if (state.autoPhase >= autoSequence.length - 1) {
+          state.autoPhase = 0;
+        }
       }
+
+      const nextState = interpolationState(state.autoPhase, state.autoProgress);
+      state.shape = nextState.shape;
+      state.morph = nextState.morph;
+      render();
       state.animationFrame = requestAnimationFrame(animationTick);
     }
 
     function startAnimation() {
-      if (state.mode !== "principle" || state.animationFrame !== null) return;
-      state.showLayers = true;
-      if (state.alignProgress >= 1) state.alignProgress = 0;
+      if (state.animationFrame !== null) return;
+
       if (reducedMotion.matches) {
-        state.alignProgress = 1;
-        render();
-        document.getElementById("liveStatus").textContent = "동작 줄이기 설정에 따라 층을 즉시 정렬했습니다.";
+        const currentIndex = autoSequence.findIndex(item => item.shape === state.shape && item.morph === Math.round(state.morph));
+        const nextIndex = currentIndex >= 0 ? (currentIndex + 1) % (autoSequence.length - 1) : 1;
+        state.shape = autoSequence[nextIndex].shape;
+        state.morph = autoSequence[nextIndex].morph;
+        render(true);
+        document.getElementById("liveStatus").textContent =
+          `동작 줄이기 설정에 따라 ${autoSequence[nextIndex].label} 상태로 즉시 전환했습니다.`;
         return;
       }
+
+      state.autoPhase = 0;
+      state.autoProgress = 0;
+      state.lastTime = null;
+      state.shape = "straight";
+      state.morph = 0;
       state.animationFrame = requestAnimationFrame(animationTick);
-      updateText();
-    }
-
-    function chooseMode(mode) {
-      stopAnimation();
-      state.mode = mode;
-      if (mode === "condition") {
-        state.showLayers = false;
-        state.alignProgress = 0;
-      }
-      render(true);
-    }
-
-    function setPrediction(choice) {
-      state.prediction = choice;
-      document.getElementById("samePrediction").setAttribute("aria-pressed", String(choice === "same"));
-      document.getElementById("differentPrediction").setAttribute("aria-pressed", String(choice === "different"));
-      document.getElementById("predictionResult").textContent = choice === "same"
-        ? "‘같다’고 예상했습니다. 여러 높이의 단면을 확인해 근거를 찾아보세요."
-        : "‘다르다’고 예상했습니다. 겉모양 대신 같은 높이의 단면을 비교해 보세요.";
-      document.getElementById("liveStatus").textContent = choice === "same"
-        ? "부피가 같다고 예상했습니다."
-        : "부피가 다르다고 예상했습니다.";
-    }
-
-    heightSlider.addEventListener("input", () => {
-      state.height = Number(heightSlider.value) / 100;
-      render(false);
-    });
-    heightSlider.addEventListener("change", () => updateText(true));
-
-    document.getElementById("principleMode").addEventListener("click", () => chooseMode("principle"));
-    document.getElementById("conditionMode").addEventListener("click", () => chooseMode("condition"));
-    document.getElementById("samePrediction").addEventListener("click", () => setPrediction("same"));
-    document.getElementById("differentPrediction").addEventListener("click", () => setPrediction("different"));
-
-    document.getElementById("layersButton").addEventListener("click", () => {
-      stopAnimation();
-      state.showLayers = !state.showLayers;
-      if (!state.showLayers) state.alignProgress = 0;
-      render();
-      document.getElementById("liveStatus").textContent = state.showLayers
-        ? "두 입체를 열두 개의 얇은 층으로 나타냈습니다."
-        : "층 표시를 닫았습니다.";
-    });
-
-    document.getElementById("stepButton").addEventListener("click", () => {
-      stopAnimation();
-      state.showLayers = true;
-      state.alignProgress = Math.min(1, state.alignProgress + 0.2);
-      render();
+      updateInterface();
       document.getElementById("liveStatus").textContent =
-        `밀린 층을 ${Math.round(state.alignProgress * 100)}퍼센트 정렬했습니다.`;
-    });
+        "곧게 쌓기, 비스듬히 밀기, S자로 밀기 순서의 자동 변형을 시작했습니다.";
+    }
 
+    morphSlider.addEventListener("input", () => {
+      stopAnimation();
+      if (state.shape === "straight" && Number(morphSlider.value) > 0) {
+        state.shape = "slant";
+      }
+      state.morph = Number(morphSlider.value) / 100;
+      render();
+    });
+    morphSlider.addEventListener("change", () => updateInterface(true));
+
+    layerSlider.addEventListener("input", () => {
+      state.selectedLayer = Number(layerSlider.value);
+      render();
+    });
+    layerSlider.addEventListener("change", () => updateInterface(true));
+
+    document.getElementById("straightPreset").addEventListener("click", () => setPreset("straight"));
+    document.getElementById("slantPreset").addEventListener("click", () => setPreset("slant"));
+    document.getElementById("wavePreset").addEventListener("click", () => setPreset("wave"));
     document.getElementById("autoButton").addEventListener("click", startAnimation);
     document.getElementById("pauseButton").addEventListener("click", () => {
-      stopAnimation("층 정렬 애니메이션을 일시정지했습니다.");
+      stopAnimation("자동 변형을 현재 모습에서 일시정지했습니다.");
     });
-
     document.getElementById("resetButton").addEventListener("click", () => {
       stopAnimation();
-      state.height = 0.5;
-      state.showLayers = false;
-      state.alignProgress = 0;
-      heightSlider.value = "50";
+      state.shape = "straight";
+      state.morph = 0;
+      state.selectedLayer = 18;
+      state.autoPhase = 0;
+      state.autoProgress = 0;
       render();
-      document.getElementById("liveStatus").textContent = "높이와 층 정렬을 초기화했습니다.";
+      document.getElementById("liveStatus").textContent =
+        "곧게 쌓은 상태와 18번 선택 층으로 초기화했습니다.";
     });
 
     window.addEventListener("pagehide", () => stopAnimation());
