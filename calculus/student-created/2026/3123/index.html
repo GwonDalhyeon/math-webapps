@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>3123 학생 제작 웹앱</title>
+
+<script src="https://cdn.jsdelivr.net/npm/mathjs@12.4.1/lib/browser/math.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+body{font-family:Arial,sans-serif;background:#f5f7fa;margin:0;padding:20px}
+.section{background:white;padding:20px;margin-bottom:20px;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.1)}
+canvas{max-height:400px}
+input[type=text]{width:100%;padding:10px;font-size:16px}
+.info{line-height:1.8}
+.red{color:red;font-weight:bold}
+</style>
+
+<style>
+  .student-work-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    max-width: 1040px;
+    margin: 0 auto 16px;
+    padding: 10px 12px;
+    border: 1px solid #dbe3ef;
+    border-radius: 8px;
+    background: #f8fafc;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+  .student-work-links a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 36px;
+    padding: 7px 10px;
+    border-radius: 6px;
+    background: #ffffff;
+    color: #1d4ed8;
+    text-decoration: none;
+    font-weight: 700;
+    border: 1px solid #dbe3ef;
+  }
+  .student-work-links a:hover {
+    background: #eff6ff;
+  }
+</style>
+</head>
+<body>
+
+<nav class="student-work-links" aria-label="학생 답안 자료">
+  <a href="../">목록으로</a>
+  <a href="./answer.html">답안 보기</a>
+  <a href="./answer.txt">원문 TXT</a>
+</nav>
+
+
+<div class="section info">
+<h1>함수의 도함수와 변곡점</h1>
+<b>학번:</b> 3123<br>
+<b>이름:</b> 비공개<br>
+<b>책 제목:</b> 수학책을 탈출한 미적분<br>
+<b>저자:</b> 류치 / 이지수<br>
+<b>선택한 부분 또는 주제:</b> 효율적인 선택을 위한 극값 조사 및 변곡점 조사와 미분<br>
+<b>관련 미적분 개념:</b> 여러가지 미분법, 변곡점, 극값<br><br>
+
+<b>웹앱 제작 의도:</b><br>
+미적분을 잘 모르는 사람도 함수의 도함수와 변곡점을 쉽게 이해할 수 있도록 만들었다.<br><br>
+
+<b>사용 방법:</b><br>
+함수를 입력하고 그래프 그리기를 누른다. 접선 위치 슬라이더를 움직여 접선의 변화도 확인할 수 있다.
+</div>
+
+<div class="section">
+<h2>개념 설명</h2>
+변곡점은 함수의 오목함이 바뀌는 지점이다.<br>
+도함수는 함수의 변화율을 나타낸다.<br>
+이 웹앱은 원함수, 도함수, 변곡점을 함께 보여준다.
+</div>
+
+<div class="section">
+<h2>함수 입력</h2>
+<input id="func" value="x^3-3*x">
+<p>예시: x^3-3*x, sin(x), cos(x), tan(x), ln(x), exp(x)</p>
+<button onclick="drawAll()">그래프 그리기</button>
+
+<h3>접선 위치</h3>
+<input type="range" id="slider" min="-10" max="10" step="0.1" value="0" oninput="drawAll()">
+<span id="sliderValue">0</span>
+</div>
+
+<div class="section">
+<h2>원함수 그래프</h2>
+<canvas id="funcChart"></canvas>
+</div>
+
+<div class="section">
+<h2>도함수 그래프</h2>
+<canvas id="derChart"></canvas>
+</div>
+
+<div class="section">
+<h2>결과 해석</h2>
+<div id="result"></div>
+</div>
+
+<script>
+let chart1=null;
+let chart2=null;
+
+function findInflections(f, second){
+    let pts=[];
+    for(let x=-10;x<10;x+=0.05){
+        try{
+            let a=second.evaluate({x:x});
+            let b=second.evaluate({x:x+0.05});
+            if(isFinite(a)&&isFinite(b)&&a*b<0){
+                pts.push({x:x,y:f.evaluate({x:x})});
+            }
+        }catch(e){}
+    }
+    return pts;
+}
+
+function drawAll(){
+
+document.getElementById("sliderValue").textContent =
+document.getElementById("slider").value;
+
+try{
+
+const expr=document.getElementById("func").value;
+
+const f=math.compile(expr);
+const dExpr=math.derivative(expr,"x").toString();
+const d=math.compile(dExpr);
+
+const sExpr=math.derivative(dExpr,"x").toString();
+const s=math.compile(sExpr);
+
+let xData=[];
+let yData=[];
+let dyData=[];
+
+for(let x=-10;x<=10;x+=0.1){
+    try{
+        let y=f.evaluate({x});
+        let dy=d.evaluate({x});
+
+        if(isFinite(y)){
+            xData.push(x);
+            yData.push(y);
+        }
+
+        if(isFinite(dy)){
+            dyData.push({x:x,y:dy});
+        }
+    }catch(e){}
+}
+
+const inflections=findInflections(f,s);
+
+const tangentX=parseFloat(document.getElementById("slider").value);
+
+let tangentPoint=null;
+let tangentLine=[];
+
+try{
+    let y0=f.evaluate({x:tangentX});
+    let m=d.evaluate({x:tangentX});
+
+    tangentPoint={x:tangentX,y:y0};
+
+    for(let x=-10;x<=10;x+=0.1){
+        tangentLine.push({
+            x:x,
+            y:m*(x-tangentX)+y0
+        });
+    }
+}catch(e){}
+
+if(chart1) chart1.destroy();
+
+chart1=new Chart(document.getElementById("funcChart"),{
+type:"scatter",
+data:{
+datasets:[
+{
+label:"원함수",
+showLine:true,
+data:xData.map((x,i)=>({x:x,y:yData[i]}))
+},
+{
+label:"변곡점",
+data:inflections,
+backgroundColor:"red",
+pointRadius:6
+},
+{
+label:"접선",
+showLine:true,
+data:tangentLine,
+borderColor:"green",
+pointRadius:0
+},
+{
+label:"접점",
+data:tangentPoint?[tangentPoint]:[],
+backgroundColor:"orange",
+pointRadius:6
+}
+]
+},
+options:{
+responsive:true,
+scales:{
+x:{min:-10,max:10,ticks:{stepSize:1}}
+}
+}
+});
+
+if(chart2) chart2.destroy();
+
+chart2=new Chart(document.getElementById("derChart"),{
+type:"scatter",
+data:{
+datasets:[{
+label:"도함수",
+showLine:true,
+data:dyData
+}]
+},
+options:{
+responsive:true,
+scales:{
+x:{min:-10,max:10,ticks:{stepSize:1}}
+}
+}
+});
+
+let txt="";
+
+txt+="<b>입력 함수</b>: "+expr+"<br>";
+txt+="<b>도함수</b>: "+dExpr+"<br>";
+txt+="<b>이계도함수</b>: "+sExpr+"<br><br>";
+
+txt+="<b>변곡점 후보</b><br>";
+
+if(inflections.length===0){
+txt+="발견되지 않음<br>";
+}else{
+inflections.forEach(p=>{
+txt+="<span class='red'>("
++p.x.toFixed(2)+", "
++p.y.toFixed(2)+")</span><br>";
+});
+}
+
+try{
+let m=d.evaluate({x:tangentX});
+let y0=f.evaluate({x:tangentX});
+let b=y0-m*tangentX;
+
+txt+="<br><b>현재 접선</b><br>";
+txt+="y = "+m.toFixed(4)+"x + "+b.toFixed(4);
+}catch(e){}
+
+document.getElementById("result").innerHTML=txt;
+
+}catch(e){
+document.getElementById("result").innerHTML="함수 해석 실패";
+}
+}
+
+drawAll();
+</script>
+</body>
+</html>

@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>3418 학생 제작 웹앱</title>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+body{
+    font-family: Arial, sans-serif;
+    margin:20px;
+    background:#f4f6f8;
+    line-height:1.6;
+}
+
+.section{
+    background:white;
+    padding:15px;
+    margin-bottom:15px;
+    border-radius:10px;
+    box-shadow:0 2px 5px rgba(0,0,0,0.1);
+}
+
+h1,h2{
+    color:#003366;
+}
+
+.controls{
+    display:flex;
+    flex-wrap:wrap;
+    gap:20px;
+}
+
+.bridge{
+    position:relative;
+    width:100%;
+    height:120px;
+    margin-top:20px;
+}
+
+.bridge-line{
+    position:absolute;
+    top:60px;
+    width:100%;
+    height:8px;
+    background:#666;
+}
+
+.car{
+    position:absolute;
+    top:20px;
+    font-size:35px;
+    transition:0.2s;
+}
+
+.status{
+    font-size:20px;
+    font-weight:bold;
+}
+
+.safe{
+    color:green;
+}
+
+.warning{
+    color:red;
+}
+
+canvas{
+    max-height:450px;
+}
+</style>
+
+<style>
+  .student-work-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    max-width: 1040px;
+    margin: 0 auto 16px;
+    padding: 10px 12px;
+    border: 1px solid #dbe3ef;
+    border-radius: 8px;
+    background: #f8fafc;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+  .student-work-links a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 36px;
+    padding: 7px 10px;
+    border-radius: 6px;
+    background: #ffffff;
+    color: #1d4ed8;
+    text-decoration: none;
+    font-weight: 700;
+    border: 1px solid #dbe3ef;
+  }
+  .student-work-links a:hover {
+    background: #eff6ff;
+  }
+</style>
+</head>
+<body>
+
+<nav class="student-work-links" aria-label="학생 답안 자료">
+  <a href="../">목록으로</a>
+  <a href="./answer.html">답안 보기</a>
+  <a href="./answer.txt">원문 TXT</a>
+</nav>
+
+
+<div class="section">
+<h1>교량 구조물의 처짐과 미분 분석</h1>
+
+<p><b>학번:</b> 3418</p>
+<p><b>이름:</b> 비공개</p>
+<p><b>책 제목:</b> 수학책을 탈출한 미적분</p>
+<p><b>저자:</b> 류치</p>
+<p><b>선택 주제:</b> 미분을 이용한 구조물 변형과 하중 변화 분석</p>
+<p><b>관련 개념:</b> 미분, 도함수, 순간 변화율, 접선의 기울기</p>
+
+<p><b>웹앱 제작 의도:</b>
+교량 위를 차량이 지나갈 때 발생하는 처짐량 변화를 관찰하고,
+미분을 통해 순간 변화율이 실제 구조물 안전성 분석에 어떻게 활용되는지 이해한다.
+</p>
+
+<p><b>사용 방법:</b>
+차량 무게와 위치를 조절하여 그래프와 교량 상태 변화를 관찰한다.
+</p>
+
+<h3>
+교량에 차량이 지나갈 때 발생하는 처짐량의 변화를 관찰하고
+미분을 통해 구조물의 순간 변화율을 분석해 보세요.
+</h3>
+</div>
+
+<div class="section">
+<h2>개념 설명</h2>
+
+<p>
+교량 위를 차량이 지나가면 교량은 조금 휘어지게 된다.
+이때 처짐량이 위치에 따라 어떻게 변하는지를 함수로 나타낼 수 있다.
+</p>
+
+<p>
+접선의 기울기는 특정 순간의 변화 속도를 의미하며,
+이는 미분값(도함수)으로 표현된다.
+구조물의 변형 속도가 급격하게 증가하면 안전성에 문제가 발생할 수 있다.
+</p>
+</div>
+
+<div class="section">
+<h2>조작 영역</h2>
+
+<div class="controls">
+
+<div>
+<label>
+차량 무게 :
+<span id="weightValue">50</span>톤
+</label><br>
+<input type="range" id="weight" min="10" max="100" value="50">
+</div>
+
+<div>
+<label>
+차량 위치 :
+<span id="positionValue">50</span>
+</label><br>
+<input type="range" id="position" min="0" max="100" value="50">
+</div>
+
+<div>
+<button id="pauseBtn">일시 정지</button>
+<button id="resetBtn">초기화</button>
+</div>
+
+</div>
+</div>
+
+<div class="section">
+<h2>교량 시각화</h2>
+
+<div class="bridge">
+<div class="bridge-line"></div>
+<div class="car" id="bridgeCar">🚗</div>
+</div>
+</div>
+
+<div class="section">
+<h2>그래프 시각화</h2>
+
+<canvas id="chart"></canvas>
+</div>
+
+<div class="section">
+<h2>결과 해석</h2>
+
+<p>현재 처짐량 : <span id="deflection"></span></p>
+
+<p>순간 변화율(도함수) : <span id="slope"></span></p>
+
+<p>차량 위치 : <span id="currentPos"></span></p>
+
+<p class="status" id="status"></p>
+
+<p>
+접선의 기울기가 클수록 교량의 변형 속도가 빠르게 변하고 있다는 의미이다.
+이는 구조물의 안전성을 평가할 때 중요한 정보가 된다.
+</p>
+</div>
+
+<script>
+
+const weightSlider = document.getElementById("weight");
+const positionSlider = document.getElementById("position");
+
+const weightValue = document.getElementById("weightValue");
+const positionValue = document.getElementById("positionValue");
+
+const deflectionText = document.getElementById("deflection");
+const slopeText = document.getElementById("slope");
+const currentPos = document.getElementById("currentPos");
+const statusText = document.getElementById("status");
+
+const bridgeCar = document.getElementById("bridgeCar");
+
+let paused = false;
+
+const xValues = [];
+const yValues = [];
+
+for(let x=0;x<=100;x++){
+    xValues.push(x);
+    yValues.push(0);
+}
+
+const ctx = document.getElementById("chart");
+
+const chart = new Chart(ctx,{
+type:'line',
+data:{
+labels:xValues,
+datasets:[
+{
+label:'교량 처짐량',
+data:yValues,
+borderWidth:3,
+tension:0.3
+},
+{
+label:'현재 차량 위치',
+data:[{x:50,y:0}],
+pointRadius:10,
+showLine:false
+},
+{
+label:'접선',
+data:[],
+borderDash:[5,5],
+borderWidth:2
+}
+]
+},
+options:{
+responsive:true,
+animation:false,
+scales:{
+x:{
+title:{
+display:true,
+text:'차량 위치'
+}
+},
+y:{
+title:{
+display:true,
+text:'처짐량'
+}
+}
+}
+}
+});
+
+function updateGraph(){
+
+if(paused) return;
+
+let w = Number(weightSlider.value);
+let pos = Number(positionSlider.value);
+
+weightValue.textContent = w;
+positionValue.textContent = pos;
+
+const graphData = [];
+
+for(let x=0;x<=100;x++){
+
+let y =
+w * 0.5 *
+Math.sin(Math.PI*x/100);
+
+graphData.push(y);
+
+}
+
+chart.data.datasets[0].data = graphData;
+
+let yPos =
+w * 0.5 *
+Math.sin(Math.PI*pos/100);
+
+let slope =
+w * 0.5 *
+(Math.PI/100) *
+Math.cos(Math.PI*pos/100);
+
+chart.data.datasets[1].data = [{
+x:pos,
+y:yPos
+}];
+
+let tangent = [];
+
+for(let dx=-20; dx<=20; dx++){
+
+let x = pos + dx;
+
+if(x>=0 && x<=100){
+
+let y = yPos + slope*(x-pos);
+
+tangent.push({
+x:x,
+y:y
+});
+
+}
+
+}
+
+chart.data.datasets[2].data = tangent;
+
+chart.update();
+
+bridgeCar.style.left = `${pos}%`;
+
+deflectionText.textContent =
+yPos.toFixed(2);
+
+slopeText.textContent =
+slope.toFixed(3);
+
+currentPos.textContent =
+pos;
+
+if(Math.abs(slope)>1){
+
+statusText.textContent =
+"⚠ 경고 : 구조물 변형 속도가 빠릅니다.";
+
+statusText.className =
+"status warning";
+
+}else{
+
+statusText.textContent =
+"✅ 안전 상태";
+
+statusText.className =
+"status safe";
+
+}
+
+}
+
+weightSlider.addEventListener("input",updateGraph);
+positionSlider.addEventListener("input",updateGraph);
+
+document.getElementById("pauseBtn")
+.addEventListener("click",()=>{
+
+paused=!paused;
+
+});
+
+document.getElementById("resetBtn")
+.addEventListener("click",()=>{
+
+weightSlider.value=50;
+positionSlider.value=50;
+paused=false;
+updateGraph();
+
+});
+
+updateGraph();
+
+</script>
+
+</body>
+</html>

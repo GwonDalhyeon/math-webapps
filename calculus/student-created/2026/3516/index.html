@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>3516 학생 제작 웹앱</title>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+body{
+    font-family: Arial, sans-serif;
+    margin:20px;
+    background:#f5f7fa;
+    line-height:1.6;
+}
+
+.section{
+    background:white;
+    padding:20px;
+    margin-bottom:20px;
+    border-radius:10px;
+    box-shadow:0 2px 5px rgba(0,0,0,0.1);
+}
+
+h1,h2{
+    color:#2c3e50;
+}
+
+.controls{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(250px,1fr));
+    gap:15px;
+}
+
+label{
+    font-weight:bold;
+}
+
+input[type=range]{
+    width:100%;
+}
+
+.value{
+    color:#d35400;
+    font-weight:bold;
+}
+
+canvas{
+    max-width:100%;
+}
+
+#result{
+    font-size:18px;
+    font-weight:bold;
+    color:#1f4e79;
+}
+</style>
+
+<style>
+  .student-work-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    max-width: 1040px;
+    margin: 0 auto 16px;
+    padding: 10px 12px;
+    border: 1px solid #dbe3ef;
+    border-radius: 8px;
+    background: #f8fafc;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+  .student-work-links a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 36px;
+    padding: 7px 10px;
+    border-radius: 6px;
+    background: #ffffff;
+    color: #1d4ed8;
+    text-decoration: none;
+    font-weight: 700;
+    border: 1px solid #dbe3ef;
+  }
+  .student-work-links a:hover {
+    background: #eff6ff;
+  }
+</style>
+</head>
+<body>
+
+<nav class="student-work-links" aria-label="학생 답안 자료">
+  <a href="../">목록으로</a>
+  <a href="./answer.html">답안 보기</a>
+  <a href="./answer.txt">원문 TXT</a>
+</nav>
+
+
+<!-- 상단 정보 영역 -->
+<div class="section">
+<h1>미적분 독서 연계 웹앱</h1>
+
+<p><strong>학번:</strong> 3516</p>
+<p><strong>이름:</strong> 비공개</p>
+<p><strong>책 제목:</strong> 미적분으로 바라본 하루</p>
+<p><strong>저자:</strong> 오스카 E. 페르난데스</p>
+<p><strong>선택한 부분 또는 주제:</strong> 감기의 미적분학</p>
+<p><strong>관련 미적분 개념:</strong> 미분 방정식</p>
+
+<p><strong>웹앱 제작 의도:</strong>
+헌혈 참여는 사람들 사이의 영향으로 확산되며 그 과정은 미분 방정식을 이용한 로지스틱모델로 설명할 수 있다.
+</p>
+
+<p><strong>사용 방법:</strong>
+홍보 효과 k, 초기 헌혈 참여자 수 z(t), 전체 인원 수 N을 조절하여 그래프 변화를 확인해보세요.
+</p>
+</div>
+
+<!-- 개념 설명 -->
+<div class="section">
+<h2>개념 설명</h2>
+
+<p>
+책에서는 감염자 수가 일정하게 증가하지 않고 변화율에 따라 증가 속도가 달라지는 현상을 설명한다.
+이 웹앱에서는 같은 원리를 헌혈 참여 확산에 적용하였다.
+</p>
+
+<p>
+참여자 수는 처음에는 천천히 증가하지만, 중간에는 빠르게 증가하고,
+이후에는 증가 속도가 다시 느려지며 S자 형태의 그래프를 만든다.
+</p>
+
+<p>
+감염 속도가 일정하지 않고 변화율을 통해 감염자 수가 빠르게 증가하는 순간을 확인할 수 있다는 점이 흥미로웠다.
+</p>
+</div>
+
+<!-- 시각화 -->
+<div class="section">
+<h2>참여자 수 변화 그래프</h2>
+<canvas id="chart"></canvas>
+</div>
+
+<!-- 조작 영역 -->
+<div class="section">
+<h2>조작 영역</h2>
+
+<div class="controls">
+
+<div>
+<label>홍보 효과 k :
+<span class="value" id="kValue">0.2</span>
+</label>
+<input type="range" id="k" min="0.05" max="1" step="0.05" value="0.2">
+</div>
+
+<div>
+<label>초기 헌혈 참여자 수 z(t) :
+<span class="value" id="zValue">10</span>
+</label>
+<input type="range" id="z" min="1" max="100" value="10">
+</div>
+
+<div>
+<label>전체 인원 수 N :
+<span class="value" id="nValue">100</span>
+</label>
+<input type="range" id="n" min="50" max="500" value="100">
+</div>
+
+</div>
+</div>
+
+<!-- 결과 해석 -->
+<div class="section">
+<h2>결과 해석</h2>
+<p id="result">
+헌혈 참여자 수가 일정하게 증가하는 것이 아니라 홍보 효과와 초기 참여자의 수에 따라 확산 속도가 달라질 수 있다.
+</p>
+</div>
+
+<script>
+const ctx = document.getElementById('chart');
+
+let chart;
+
+function logisticData(k, initial, N){
+
+    const data = [];
+
+    // 로지스틱 함수
+    const A = (N - initial) / initial;
+
+    for(let t=0;t<=20;t+=0.5){
+
+        const y = N / (1 + A * Math.exp(-k*t));
+
+        data.push({
+            x:t,
+            y:y
+        });
+    }
+
+    return data;
+}
+
+function updateChart(){
+
+    const k = parseFloat(document.getElementById("k").value);
+    const initial = parseFloat(document.getElementById("z").value);
+    const N = parseFloat(document.getElementById("n").value);
+
+    document.getElementById("kValue").textContent = k;
+    document.getElementById("zValue").textContent = initial;
+    document.getElementById("nValue").textContent = N;
+
+    const data = logisticData(k, initial, N);
+
+    if(chart){
+        chart.destroy();
+    }
+
+    chart = new Chart(ctx,{
+        type:'line',
+        data:{
+            datasets:[{
+                label:'헌혈 참여자 수',
+                data:data,
+                borderColor:'#e74c3c',
+                borderWidth:3,
+                fill:false,
+                tension:0.4
+            }]
+        },
+        options:{
+            responsive:true,
+            scales:{
+                x:{
+                    type:'linear',
+                    title:{
+                        display:true,
+                        text:'시간'
+                    }
+                },
+                y:{
+                    title:{
+                        display:true,
+                        text:'참여자 수'
+                    }
+                }
+            }
+        }
+    });
+
+    document.getElementById("result").innerHTML =
+    "현재 설정에서는 홍보 효과(k)=" + k +
+    ", 초기 참여자 수=" + initial +
+    ", 전체 인원 수 N=" + N +
+    " 이며, 참여자 수는 S자 형태로 증가한다.";
+}
+
+document.getElementById("k").addEventListener("input", updateChart);
+document.getElementById("z").addEventListener("input", updateChart);
+document.getElementById("n").addEventListener("input", updateChart);
+
+updateChart();
+</script>
+
+</body>
+</html>

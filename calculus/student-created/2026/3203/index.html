@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3203 학생 제작 웹앱</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        /* 기본 스타일 및 반응형 레이아웃 설정 */
+        body {
+            font-family: 'Malgun Gothic', sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f6fa;
+            color: #333;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+        header, section {
+            background: #ffffff;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 { font-size: 24px; color: #2c3e50; margin-top: 0; border-bottom: 2px solid #3498db; padding-bottom: 10px; }
+        h2 { font-size: 18px; color: #2c3e50; margin-top: 0; }
+
+        /* 상단 정보 테이블 스타일 */
+        .info-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 15px;
+        }
+        .info-table th, .info-table td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: left;
+            font-size: 14px;
+        }
+        .info-table th {
+            background-color: #f2f2f2;
+            width: 25%;
+        }
+
+        /* 시각화 및 조작 영역 구분 */
+        .visual-container {
+            position: relative;
+            width: 100%;
+            height: 400px;
+            margin-bottom: 15px;
+        }
+        .control-panel {
+            background: #eef2f3;
+            padding: 15px;
+            border-radius: 6px;
+            border-left: 5px solid #3498db;
+        }
+        .instruction {
+            background: #fff3cd;
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 10px;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        /* 결과 해석 영역 */
+        .result-panel {
+            background: #edf2f7;
+            padding: 15px;
+            border-radius: 6px;
+        }
+        .text-bold { font-weight: bold; color: #e74c3c; }
+    </style>
+
+<style>
+  .student-work-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    max-width: 1040px;
+    margin: 0 auto 16px;
+    padding: 10px 12px;
+    border: 1px solid #dbe3ef;
+    border-radius: 8px;
+    background: #f8fafc;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+  .student-work-links a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 36px;
+    padding: 7px 10px;
+    border-radius: 6px;
+    background: #ffffff;
+    color: #1d4ed8;
+    text-decoration: none;
+    font-weight: 700;
+    border: 1px solid #dbe3ef;
+  }
+  .student-work-links a:hover {
+    background: #eff6ff;
+  }
+</style>
+</head>
+<body>
+
+<nav class="student-work-links" aria-label="학생 답안 자료">
+  <a href="../">목록으로</a>
+  <a href="./answer.html">답안 보기</a>
+  <a href="./answer.txt">원문 TXT</a>
+</nav>
+
+
+<div class="container">
+
+    <header>
+        <h1>그래프에 따른 접선과 평균변화율의 변화</h1>
+        <table class="info-table">
+            <tr>
+                <th>학번 / 이름</th>
+                <td>3203 / 비공개</td>
+            </tr>
+            <tr>
+                <th>책 제목 / 저자</th>
+                <td>미적분으로 바라본 하루 / 오스카 E. 페르난데스</td>
+            </tr>
+            <tr>
+                <th>선택한 부분 또는 주제</th>
+                <td>접선, 평균변화율과 순간변화율</td>
+            </tr>
+            <tr>
+                <th>관련 미적분 개념</th>
+                <td>접선의 기울기를 구하는 방법이 미적분과 관련이 있어서 골랐습니다.</td>
+            </tr>
+            <tr>
+                <th>웹앱 제작 의도</th>
+                <td>주식 그래프에서 주가가 달라짐에 따라 접선의 기울기가 변하고 그래프중에서 극대와 극소를 찾아내는 것을 보여주고싶습니다.</td>
+            </tr>
+            <tr>
+                <th>사용 방법 안내</th>
+                <td>
+                    1. 기본으로 무작위 연속 그래프가 그려져 있습니다.<br>
+                    2. 조작 영역의 '마우스로 그래프 직접 그리기' 활성화 후 캔버스 위를 클릭·드래그하면 새로운 주가 연속 그래프로 덮어씌워집니다.<br>
+                    3. '특정 시점 선택' 슬라이더를 움직여 주식 차트 위의 접선과 평균변화율 그래프의 변화를 관찰하세요.
+                </td>
+            </tr>
+        </table>
+    </header>
+
+    <section>
+        <h2>개념 설명</h2>
+        <p><strong>독서 중 생긴 질문:</strong> 가끔 유튜브를 보다보면 주식 관련 영상이 뜨는데 이 주식 관련 영상에서 여러 선들을 긋는것을 보며 저 선들은 어떤 의미가 있어서 저렇게 열심히 선들을 긋는지 알고싶었기때문에 선택하였고, 미분과 주가 그래프과 관련이 있으면 적분과는 어떤 관계가 있을지에 대해 의문이 생겼습니다.</p>
+        <p><strong>수학적 원리:</strong> 주가 그래프에서 두 지점을 연결한 선의 기울기는 <strong>평균변화율</strong>을 의미하며, 특정 시점에서 한 점에 스치듯 지나는 선의 기울기는 <strong>순간변화율(접선의 기울기)</strong>을 의미합니다. 주가 그래프의 높낮이가 바뀌면서 접선의 기울기가 0이 되는 지점을 통해 주가의 <strong>극대와 극소</strong>를 찾아낼 수 있습니다.</p>
+    </section>
+
+    <section>
+        <h2>시각화 영역</h2>
+        <div class="visual-container">
+            <canvas id="stockChart"></canvas>
+        </div>
+    </section>
+
+    <section class="control-panel">
+        <h2>조작 영역</h2>
+        <div class="instruction">
+            ※ 안내: 아래 캔버스 드래그로 그래프를 덮어쓰거나 슬라이더를 조정하여 접선 및 평균변화율 그래프의 변화를 확인할 수 있습니다.
+        </div>
+        <div style="margin-bottom: 15px;">
+            <label style="font-weight: bold;">[그래프 직접 조작] </label>
+            <button id="clearBtn" style="padding: 5px 10px; cursor: pointer;">새로운 무작위 그래프 생성</button>
+            <span style="font-size: 13px; color: #666; margin-left: 10px;">(차트 위에서 마우스를 드래그하면 연속된 주가 그래프를 직접 그릴 수 있습니다)</span>
+        </div>
+        <div>
+            <label for="timeSlider" style="font-weight: bold;">[특정 시점 선택 (x값)] : </label>
+            <input type="range" id="timeSlider" min="1" max="19" value="10" step="1" style="width: 60%;">
+            <span id="sliderValue" style="font-weight: bold; margin-left: 10px;">10</span>
+        </div>
+    </section>
+
+    <section class="result-panel">
+        <h2>결과 해석 영역</h2>
+        <div id="interpretation">
+            사용자가 주식차트에 나오는 접선들이 어떤건지 이해했으면 좋겠고 접선이 생기는 과정과 어떤 모습으로 생기는지 알았으면 좋겠다.<br>
+            <hr style="border: 0; height: 1px; background: #ccc; margin: 10px 0;">
+            • 현재 선택된 시점의 주가 위치에서 <span class="text-bold">접선의 기울기(순간변화율)</span>가 실시간으로 계산되어 화면에 갈색 선으로 표시됩니다.<br>
+            • 지정된 구간 동안의 <span class="text-bold">평균변화율 그래프</span>가 함께 표시되어 차이를 직관적으로 비교할 수 있습니다.<br>
+            • 접선의 기울기가 양(+)에서 음(-)으로 바뀌거나 음(-)에서 양(+)으로 바뀌며 <span class="text-bold">기울기가 0이 되는 지점</span> 근방에서 주가의 <span class="text-bold">극대와 극소</span>가 형성됩니다.
+        </div>
+    </section>
+
+</div>
+
+<script>
+    // ----------------------------------------------------------------
+    // 초기 데이터 설정 (학생 요구사항: 무작위 그래프 하나를 기본으로 그려놔야 함, 연속 형태)
+    // ----------------------------------------------------------------
+    const dataPointsCount = 21;
+    let labels = Array.from({length: dataPointsCount}, (_, i) => i);
+    let stockData = generateRandomContinuousData(dataPointsCount);
+
+    // 무작위 연속 그래프 생성 함수 (주식 그래프 모두 연속 조건 반영)
+    function generateRandomContinuousData(count) {
+        let data = [Math.floor(Math.random() * 40) + 30];
+        for(let i = 1; i < count; i++) {
+            let change = (Math.random() - 0.5) * 15; // 이전 값에서 완만하게 변동하여 연속성 유지
+            let nextVal = data[i-1] + change;
+            // 범위 제한
+            if(nextVal < 10) nextVal = 10;
+            if(nextVal > 90) nextVal = 90;
+            data.push(Number(nextVal.toFixed(2)));
+        }
+        return data;
+    }
+
+    // ----------------------------------------------------------------
+    // 접선 및 평균변화율 계산 함수
+    // ----------------------------------------------------------------
+    function getAnalysisLines(xIdx) {
+        // 1. 접선 계산 (수치해석적 중앙차분으로 미분계수 근사)
+        let slope = 0;
+        if(xIdx === 0) {
+            slope = stockData[1] - stockData[0];
+        } else if(xIdx === dataPointsCount - 1) {
+            slope = stockData[dataPointsCount-1] - stockData[dataPointsCount-2];
+        } else {
+            slope = (stockData[xIdx+1] - stockData[xIdx-1]) / 2;
+        }
+
+        let tangentLine = [];
+        let yAtX = stockData[xIdx];
+        for(let i = 0; i < dataPointsCount; i++) {
+            // 접선 방정식: y = slope * (x - xIdx) + yAtX
+            let y = slope * (i - xIdx) + yAtX;
+            tangentLine.push(y);
+        }
+
+        // 2. 평균변화율 그래프 계산 (기준점 xIdx와 주변 고정범위 간의 변화율 변화 모습 추적)
+        let avgRateLine = [];
+        let startIdx = Math.max(0, xIdx - 4);
+        let endIdx = Math.min(dataPointsCount - 1, xIdx + 4);
+        if(startIdx === endIdx) {
+            avgRateLine = Array(dataPointsCount).fill(null);
+        } else {
+            let avgSlope = (stockData[endIdx] - stockData[startIdx]) / (endIdx - startIdx);
+            for(let i = 0; i < dataPointsCount; i++) {
+                if(i >= startIdx && i <= endIdx) {
+                    avgRateLine.push(avgSlope * (i - startIdx) + stockData[startIdx]);
+                } else {
+                    avgRateLine.push(null); // 구간 외에는 그리지 않음
+                }
+            }
+        }
+
+        return { tangentLine, avgRateLine };
+    }
+
+    // ----------------------------------------------------------------
+    // Chart.js 초기화 및 시각화 구현 (달라지는 것: 평균변화율 그래프와 접선의 기울기)
+    // ----------------------------------------------------------------
+    const ctx = document.getElementById('stockChart').getContext('2d');
+    let analysis = getAnalysisLines(10);
+
+    let myChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    label: '주가 그래프 (연속)',
+                    data: stockData,
+                    borderColor: '#3498db',
+                    backgroundColor: 'rgba(52, 152, 219, 0.1)',
+                    borderWidth: 3,
+                    tension: 0.3, // 부드러운 곡선선으로 연속성 극대화
+                    pointRadius: 4
+                },
+                {
+                    label: '선택 시점의 접선 (순간변화율)',
+                    data: analysis.tangentLine,
+                    borderColor: '#d35400',
+                    borderWidth: 2,
+                    borderDash: [5, 5],
+                    pointRadius: 0,
+                    fill: false
+                },
+                {
+                    label: '평균변화율 그래프 (주변 구간)',
+                    data: analysis.avgRateLine,
+                    borderColor: '#27ae60',
+                    borderWidth: 2,
+                    pointRadius: 0,
+                    fill: false
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: { min: 0, max: 100 }
+            },
+            plugins: {
+                legend: { position: 'top' }
+            }
+        }
+    });
+
+    // ----------------------------------------------------------------
+    // 이벤트 리스너 및 상호작용 구현 (조작 요소 기능)
+    // ----------------------------------------------------------------
+    const timeSlider = document.getElementById('timeSlider');
+    const sliderValue = document.getElementById('sliderValue');
+    const clearBtn = document.getElementById('clearBtn');
+
+    // 슬라이더 변경 시 업데이트
+    function updateChart() {
+        let xIdx = parseInt(timeSlider.value);
+        sliderValue.innerText = xIdx;
+
+        let updatedAnalysis = getAnalysisLines(xIdx);
+        myChart.data.datasets[1].data = updatedAnalysis.tangentLine;
+        myChart.data.datasets[2].data = updatedAnalysis.avgRateLine;
+        myChart.update();
+    }
+
+    timeSlider.addEventListener('input', updateChart);
+
+    // 무작위 그래프 초기화 버튼
+    clearBtn.addEventListener('click', () => {
+        stockData = generateRandomContinuousData(dataPointsCount);
+        myChart.data.datasets[0].data = stockData;
+        updateChart();
+    });
+
+    // ----------------------------------------------------------------
+    // 사용자가 그래프를 직접 조작(덮어쓰기)할 수 있도록 캔버스 드래그 기능 구현
+    // ----------------------------------------------------------------
+    let isDrawing = false;
+    const canvasElement = document.getElementById('stockChart');
+
+    canvasElement.addEventListener('mousedown', (e) => { isDrawing = true; handleDrawing(e); });
+    canvasElement.addEventListener('mousemove', (e) => { if(isDrawing) handleDrawing(e); });
+    window.addEventListener('mouseup', () => { isDrawing = false; });
+
+    // 터치 모바일 기기 대응 인터랙션
+    canvasElement.addEventListener('touchstart', (e) => { isDrawing = true; handleDrawing(e.touches[0]); });
+    canvasElement.addEventListener('touchmove', (e) => { if(isDrawing) handleDrawing(e.touches[0]); });
+    canvasElement.addEventListener('touchend', () => { isDrawing = false; });
+
+    function handleDrawing(e) {
+        // 캔버스 내 마우스 좌표 획득 후 차트 데이터 인덱스로 환산
+        const rect = canvasElement.getBoundingClientRect();
+        const xPos = e.clientX - rect.left;
+        const yPos = e.clientY - rect.top;
+
+        // Chart.js의 픽셀 좌표 역산 기능 활용
+        const chartX = myChart.scales.x.getValueForPixel(xPos);
+        const chartY = myChart.scales.y.getValueForPixel(yPos);
+
+        if(chartX >= 0 && chartX < dataPointsCount) {
+            let targetIdx = Math.round(chartX);
+            let targetVal = Math.max(0, Math.min(100, chartY));
+
+            // 기존 그래프 데이터 위에 덮어쓰기 (연속성 확보를 위해 주변도 완만하게 자동 보간 적용 가능하나 기본적으로 선 연결로 연속 유지)
+            stockData[targetIdx] = Number(targetVal.toFixed(2));
+
+            // 실시간 마우스 조작 도중 불연속점 튀는 현상 제어를 위해 주변값 단순 평활화(smoothing) 적용 (연속 그래프화)
+            if(targetIdx > 0 && Math.abs(stockData[targetIdx] - stockData[targetIdx-1]) > 25) {
+                stockData[targetIdx] = (stockData[targetIdx-1] + stockData[targetIdx]) / 2;
+            }
+            if(targetIdx < dataPointsCount - 1 && Math.abs(stockData[targetIdx] - stockData[targetIdx+1]) > 25) {
+                stockData[targetIdx] = (stockData[targetIdx+1] + stockData[targetIdx]) / 2;
+            }
+
+            myChart.data.datasets[0].data = stockData;
+            updateChart();
+        }
+    }
+</script>
+
+</body>
+</html>

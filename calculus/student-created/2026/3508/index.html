@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>3508 학생 제작 웹앱</title>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+
+body{
+    font-family: "맑은 고딕", sans-serif;
+    margin:20px;
+    background:#f5f7fb;
+}
+
+.section{
+    background:white;
+    border-radius:12px;
+    padding:15px;
+    margin-bottom:15px;
+    box-shadow:0 2px 8px rgba(0,0,0,0.08);
+}
+
+h1,h2{
+    color:#003f88;
+}
+
+.controls{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:20px;
+}
+
+button{
+    padding:10px 15px;
+    margin:5px;
+    border:none;
+    border-radius:8px;
+    background:#0056d6;
+    color:white;
+    cursor:pointer;
+}
+
+button:hover{
+    background:#003ea3;
+}
+
+input[type=range]{
+    width:100%;
+}
+
+.data-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
+    gap:10px;
+}
+
+.card{
+    background:#eef4ff;
+    padding:10px;
+    border-radius:10px;
+}
+
+.warning{
+    color:red;
+    font-weight:bold;
+}
+
+canvas{
+    max-height:550px;
+}
+
+</style>
+
+<style>
+  .student-work-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    max-width: 1040px;
+    margin: 0 auto 16px;
+    padding: 10px 12px;
+    border: 1px solid #dbe3ef;
+    border-radius: 8px;
+    background: #f8fafc;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+  .student-work-links a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 36px;
+    padding: 7px 10px;
+    border-radius: 6px;
+    background: #ffffff;
+    color: #1d4ed8;
+    text-decoration: none;
+    font-weight: 700;
+    border: 1px solid #dbe3ef;
+  }
+  .student-work-links a:hover {
+    background: #eff6ff;
+  }
+</style>
+</head>
+<body>
+
+<nav class="student-work-links" aria-label="학생 답안 자료">
+  <a href="../">목록으로</a>
+  <a href="./answer.html">답안 보기</a>
+  <a href="./answer.txt">원문 TXT</a>
+</nav>
+
+
+<div class="section">
+
+<h1>인공지능과 최적화 - 경사하강법</h1>
+
+<p><b>학번:</b> 3508</p>
+<p><b>이름:</b> 비공개</p>
+<p><b>책 제목:</b> 미적분의 쓸모</p>
+<p><b>저자:</b> 한화택</p>
+
+<p><b>선택한 부분 또는 주제</b><br>
+인공지능과 최적화 - 경사하강법
+</p>
+
+<p><b>관련 미적분 개념</b><br>
+도함수의 극대와 극소, 방정식에의 활용,
+도함수의 접선의 기울기, 다변수 함수와 편미분
+</p>
+
+<p><b>웹앱 제작 의도</b><br>
+본 웹앱은 경사하강법 원리를 바탕으로 첨단 MLCC 유전체 세라믹의 전력 손실을 최소화하는 최적의 박막 두께를 미분을 통해 추적하는 인공지능 공정 최적화 시뮬레이터이다.
+</p>
+
+<p><b>사용 방법</b><br>
+초기 두께와 학습률을 설정한 후 최적화 시작 버튼을 누르면 탐색 점이 도함수의 기울기를 이용하여 극소점을 향해 이동한다.
+학습률을 크게 하면 진동 또는 발산하는 현상을 관찰할 수 있다.
+</p>
+
+</div>
+
+<div class="section">
+
+<h2>개념 설명 영역</h2>
+
+<p>
+경사하강법은 현재 위치에서의 기울기(도함수)를 계산하여
+손실 함수가 감소하는 방향으로 이동하는 최적화 알고리즘이다.
+</p>
+
+<p>
+기울기가 양수이면 왼쪽으로,
+기울기가 음수이면 오른쪽으로 이동한다.
+기울기의 절댓값이 작아질수록 극소점에 가까워진다.
+</p>
+
+<p>
+MLCC 공정에서는 유전체 두께에 따라 전력 손실이 달라질 수 있으며,
+경사하강법은 최적 두께를 찾는 데 활용될 수 있다.
+</p>
+
+</div>
+
+<div class="section">
+
+<h2>조작 영역</h2>
+
+<div class="controls">
+
+<div>
+<label><b>초기 유전체 두께</b></label>
+<input id="startX" type="range" min="-2" max="10" step="0.1" value="8">
+<p><span id="startXText">8</span></p>
+</div>
+
+<div>
+<label><b>학습률</b></label>
+<input id="lr" type="range" min="0.01" max="1.5" step="0.01" value="0.15">
+<p><span id="lrText">0.15</span></p>
+</div>
+
+</div>
+
+<button onclick="startGD()">최적화 시작</button>
+<button onclick="pauseGD()">일시 정지</button>
+<button onclick="resetGD()">초기화</button>
+
+<p class="warning" id="warning"></p>
+
+</div>
+
+<div class="section">
+
+<h2>시각화 영역</h2>
+
+<canvas id="graph"></canvas>
+
+</div>
+
+<div class="section">
+
+<h2>결과 해석 영역</h2>
+
+<div class="data-grid">
+
+<div class="card">
+현재 단계<br>
+<b id="step">0</b>
+</div>
+
+<div class="card">
+현재 두께 x<br>
+<b id="xVal">0</b>
+</div>
+
+<div class="card">
+손실 함수 E(x)<br>
+<b id="lossVal">0</b>
+</div>
+
+<div class="card">
+도함수 E'(x)<br>
+<b id="gradVal">0</b>
+</div>
+
+</div>
+
+<br>
+
+<p id="meaning">
+초기 상태입니다.
+</p>
+
+</div>
+
+<script>
+
+// 가상의 MLCC 손실 함수
+function E(x){
+    return (x-4)*(x-4)+0.08*Math.pow(x-4,4)+3;
+}
+
+// 도함수
+function dE(x){
+    return 2*(x-4)+0.32*Math.pow(x-4,3);
+}
+
+let curve=[];
+
+for(let x=-2;x<=10;x+=0.05){
+    curve.push({
+        x:x,
+        y:E(x)
+    });
+}
+
+let currentX=8;
+let step=0;
+let timer=null;
+let path=[];
+
+const chart=new Chart(
+document.getElementById("graph"),
+{
+type:"scatter",
+data:{
+datasets:[
+{
+label:"손실 함수 E(x)",
+data:curve,
+showLine:true,
+borderWidth:2
+},
+{
+label:"탐색 경로",
+data:[],
+showLine:true
+},
+{
+label:"현재 탐색점",
+data:[]
+},
+{
+label:"접선",
+data:[],
+showLine:true,
+borderDash:[8,5]
+}
+]
+},
+options:{
+animation:false,
+scales:{
+x:{
+title:{
+display:true,
+text:"유전체 두께"
+}
+},
+y:{
+title:{
+display:true,
+text:"전력 손실"
+}
+}
+}
+}
+}
+);
+
+function drawTangent(){
+
+let slope=dE(currentX);
+let y0=E(currentX);
+
+let p1=currentX-1;
+let p2=currentX+1;
+
+chart.data.datasets[3].data=[
+{x:p1,y:y0+slope*(p1-currentX)},
+{x:p2,y:y0+slope*(p2-currentX)}
+];
+}
+
+function updateScreen(){
+
+let grad=dE(currentX);
+
+document.getElementById("step").innerText=step;
+document.getElementById("xVal").innerText=currentX.toFixed(4);
+document.getElementById("lossVal").innerText=E(currentX).toFixed(4);
+document.getElementById("gradVal").innerText=grad.toFixed(4);
+
+chart.data.datasets[1].data=path;
+
+chart.data.datasets[2].data=[
+{
+x:currentX,
+y:E(currentX)
+}
+];
+
+drawTangent();
+
+chart.update();
+
+if(Math.abs(grad)<0.001){
+
+document.getElementById("meaning").innerHTML=
+"도함수 값이 거의 0이 되어 극소점에 수렴하였다. 즉 전력 손실이 최소가 되는 최적 유전체 두께를 찾은 상태이다.";
+
+}
+else if(grad>0){
+
+document.getElementById("meaning").innerHTML=
+"현재 접선의 기울기가 양수이므로 경사하강법은 손실을 줄이기 위해 왼쪽 방향으로 이동한다.";
+
+}
+else{
+
+document.getElementById("meaning").innerHTML=
+"현재 접선의 기울기가 음수이므로 경사하강법은 손실을 줄이기 위해 오른쪽 방향으로 이동한다.";
+
+}
+}
+
+function startGD(){
+
+clearInterval(timer);
+
+let lr=Number(document.getElementById("lr").value);
+
+timer=setInterval(()=>{
+
+let grad=dE(currentX);
+
+currentX=currentX-lr*grad;
+
+step++;
+
+path.push({
+x:currentX,
+y:E(currentX)
+});
+
+updateScreen();
+
+if(Math.abs(grad)<0.001){
+
+clearInterval(timer);
+
+}
+
+if(Math.abs(currentX)>30 || !isFinite(currentX)){
+
+clearInterval(timer);
+
+document.getElementById("warning").innerHTML=
+"[경고] 학습률이 너무 커서 최적화에 실패(발산)했습니다. 학습률을 낮추고 재시도하세요.";
+
+alert("최적화 실패(발산)");
+
+}
+
+},400);
+}
+
+function pauseGD(){
+
+clearInterval(timer);
+
+}
+
+function resetGD(){
+
+clearInterval(timer);
+
+currentX=
+Number(document.getElementById("startX").value);
+
+step=0;
+
+path=[
+{
+x:currentX,
+y:E(currentX)
+}
+];
+
+document.getElementById("warning").innerHTML="";
+
+updateScreen();
+
+}
+
+document.getElementById("startX").oninput=function(){
+
+document.getElementById("startXText").innerText=this.value;
+
+};
+
+document.getElementById("lr").oninput=function(){
+
+document.getElementById("lrText").innerText=this.value;
+
+};
+
+resetGD();
+
+</script>
+
+</body>
+</html>

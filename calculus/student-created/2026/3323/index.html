@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3323 학생 제작 웹앱</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        /* 기본 스타일 및 웹앱 반응형 레이아웃 설정 */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f6f9;
+            color: #333;
+        }
+        .container {
+            max-width: 950px;
+            margin: 0 auto;
+            background: #ffffff;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.06);
+        }
+        h1 {
+            text-align: center;
+            color: #1e3a8a;
+            margin-bottom: 25px;
+            font-size: 24px;
+        }
+        h2 {
+            color: #2563eb;
+            border-bottom: 2px solid #e5e7eb;
+            padding-bottom: 6px;
+            margin-top: 0;
+            font-size: 18px;
+        }
+
+        /* 공통 영역 박스 스타일 정의 */
+        .section {
+            background: #fafafa;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        /* 1. 상단 정보 영역 스타일 */
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+        .info-item {
+            font-size: 15px;
+        }
+        .info-item span {
+            font-weight: bold;
+            color: #4b5563;
+        }
+        .info-full {
+            grid-column: span 2;
+            border-top: 1px dashed #e5e7eb;
+            padding-top: 10px;
+            margin-top: 5px;
+        }
+
+        /* 2. 개념 설명 영역 스타일 */
+        .concept-text {
+            font-size: 14px;
+            line-height: 1.7;
+            color: #374151;
+        }
+        .formula {
+            background: #edf2f7;
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-family: "Courier New", Courier, monospace;
+            font-weight: bold;
+            display: inline-block;
+            margin: 5px 0;
+        }
+
+        /* 3번 시각화 영역 & 4번 조작 영역을 배치하는 메인 레이아웃 */
+        .main-layout {
+            display: grid;
+            grid-template-columns: 1.4fr 1fr;
+            gap: 20px;
+        }
+
+        /* 3. 시각화 영역 스타일 */
+        .visualization-box {
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+        }
+        .chart-container {
+            position: relative;
+            height: 340px;
+            width: 100%;
+        }
+
+        /* 4. 조작 영역 스타일 */
+        .control-item {
+            margin-bottom: 18px;
+        }
+        .control-item label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 6px;
+            color: #1f2937;
+            font-size: 14.5px;
+        }
+        .slider-box {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .slider-box input[type="range"] {
+            flex: 1;
+            accent-color: #2563eb;
+        }
+        .value-disp {
+            width: 55px;
+            text-align: right;
+            font-weight: bold;
+            color: #2563eb;
+            font-size: 15px;
+        }
+        .toggle-container {
+            background: #eff6ff;
+            border: 1px solid #bfdbfe;
+            border-radius: 6px;
+            padding: 12px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            font-weight: bold;
+            color: #1e40af;
+            font-size: 14.5px;
+        }
+        .toggle-container input {
+            width: 17px;
+            height: 17px;
+            cursor: pointer;
+        }
+
+        /* 직접 입력 영역 스타일 추가 */
+        .auc-input-box {
+            margin-top: 10px;
+            padding: 10px;
+            background: #f0fdf4;
+            border: 1px dashed #4ade80;
+            border-radius: 6px;
+            display: none;
+            align-items: center;
+            gap: 8px;
+        }
+        .auc-input-box span {
+            font-size: 13.5px;
+            font-weight: bold;
+            color: #166534;
+        }
+        .auc-input-box input {
+            width: 75px;
+            padding: 4px 6px;
+            border: 1px solid #bcd;
+            border-radius: 4px;
+            font-weight: bold;
+            text-align: center;
+        }
+        .auc-input-box button {
+            background: #166534;
+            color: #fff;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: bold;
+        }
+        .auc-input-box button:hover {
+            background: #14532d;
+        }
+
+        /* 5. 결과 해석 영역 스타일 */
+        .result-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            text-align: center;
+            margin-bottom: 15px;
+        }
+        .stat-card {
+            background: #f3f4f6;
+            padding: 10px;
+            border-radius: 6px;
+            border: 1px solid #e5e7eb;
+        }
+        .stat-card div:first-child {
+            font-size: 12px;
+            color: #6b7280;
+            margin-bottom: 4px;
+        }
+        .stat-card div:last-child {
+            font-size: 17px;
+            font-weight: bold;
+            color: #111827;
+        }
+        .interpretation-text {
+            font-size: 14px;
+            line-height: 1.6;
+            color: #374151;
+            background: #ffffff;
+            padding: 12px;
+            border-radius: 6px;
+            border-left: 4px solid #2563eb;
+        }
+
+        /* 모바일 디바이스 지원을 위한 미디어 쿼리 (반응형 UI) */
+        @media (max-width: 768px) {
+            .main-layout {
+                grid-template-columns: 1fr;
+            }
+            .info-grid {
+                grid-template-columns: 1fr;
+            }
+            .info-full {
+                grid-column: span 1;
+            }
+            body {
+                padding: 10px;
+            }
+        }
+    </style>
+
+<style>
+  .student-work-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    max-width: 1040px;
+    margin: 0 auto 16px;
+    padding: 10px 12px;
+    border: 1px solid #dbe3ef;
+    border-radius: 8px;
+    background: #f8fafc;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+  .student-work-links a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 36px;
+    padding: 7px 10px;
+    border-radius: 6px;
+    background: #ffffff;
+    color: #1d4ed8;
+    text-decoration: none;
+    font-weight: 700;
+    border: 1px solid #dbe3ef;
+  }
+  .student-work-links a:hover {
+    background: #eff6ff;
+  }
+</style>
+</head>
+<body>
+
+<nav class="student-work-links" aria-label="학생 답안 자료">
+  <a href="../">목록으로</a>
+  <a href="./answer.html">답안 보기</a>
+  <a href="./answer.txt">원문 TXT</a>
+</nav>
+
+
+<div class="container">
+    <h1>미적분 독서 연계 시각화 웹앱</h1>
+
+    <div class="section info-grid">
+        <div class="info-item"><span>학번:</span> 3323</div>
+        <div class="info-item"><span>이름:</span> 비공개</div>
+        <div class="info-item"><span>책 제목:</span> 쉽게 풀어쓴 제약수학</div>
+        <div class="info-item"><span>저자:</span> 김동욱</div>
+        <div class="info-full"><span>선택한 부분 또는 주제:</span> 1구획 모델과 이상적분을 이용한 AUC 상호작용 모델링</div>
+        <div class="info-full"><span>관련 미적분 개념:</span> 지수함수의 도함수, 구분구적법</div>
+        <div class="info-full"><span>웹앱 제작 의도:</span> 초기 투여량과 소멸 속도 상수를 조작하여, 약물 농도 곡선의 변화와 이상적분으로 계산되는 AUC 면적을 실시간으로 확인하는 웹앱이다.</div>
+        <div class="info-full" style="color: #2563eb; background-color: #f0fdf4; padding: 10px; border-radius: 6px; border: 1px solid #bbf7d0;">
+            <span>사용 방법 안내:</span> 소멸속도 상수(k)와 초기농도(C₀) 슬라이더를 조작하여 농도 곡선과 면적의 변화를 관찰하세요. 시간(t) 슬라이더로 특정 시점의 접선(순간 속도)을 확인할 수 있습니다. AUC 고정을 체크하면 목표 값을 직접 입력하여 수치를 역동적으로 연동시킬 수 있습니다.
+        </div>
+    </div>
+
+    <div class="section concept-text">
+        <h2>개념 설명 영역</h2>
+        <p>
+            체내 약물 동태를 설명하는 <strong>1구획 모델</strong>에서 약물의 혈중 농도 변동은 지수함수 곡선을 따르며, 식은 <span class="formula">C(t) = C₀ · e^(-kt)</span>로 표현됩니다. (C₀: 초기 약물 농도, k: 소멸속도 상수)
+        </p>
+        <p>
+            <strong>지수함수의 도함수와 순간 속도:</strong> 임의의 시간 t에서 약물이 소멸되는 순간 속도는 농도 함수의 미분인 <span class="formula">C'(t) = -k · C₀ · e^(-kt)</span>입니다. 이는 그래프 상에서 특정 시점의 <strong>접선의 기울기</strong>로 시각화됩니다.
+        </p>
+        <p>
+            <strong>구분구적법과 이상적분(AUC):</strong> 약물이 체내에 머무르며 일으키는 총 노출량은 농도 곡선 하부 면적인 <strong>AUC(Area Under the Curve)</strong>로 나타냅니다. 시간 0부터 무한대까지 잘게 쪼개어 더하는 구분구적법의 극한인 이상적분을 수행하면 다음과 같은 단순하고 명확한 수학적 관계식을 얻을 수 있습니다:
+            <br>
+            <span class="formula">AUC = ∫₀^∞ C₀ · e^(-kt) dt = C₀ / k</span>
+        </p>
+    </div>
+
+    <div class="main-layout">
+
+        <div class="section visualization-box">
+            <h2>시각화 영역 (그래프)</h2>
+            <div class="chart-container">
+                <canvas id="drugChart"></canvas>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>조작 영역</h2>
+
+            <div class="control-item">
+                <label for="k-slider">소멸속도 상수 (k) [환자 대사 능력]</label>
+                <div class="slider-box">
+                    <input type="range" id="k-slider" min="0.1" max="1.0" step="0.01" value="0.3">
+                    <span class="value-disp" id="k-val">0.30</span>
+                </div>
+            </div>
+
+            <div class="control-item">
+                <label for="c0-slider">초기 농도 (C₀) [약물 투여량]</label>
+                <div class="slider-box">
+                    <input type="range" id="c0-slider" min="10" max="100" step="1" value="60">
+                    <span class="value-disp" id="c0-val">60</span>
+                </div>
+            </div>
+
+            <div class="control-item">
+                <label for="t-slider">관측 시간 (t) [순간 변화율 확인용]</label>
+                <div class="slider-box">
+                    <input type="range" id="t-slider" min="0" max="10" step="0.1" value="2.0">
+                    <span class="value-disp" id="t-val">2.0</span>
+                </div>
+            </div>
+
+            <div class="control-item">
+                <label class="toggle-container">
+                    <input type="checkbox" id="auc-lock">
+                    <span>AUC 고정 및 변수 자동 연동 기능</span>
+                </label>
+
+                <div class="auc-input-box" id="auc-input-area">
+                    <span>목표 AUC:</span>
+                    <input type="number" id="direct-auc-num" min="10" max="1000" value="200">
+                    <button type="button" id="btn-apply-auc">적용</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>결과 해석 영역</h2>
+        <div class="result-stats">
+            <div class="stat-card">
+                <div>체내 약물 총 노출량 (AUC)</div>
+                <div id="res-auc">200.00</div>
+            </div>
+            <div class="stat-card">
+                <div>현재 시간 농도 C(t)</div>
+                <div id="res-c">32.93</div>
+            </div>
+            <div class="stat-card">
+                <div>순간 배설 속도 (기울기)</div>
+                <div id="res-slope">-9.88</div>
+            </div>
+        </div>
+        <div class="interpretation-text" id="interpretation-text">
+            데이터 계산 중...
+        </div>
+    </div>
+</div>
+
+<script>
+    // DOM 요소 가져오기
+    const kSlider = document.getElementById('k-slider');
+    const c0Slider = document.getElementById('c0-slider');
+    const tSlider = document.getElementById('t-slider');
+    const aucLockCheckbox = document.getElementById('auc-lock');
+    const aucInputArea = document.getElementById('auc-input-area');
+    const directAucNum = document.getElementById('direct-auc-num');
+    const btnApplyAuc = document.getElementById('btn-apply-auc');
+
+    const kValDisp = document.getElementById('k-val');
+    const c0ValDisp = document.getElementById('c0-val');
+    const tValDisp = document.getElementById('t-val');
+
+    const resAuc = document.getElementById('res-auc');
+    const resC = document.getElementById('res-c');
+    const resSlope = document.getElementById('res-slope');
+    const interpretationText = document.getElementById('interpretation-text');
+
+    // 상태 변수 제어
+    let isAucLocked = false;
+    let lockedAucValue = 200.00; // 초기 상태 (C0=60, k=0.3 -> 60/0.3 = 200)
+
+    // Chart.js 초기화 설정 (x축은 시간 0~10 범위로 지정)
+    const ctx = document.getElementById('drugChart').getContext('2d');
+    const labels = [];
+    for (let t = 0; t <= 10; t += 0.1) {
+        labels.push(t.toFixed(1));
+    }
+
+    const drugChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    label: '약물 농도 곡선 C(t) (아래 면적 = AUC)',
+                    data: [],
+                    borderColor: '#2563eb',
+                    backgroundColor: 'rgba(37, 99, 235, 0.15)',
+                    fill: true,
+                    tension: 0.1,
+                    pointRadius: 0
+                },
+                {
+                    label: '특정 시점에서의 접선',
+                    data: [],
+                    borderColor: '#ef4444',
+                    borderWidth: 2,
+                    borderDash: [5, 5],
+                    fill: false,
+                    pointRadius: 0
+                },
+                {
+                    label: '현재 관측 지점 (t)',
+                    data: [],
+                    borderColor: '#ef4444',
+                    backgroundColor: '#ef4444',
+                    pointRadius: 6,
+                    showLine: false
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                x: {
+                    title: { display: true, text: '시간 (t)' }
+                },
+                y: {
+                    title: { display: true, text: '농도 (C)' },
+                    min: 0,
+                    max: 120 /* 농도 축 최대값을 고정하여 슬라이더 조작 시 변화 유추를 직관적으로 도움 */
+                }
+            },
+            plugins: {
+                legend: { position: 'top' }
+            }
+        }
+    });
+
+    // 화면 및 수치 데이터 실시간 업데이트 함수
+    function updateAll() {
+        const k = parseFloat(kSlider.value);
+        const c0 = parseFloat(c0Slider.value);
+        const tSel = parseFloat(tSlider.value);
+
+        // 슬라이더 텍스트 수치 표시 변경
+        kValDisp.innerText = k.toFixed(2);
+        c0ValDisp.innerText = c0;
+        tValDisp.innerText = tSel.toFixed(1);
+
+        // 1. 농도 곡선 데이터 계산
+        const curveData = [];
+        for (let t = 0; t <= 10; t += 0.1) {
+            curveData.push(c0 * Math.exp(-k * t));
+        }
+        drugChart.data.datasets[0].data = curveData;
+
+        // 2. 접선 데이터 계산 (접선 공식: y = C'(tSel)*(t - tSel) + C(tSel))
+        const c_tSel = c0 * Math.exp(-k * tSel);
+        const slope = -k * c_tSel;
+
+        const tangentData = [];
+        for (let t = 0; t <= 10; t += 0.1) {
+            let yTan = slope * (t - tSel) + c_tSel;
+            tangentData.push(yTan >= 0 ? yTan : null); // 0 미만은 그리지 않음
+        }
+        drugChart.data.datasets[1].data = tangentData;
+
+        // 3. 선택된 현재 위치 점 찍기
+        const pointData = new Array(labels.length).fill(null);
+        const idx = Math.round(tSel * 10);
+        if (idx >= 0 && idx < pointData.length) {
+            pointData[idx] = c_tSel;
+        }
+        drugChart.data.datasets[2].data = pointData;
+
+        // 차트 갱신
+        drugChart.update();
+
+        // 수치 결과 산출
+        const currentAuc = c0 / k;
+        resAuc.innerText = currentAuc.toFixed(2);
+        resC.innerText = c_tSel.toFixed(2);
+        resSlope.innerText = slope.toFixed(2);
+
+        // 5번 결과 해석 영역의 동적 메시지 작성
+        let infoMessage = `현재 환자의 약물 소멸속도 상수 k는 <strong>${k.toFixed(2)}</strong>, 초기 투여 농도 C₀는 <strong>${c0}</strong>입니다. 이상적분으로 계산된 체내 총 약물 노출량(AUC)은 <strong>${currentAuc.toFixed(2)}</strong>입니다.<br><br>`;
+
+        if (isAucLocked) {
+            infoMessage += `🔒 <strong>AUC 고정 모드 작동 중:</strong> 현재 목표 총 노출량이 <strong>${lockedAucValue.toFixed(2)}</strong>로 잠겨 있습니다. `;
+            infoMessage += `환자의 배출 속도(k)가 빠를수록 동일한 치료 효과를 내기 위해서 초기 투여량(C₀)을 실시간으로 비례하여 높여야 하고, 반대로 배출이 느리면 투여량을 낮춰야 함을 뜻합니다. `;
+            infoMessage += `이는 수학식 <span style="background:#e0f2fe; padding:2px 4px; border-radius:3px; font-weight:bold;">C₀ = AUC × k</span>의 정비례 관계를 완벽히 증명합니다.`;
+        } else {
+            infoMessage += `💡 <strong>수학적 해석 원리:</strong> 소멸속도 상수 k가 클수록 약물이 빨리 빠져나가 곡선이 급격하게 감소하며 전체 면적(AUC)이 줄어듭니다. `;
+            infoMessage += `선택하신 시간 t = ${tSel.toFixed(1)}에서 접선의 기울기(순간 배설 속도)는 <strong>${slope.toFixed(2)}</strong>입니다. 이는 농도 C(t)가 높은 초기일수록 약물이 더 빠르게 배설됨을 미분 계수의 크기로 보여줍니다.`;
+        }
+
+        interpretationText.innerHTML = infoMessage;
+    }
+
+    // AUC 고정 체크박스 이벤트 리스너
+    aucLockCheckbox.addEventListener('change', (e) => {
+        isAucLocked = e.target.checked;
+        if (isAucLocked) {
+            // 체크되는 순간의 AUC 값을 고정 목표치로 설정하고 입력창 노출
+            const currentAuc = parseFloat(c0Slider.value) / parseFloat(kSlider.value);
+            lockedAucValue = currentAuc;
+            directAucNum.value = Math.round(currentAuc);
+            aucInputArea.style.display = 'flex';
+        } else {
+            aucInputArea.style.display = 'none';
+        }
+        updateAll();
+    });
+
+    // 목표 AUC 직접 입력 적용 버튼 로직
+    btnApplyAuc.addEventListener('click', () => {
+        let inputVal = parseFloat(directAucNum.value);
+        if (isNaN(inputVal) || inputVal < 10 || inputVal > 1000) {
+            alert("안전한 시각화를 위해 10에서 1000 사이의 AUC 값을 입력해주세요!");
+            return;
+        }
+
+        lockedAucValue = inputVal;
+
+        // 현재 k값을 기준으로 적절한 C0를 먼저 역산 (C0 = AUC * k)
+        let targetC0 = lockedAucValue * parseFloat(kSlider.value);
+
+        // 역산한 C0가 슬라이더 범위(10 ~ 100)를 벗어나면 범위를 한계치로 고정하고 k를 재조정
+        if (targetC0 >= 10 && targetC0 <= 100) {
+            c0Slider.value = Math.round(targetC0);
+        } else {
+            if (targetC0 < 10) {
+                c0Slider.value = 10;
+                kSlider.value = (10 / lockedAucValue).toFixed(2);
+            } else if (targetC0 > 100) {
+                c0Slider.value = 100;
+                kSlider.value = (100 / lockedAucValue).toFixed(2);
+            }
+        }
+        updateAll();
+    });
+
+    // 조작에 따른 자동 실시간 변동 연동 제어 로직 (C0 변동 시)
+    c0Slider.addEventListener('input', () => {
+        if (isAucLocked) {
+            // AUC = C0 / k  =>  k = C0 / AUC
+            let targetK = parseFloat(c0Slider.value) / lockedAucValue;
+            if (targetK >= 0.1 && targetK <= 1.0) {
+                kSlider.value = targetK.toFixed(2);
+            } else {
+                if (targetK < 0.1) {
+                    kSlider.value = 0.1;
+                    c0Slider.value = (0.1 * lockedAucValue).toFixed(0);
+                } else if (targetK > 1.0) {
+                    kSlider.value = 1.0;
+                    c0Slider.value = (1.0 * lockedAucValue).toFixed(0);
+                }
+            }
+        }
+        updateAll();
+    });
+
+    // 조작에 따른 자동 실시간 변동 연동 제어 로직 (k 변동 시)
+    kSlider.addEventListener('input', () => {
+        if (isAucLocked) {
+            // AUC = C0 / k  =>  C0 = AUC * k
+            let targetC0 = lockedAucValue * parseFloat(kSlider.value);
+            if (targetC0 >= 10 && targetC0 <= 100) {
+                c0Slider.value = targetC0.toFixed(0);
+            } else {
+                if (targetC0 < 10) {
+                    c0Slider.value = 10;
+                    kSlider.value = (10 / lockedAucValue).toFixed(2);
+                } else if (targetC0 > 100) {
+                    c0Slider.value = 100;
+                    kSlider.value = (100 / lockedAucValue).toFixed(2);
+                }
+            }
+        }
+        updateAll();
+    });
+
+    tSlider.addEventListener('input', updateAll);
+
+    // 초기 웹앱 구동 실행
+    updateAll();
+</script>
+
+</body>
+</html>

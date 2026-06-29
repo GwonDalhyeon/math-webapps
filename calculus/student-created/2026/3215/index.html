@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>3215 학생 제작 웹앱</title>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+*{
+    box-sizing:border-box;
+}
+
+body{
+    font-family:Arial, sans-serif;
+    margin:0;
+    background:#f4f6f9;
+    line-height:1.6;
+}
+
+.container{
+    width:95%;
+    max-width:1200px;
+    margin:auto;
+    padding:20px;
+}
+
+.section{
+    background:white;
+    margin-bottom:20px;
+    padding:20px;
+    border-radius:12px;
+    box-shadow:0 2px 8px rgba(0,0,0,0.1);
+}
+
+h1,h2{
+    margin-top:0;
+}
+
+.info-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(250px,1fr));
+    gap:10px;
+}
+
+.control-area{
+    display:flex;
+    flex-wrap:wrap;
+    gap:15px;
+    align-items:center;
+}
+
+button{
+    padding:10px 15px;
+    border:none;
+    border-radius:8px;
+    cursor:pointer;
+    background:#2d6cdf;
+    color:white;
+}
+
+button:hover{
+    opacity:0.9;
+}
+
+input[type=range]{
+    width:250px;
+}
+
+.result{
+    font-size:18px;
+    font-weight:bold;
+}
+
+.status{
+    padding:8px 12px;
+    border-radius:8px;
+    display:inline-block;
+    color:white;
+}
+
+canvas{
+    max-height:500px;
+}
+
+@media(max-width:768px){
+    .control-area{
+        flex-direction:column;
+        align-items:flex-start;
+    }
+}
+</style>
+
+<style>
+  .student-work-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    max-width: 1040px;
+    margin: 0 auto 16px;
+    padding: 10px 12px;
+    border: 1px solid #dbe3ef;
+    border-radius: 8px;
+    background: #f8fafc;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+  .student-work-links a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 36px;
+    padding: 7px 10px;
+    border-radius: 6px;
+    background: #ffffff;
+    color: #1d4ed8;
+    text-decoration: none;
+    font-weight: 700;
+    border: 1px solid #dbe3ef;
+  }
+  .student-work-links a:hover {
+    background: #eff6ff;
+  }
+</style>
+</head>
+<body>
+
+<nav class="student-work-links" aria-label="학생 답안 자료">
+  <a href="../">목록으로</a>
+  <a href="./answer.html">답안 보기</a>
+  <a href="./answer.txt">원문 TXT</a>
+</nav>
+
+
+<div class="container">
+
+    <!-- 상단 정보 영역 -->
+    <div class="section">
+        <h1>주식시장의 기복과 미적분</h1>
+
+        <div class="info-grid">
+            <div><strong>학번:</strong> 3215</div>
+            <div><strong>이름:</strong> 비공개</div>
+            <div><strong>책 제목:</strong> 수학책을 탈출한 미적분</div>
+            <div><strong>저자:</strong> 류치</div>
+            <div><strong>선택한 주제:</strong> 주식시장의 기복</div>
+            <div><strong>관련 미적분 개념:</strong> 함수의 변곡점, 극값, 볼록성, 평균값 정리</div>
+        </div>
+
+        <hr>
+
+        <p>
+            <strong>웹앱 제작 의도</strong><br>
+            주식동향그래프에 미적분을 적용하면 도함수와 이계도함수의 부호를 통해
+            주가의 상승·하락 및 전환 시점을 판별할 수 있음을 보여주기 위해 제작하였다.
+        </p>
+
+        <p>
+            <strong>사용 방법</strong><br>
+            시간 슬라이더를 움직이거나 자동 재생 버튼을 눌러 그래프의 현재 위치를 바꿔보세요.
+            현재 시점의 기울기(f'(x))와 곡률(f''(x))이 어떻게 변하는지 확인할 수 있습니다.
+        </p>
+    </div>
+
+    <!-- 개념 설명 영역 -->
+    <div class="section">
+        <h2>개념 설명</h2>
+
+        <p>
+            주가를 하나의 함수라고 생각하면,
+            도함수 f'(x)는 현재 주가가 상승 중인지 하락 중인지를 알려준다.
+        </p>
+
+        <p>
+            또한 이계도함수 f''(x)는 그래프의 굽음 정도를 나타내며,
+            상승세가 강해지는지 약해지는지를 판단하는 데 활용할 수 있다.
+        </p>
+
+        <p>
+            극값과 변곡점은 주가의 전환 가능성을 분석하는 데 중요한 기준이 된다.
+        </p>
+    </div>
+
+    <!-- 시각화 영역 -->
+    <div class="section">
+        <h2>주식 동향 시각화</h2>
+
+        <canvas id="stockChart"></canvas>
+    </div>
+
+    <!-- 조작 영역 -->
+    <div class="section">
+        <h2>조작 영역</h2>
+
+        <div class="control-area">
+            <label>
+                시간 :
+                <input type="range" id="timeSlider" min="0" max="100" value="50">
+            </label>
+
+            <button id="playBtn">▶ 재생</button>
+
+            <div id="currentTime"></div>
+        </div>
+    </div>
+
+    <!-- 결과 해석 영역 -->
+    <div class="section">
+        <h2>결과 해석</h2>
+
+        <div class="result">
+            f'(x) =
+            <span id="firstDerivative"></span>
+        </div>
+
+        <div class="result">
+            f''(x) =
+            <span id="secondDerivative"></span>
+        </div>
+
+        <br>
+
+        <div id="statusBox"></div>
+
+        <p id="explanation"></p>
+    </div>
+
+</div>
+
+<script>
+
+/*
+    주가를 설명하기 위한 예시 함수
+    y = 50 + 15sin(x/10) + 0.15x
+
+    학생이 이해하기 쉬운 수준으로 작성
+*/
+
+const xData = [];
+const yData = [];
+
+for(let x=0; x<=100; x++){
+    xData.push(x);
+    yData.push(
+        50 +
+        15*Math.sin(x/10) +
+        0.15*x
+    );
+}
+
+const ctx = document.getElementById('stockChart');
+
+const chart = new Chart(ctx,{
+    type:'line',
+    data:{
+        labels:xData,
+        datasets:[
+            {
+                label:'주가 함수',
+                data:yData,
+                borderWidth:3,
+                tension:0.3,
+                borderColor:'blue'
+            },
+            {
+                label:'현재 위치',
+                data:[],
+                pointRadius:8,
+                showLine:false,
+                backgroundColor:'black'
+            }
+        ]
+    },
+    options:{
+        responsive:true,
+        animation:false
+    }
+});
+
+const slider = document.getElementById("timeSlider");
+
+let timer = null;
+
+function f(x){
+    return 50 + 15*Math.sin(x/10) + 0.15*x;
+}
+
+function fp(x){
+    return 1.5*Math.cos(x/10)+0.15;
+}
+
+function fpp(x){
+    return -0.15*Math.sin(x/10);
+}
+
+function update(){
+
+    const x = Number(slider.value);
+
+    const y = f(x);
+
+    const first = fp(x);
+
+    const second = fpp(x);
+
+    chart.data.datasets[1].data = [{
+        x:x,
+        y:y
+    }];
+
+    if(first >= 0){
+        chart.data.datasets[0].borderColor = "blue";
+    }else{
+        chart.data.datasets[0].borderColor = "red";
+    }
+
+    chart.update();
+
+    document.getElementById("currentTime").innerText =
+        "현재 시간 : " + x;
+
+    document.getElementById("firstDerivative").innerText =
+        first.toFixed(3);
+
+    document.getElementById("secondDerivative").innerText =
+        second.toFixed(3);
+
+    let state = "";
+    let explanation = "";
+
+    if(Math.abs(first) < 0.05){
+
+        if(second < 0){
+            state = "극대 가능성";
+        }
+        else if(second > 0){
+            state = "극소 가능성";
+        }
+        else{
+            state = "전환 구간";
+        }
+
+    }else{
+
+        if(first > 0){
+
+            if(second > 0){
+                state = "상승 중";
+            }else{
+                state = "상승하지만 증가세 둔화";
+            }
+
+        }else{
+
+            if(second < 0){
+                state = "하락 중";
+            }else{
+                state = "하락하지만 감소세 완화";
+            }
+        }
+    }
+
+    const color = first >= 0 ? "blue" : "red";
+
+    document.getElementById("statusBox").innerHTML =
+        `<span class="status" style="background:${color}">
+        ${state}
+        </span>`;
+
+    explanation =
+    `현재 시점에서 도함수 f'(x)의 부호를 이용하여
+    상승 또는 하락 여부를 확인할 수 있으며,
+    이계도함수 f''(x)를 통해 전환 가능성을 살펴볼 수 있다.`;
+
+    document.getElementById("explanation").innerText =
+        explanation;
+}
+
+slider.addEventListener("input", update);
+
+document.getElementById("playBtn").addEventListener("click",()=>{
+
+    if(timer){
+
+        clearInterval(timer);
+        timer = null;
+
+        document.getElementById("playBtn").innerText = "▶ 재생";
+
+    }else{
+
+        document.getElementById("playBtn").innerText = "⏸ 정지";
+
+        timer = setInterval(()=>{
+
+            let value = Number(slider.value);
+
+            value++;
+
+            if(value>100){
+                value=0;
+            }
+
+            slider.value=value;
+            update();
+
+        },100);
+    }
+});
+
+update();
+
+</script>
+
+</body>
+</html>

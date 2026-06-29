@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3207 학생 제작 웹앱</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        /* 기본 스타일 및 반응형 레이아웃 설정 */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f6f9;
+            color: #333;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        header, section {
+            background: #fff;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        h1, h2, h3 {
+            color: #1a365d;
+            margin-top: 0;
+        }
+        /* 영역 구분 가시화 */
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        .info-item {
+            background: #edf2f7;
+            padding: 10px 15px;
+            border-radius: 6px;
+        }
+        .info-label {
+            font-weight: bold;
+            color: #4a5568;
+            font-size: 0.9rem;
+        }
+        .info-value {
+            font-size: 1.1rem;
+            margin-top: 5px;
+        }
+        .flex-container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        @media (min-width: 768px) {
+            .flex-container {
+                flex-direction: row;
+            }
+            .left-panel { flex: 1; min-width: 0; }
+            .right-panel { flex: 1; min-width: 0; }
+        }
+        /* 조작 영역 스타일 */
+        .control-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        input[type="range"] {
+            width: 100%;
+            margin-bottom: 5px;
+        }
+        .value-display {
+            font-weight: bold;
+            color: #2b6cb0;
+            float: right;
+        }
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        button {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 4px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .btn-primary { background-color: #3182ce; color: white; }
+        .btn-primary:hover { background-color: #2b6cb0; }
+        .btn-toggle { background-color: #e2e8f0; color: #4a5568; }
+        .btn-toggle.active { background-color: #48bb78; color: white; }
+        /* 시각화 영역 스타일 */
+        .canvas-container {
+            position: relative;
+            margin-bottom: 20px;
+            background: #0d1b2a;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        canvas {
+            display: block;
+            width: 100%;
+        }
+        .chart-box {
+            margin-top: 15px;
+            background: #fff;
+            padding: 10px;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+        }
+        /* 결과 해석 영역 스타일 */
+        .result-box {
+            background-color: #ebf8ff;
+            border-left: 4px solid #3182ce;
+            padding: 15px;
+            margin-top: 15px;
+        }
+    </style>
+
+<style>
+  .student-work-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    max-width: 1040px;
+    margin: 0 auto 16px;
+    padding: 10px 12px;
+    border: 1px solid #dbe3ef;
+    border-radius: 8px;
+    background: #f8fafc;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+  .student-work-links a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 36px;
+    padding: 7px 10px;
+    border-radius: 6px;
+    background: #ffffff;
+    color: #1d4ed8;
+    text-decoration: none;
+    font-weight: 700;
+    border: 1px solid #dbe3ef;
+  }
+  .student-work-links a:hover {
+    background: #eff6ff;
+  }
+</style>
+</head>
+<body>
+
+<nav class="student-work-links" aria-label="학생 답안 자료">
+  <a href="../">목록으로</a>
+  <a href="./answer.html">답안 보기</a>
+  <a href="./answer.txt">원문 TXT</a>
+</nav>
+
+
+<div class="container">
+    <header>
+        <h2>[수행평가] 미적분 독서 연계 웹앱</h2>
+        <div class="info-grid">
+            <div class="info-item"><div class="info-label">학번 / 이름</div><div class="info-value">3207 / 비공개</div></div>
+            <div class="info-item"><div class="info-label">책 제목 / 저자</div><div class="info-value">미적분의 쓸모 / 한화택</div></div>
+            <div class="info-item"><div class="info-label">선택한 주제</div><div class="info-value">가속도의 법칙으로 떠나는 우주여행</div></div>
+            <div class="info-item"><div class="info-label">관련 미적분 개념</div><div class="info-value">미분, 적분, 순간변화율, 속도함수, 위치함수</div></div>
+        </div>
+        <div style="background: #f7fafc; padding: 15px; border-radius: 6px; border-left: 4px solid #4a5568;">
+            <strong>웹앱 제작 의도:</strong> 연료가 줄어들면 로켓은 어떻게 움직일까? 그리고 행성의 중력은 우주선의 속도를 어떻게 바꿀까? 이 웹앱에서는 로켓방정식과 중력도움 비행을 통해 미적분이 우주탐사에 활용되는 과정을 직접 탐구할 수 있습니다.
+            <br><br>
+            <strong>사용 방법 안내:</strong> 슬라이더를 조작하여 연료 소모율과 연소가스 분출속도를 설정하고, 중력도움 사용 여부를 선택한 후 [애니메이션 재생] 버튼을 눌러 로켓의 비행 상태와 그래프 변화를 확인하세요. 시간 슬라이더로 특정 시점의 상태를 직접 탐색할 수도 있습니다.
+        </div>
+    </header>
+
+    <div class="flex-container">
+        <div class="left-panel">
+            <section>
+                <h3>4. 조작 영역</h3>
+                <div class="control-group">
+                    <label>연료 소모율 (dm/dt) <span class="value-display" id="burnRateVal">15 kg/s</span></label>
+                    <input type="range" id="burnRate" min="5" max="25" value="15" step="1">
+                </div>
+                <div class="control-group">
+                    <label>연소가스 분출속도 (u) <span class="value-display" id="exhaustVelVal">2500 m/s</span></label>
+                    <input type="range" id="exhaustVel" min="1500" max="3500" value="2500" step="100">
+                </div>
+                <div class="control-group">
+                    <label>시간 탐색 (t) <span class="value-display" id="timeSliderVal">0 초</span></label>
+                    <input type="range" id="timeSlider" min="0" max="100" value="0" step="1">
+                </div>
+                <div class="btn-group">
+                    <button type="button" id="gravityAssistBtn" class="btn-toggle">중력도움 미사용</button>
+                    <button type="button" id="playBtn" class="btn-primary">애니메이션 재생</button>
+                </div>
+            </section>
+
+            <section>
+                <h3>5. 결과 해석 및 추가 기능</h3>
+                <div class="result-box">
+                    <h4>수학적 결과 해석</h4>
+                    <p id="mathInterpretation">시간에 따라 로켓의 질량이 지속적으로 감소하므로, 미분 법칙(가속도)에 의해 속도의 순간변화율이 가파르게 증가합니다. 이를 적분하여 얻은 위치함수는 곡선 형태로 나타납니다.</p>
+                </div>
+                <div class="result-box" style="background-color: #f0fff4; border-left-color: #38a169;">
+                    <h4>자동 계산 및 비교 (추가 기능)</h4>
+                    <p>🚀 <strong>예상 최종 속도:</strong> <span id="calcFinalVel">0</span> m/s</p>
+                    <p>📍 <strong>예상 최종 위치:</strong> <span id="calcFinalPos">0</span> km</p>
+                    <p>🪐 <strong>화성 예상 도착 시간 비교:</strong> <span id="calcArrivalTime">0</span>초</p>
+                </div>
+            </section>
+        </div>
+
+        <div class="right-panel">
+            <section>
+                <h3>2. 개념 설명 영역</h3>
+                <p><strong>로켓 방정식과 미적분:</strong> 로켓은 가스를 분출하며 연료를 소비하기 때문에 전체 질량이 계속 감소합니다. 질량이 변화하는 시스템에서 가속도(속도의 미분)는 고정되지 않고 변화하므로, 순간변화율을 적분해야만 정확한 속도함수와 위치함수를 도출할 수 있습니다.</p>
+                <p><strong>중력도움(스윙바이) 원리:</strong> 행성의 중력장을 지나갈 때, 우주선은 자체 연료를 쓰지 않고도 행성의 공전 궤도 에너지를 얻어 순간적으로 속도가 크게 증가(가속도의 급격한 변화)하게 됩니다.</p>
+            </section>
+
+            <section>
+                <h3>3. 시각화 영역</h3>
+                <div class="canvas-container">
+                    <canvas id="spaceCanvas" height="180"></canvas>
+                </div>
+                <div class="chart-box">
+                    <canvas id="speedChart" height="120"></canvas>
+                </div>
+                <div class="chart-box">
+                    <canvas id="positionChart" height="120"></canvas>
+                </div>
+            </section>
+        </div>
+    </div>
+</div>
+
+<script>
+    // 상태 변수 정의
+    let config = {
+        m0: 3000,          // 초기 로켓 전체 질량 (kg)
+        m1: 1000,          // 로켓 자체 순수 질량 (kg, 연료 제외)
+        burnRate: 15,      // dm/dt (연료 소모율)
+        u: 2500,           // 연소가스 분출속도 (m/s)
+        useGravity: false, // 중력도움 여부
+        currentTime: 0,
+        maxTime: 100
+    };
+
+    let animationId = null;
+    let isPlaying = false;
+
+    // DOM 요소들
+    const burnRateInput = document.getElementById('burnRate');
+    const burnRateVal = document.getElementById('burnRateVal');
+    const exhaustVelInput = document.getElementById('exhaustVel');
+    const exhaustVelVal = document.getElementById('exhaustVelVal');
+    const timeSlider = document.getElementById('timeSlider');
+    const timeSliderVal = document.getElementById('timeSliderVal');
+    const gravityAssistBtn = document.getElementById('gravityAssistBtn');
+    const playBtn = document.getElementById('playBtn');
+
+    const spaceCanvas = document.getElementById('spaceCanvas');
+    const ctx = spaceCanvas.getContext('2d');
+
+    // Chart.js 초기화
+    let speedChart, positionChart;
+
+    function initCharts() {
+        const ctxSpeed = document.getElementById('speedChart').getContext('2d');
+        speedChart = new Chart(ctxSpeed, {
+            type: 'line',
+            data: { labels: [], datasets: [{ label: '속도 (m/s)', data: [], borderColor: '#e53e3e', borderWidth: 2, fill: false, pointRadius: 0 }] },
+            options: { responsive: true, scales: { x: { display: true, title: { display: true, text: '시간 (초)' } }, y: { display: true } } }
+        });
+
+        const ctxPos = document.getElementById('positionChart').getContext('2d');
+        positionChart = new Chart(ctxPos, {
+            type: 'line',
+            data: { labels: [], datasets: [{ label: '위치 (km)', data: [], borderColor: '#3182ce', borderWidth: 2, fill: false, pointRadius: 0 }] },
+            options: { responsive: true, scales: { x: { display: true, title: { display: true, text: '시간 (초)' } }, y: { display: true } } }
+        });
+    }
+
+    // 물리 물리 데이터 계산 엔진
+    function calculatePhysicsForTime(t, currentConfig) {
+        let burnOutTime = (currentConfig.m0 - currentConfig.m1) / currentConfig.burnRate;
+        let activeTime = Math.min(t, burnOutTime);
+
+        // 로켓 기본 속도 계산 (치올코프스키 로켓방정식 기반 단순화 모델)
+        let v = currentConfig.u * Math.log(currentConfig.m0 / (currentConfig.m0 - currentConfig.burnRate * activeTime));
+
+        // 연소 종료 후 등속 운동 반영
+        if (t > burnOutTime) {
+            let vMax = currentConfig.u * Math.log(currentConfig.m0 / currentConfig.m1);
+            v = vMax;
+        }
+
+        // 중력도움 효과 적용 (t가 50초인 시점을 통과할 때 순간 속도 가산 효과)
+        let gravityBoost = 0;
+        if (currentConfig.useGravity && t >= 50) {
+            gravityBoost = 1500; // 중력도움으로 얻은 속도 증가분 (m/s)
+            v += gravityBoost;
+        }
+
+        // 간단한 수치 적분 형태로 위치 계산 (시간 간격 1초 기준 누적 계산 시뮬레이션 데이터 추출용)
+        return { v: v, burnOutTime: burnOutTime };
+    }
+
+    // 전체 타임라인 데이터 생성 함수
+    function generateTimelineData() {
+        let speedData = [];
+        let posData = [];
+        let labels = [];
+        let currentPos = 0;
+
+        for (let t = 0; t <= config.maxTime; t++) {
+            let phys = calculatePhysicsForTime(t, config);
+            let v = phys.v;
+
+            if (t > 0) {
+                // 직전 속도와 현재 속도의 평균값으로 위치 적분 처리 (m -> km 변환)
+                let prevV = speedData[t-1];
+                currentPos += ((prevV + v) / 2) / 1000;
+            }
+
+            speedData.push(v);
+            posData.push(currentPos);
+            labels.push(t);
+        }
+        return { speedData, posData, labels };
+    }
+
+    // 화면 갱신 함수
+    function updateUI() {
+        let data = generateTimelineData();
+
+        // 그래프 데이터 업데이트
+        speedChart.data.labels = data.labels;
+        speedChart.data.datasets[0].data = data.speedData;
+        speedChart.update('none');
+
+        positionChart.data.labels = data.labels;
+        positionChart.data.datasets[0].data = data.posData;
+        positionChart.update('none');
+
+        // 특정 선택 시점 값 받아오기
+        let t = config.currentTime;
+        let currentSpeed = data.speedData[t];
+        let currentPosition = data.posData[t];
+
+        // 추가 기능 자동 계산값 채우기
+        let finalSpeed = data.speedData[config.maxTime];
+        let finalPos = data.posData[config.maxTime];
+        document.getElementById('calcFinalVel').innerText = Math.round(finalSpeed).toLocaleString();
+        document.getElementById('calcFinalPos').innerText = Math.round(finalPos).toLocaleString();
+
+        // 화성 예상 도착 시간 비교 (특정 기준 거리 1500km 도달 기준 시뮬레이션 시간 계산)
+        let arrivalTime = "연료 부족으로 도달 불가";
+        for(let i=0; i<data.posData.length; i++) {
+            if(data.posData[i] >= 1200) {
+                arrivalTime = i + " 초";
+                break;
+            }
+        }
+        document.getElementById('calcArrivalTime').innerText = config.useGravity ? arrivalTime + " (중력도움으로 단축)" : arrivalTime;
+
+        // 결과 해석 텍스트 동적 업데이트
+        if (config.useGravity && t >= 50) {
+            document.getElementById('mathInterpretation').innerText = `현재 ${t}초 기점: 로켓은 연료 소모(${config.burnRate} kg/s)에 따라 가속되다가, 50초 기점에 금성 중력도움을 받아 속도가 순간변화율 이상으로 급격히 도약했습니다. 적분된 위치 변화율(기울기) 역시 훨씬 가팔라져 목적지 도달 시간이 단축됩니다.`;
+        } else {
+            document.getElementById('mathInterpretation').innerText = `현재 ${t}초 기점: 연료 소모율이 줄어들수록 로켓 질량 감소 속도가 느려져 가속도(속도의 미분값)가 완만하게 증가합니다. 반대로 가스 속도(u)가 빠르면 최종 위치(위치함수의 정적분 값)가 극대화됩니다.`;
+        }
+
+        drawSpaceAnimation(t, data.posData[t]);
+    }
+
+    // 우주선 비행 경로 애니메이션 캔버스 그리기
+    function drawSpaceAnimation(t, pos) {
+        ctx.clearRect(0, 0, spaceCanvas.width, spaceCanvas.height);
+
+        // 배경 우주선 및 행성 그리기
+        ctx.fillStyle = "#ffffff";
+        for (let i = 0; i < 20; i++) {
+            let x = (Math.sin(i * 99) + 1) * spaceCanvas.width / 2;
+            let y = (Math.cos(i * 33) + 1) * spaceCanvas.height / 2;
+            ctx.fillRect(x, y, 1, 1);
+        }
+
+        // 금성(행성) 그리기 (중력도움 지점 시각화)
+        if (config.useGravity) {
+            ctx.beginPath();
+            ctx.arc(spaceCanvas.width * 0.5, spaceCanvas.height * 0.5, 15, 0, 2 * Math.PI);
+            ctx.fillStyle = "#e28743";
+            ctx.fill();
+            ctx.fillStyle = "#ffffff";
+            ctx.font = "10px sans-serif";
+            ctx.fillText("금성 (중력도움)", spaceCanvas.width * 0.5 - 35, spaceCanvas.height * 0.5 - 20);
+        }
+
+        // 로켓 위치 계산 및 그리기
+        let startX = 30;
+        let endX = spaceCanvas.width - 40;
+        let currentX = startX + (t / config.maxTime) * (endX - startX);
+        let currentY = spaceCanvas.height * 0.5;
+
+        // 중력도움 사용 시 궤도 곡선 효과 연출
+        if (config.useGravity && t > 35 && t < 65) {
+            currentY += Math.sin((t - 35) / 30 * Math.PI) * 25;
+        }
+
+        // 로켓 본체
+        ctx.fillStyle = "#e53e3e";
+        ctx.beginPath();
+        ctx.moveTo(currentX, currentY);
+        ctx.lineTo(currentX - 15, currentY - 6);
+        ctx.lineTo(currentX - 15, currentY + 6);
+        ctx.fill();
+
+        // 화염 효과 (시간 및 가속 여부에 따라 변화)
+        if (t < 100) {
+            ctx.fillStyle = "#ecc94b";
+            ctx.beginPath();
+            ctx.moveTo(currentX - 15, currentY - 4);
+            ctx.lineTo(currentX - 25 - (config.burnRate * 0.5), currentY);
+            ctx.lineTo(currentX - 15, currentY + 4);
+            ctx.fill();
+        }
+
+        // 실시간 정보 텍스트 표시
+        ctx.fillStyle = "#fff";
+        ctx.font = "12px sans-serif";
+        ctx.fillText(`시간: ${t}s`, 10, 20);
+        ctx.fillText(`이동거리: ${Math.round(pos)} km`, 10, 40);
+    }
+
+    // 이벤트 리스너 연동
+    burnRateInput.addEventListener('input', (e) => {
+        config.burnRate = parseInt(e.target.value);
+        burnRateVal.innerText = config.burnRate + " kg/s";
+        updateUI();
+    });
+
+    exhaustVelInput.addEventListener('input', (e) => {
+        config.u = parseInt(e.target.value);
+        exhaustVelVal.innerText = config.u + " m/s";
+        updateUI();
+    });
+
+    timeSlider.addEventListener('input', (e) => {
+        config.currentTime = parseInt(e.target.value);
+        timeSliderVal.innerText = config.currentTime + " 초";
+        updateUI();
+    });
+
+    gravityAssistBtn.addEventListener('click', () => {
+        config.useGravity = !config.useGravity;
+        if (config.useGravity) {
+            gravityAssistBtn.innerText = "중력도움 사용중";
+            gravityAssistBtn.classList.add('active');
+        } else {
+            gravityAssistBtn.innerText = "중력도움 미사용";
+            gravityAssistBtn.classList.remove('active');
+        }
+        updateUI();
+    });
+
+    playBtn.addEventListener('click', () => {
+        if (isPlaying) {
+            clearInterval(animationId);
+            playBtn.innerText = "애니메이션 재생";
+            isPlaying = false;
+        } else {
+            config.currentTime = 0;
+            playBtn.innerText = "일시정지";
+            isPlaying = true;
+            animationId = setInterval(() => {
+                config.currentTime++;
+                if (config.currentTime > config.maxTime) {
+                    config.currentTime = config.maxTime;
+                    clearInterval(animationId);
+                    playBtn.innerText = "애니메이션 재생";
+                    isPlaying = false;
+                }
+                timeSlider.value = config.currentTime;
+                timeSliderVal.innerText = config.currentTime + " 초";
+                updateUI();
+            }, 100);
+        }
+    });
+
+    // 윈도우 로드 시 실행
+    window.onload = () => {
+        initCharts();
+        updateUI();
+    };
+</script>
+
+</body>
+</html>

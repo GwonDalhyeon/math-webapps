@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>3504 학생 제작 웹앱</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+body{font-family:Arial,sans-serif;margin:0;background:#f4f6f9}
+.container{max-width:1200px;margin:auto;padding:20px}
+.section{background:white;padding:20px;margin:15px 0;border-radius:10px;box-shadow:0 2px 5px rgba(0,0,0,.1)}
+h1,h2{color:#2c3e50}
+.controls{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+button,select{padding:8px 12px}
+input[type=range]{width:300px}
+#result{font-size:18px;font-weight:bold}
+</style>
+
+<style>
+  .student-work-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    max-width: 1040px;
+    margin: 0 auto 16px;
+    padding: 10px 12px;
+    border: 1px solid #dbe3ef;
+    border-radius: 8px;
+    background: #f8fafc;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+  .student-work-links a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 36px;
+    padding: 7px 10px;
+    border-radius: 6px;
+    background: #ffffff;
+    color: #1d4ed8;
+    text-decoration: none;
+    font-weight: 700;
+    border: 1px solid #dbe3ef;
+  }
+  .student-work-links a:hover {
+    background: #eff6ff;
+  }
+</style>
+</head>
+<body>
+
+<nav class="student-work-links" aria-label="학생 답안 자료">
+  <a href="../">목록으로</a>
+  <a href="./answer.html">답안 보기</a>
+  <a href="./answer.txt">원문 TXT</a>
+</nav>
+
+<div class="container">
+
+<div class="section">
+<h1>도시는 무엇으로 사는가 - 교통량 변화와 순간변화율</h1>
+<p><b>학번:</b> 3504 | <b>이름:</b> 비공개</p>
+<p><b>책 제목:</b> 도시는 무엇으로 사는가</p>
+<p><b>저자:</b> 유현준</p>
+<p><b>선택 주제:</b> 도시의 교통 흐름과 효율적인 도로 설계</p>
+<p><b>관련 미적분 개념:</b> 함수, 미분, 순간변화율</p>
+<p><b>웹앱 제작 의도:</b> 시간에 따른 교통량 변화를 함수로 표현하고, 순간변화율을 통해 교통량 변화 속도를 분석한다.</p>
+<p><b>사용 방법:</b> 슬라이더를 움직이거나 재생 버튼을 눌러 시간을 바꾸고 그래프의 접선과 순간변화율을 확인한다.</p>
+<p><b>핵심 설명:</b> "도시의 교통량은 시간에 따라 계속 변화합니다. 그래프 위의 점을 움직이며 순간변화율을 확인하고, 미분이 도시의 교통 문제를 분석하고 해결하는 데 어떻게 활용되는지 알아보세요."</p>
+</div>
+
+<div class="section">
+<h2>개념 설명</h2>
+<p>교통량은 시간에 따라 변하는 함수로 볼 수 있다. 특정 시점에서 교통량이 얼마나 빠르게 증가하거나 감소하는지를 나타내는 값이 순간변화율이며, 이는 미분으로 구할 수 있다. 도시공학에서는 이를 이용해 도로 설계와 교통 정책을 개선한다.</p>
+</div>
+
+<div class="section">
+<h2>시각화 영역</h2>
+<canvas id="chart"></canvas>
+</div>
+
+<div class="section">
+<h2>조작 영역</h2>
+<div class="controls">
+<label>시간:
+<input type="range" id="timeSlider" min="0" max="24" step="0.5" value="8">
+</label>
+
+<select id="dataset">
+<option value="normal">일반 도심</option>
+<option value="rush">혼잡 도시</option>
+<option value="suburb">교외 지역</option>
+</select>
+
+<button onclick="togglePlay()">재생/일시정지</button>
+<button onclick="jumpTime(8)">출근시간</button>
+<button onclick="jumpTime(18)">퇴근시간</button>
+</div>
+</div>
+
+<div class="section">
+<h2>결과 해석 영역</h2>
+<div id="result"></div>
+<div id="best"></div>
+</div>
+
+</div>
+
+<script>
+const sets={
+normal:t=>80+120*Math.exp(-Math.pow((t-8)/2,2))+100*Math.exp(-Math.pow((t-18)/2,2)),
+rush:t=>70+180*Math.exp(-Math.pow((t-8)/1.8,2))+170*Math.exp(-Math.pow((t-18)/1.8,2)),
+suburb:t=>50+90*Math.exp(-Math.pow((t-8)/2.5,2))+80*Math.exp(-Math.pow((t-18)/2.5,2))
+};
+
+let chart;
+const times=[];
+for(let t=0;t<=24;t+=0.5) times.push(t);
+
+function derivative(f,x){
+return (f(x+0.1)-f(x-0.1))/0.2;
+}
+
+function update(){
+const f=sets[dataset.value];
+const data=times.map(t=>f(t));
+
+const x=parseFloat(timeSlider.value);
+const y=f(x);
+const slope=derivative(f,x);
+
+const point={x:x,y:y};
+
+if(chart) chart.destroy();
+
+chart=new Chart(document.getElementById("chart"),{
+type:"line",
+data:{
+datasets:[
+{
+label:"교통량",
+data:times.map(t=>({x:t,y:f(t)})),
+borderWidth:3
+},
+{
+label:"현재 위치",
+data:[point],
+type:"scatter",
+pointRadius:7
+}
+]
+},
+options:{
+responsive:true,
+scales:{x:{title:{display:true,text:"시간"}},y:{title:{display:true,text:"교통량"}}}
+}
+});
+
+let level="원활";
+if(y>220) level="매우 혼잡";
+else if(y>150) level="혼잡";
+
+document.getElementById("result").innerHTML=
+`현재 시간: ${x}시<br>
+교통량: ${y.toFixed(1)}<br>
+순간변화율: ${slope.toFixed(2)}<br>
+혼잡도: ${level}<br>
+현재 교통 상태: ${slope>0?"교통량 증가 중":"교통량 감소 중"}`;
+
+let maxInc={t:0,v:-999};
+let maxDec={t:0,v:999};
+for(let t=0;t<=24;t+=0.5){
+let d=derivative(f,t);
+if(d>maxInc.v) maxInc={t:t,v:d};
+if(d<maxDec.v) maxDec={t:t,v:d};
+}
+
+document.getElementById("best").innerHTML=
+`<hr>
+교통량이 가장 빠르게 증가하는 시점: ${maxInc.t}시 (순간변화율 ${maxInc.v.toFixed(2)})<br>
+교통량이 가장 빠르게 감소하는 시점: ${maxDec.t}시 (순간변화율 ${maxDec.v.toFixed(2)})`;
+}
+
+let timer=null;
+function togglePlay(){
+if(timer){clearInterval(timer);timer=null;return;}
+timer=setInterval(()=>{
+timeSlider.value=(parseFloat(timeSlider.value)+0.5)%24;
+update();
+},500);
+}
+function jumpTime(t){
+timeSlider.value=t;
+update();
+}
+
+timeSlider.oninput=update;
+dataset.onchange=update;
+update();
+</script>
+</body>
+</html>

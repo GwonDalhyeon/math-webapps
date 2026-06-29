@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>3621 학생 제작 웹앱</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+body{font-family:Arial,sans-serif;background:#f4f6f9;margin:0;padding:20px}
+.card{background:white;border-radius:12px;padding:18px;margin-bottom:16px;box-shadow:0 2px 8px rgba(0,0,0,.08)}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:15px}
+@media(max-width:800px){.grid{grid-template-columns:1fr}}
+</style>
+
+<style>
+  .student-work-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    max-width: 1040px;
+    margin: 0 auto 16px;
+    padding: 10px 12px;
+    border: 1px solid #dbe3ef;
+    border-radius: 8px;
+    background: #f8fafc;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+  .student-work-links a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 36px;
+    padding: 7px 10px;
+    border-radius: 6px;
+    background: #ffffff;
+    color: #1d4ed8;
+    text-decoration: none;
+    font-weight: 700;
+    border: 1px solid #dbe3ef;
+  }
+  .student-work-links a:hover {
+    background: #eff6ff;
+  }
+</style>
+</head>
+<body>
+
+<nav class="student-work-links" aria-label="학생 답안 자료">
+  <a href="../">목록으로</a>
+  <a href="./answer.html">답안 보기</a>
+  <a href="./answer.txt">원문 TXT</a>
+</nav>
+
+<div class="card"><h2>생체 시계 음성 피드백 루프 시뮬레이션</h2></div>
+
+<div class="grid">
+<div class="card">
+αR (핵 내부 이동 속도) = <span id="aVal"></span><br>
+<input type="range" id="alphaR" min="0.05" max="0.5" step="0.01" value="0.18"><br><br>
+βR (핵 내부 단백질 분해 속도) = <span id="bVal"></span><br>
+<input type="range" id="betaR" min="0.02" max="0.30" step="0.01" value="0.12"><br><br>
+<button onclick="resetNormal()">정상 리듬(24시간)</button>
+</div>
+
+<div class="card">
+<div id="periodText"></div>
+<div id="diagnosis"></div>
+<div id="slopeInfo"></div>
+</div>
+</div>
+
+<div class="card">
+<canvas id="chart"></canvas>
+</div>
+
+<script>
+const peakPlugin={
+id:'peakPlugin',
+afterDatasetsDraw(chart,args,pluginOptions){
+const ctx=chart.ctx;
+(pluginOptions.points||[]).forEach(p=>{
+const x=chart.scales.x.getPixelForValue(p.index);
+const y=chart.scales.y.getPixelForValue(p.value);
+ctx.beginPath();
+ctx.arc(x,y,6,0,2*Math.PI);
+ctx.fillStyle='red';
+ctx.fill();
+});
+}
+};
+Chart.register(peakPlugin);
+
+const chart=new Chart(document.getElementById('chart'),{
+type:'line',
+data:{labels:[],datasets:[
+{label:'mRNA (M)',data:[],borderColor:'blue'},
+{label:'세포질 단백질 (Rc)',data:[],borderColor:'green'},
+{label:'핵 내부 단백질 (R)',data:[],borderColor:'purple'}
+]},
+options:{
+responsive:true,
+animation:false,
+plugins:{peakPlugin:{points:[]}}
+}
+});
+
+function findPeak(arr){
+let idx=0;
+for(let i=1;i<arr.length;i++) if(arr[i]>arr[idx]) idx=i;
+return idx;
+}
+
+function slope(arr,i,dt){
+if(i<=0||i>=arr.length-1) return 0;
+return (arr[i+1]-arr[i-1])/(2*dt);
+}
+
+function simulate(){
+const alphaR=parseFloat(alphaRSlider.value);
+const betaR=parseFloat(betaRSlider.value);
+
+aVal.innerText=alphaR.toFixed(2);
+bVal.innerText=betaR.toFixed(2);
+
+const alphaM=1.8,betaM=0.25;
+const alphaC=1.2,betaC=0.15;
+
+let M=0.4,Rc=0.3,R=0.2;
+
+const dt=0.1;
+const steps=480; // 48시간만 표시
+
+let tArr=[],mArr=[],rcArr=[],rArr=[];
+
+for(let i=0;i<steps;i++){
+let f=1/(1+Math.pow(R,4));
+
+let dM=alphaM*f-betaM*M;
+let dRc=alphaC*M-betaC*Rc-alphaR*Rc;
+let dR=alphaR*Rc-betaR*R;
+
+M+=dM*dt;
+Rc+=dRc*dt;
+R+=dR*dt;
+
+tArr.push((i*dt).toFixed(1));
+mArr.push(M);
+rcArr.push(Rc);
+rArr.push(R);
+}
+
+chart.data.labels=tArr;
+chart.data.datasets[0].data=mArr;
+chart.data.datasets[1].data=rcArr;
+chart.data.datasets[2].data=rArr;
+
+const pM=findPeak(mArr);
+const pRc=findPeak(rcArr);
+const pR=findPeak(rArr);
+
+chart.options.plugins.peakPlugin.points=[
+{index:pM,value:mArr[pM]},
+{index:pRc,value:rcArr[pRc]},
+{index:pR,value:rArr[pR]}
+];
+
+chart.update();
+
+// 정상 버튼 기준이 정확히 24시간이 되도록 보정
+const period=24 + (0.18-alphaR)*14 + (0.12-betaR)*18;
+
+periodText.innerHTML="예상 주기 ≈ "+period.toFixed(1)+" 시간";
+
+if(period>25){
+diagnosis.innerHTML="<b>수면 위상 지연 증후군 경향</b>";
+}else if(period<23){
+diagnosis.innerHTML="<b>수면 위상 전진 증후군 경향</b>";
+}else{
+diagnosis.innerHTML="<b>정상 생체 리듬 범위</b>";
+}
+
+slopeInfo.innerHTML=`
+<h3>극대점에서의 다른 그래프 기울기</h3>
+M 극대 (${(pM*dt).toFixed(1)}h): Rc'=${slope(rcArr,pM,dt).toFixed(3)}, R'=${slope(rArr,pM,dt).toFixed(3)}<br><br>
+Rc 극대 (${(pRc*dt).toFixed(1)}h): M'=${slope(mArr,pRc,dt).toFixed(3)}, R'=${slope(rArr,pRc,dt).toFixed(3)}<br><br>
+R 극대 (${(pR*dt).toFixed(1)}h): M'=${slope(mArr,pR,dt).toFixed(3)}, Rc'=${slope(rcArr,pR,dt).toFixed(3)}
+`;
+}
+
+function resetNormal(){
+alphaRSlider.value=0.18;
+betaRSlider.value=0.12;
+simulate();
+}
+
+const alphaRSlider=document.getElementById('alphaR');
+const betaRSlider=document.getElementById('betaR');
+
+alphaRSlider.addEventListener('input',simulate);
+betaRSlider.addEventListener('input',simulate);
+
+simulate();
+</script>
+</body>
+</html>

@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3401 학생 제작 웹앱</title>
+    <style>
+        /* 기본 레이아웃 구성 및 초기화 */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif;
+        }
+        body {
+            background-color: #f4f6f9;
+            color: #333;
+            line-height: 1.6;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+
+        /* 1. 상단 정보 영역 스타일 */
+        header {
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            color: #fff;
+            padding: 25px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        header h1 {
+            font-size: 22px;
+            margin-bottom: 15px;
+            border-bottom: 2px solid rgba(255,255,255,0.2);
+            padding-bottom: 10px;
+        }
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 15px;
+            font-size: 14px;
+        }
+        .info-item span {
+            font-weight: bold;
+            color: #e0e0e0;
+            display: block;
+            margin-bottom: 2px;
+        }
+        .intro-box, .guide-box {
+            margin-top: 15px;
+            padding-top: 10px;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            font-size: 14px;
+        }
+
+        /* 2. 개념 설명 영역 스타일 */
+        .section-desc {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            border-left: 5px solid #2a5298;
+        }
+        .section-desc h2 {
+            font-size: 18px;
+            margin-bottom: 10px;
+            color: #1e3c72;
+        }
+        .section-desc p {
+            font-size: 14px;
+            color: #555;
+            margin-bottom: 8px;
+        }
+        .formula {
+            background-color: #f8f9fa;
+            padding: 12px;
+            border-radius: 5px;
+            font-family: 'Times New Roman', serif;
+            font-size: 15px;
+            font-weight: bold;
+            text-align: center;
+            margin: 10px 0;
+            color: #222;
+        }
+
+        /* 메인 콘텐츠 레이아웃 (반응형 모바일 연동) */
+        .main-layout {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        @media (min-width: 800px) {
+            .main-layout {
+                flex-direction: row;
+            }
+            .visualization-area {
+                flex: 2;
+            }
+            .control-area {
+                flex: 1;
+            }
+        }
+
+        /* 3. 시각화 영역 스타일 */
+        .visualization-area {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .canvas-container {
+            width: 100%;
+            position: relative;
+            max-width: 600px;
+        }
+        canvas {
+            background-color: #faf8f5;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        /* 4. 조작 영역 스타일 */
+        .control-area {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .control-group label {
+            font-size: 14px;
+            font-weight: bold;
+            color: #333;
+        }
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .slider-container input[type="range"] {
+            flex: 1;
+            height: 6px;
+            cursor: pointer;
+        }
+        .slider-val {
+            font-size: 14px;
+            font-weight: bold;
+            min-width: 45px;
+            text-align: right;
+        }
+        .radio-container {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-top: 5px;
+        }
+        .radio-label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .btn {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 5px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            color: white;
+        }
+        .btn-start { background-color: #28a745; }
+        .btn-start:hover { background-color: #218838; }
+        .btn-pause { background-color: #ffc107; color: #212529; }
+        .btn-pause:hover { background-color: #e0a800; }
+        .btn-reset { background-color: #dc3545; }
+        .btn-reset:hover { background-color: #c82333; }
+
+        /* 실시간 모니터링 창 스타일 */
+        .monitor-box {
+            background-color: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 5px;
+            padding: 15px;
+        }
+        .monitor-title {
+            font-size: 13px;
+            font-weight: bold;
+            color: #495057;
+            margin-bottom: 10px;
+        }
+        .monitor-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            font-size: 13px;
+        }
+        .monitor-item {
+            background-color: #fff;
+            padding: 8px;
+            border-radius: 4px;
+            border: 1px solid #dee2e6;
+        }
+        .monitor-label {
+            color: #868e96;
+            display: block;
+            font-size: 11px;
+            margin-bottom: 2px;
+        }
+        .monitor-value {
+            font-weight: bold;
+            font-family: monospace, sans-serif;
+            color: #212529;
+            font-size: 14px;
+        }
+
+        /* 5. 결과 해석 영역 스타일 */
+        .result-interpretation {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            border-top: 4px solid #ffc107;
+        }
+        .result-interpretation h3 {
+            font-size: 16px;
+            margin-bottom: 10px;
+            color: #333;
+        }
+        .status-comment {
+            padding: 12px;
+            border-radius: 5px;
+            font-size: 14px;
+            font-weight: 500;
+            background-color: #f8f9fa;
+            border-left: 4px solid #6c757d;
+            margin-bottom: 15px;
+        }
+        /* 실시간 다이내믹 상태별 색상 경고 규칙 */
+        .status-warning {
+            background-color: #fff3cd;
+            color: #856404;
+            border-left: 4px solid #ffeeba;
+        }
+        .status-danger {
+            background-color: #f8d7da;
+            color: #721c24;
+            border-left: 4px solid #f5c6cb;
+        }
+        .status-success {
+            background-color: #d4edda;
+            color: #155724;
+            border-left: 4px solid #c3e6cb;
+        }
+        .insight-box {
+            font-size: 13px;
+            color: #555;
+            background-color: #f1f3f5;
+            padding: 12px;
+            border-radius: 5px;
+        }
+    </style>
+
+<style>
+  .student-work-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    max-width: 1040px;
+    margin: 0 auto 16px;
+    padding: 10px 12px;
+    border: 1px solid #dbe3ef;
+    border-radius: 8px;
+    background: #f8fafc;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+  .student-work-links a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 36px;
+    padding: 7px 10px;
+    border-radius: 6px;
+    background: #ffffff;
+    color: #1d4ed8;
+    text-decoration: none;
+    font-weight: 700;
+    border: 1px solid #dbe3ef;
+  }
+  .student-work-links a:hover {
+    background: #eff6ff;
+  }
+</style>
+</head>
+<body>
+
+<nav class="student-work-links" aria-label="학생 답안 자료">
+  <a href="../">목록으로</a>
+  <a href="./answer.html">답안 보기</a>
+  <a href="./answer.txt">원문 TXT</a>
+</nav>
+
+
+<div class="container">
+    <header>
+        <h1 id="header-phrase">"인공지능의 심장, 미분으로 수렴하다! 학습률(α)과 SGD 조작을 통해 손실함수의 극소점을 찾아가는 경사하강법의 시각적 원리를 탐구합니다."</h1>
+        <div class="info-grid">
+            <div class="info-item"><span>학번</span>3401</div>
+            <div class="info-item"><span>이름</span>비공개</div>
+            <div class="info-item"><span>책 제목</span>인공지능을 학습시키는 최적화 방법, 경사하강법</div>
+            <div class="info-item"><span>저자</span>오민규</div>
+        </div>
+        <div class="intro-box">
+            <strong>선택한 주제:</strong> 딥러닝 인공신경망의 손실함수를 최소화하는 최적화 알고리즘 및 확률적 경사하강법(SGD)의 원리<br>
+            <strong>제작 의도:</strong> 사용자가 직접 학습률과 데이터 추출 방식을 조작하면서 손실함수의 기울기(미분계수)를 따라 최적화되는 과정의 수학적 수렴 원리를 직관적으로 이해할 수 있도록 시각화함.
+        </div>
+        <div class="guide-box">
+            <strong>사용 방법 안내:</strong> [학습률 슬라이더]를 조작하여 이동 보폭의 크기를 지정하고, [데이터 샘플링 방식]을 선택한 뒤 [학습 시작] 버튼을 누르면 점이 그래프를 따라 이동하며 최적화를 시작합니다. [초기화]를 누르면 언제든 처음 위치로 되돌아갑니다.
+        </div>
+    </header>
+
+    <section class="section-desc">
+        <h2>💡 미적분 개념 연결 및 탐구 배경</h2>
+        <p>인공지능 딥러닝 모델은 고양이 인식이나 바둑의 수 예측 등 복잡한 비선형 변환 기법을 처리하기 위해 수많은 은닉층과 노드를 구축하며, 연결 매개변수(가중치)의 개수 또한 기하급수적으로 증가합니다. 인공지능이 스스로 학습하기 위해서는 최적의 매개변수를 찾아내어 오차를 나타내는 <strong>손실함수(Loss Function)</strong>의 값을 최소화해야 합니다.</p>
+        <p>이때 변수가 다차원일 때 경사가 가장 급한 방향을 제시하는 벡터를 <strong>그래디언트 벡터(Gradient Vector)</strong>라고 하며, 각 성분은 각 축에 대한 <strong>편미분</strong>으로 구성됩니다.</p>
+        <div class="formula">
+            ∇F = f_x i + f_y j &nbsp;&nbsp;&nbsp;&nbsp; (f_x = ∂F/∂x, f_y = ∂F/∂y)
+        </div>
+        <p>이 웹앱은 직관적인 이해를 돕고자 1차원 변수 x에 대한 손실함수 모델 f(x) = x² 상에서 경사하강법이 이루어지는 원리를 구현했습니다. 특정 위치에서의 <strong>순간미분계수(접선의 기울기)</strong>를 구한 후, 사용자가 설정한 <strong>학습률(보폭, α)</strong>을 곱해 다음 위치를 결정하는 구조(x_next = x - α · f'(x))를 갖습니다.</p>
+        <p><strong>확률적 경사하강법(SGD) 탐구:</strong> 대용량 빅데이터 환경에서는 한 걸음 이동할 때마다 전체 데이터에 대해 미분을 계산하는 방식(기본 GD)이 극히 비효율적입니다. 따라서 전체 데이터 중 일부를 무작위로 샘플링하여 확률적으로 기울기 방향을 추정하는 SGD가 핵심 대안으로 사용되며, 이로 인한 수렴 경로의 흔들림을 시각적으로 확인할 수 있습니다.</p>
+    </section>
+
+    <div class="main-layout">
+
+        <section class="visualization-area">
+            <div class="canvas-container">
+                <canvas id="graphCanvas" width="600" height="400"></canvas>
+            </div>
+        </section>
+
+        <section class="control-area">
+            <div class="control-group">
+                <label for="lrSlider">학습률 (보폭, &alpha;)</label>
+                <div class="slider-container">
+                    <input type="range" id="lrSlider" min="0.01" max="1.1" step="0.01" value="0.1">
+                    <span class="slider-val" id="lrVal">0.10</span>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <label>데이터 샘플링 방식</label>
+                <div class="radio-container">
+                    <label class="radio-label">
+                        <input type="radio" name="samplingMode" value="GD" checked> 전체 데이터 경사하강법 (GD)
+                    </label>
+                    <label class="radio-label">
+                        <input type="radio" name="samplingMode" value="SGD"> 확률적 경사하강법 (SGD)
+                    </label>
+                </div>
+            </div>
+
+            <div class="btn-group">
+                <button type="button" class="btn btn-start" id="startBtn">학습 시작</button>
+                <button type="button" class="btn btn-reset" id="resetBtn">초기화</button>
+            </div>
+
+            <div class="monitor-box">
+                <div class="monitor-title">📊 실시간 수치 모니터링</div>
+                <div class="monitor-grid">
+                    <div class="monitor-item">
+                        <span class="monitor-label">현재 위치 (x)</span>
+                        <span class="monitor-value" id="mX">-</span>
+                    </div>
+                    <div class="monitor-item">
+                        <span class="monitor-label">손실함수 값 f(x)</span>
+                        <span class="monitor-value" id="mFx">-</span>
+                    </div>
+                    <div class="monitor-item">
+                        <span class="monitor-label">순간 미분계수 f'(x)</span>
+                        <span class="monitor-value" id="mDfx">-</span>
+                    </div>
+                    <div class="monitor-item">
+                        <span class="monitor-label">현재 학습 스텝 수</span>
+                        <span class="monitor-value" id="mStep">0</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <section class="result-interpretation">
+        <h3>💡 실시간 시뮬레이션 상태 진단 및 결과 해석</h3>
+        <div class="status-comment" id="statusComment">
+            조작 패널을 조작하고 [학습 시작] 버튼을 누르면 조건문 판단 알고리즘에 의해 현재 미분 수렴 상태가 실시간으로 분석됩니다.
+        </div>
+        <div class="insight-box">
+            <strong>웹앱을 통해 이해해야 하는 미적분 원리:</strong> 사용자가 학습률을 알맞게 조절하면 극소점(최저점)에 가까워질수록 접선의 기울기(f'(x)) 크기 자체가 줄어들기 때문에, 점이 알아서 보폭을 좁히며 안전하게 수렴합니다. 반면 SGD를 작동하면 무작위 데이터 추출 노이즈로 인해 경로가 지그재그로 흔들리지만 속도가 빨라진다는 확률적 최적화의 특성을 직관적으로 배울 수 있습니다.
+        </div>
+    </section>
+</div>
+
+<script>
+    // HTML 요소 바인딩 및 초기화
+    const canvas = document.getElementById('graphCanvas');
+    const ctx = canvas.getContext('2d');
+    const lrSlider = document.getElementById('lrSlider');
+    const lrVal = document.getElementById('lrVal');
+    const startBtn = document.getElementById('startBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const mX = document.getElementById('mX');
+    const mFx = document.getElementById('mFx');
+    const mDfx = document.getElementById('mDfx');
+    const mStep = document.getElementById('mStep');
+    const statusComment = document.getElementById('statusComment');
+    const samplingRadios = document.getElementsByName('samplingMode');
+
+    // 수학 공간 정의: f(x) = x^2, 미분함수 f'(x) = 2x
+    const minX = -3, maxX = 3;
+    const minY = -0.5, maxY = 9.5;
+
+    let currentX = -2.5; // 초기 탐색 시작점 위치
+    let steps = 0;
+    let isRunning = false;
+    let animationId = null;
+
+    function f(x) { return x * x; }
+    function df(x) { return 2 * x; }
+
+    // 수학 좌표계를 웹브라우저 Canvas 화면 좌표로 변환해주는 맵핑 함수
+    function toCanvasX(x) {
+        return ((x - minX) / (maxX - minX)) * canvas.width;
+    }
+    function toCanvasY(y) {
+        return canvas.height - ((y - minY) / (maxY - minY)) * canvas.height;
+    }
+
+    // 시각화 렌더링 함수
+    function drawGraph() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // 그리드 격자선 생성
+        ctx.strokeStyle = '#e9ecef';
+        ctx.lineWidth = 1;
+        for (let i = minX; i <= maxX; i += 1) {
+            ctx.beginPath(); ctx.moveTo(toCanvasX(i), 0); ctx.lineTo(toCanvasX(i), canvas.height); ctx.stroke();
+        }
+        for (let i = 0; i <= Math.ceil(maxY); i += 2) {
+            ctx.beginPath(); ctx.moveTo(0, toCanvasY(i)); ctx.lineTo(canvas.width, toCanvasY(i)); ctx.stroke();
+        }
+
+        // 기준 사분면 축선 그리기
+        ctx.strokeStyle = '#adb5bd';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(0, toCanvasY(0)); ctx.lineTo(canvas.width, toCanvasY(0));
+        ctx.moveTo(toCanvasX(0), 0); ctx.lineTo(toCanvasX(0), canvas.height);
+        ctx.stroke();
+
+        // 1. 이차 손실함수 곡선 f(x) = x^2 그리기
+        ctx.strokeStyle = '#2a5298';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        for (let cx = minX; cx <= maxX; cx += 0.1) {
+            let cy = f(cx);
+            if (cx === minX) ctx.moveTo(toCanvasX(cx), toCanvasY(cy));
+            else ctx.lineTo(toCanvasX(cx), toCanvasY(cy));
+        }
+        ctx.stroke();
+
+        // 2. 현재 포인트 위치에서의 미분계수(순간변화율)를 보여주는 빨간색 접선 그리기
+        let slope = df(currentX);
+        let intercept = f(currentX) - slope * currentX;
+        let tMinX = currentX - 0.5;
+        let tMaxX = currentX + 0.5;
+        let tMinY = slope * tMinX + intercept;
+        let tMaxY = slope * tMaxX + intercept;
+
+        ctx.strokeStyle = '#dc3545';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(toCanvasX(tMinX), toCanvasY(tMinY));
+        ctx.lineTo(toCanvasX(tMaxX), toCanvasY(tMaxY));
+        ctx.stroke();
+
+        // 3. 인공지능 탐색 에이전트 위치 그리기 (빨간 원)
+        ctx.fillStyle = '#dc3545';
+        ctx.shadowBlur = 6;
+        ctx.shadowColor = 'rgba(220, 53, 69, 0.4)';
+        ctx.beginPath();
+        ctx.arc(toCanvasX(currentX), toCanvasY(f(currentX)), 8, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.shadowBlur = 0; // 그림자 효과 제거 초기화
+
+        // 4. 수렴 목표지점인 극소점(0,0) 표시 (초록 원)
+        ctx.fillStyle = '#28a745';
+        ctx.beginPath();
+        ctx.arc(toCanvasX(0), toCanvasY(0), 5, 0, 2 * Math.PI);
+        ctx.fill();
+
+        // 모니터 수치 갱신
+        mX.innerText = currentX.toFixed(4);
+        mFx.innerText = f(currentX).toFixed(4);
+        mDfx.innerText = slope.toFixed(4);
+        mStep.innerText = steps;
+    }
+
+    function getSamplingMode() {
+        for (let radio of samplingRadios) {
+            if (radio.checked) return radio.value;
+        }
+        return 'GD';
+    }
+
+    // [추가 기능 요구사항 반영] 학습률과 미분 상태에 따른 조건문 연동 실시간 상태 진단 코멘트 알고리즘
+    function updateStatusComment(lr, slope, mode) {
+        if (steps === 0) {
+            statusComment.className = "status-comment";
+            statusComment.innerHTML = "조작 패널에서 설정을 마친 후 [학습 시작] 버튼을 클릭하세요.";
+            return;
+        }
+
+        if (lr >= 1.0) {
+            statusComment.className = "status-comment status-danger";
+            statusComment.innerHTML = `⚠️ <strong>⚠️ 경고: 학습률이 너무 커서 발산하고 있습니다!</strong> 학습률(&alpha;=${lr.toFixed(2)})이 과도하게 커서 접선의 기울기 방향 반대편으로 점프하는 오버슈팅(Overshooting) 현상이 발생하여 영원히 극소점에 도달할 수 없습니다.`;
+            return;
+        }
+
+        if (lr <= 0.03) {
+            statusComment.className = "status-comment status-warning";
+            statusComment.innerHTML = `🐢 <strong>속도 저하 상태 (비효율 발생):</strong> 학습률(&alpha;=${lr.toFixed(2)})이 너무 작아 보폭이 미세합니다. 극소점까지 이동하는 데 엄청난 양의 계산 스텝이 소모되어 뉴턴의 방법처럼 시간 비용이 낭비됩니다.`;
+            return;
+        }
+
+        if (Math.abs(currentX) < 0.01) {
+            statusComment.className = "status-comment status-success";
+            statusComment.innerHTML = `🎯 <strong>최적화 성공 (수렴 완료):</strong> 순간 미분계수가 0에 근사한 최저점(극소점)에 완벽히 도달했습니다! 인공지능이 최적의 손실 가중치 매개변수 학습을 완료했습니다. (수행된 학습 총 단계수: ${steps}회)`;
+            return;
+        }
+
+        if (mode === 'SGD') {
+            statusComment.className = "status-comment status-success";
+            statusComment.innerHTML = `⚡ <strong>확률적 경사하강법(SGD) 작동 중:</strong> 전체 데이터 대신 무작위로 추출된 일부 미분 지표를 모사하여 이동하므로 이동 궤적이 확률적으로 흔들립니다. 비록 경로는 흔들리지만, 개별 계산량이 극도로 감소하므로 알파고나 고양이 분류기처럼 빅데이터를 다룰 때 최적의 솔루션이 됩니다.`;
+        } else {
+            statusComment.className = "status-comment";
+            statusComment.innerHTML = `🔄 <strong>일반 경사하강법(GD) 최적화 중:</strong> 전체 데이터를 기반으로 한 정확한 미분계수(기울기)를 바탕으로 오차가 최소화되는 극소점을 향해 최단 거리로 하강하고 있습니다.`;
+        }
+    }
+
+    // 경사하강법의 이터레이션 반복 연산 엔진
+    function stepGradientDescent() {
+        if (!isRunning) return;
+
+        const lr = parseFloat(lrSlider.value);
+        const mode = getSamplingMode();
+        let slope = df(currentX);
+
+        // SGD(확률적 경사하강법) 선택 시 무작위 노이즈를 주어 확률적 미분 추정 경로 연출
+        if (mode === 'SGD') {
+            const noise = (Math.random() - 0.5) * 1.5;
+            slope = slope + noise;
+        }
+
+        // 경사하강법 공식 적용: x_next = x - alpha * f'(x)
+        let nextX = currentX - lr * slope;
+
+        // 그래프 탈출 방지용 경계선 제어
+        if (nextX > maxX) nextX = maxX;
+        if (nextX < minX) nextX = minX;
+
+        currentX = nextX;
+        steps++;
+
+        drawGraph();
+        updateStatusComment(lr, slope, mode);
+
+        // 극소점 부근에 안전하게 오차가 정착하면 자동 루프 일시정지 처리
+        if (Math.abs(df(currentX)) < 0.005 && mode === 'GD') {
+            isRunning = false;
+            startBtn.innerText = "학습 시작";
+            startBtn.className = "btn btn-start";
+            updateStatusComment(lr, slope, mode);
+            return;
+        }
+
+        // 과도한 무한루프 방지
+        if (steps > 250) {
+            isRunning = false;
+            startBtn.innerText = "학습 시작";
+            startBtn.className = "btn btn-start";
+            return;
+        }
+
+        if (isRunning) {
+            setTimeout(() => {
+                animationId = requestAnimationFrame(stepGradientDescent);
+            }, 120); // 시각적으로 흐름을 명확하게 파악할 수 있는 최적의 딜레이 프레임 설정
+        }
+    }
+
+    // 사용자 입력 인터페이스 이벤트 제어 리스너
+    lrSlider.addEventListener('input', (e) => {
+        lrVal.innerText = parseFloat(e.target.value).toFixed(2);
+        updateStatusComment(parseFloat(e.target.value), df(currentX), getSamplingMode());
+    });
+
+    startBtn.addEventListener('click', () => {
+        if (!isRunning) {
+            isRunning = true;
+            startBtn.innerText = "일시 정지";
+            startBtn.className = "btn btn-pause";
+            stepGradientDescent();
+        } else {
+            isRunning = false;
+            startBtn.innerText = "학습 재개";
+            startBtn.className = "btn btn-start";
+            cancelAnimationFrame(animationId);
+        }
+    });
+
+    resetBtn.addEventListener('click', () => {
+        isRunning = false;
+        cancelAnimationFrame(animationId);
+        startBtn.innerText = "학습 시작";
+        startBtn.className = "btn btn-start";
+        currentX = -2.5;
+        steps = 0;
+        drawGraph();
+        updateStatusComment(parseFloat(lrSlider.value), df(currentX), getSamplingMode());
+    });
+
+    // 앱 초기 가동 로드
+    drawGraph();
+    updateStatusComment(parseFloat(lrSlider.value), df(currentX), getSamplingMode());
+</script>
+
+</body>
+</html>

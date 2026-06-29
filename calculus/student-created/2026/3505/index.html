@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>3505 학생 제작 웹앱</title>
+  <style>
+    /* ══════════════════════════════════════
+       CSS 변수 (색상·글꼴 한곳에서 관리)
+    ══════════════════════════════════════ */
+    :root {
+      --bg:       #0f1117;
+      --surface:  #1a1d27;
+      --border:   #2c3044;
+      --accent:   #7c9eff;   /* 파랑 — 접선·강조 */
+      --curve:    #e8c97a;   /* 황금 — 델토이드 곡선 */
+      --trace:    #ff8080;   /* 빨강 — 지나온 경로 */
+      --cusp:     #ff4f4f;   /* 빨강 — 첨점 경고 */
+      --text:     #d8dce8;
+      --muted:    #6b7394;
+      --mono:     'Consolas', 'Menlo', monospace;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif;
+      font-size: 15px;
+      line-height: 1.65;
+    }
+
+    /* ── 1. 상단 정보 영역 ─────────────────── */
+    .info-header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 18px 22px 14px;
+    }
+    .info-header h1 {
+      font-size: 1.2rem;
+      color: var(--curve);
+      margin-bottom: 5px;
+    }
+    .tagline {
+      font-size: 0.9rem;
+      color: var(--text);
+      max-width: 900px;
+      margin-bottom: 12px;
+    }
+    /* 메타 정보 그리드 */
+    .meta-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+      gap: 4px 18px;
+      font-size: 0.8rem;
+    }
+    .meta-grid dt { display: inline; color: var(--muted); }
+    .meta-grid dd { display: inline; margin-left: 4px; }
+    /* 사용 방법 한 줄 */
+    .how-to {
+      margin: 10px 22px 0;
+      padding: 8px 14px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--accent);
+      font-size: 0.8rem;
+      color: var(--muted);
+      border-radius: 4px;
+    }
+    .how-to strong { color: var(--text); }
+
+    /* ── 2. 개념 설명 + 수식 박스 ──────────── */
+    .concept-box {
+      margin: 12px 16px;
+      padding: 12px 16px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--curve);
+      border-radius: 5px;
+      font-size: 0.85rem;
+    }
+    .concept-box h2 {
+      font-size: 0.75rem;
+      color: var(--curve);
+      text-transform: uppercase;
+      letter-spacing: .07em;
+      margin-bottom: 7px;
+    }
+    .formula-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 8px;
+    }
+    .chip {
+      background: #0d0f18;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 4px 10px;
+      font-family: var(--mono);
+      font-size: 0.78rem;
+      color: var(--curve);
+    }
+
+    /* ── 3·4·5. 메인 레이아웃 ─────────────── */
+    .main-area {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0;
+      padding: 0 16px 20px;
+    }
+
+    /* 캔버스 영역 */
+    .canvas-wrap {
+      flex: 1 1 380px;
+      min-width: 280px;
+      position: relative;
+    }
+    canvas {
+      display: block;
+      width: 100%;
+      height: auto;
+      background: #0b0d14;
+      border: 1px solid var(--border);
+      border-radius: 5px;
+    }
+    /* 첨점 경고 오버레이 */
+    #cusp-warn {
+      display: none;
+      position: absolute;
+      bottom: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(255,79,79,.13);
+      border: 1px solid var(--cusp);
+      color: var(--cusp);
+      font-size: 0.76rem;
+      padding: 7px 13px;
+      border-radius: 5px;
+      max-width: 92%;
+      text-align: center;
+      pointer-events: none;
+      line-height: 1.45;
+    }
+
+    /* 오른쪽 패널 */
+    .side-panel {
+      flex: 0 0 240px;
+      min-width: 210px;
+      padding-left: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    /* 수치값 표 */
+    .val-table {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      overflow: hidden;
+      font-size: 0.8rem;
+    }
+    .val-table .thead {
+      background: #0d0f18;
+      padding: 6px 12px;
+      font-size: 0.72rem;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: .07em;
+    }
+    .val-table table { width: 100%; border-collapse: collapse; }
+    .val-table tr { border-top: 1px solid var(--border); }
+    .val-table td { padding: 5px 11px; }
+    .val-table td:first-child {
+      color: var(--muted);
+      font-family: var(--mono);
+      font-size: 0.76rem;
+      width: 62px;
+    }
+    .val-table td:last-child {
+      color: #fff;
+      font-family: var(--mono);
+      font-size: 0.8rem;
+      text-align: right;
+    }
+    .unstable { color: var(--cusp) !important; }
+
+    /* 조작 영역 */
+    .ctrl-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      padding: 11px 12px;
+    }
+    .ctrl-box h3 {
+      font-size: 0.72rem;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: .07em;
+      margin-bottom: 9px;
+    }
+    .srow {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      margin-bottom: 7px;
+    }
+    .srow label {
+      flex: 0 0 30px;
+      font-family: var(--mono);
+      font-size: 0.78rem;
+      color: var(--muted);
+    }
+    .srow input[type=range] {
+      flex: 1;
+      accent-color: var(--accent);
+      cursor: pointer;
+    }
+    .srow .sv {
+      flex: 0 0 42px;
+      text-align: right;
+      font-family: var(--mono);
+      font-size: 0.78rem;
+    }
+    .btn-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+      margin-top: 5px;
+    }
+    button {
+      background: #0d0f18;
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-size: 0.76rem;
+      padding: 5px 9px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-family: inherit;
+      transition: background .13s, border-color .13s;
+    }
+    button:hover { background: #1c2035; border-color: var(--accent); }
+    button.on { background: rgba(124,158,255,.14); border-color: var(--accent); color: var(--accent); }
+
+    /* 5. 결과 해석 영역 */
+    .interp {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      padding: 9px 12px;
+      font-size: 0.79rem;
+      line-height: 1.6;
+    }
+    .interp .ilabel {
+      font-size: 0.7rem;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: .07em;
+      margin-bottom: 5px;
+    }
+    .hl  { color: var(--curve); font-family: var(--mono); }
+    .red { color: var(--cusp); }
+
+    /* 반응형 */
+    @media (max-width: 620px) {
+      .side-panel { flex: 1 1 100%; padding-left: 0; }
+      .meta-grid  { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+
+<style>
+  .student-work-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    max-width: 1040px;
+    margin: 0 auto 16px;
+    padding: 10px 12px;
+    border: 1px solid #dbe3ef;
+    border-radius: 8px;
+    background: #f8fafc;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+  .student-work-links a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 36px;
+    padding: 7px 10px;
+    border-radius: 6px;
+    background: #ffffff;
+    color: #1d4ed8;
+    text-decoration: none;
+    font-weight: 700;
+    border: 1px solid #dbe3ef;
+  }
+  .student-work-links a:hover {
+    background: #eff6ff;
+  }
+</style>
+</head>
+<body>
+
+<nav class="student-work-links" aria-label="학생 답안 자료">
+  <a href="../">목록으로</a>
+  <a href="./answer.html">답안 보기</a>
+  <a href="./answer.txt">원문 TXT</a>
+</nav>
+
+
+<!-- ═══════════════════════════════════════
+     1. 상단 정보 영역
+═══════════════════════════════════════ -->
+<header class="info-header">
+  <h1>델토이드 곡선 — 매개변수 미분과 첨점에서의 미분 가능성</h1>
+  <p class="tagline">
+    큰 원 안에서 굴러가는 작은 원이 만드는 델토이드 곡선을 통해,
+    매개변수 변화가 점의 위치·접선의 기울기·첨점에서의 미분 가능성에
+    어떤 영향을 주는지 시각화한다.
+  </p>
+  <dl class="meta-grid">
+    <div><dt>학번</dt><dd>3505</dd></div>
+    <div><dt>이름</dt><dd>비공개</dd></div>
+    <div><dt>책 제목</dt><dd>미적분으로 바라본 하루 · 기하의 이해</dd></div>
+    <div><dt>저자</dt><dd>오스카 E. 페르난데스 · 김향숙</dd></div>
+    <div><dt>선택 주제</dt><dd>델토이드 곡선</dd></div>
+    <div style="grid-column:1/-1"><dt>관련 개념</dt>
+      <dd>미분계수, 순간변화율, 접선의 기울기, 매개변수 방정식, 매개변수 미분, 미분 가능성, 첨점</dd></div>
+    <div style="grid-column:1/-1"><dt>제작 의도</dt>
+      <dd>미분을 단순히 기울기를 구하는 공식으로 이해하는 데서 나아가, 움직이는 점의 경로·곡선의 성질을 분석하는 도구로 이해하도록 한다.
+          dy/dx = (dy/dt)/(dx/dt)가 왜 자연스러운지, 그리고 첨점에서 0/0 꼴이 발생하는 것이 왜 미분 불가능성과 연결되는지 직접 관찰할 수 있게 한다.</dd></div>
+  </dl>
+</header>
+
+<!-- 사용 방법 -->
+<div class="how-to">
+  <strong>사용 방법:</strong>
+  t 슬라이더로 곡선 위 점을 이동 → 접선 방향과 수치값 변화 관찰.
+  a 슬라이더로 원 크기 조절.
+  <strong>자동 재생</strong>으로 곡선 생성 전체 과정 확인.
+  <strong>생성 원리 보기</strong>를 켜면 큰 원과 굴러가는 작은 원이 나타납니다.
+  첨점 근처(t ≈ 0, 2π/3, 4π/3)에서는 하단에 경고 문구가 표시됩니다.
+</div>
+
+<!-- ═══════════════════════════════════════
+     2. 개념 설명 + 수식 박스
+═══════════════════════════════════════ -->
+<div class="concept-box">
+  <h2>개념 설명 — 델토이드와 매개변수 미분</h2>
+  <p>
+    델토이드는 반지름 3a인 큰 원 내부에서 반지름 a인 작은 원이 굴러갈 때
+    작은 원 위의 한 점이 그리는 곡선이다.
+    x와 y 모두 매개변수 t로 표현되므로 접선 기울기는
+    <em>dy/dx = (dy/dt) ÷ (dx/dt)</em> 로 계산한다(매개변수 미분).
+    세 첨점(t = 0, 2π/3, 4π/3)에서는 dx/dt = 0, dy/dt = 0이 동시에 성립하여
+    0/0 꼴이 발생한다. 이것은 계산 오류가 아니라
+    <strong>곡선이 뾰족하게 꺾이는 지점에서 미분 가능성이 성립하지 않는 현상</strong>이다.
+  </p>
+  <div class="formula-row">
+    <span class="chip">x(t) = 2a·cos t + a·cos 2t</span>
+    <span class="chip">y(t) = 2a·sin t − a·sin 2t</span>
+    <span class="chip">dx/dt = −2a·sin t − 2a·sin 2t</span>
+    <span class="chip">dy/dt = 2a·cos t − 2a·cos 2t</span>
+    <span class="chip">dy/dx = (dy/dt) / (dx/dt)</span>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     3·4. 시각화 영역 + 조작 영역
+     5.   결과 해석 영역
+═══════════════════════════════════════ -->
+<div class="main-area">
+
+  <!-- 캔버스 (시각화) -->
+  <div class="canvas-wrap">
+    <canvas id="cvs" width="520" height="520"></canvas>
+    <!-- 첨점 경고 오버레이 -->
+    <div id="cusp-warn">
+      ⚠ 첨점 근처 — dx/dt와 dy/dt가 동시에 0에 가까워져<br>
+      접선 기울기 계산이 불안정합니다.<br>
+      이는 계산 오류가 아닌, 곡선이 <strong>뾰족하게 꺾이는</strong> 지점에서<br>
+      미분 가능성이 성립하지 않는 수학적 현상입니다.
+    </div>
+  </div>
+
+  <!-- 오른쪽 패널 -->
+  <div class="side-panel">
+
+    <!-- 수치값 표 -->
+    <div class="val-table">
+      <div class="thead">현재 수치값</div>
+      <table>
+        <tr><td>t</td>     <td id="vt">—</td></tr>
+        <tr><td>a</td>     <td id="va">—</td></tr>
+        <tr><td>x(t)</td>  <td id="vx">—</td></tr>
+        <tr><td>y(t)</td>  <td id="vy">—</td></tr>
+        <tr><td>dx/dt</td> <td id="vdx">—</td></tr>
+        <tr><td>dy/dt</td> <td id="vdy">—</td></tr>
+        <tr><td>dy/dx</td> <td id="vslope">—</td></tr>
+      </table>
+    </div>
+
+    <!-- 4. 조작 영역 -->
+    <div class="ctrl-box">
+      <h3>조작 영역</h3>
+      <!-- t 슬라이더 -->
+      <div class="srow">
+        <label>t</label>
+        <input type="range" id="st" min="0" max="6.2832" step="0.01" value="0.5">
+        <span class="sv" id="dt">0.50</span>
+      </div>
+      <!-- a 슬라이더 -->
+      <div class="srow">
+        <label>a</label>
+        <input type="range" id="sa" min="20" max="70" step="1" value="50">
+        <span class="sv" id="da">50</span>
+      </div>
+      <!-- 버튼 -->
+      <div class="btn-row">
+        <button id="bPlay">▶ 자동 재생</button>
+        <button id="bStop">■ 정지</button>
+        <button id="bReset">↺ 초기화</button>
+      </div>
+      <div class="btn-row" style="margin-top:5px">
+        <button id="bTan" class="on">접선 표시 ✓</button>
+        <button id="bOrigin">생성 원리 보기</button>
+      </div>
+    </div>
+
+    <!-- 5. 결과 해석 영역 -->
+    <div class="interp">
+      <div class="ilabel">결과 해석</div>
+      <div id="interp">t 슬라이더를 움직여 보세요.</div>
+    </div>
+
+  </div><!-- /side-panel -->
+</div><!-- /main-area -->
+
+<!-- ═══════════════════════════════════════
+     JavaScript
+═══════════════════════════════════════ -->
+<script>
+// ─────────────────────────────────────────
+// 상태 변수
+// ─────────────────────────────────────────
+const cvs = document.getElementById('cvs');
+const ctx = cvs.getContext('2d');
+
+let t          = 0.5;   // 매개변수 t (0 ~ 2π)
+let a          = 50;    // 작은 원 반지름
+let showTan    = true;  // 접선 표시 여부
+let showOrigin = false; // 생성 원리(큰 원·작은 원) 표시 여부
+let animId     = null;  // requestAnimationFrame ID
+
+// 첨점 판별 임계값 (|dx/dt|² + |dy/dt|² 의 정규화값)
+const CUSP_THR = 0.18;
+
+// ─────────────────────────────────────────
+// 매개변수 방정식 & 미분 (학생이 지정한 식)
+// ─────────────────────────────────────────
+
+/** 델토이드 위의 점 좌표 (수학 좌표계) */
+function dXY(t, a) {
+  return {
+    x: 2*a*Math.cos(t) + a*Math.cos(2*t),
+    y: 2*a*Math.sin(t) - a*Math.sin(2*t)
+  };
+}
+
+/** dx/dt, dy/dt */
+function dDeriv(t, a) {
+  return {
+    dxdt: -2*a*Math.sin(t) - 2*a*Math.sin(2*t),
+    dydt:  2*a*Math.cos(t) - 2*a*Math.cos(2*t)
+  };
+}
+
+// ─────────────────────────────────────────
+// 좌표 변환: 수학 좌표계 → 캔버스 좌표계
+// (캔버스는 y축이 아래로 향함)
+// ─────────────────────────────────────────
+function toC(x, y) {
+  return { cx: cvs.width/2 + x, cy: cvs.height/2 - y };
+}
+
+// ─────────────────────────────────────────
+// 첨점 근처인지 판별
+// ─────────────────────────────────────────
+function nearCusp(t, a) {
+  const { dxdt, dydt } = dDeriv(t, a);
+  const mag = Math.sqrt(dxdt*dxdt + dydt*dydt);
+  return (mag / a) < CUSP_THR;
+}
+
+// ─────────────────────────────────────────
+// 메인 그리기 함수
+// ─────────────────────────────────────────
+function draw() {
+  const W = cvs.width, H = cvs.height;
+  ctx.clearRect(0, 0, W, H);
+
+  // 배경 격자
+  ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+  ctx.lineWidth = 1;
+  for (let gx = 0; gx < W; gx += 40) {
+    ctx.beginPath(); ctx.moveTo(gx,0); ctx.lineTo(gx,H); ctx.stroke();
+  }
+  for (let gy = 0; gy < H; gy += 40) {
+    ctx.beginPath(); ctx.moveTo(0,gy); ctx.lineTo(W,gy); ctx.stroke();
+  }
+
+  // 좌표축
+  ctx.strokeStyle = 'rgba(255,255,255,0.12)';
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(W/2,0); ctx.lineTo(W/2,H); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(0,H/2); ctx.lineTo(W,H/2); ctx.stroke();
+
+  // ── 생성 원리: 큰 원 + 굴러가는 작은 원 ─
+  if (showOrigin) {
+    const bigR  = 3 * a;  // 큰 원 반지름
+
+    // 큰 원
+    ctx.strokeStyle = 'rgba(124,158,255,0.28)';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.arc(W/2, H/2, bigR, 0, 2*Math.PI);
+    ctx.stroke();
+
+    // 작은 원 중심: 큰 원 내접 굴림 → 중심까지 거리 = 2a
+    const scx = 2*a*Math.cos(t);
+    const scy = 2*a*Math.sin(t);
+    const sc  = toC(scx, scy);
+
+    // 작은 원
+    ctx.strokeStyle = 'rgba(232,201,122,0.38)';
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    ctx.arc(sc.cx, sc.cy, a, 0, 2*Math.PI);
+    ctx.stroke();
+
+    // 작은 원 중심 점
+    ctx.fillStyle = 'rgba(232,201,122,0.75)';
+    ctx.beginPath();
+    ctx.arc(sc.cx, sc.cy, 3.5, 0, 2*Math.PI);
+    ctx.fill();
+
+    // 큰 원 중심 → 작은 원 중심 연결선(점선)
+    ctx.strokeStyle = 'rgba(124,158,255,0.18)';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([3,5]);
+    ctx.beginPath();
+    ctx.moveTo(W/2, H/2);
+    ctx.lineTo(sc.cx, sc.cy);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  // ── 델토이드 전체 곡선 (옅게) ─────────
+  const STEPS = 300;
+  ctx.strokeStyle = 'rgba(232,201,122,0.22)';
+  ctx.lineWidth = 1.8;
+  ctx.beginPath();
+  for (let i = 0; i <= STEPS; i++) {
+    const ti = (i / STEPS) * 2 * Math.PI;
+    const { x, y } = dXY(ti, a);
+    const c = toC(x, y);
+    i === 0 ? ctx.moveTo(c.cx, c.cy) : ctx.lineTo(c.cx, c.cy);
+  }
+  ctx.closePath();
+  ctx.stroke();
+
+  // ── 지나온 경로 강조 (빨간색) ─────────
+  ctx.strokeStyle = '#ff8080';
+  ctx.lineWidth = 2.8;
+  ctx.beginPath();
+  for (let i = 0; i <= STEPS; i++) {
+    const ti = (i / STEPS) * t;   // 0 ~ t 구간만
+    const { x, y } = dXY(ti, a);
+    const c = toC(x, y);
+    i === 0 ? ctx.moveTo(c.cx, c.cy) : ctx.lineTo(c.cx, c.cy);
+  }
+  ctx.stroke();
+
+  // ── 세 첨점 표시 ───────────────────────
+  [0, 2*Math.PI/3, 4*Math.PI/3].forEach(ct => {
+    const { x, y } = dXY(ct, a);
+    const c = toC(x, y);
+    ctx.strokeStyle = 'rgba(255,79,79,0.55)';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.arc(c.cx, c.cy, 5, 0, 2*Math.PI);
+    ctx.stroke();
+  });
+
+  // ── 현재 점 ────────────────────────────
+  const { x: px, y: py } = dXY(t, a);
+  const pc   = toC(px, py);
+  const near = nearCusp(t, a);
+
+  // 외곽 링
+  ctx.strokeStyle = near ? 'rgba(255,79,79,0.4)' : 'rgba(255,255,255,0.28)';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.arc(pc.cx, pc.cy, 11, 0, 2*Math.PI);
+  ctx.stroke();
+
+  // 점 본체
+  ctx.fillStyle = near ? '#ff4f4f' : '#ffffff';
+  ctx.beginPath();
+  ctx.arc(pc.cx, pc.cy, 5.5, 0, 2*Math.PI);
+  ctx.fill();
+
+  // ── 접선 ───────────────────────────────
+  if (showTan) {
+    const { dxdt, dydt } = dDeriv(t, a);
+    const mag = Math.sqrt(dxdt*dxdt + dydt*dydt);
+    if (mag > 1e-4) {
+      const len = 80;
+      const ux = dxdt / mag;
+      const uy = dydt / mag;   // 수학 좌표계 방향
+      // 캔버스 좌표로 변환 (y 반전 주의)
+      const c1 = toC(px + ux*len, py + uy*len);
+      const c2 = toC(px - ux*len, py - uy*len);
+      ctx.strokeStyle = near ? 'rgba(255,120,120,0.65)' : 'rgba(124,158,255,0.9)';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([5,3]);
+      ctx.beginPath();
+      ctx.moveTo(c1.cx, c1.cy);
+      ctx.lineTo(c2.cx, c2.cy);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+  }
+
+  // 첨점 경고 오버레이 표시/숨김
+  document.getElementById('cusp-warn').style.display = near ? 'block' : 'none';
+
+  // 수치값·해석 텍스트 갱신
+  updatePanel(px, py, near);
+}
+
+// ─────────────────────────────────────────
+// 수치값 패널 + 결과 해석 갱신
+// ─────────────────────────────────────────
+function updatePanel(px, py, near) {
+  const { dxdt, dydt } = dDeriv(t, a);
+
+  document.getElementById('vt').textContent   = t.toFixed(4);
+  document.getElementById('va').textContent   = a;
+  document.getElementById('vx').textContent   = px.toFixed(2);
+  document.getElementById('vy').textContent   = py.toFixed(2);
+  document.getElementById('vdx').textContent  = dxdt.toFixed(3);
+  document.getElementById('vdy').textContent  = dydt.toFixed(3);
+
+  const vsl = document.getElementById('vslope');
+  if (near) {
+    vsl.textContent = '불안정 (0/0 꼴)';
+    vsl.className = 'unstable';
+  } else {
+    const s = dydt / dxdt;
+    vsl.textContent = isFinite(s) ? s.toFixed(4) : '∞';
+    vsl.className = '';
+  }
+
+  // 결과 해석 문구
+  const el = document.getElementById('interp');
+  if (near) {
+    // 첨점 근처: 미분 불가능성 설명
+    el.innerHTML =
+      `<span class="red">⚠ 첨점 영역</span><br>` +
+      `dx/dt ≈ <span class="hl">${dxdt.toFixed(3)}</span>,
+       dy/dt ≈ <span class="hl">${dydt.toFixed(3)}</span><br>` +
+      `두 값이 동시에 0에 가까워져<br>` +
+      `dy/dx = dy/dt ÷ dx/dt 가 <span class="red">0/0 꼴</span>이 됩니다.<br>` +
+      `이 지점에서 곡선은 <span class="red">뾰족하게 꺾이며</span>,<br>` +
+      `일반적인 접선 기울기가 정의되지 않습니다.<br>` +
+      `이것이 <em>첨점에서의 미분 불가능성</em>입니다.`;
+  } else {
+    // 일반 위치: 매개변수 미분 원리 설명
+    const s = dydt / dxdt;
+    const sStr = isFinite(s) ? s.toFixed(3) : '∞';
+    el.innerHTML =
+      `t = <span class="hl">${t.toFixed(3)}</span> 에서<br>` +
+      `점의 위치: (<span class="hl">${px.toFixed(1)}</span>,
+                   <span class="hl">${py.toFixed(1)}</span>)<br><br>` +
+      `dy/dx = dy/dt ÷ dx/dt<br>` +
+      `= <span class="hl">${dydt.toFixed(3)}</span>
+         ÷ <span class="hl">${dxdt.toFixed(3)}</span>
+         = <span class="hl">${sStr}</span><br><br>` +
+      `t가 증가할수록 접선 기울기가 연속적으로 바뀝니다.<br>` +
+      `이것이 <em>매개변수 미분으로 구한 순간변화율</em>입니다.`;
+  }
+}
+
+// ─────────────────────────────────────────
+// 슬라이더 이벤트
+// ─────────────────────────────────────────
+document.getElementById('st').addEventListener('input', e => {
+  t = parseFloat(e.target.value);
+  document.getElementById('dt').textContent = t.toFixed(2);
+  draw();
+});
+document.getElementById('sa').addEventListener('input', e => {
+  a = parseInt(e.target.value);
+  document.getElementById('da').textContent = a;
+  draw();
+});
+
+// ─────────────────────────────────────────
+// 버튼 이벤트
+// ─────────────────────────────────────────
+
+// 자동 재생
+document.getElementById('bPlay').addEventListener('click', () => {
+  if (animId) return;
+  (function step() {
+    t = (t + 0.015) % (2 * Math.PI);
+    document.getElementById('st').value = t;
+    document.getElementById('dt').textContent = t.toFixed(2);
+    draw();
+    animId = requestAnimationFrame(step);
+  })();
+});
+
+// 정지
+document.getElementById('bStop').addEventListener('click', () => {
+  if (animId) { cancelAnimationFrame(animId); animId = null; }
+});
+
+// 초기화 (t를 0.5로 되돌림)
+document.getElementById('bReset').addEventListener('click', () => {
+  if (animId) { cancelAnimationFrame(animId); animId = null; }
+  t = 0.5;
+  document.getElementById('st').value = t;
+  document.getElementById('dt').textContent = t.toFixed(2);
+  draw();
+});
+
+// 접선 표시 토글
+const bTan = document.getElementById('bTan');
+bTan.addEventListener('click', () => {
+  showTan = !showTan;
+  bTan.textContent = showTan ? '접선 표시 ✓' : '접선 숨김';
+  bTan.classList.toggle('on', showTan);
+  draw();
+});
+
+// 생성 원리 보기 토글
+const bOri = document.getElementById('bOrigin');
+bOri.addEventListener('click', () => {
+  showOrigin = !showOrigin;
+  bOri.textContent = showOrigin ? '생성 원리 숨기기 ✓' : '생성 원리 보기';
+  bOri.classList.toggle('on', showOrigin);
+  draw();
+});
+
+// ─────────────────────────────────────────
+// 초기 렌더링
+// ─────────────────────────────────────────
+draw();
+</script>
+</body>
+</html>

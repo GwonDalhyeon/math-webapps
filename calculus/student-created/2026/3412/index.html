@@ -1,0 +1,157 @@
+
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>3412 학생 제작 웹앱</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+body{font-family:Arial,sans-serif;background:#f4f7fb;margin:0}
+.wrap{max-width:1100px;margin:auto;padding:20px}
+.card{background:white;padding:18px;border-radius:12px;margin:15px 0;box-shadow:0 2px 8px rgba(0,0,0,.1)}
+h1,h2{text-align:center}
+label{display:block;margin-top:10px}
+input[type=range]{width:100%}
+.info{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+#result{font-size:18px;font-weight:bold}
+</style>
+
+<style>
+  .student-work-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    max-width: 1040px;
+    margin: 0 auto 16px;
+    padding: 10px 12px;
+    border: 1px solid #dbe3ef;
+    border-radius: 8px;
+    background: #f8fafc;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+  .student-work-links a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 36px;
+    padding: 7px 10px;
+    border-radius: 6px;
+    background: #ffffff;
+    color: #1d4ed8;
+    text-decoration: none;
+    font-weight: 700;
+    border: 1px solid #dbe3ef;
+  }
+  .student-work-links a:hover {
+    background: #eff6ff;
+  }
+</style>
+</head>
+<body>
+
+<nav class="student-work-links" aria-label="학생 답안 자료">
+  <a href="../">목록으로</a>
+  <a href="./answer.html">답안 보기</a>
+  <a href="./answer.txt">원문 TXT</a>
+</nav>
+
+<div class="wrap">
+<div class="card">
+<h1>아치형 다리의 넓이와 아치의 기울기</h1>
+<div class="info">
+<div><b>학번</b> 3412</div>
+<div><b>이름</b> 비공개</div>
+<div><b>책</b> 수학책을 탈출한 미적분</div>
+<div><b>저자</b> 류치</div>
+<div><b>주제</b> 아치형 다리의 기울기 시각화와 넓이</div>
+<div><b>미적분</b> 적분 넓이 계산</div>
+<div><b>제작 의도</b> 적분으로 넓이를 이해하고 접선의 기울기 변화를 시각화</div>
+<div><b>사용 방법</b> 슬라이더를 움직여 확인</div>
+</div>
+</div>
+
+<div class="card">
+<h2>개념 설명</h2>
+<p>아치 곡선을 y=4-x²로 두고, 곡선 아래 넓이를 구분구적법으로 계산한다.
+접선 기울기는 미분값 y'=-2x이며 정상(x=0)에서는 기울기가 0이므로 수평이다.</p>
+</div>
+
+<div class="card">
+<h2>조작</h2>
+<label>x 좌표 <span id="xv"></span></label>
+<input id="xs" type="range" min="-2" max="2" step="0.01" value="0">
+<label>아치 개수 <span id="av"></span></label>
+<input id="as" type="range" min="1" max="17" step="1" value="5">
+</div>
+
+<div class="card">
+<canvas id="c"></canvas>
+</div>
+
+<div class="card">
+<div id="result"></div>
+<p id="msg"></p>
+</div>
+</div>
+
+<script>
+const ctx=document.getElementById("c");
+const chart=new Chart(ctx,{
+type:"line",
+data:{datasets:[
+{label:"아치",data:[],borderColor:"blue",fill:false},
+{label:"접선",data:[],borderColor:"red",pointRadius:0},
+{label:"넓이",data:[],showLine:false,pointRadius:0,backgroundColor:"rgba(0,150,255,.25)"}
+]},
+options:{animation:false,scales:{x:{type:"linear",min:-2,max:2},y:{min:0,max:5}}}
+});
+
+function f(x){return 4-x*x;}
+function slope(x){return -2*x;}
+
+function update(){
+let x=parseFloat(xs.value);
+let arches=parseInt(as.value);
+xv.textContent=x.toFixed(2);
+av.textContent=arches;
+
+let pts=[];
+for(let i=-2;i<=2;i+=0.03){pts.push({x:i,y:f(i)});}
+chart.data.datasets[0].data=pts;
+
+let m=slope(x),y=f(x);
+let t=[];
+for(let i=-2;i<=2;i+=0.1){t.push({x:i,y:m*(i-x)+y});}
+chart.data.datasets[1].data=t;
+
+let areaPts=[];
+let sum=0,n=120,dx=4/n;
+for(let i=0;i<n;i++){
+let xx=-2+i*dx;
+sum+=f(xx)*dx;
+areaPts.push({x:xx+dx/2,y:f(xx)});
+}
+chart.data.datasets[2].data=areaPts;
+chart.update();
+
+document.getElementById("result").innerHTML=
+"아치 하나의 근사 넓이 : "+sum.toFixed(2)+
+"<br>전체 "+arches+"개의 넓이 : "+(sum*arches).toFixed(2)+
+"<br>접선 기울기 : "+m.toFixed(2);
+
+let msg=document.getElementById("msg");
+if(Math.abs(m)<0.15){
+msg.innerHTML="현재 정상 부근입니다. 기울기≈0 → 수평";
+msg.style.color="green";
+}else{
+msg.innerHTML="기울기가 변하면서 아치의 경사가 달라집니다.";
+msg.style.color="black";
+}
+}
+xs.oninput=update;
+as.oninput=update;
+update();
+</script>
+</body>
+</html>

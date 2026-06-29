@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>3510 학생 제작 웹앱</title>
+  <!-- Three.js: ES Module 방식 (r150+ 권장) -->
+  <script type="importmap">
+    { "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js" } }
+  </script>
+  <style>
+    /* ── 전체 레이아웃 ── */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #f4f6fb;
+      color: #222;
+      line-height: 1.6;
+    }
+
+    /* ── 섹션 공통 ── */
+    section {
+      max-width: 900px;
+      margin: 18px auto;
+      background: #fff;
+      border-radius: 12px;
+      padding: 20px 24px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+    h2 {
+      font-size: 1.1rem;
+      color: #2a4d8f;
+      margin-bottom: 10px;
+      border-left: 4px solid #2a4d8f;
+      padding-left: 10px;
+    }
+
+    /* ── 상단 정보 ── */
+    #info-section {
+      background: #2a4d8f;
+      color: #fff;
+    }
+    #info-section h1 {
+      font-size: 1.3rem;
+      margin-bottom: 10px;
+    }
+    .info-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px 20px;
+      font-size: 0.92rem;
+    }
+    .info-grid span { color: #c8d8f8; }
+    .intent-box {
+      margin-top: 12px;
+      background: rgba(255,255,255,0.12);
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 0.92rem;
+    }
+
+    /* ── 개념 설명 ── */
+    .concept-box {
+      background: #eef4ff;
+      border-radius: 8px;
+      padding: 12px 16px;
+      font-size: 0.93rem;
+    }
+    .concept-box p { margin-bottom: 6px; }
+    .formula {
+      font-family: 'Courier New', monospace;
+      background: #dbe9ff;
+      border-radius: 6px;
+      padding: 6px 12px;
+      display: inline-block;
+      margin-top: 4px;
+      font-size: 1.0rem;
+    }
+
+    /* ── 조작 영역 ── */
+    .controls-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+    @media (max-width: 600px) {
+      .controls-grid { grid-template-columns: 1fr; }
+      .info-grid { grid-template-columns: 1fr; }
+    }
+    label { font-size: 0.9rem; font-weight: 600; color: #333; }
+    select, input[type=range] {
+      width: 100%;
+      margin-top: 4px;
+    }
+    select {
+      padding: 6px 8px;
+      border-radius: 6px;
+      border: 1px solid #b0c4e8;
+      font-size: 0.93rem;
+    }
+    input[type=range] { accent-color: #2a4d8f; }
+    .slider-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.82rem;
+      color: #555;
+      margin-top: 2px;
+    }
+    .val-badge {
+      display: inline-block;
+      background: #2a4d8f;
+      color: #fff;
+      border-radius: 12px;
+      padding: 1px 10px;
+      font-size: 0.88rem;
+      margin-left: 6px;
+    }
+
+    /* ── 3D 캔버스 ── */
+    #canvas-wrap {
+      width: 100%;
+      aspect-ratio: 16/9;
+      background: #0d1b35;
+      border-radius: 10px;
+      overflow: hidden;
+      position: relative;
+    }
+    #canvas-wrap canvas { width: 100% !important; height: 100% !important; display: block; }
+    #legend {
+      position: absolute;
+      bottom: 10px;
+      left: 12px;
+      font-size: 0.78rem;
+      color: #aac;
+    }
+
+    /* ── 결과 해석 ── */
+    #result-area {
+      font-size: 0.93rem;
+    }
+    .result-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 6px 0;
+      border-bottom: 1px solid #eee;
+    }
+    .result-row:last-child { border-bottom: none; }
+    .result-val { font-weight: 700; color: #2a4d8f; font-size: 1.0rem; }
+    .result-note {
+      margin-top: 10px;
+      background: #fff8e1;
+      border-left: 4px solid #f5a623;
+      padding: 8px 12px;
+      border-radius: 0 8px 8px 0;
+      font-size: 0.88rem;
+    }
+  </style>
+
+<style>
+  .student-work-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    max-width: 1040px;
+    margin: 0 auto 16px;
+    padding: 10px 12px;
+    border: 1px solid #dbe3ef;
+    border-radius: 8px;
+    background: #f8fafc;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+  .student-work-links a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 36px;
+    padding: 7px 10px;
+    border-radius: 6px;
+    background: #ffffff;
+    color: #1d4ed8;
+    text-decoration: none;
+    font-weight: 700;
+    border: 1px solid #dbe3ef;
+  }
+  .student-work-links a:hover {
+    background: #eff6ff;
+  }
+</style>
+</head>
+<body>
+
+<nav class="student-work-links" aria-label="학생 답안 자료">
+  <a href="../">목록으로</a>
+  <a href="./answer.html">답안 보기</a>
+  <a href="./answer.txt">원문 TXT</a>
+</nav>
+
+
+<!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+     1. 상단 정보 영역
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+<section id="info-section">
+  <h1>📐 구분구적법으로 입체의 부피 구하기</h1>
+  <div class="info-grid">
+    <div><span>학번</span> 3510</div>
+    <div><span>이름</span> 비공개</div>
+    <div><span>책 제목</span> 세상에서 수학이 사라진다면</div>
+    <div><span>저자</span> 매트 파커</div>
+    <div><span>선택 주제</span> 비행기 연료 무게를 구하는 부분</div>
+    <div><span>관련 개념</span> 정적분 / 급수 / 구분구적법</div>
+  </div>
+  <div class="intent-box">
+    <strong>제작 의도:</strong>
+    구분구적법의 급수의 합이 정적분으로 수렴하는 과정을 시각적으로 확인하고,
+    이를 실생활에 적용하여 곡면 연료탱크 속 액체의 총부피와 무게를 계산해 본다.<br>
+    <strong>사용 방법:</strong>
+    도형·크기·등분 수·단위당 무게 슬라이더를 조절하면 3D 입체와 계산 결과가 즉시 바뀐다.
+  </div>
+</section>
+
+<!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+     2. 개념 설명 영역
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+<section>
+  <h2>개념 설명 — 구분구적법이란?</h2>
+  <div class="concept-box">
+    <p>
+      <strong>구분구적법(求分積法)</strong>은 입체도형을 얇은 단면들로 <em>잘게 쪼개어</em>,
+      각 단면의 넓이 × 두께를 모두 더함으로써 부피를 근사하는 방법이다.
+    </p>
+    <p>
+      등분 수 n이 클수록 각 단면이 얇아지고, 합산 값은 실제 정적분 값에 가까워진다.
+    </p>
+    <span class="formula">V ≈ Σ A(xᵢ) · Δx  →  (n→∞)  →  ∫ A(x) dx</span>
+    <p style="margin-top:8px;">
+      비행기 연료 탱크처럼 복잡한 곡면 형태도 이 원리로 부피(→ 무게)를 계산할 수 있다.
+    </p>
+  </div>
+</section>
+
+<!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+     3. 시각화 영역
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+<section>
+  <h2>시각화 — 3D 입체</h2>
+  <div id="canvas-wrap">
+    <!-- three.js가 여기에 캔버스를 삽입한다 -->
+    <div id="legend">
+      파란 슬라이스: 구분구적법 분할면 &nbsp;|&nbsp; 회색 투명: 실제 도형
+    </div>
+  </div>
+</section>
+
+<!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+     4. 조작 영역
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+<section>
+  <h2>조작 영역</h2>
+  <div class="controls-grid">
+
+    <!-- 도형 선택 -->
+    <div>
+      <label>도형 선택</label>
+      <select id="shapeSelect">
+        <option value="sphere">구 (Sphere)</option>
+        <option value="cone">원뿔 (Cone)</option>
+        <option value="paraboloid">포물면체 (Paraboloid)</option>
+      </select>
+    </div>
+
+    <!-- 반지름 -->
+    <div>
+      <label>도형 크기 (반지름 r) <span class="val-badge" id="rVal">2.0</span> m</label>
+      <input type="range" id="rSlider" min="0.5" max="4" step="0.1" value="2.0" />
+      <div class="slider-row"><span>0.5 m</span><span>4.0 m</span></div>
+    </div>
+
+    <!-- 등분 수 -->
+    <div>
+      <label>등분 수 n <span class="val-badge" id="nVal">8</span></label>
+      <input type="range" id="nSlider" min="1" max="60" step="1" value="8" />
+      <div class="slider-row"><span>1 (거친 근사)</span><span>60 (정적분에 근접)</span></div>
+    </div>
+
+    <!-- 단위 무게 -->
+    <div>
+      <label>액체 단위당 무게 (ρ) <span class="val-badge" id="rhoVal">800</span> kg/m³</label>
+      <input type="range" id="rhoSlider" min="500" max="1500" step="50" value="800" />
+      <div class="slider-row"><span>500 (가벼운 연료)</span><span>1500 (무거운 액체)</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+     5. 결과 해석 영역
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+<section id="result-area">
+  <h2>결과 해석</h2>
+  <div class="result-row">
+    <span>등분 수 n</span>
+    <span class="result-val" id="res-n">8</span>
+  </div>
+  <div class="result-row">
+    <span>급수(구분구적법) 근사 부피</span>
+    <span class="result-val" id="res-approx">—</span>
+  </div>
+  <div class="result-row">
+    <span>정적분 정확 부피</span>
+    <span class="result-val" id="res-exact">—</span>
+  </div>
+  <div class="result-row">
+    <span>오차율 (|근사 − 정확| / 정확)</span>
+    <span class="result-val" id="res-error">—</span>
+  </div>
+  <div class="result-row">
+    <span>예상 무게 (근사 부피 × ρ)</span>
+    <span class="result-val" id="res-weight">—</span>
+  </div>
+  <div class="result-note" id="res-interp">
+    슬라이더를 조작하면 해석이 표시됩니다.
+  </div>
+</section>
+
+<!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+     JavaScript
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+<script type="module">
+import * as THREE from 'three';
+// ─────────────────────────────────────
+// [A] Three.js 씬 초기화
+// ─────────────────────────────────────
+const wrap = document.getElementById('canvas-wrap');
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+renderer.setPixelRatio(window.devicePixelRatio);
+renderer.setClearColor(0x0d1b35, 1);
+wrap.appendChild(renderer.domElement);
+
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(45, 16/9, 0.1, 200);
+camera.position.set(0, 3, 12);
+camera.lookAt(0, 0, 0);
+
+// 조명
+scene.add(new THREE.AmbientLight(0xffffff, 0.6));
+const dLight = new THREE.DirectionalLight(0xffffff, 1.0);
+dLight.position.set(5, 10, 8);
+scene.add(dLight);
+
+// 자동 회전
+let rotY = 0;
+
+// ─────────────────────────────────────
+// [B] 도형별 단면 넓이 함수 A(x)
+//     x 는 도형 중심에서의 거리 (−r ~ r)
+//     반환값: 단면 원의 넓이
+// ─────────────────────────────────────
+const shapes = {
+  // 구: A(x) = π(r² − x²)
+  sphere: {
+    name: '구',
+    area: (x, r) => Math.PI * (r*r - x*x),
+    // 정적분 = 4/3 π r³
+    exact: (r) => (4/3) * Math.PI * r * r * r,
+    // three.js geometry
+    makeGhost: (r) => new THREE.SphereGeometry(r, 32, 32),
+    // 단면 반지름 at x
+    sliceRadius: (x, r) => Math.sqrt(Math.max(0, r*r - x*x))
+  },
+  // 원뿔: 꼭짓점 위, 밑면 아래; A(x) = π(r·(x+r)/(2r))²  [x: −r~r, 밑 반지름 = r]
+  cone: {
+    name: '원뿔',
+    area: (x, r) => { const rx = r * (x + r) / (2*r); return Math.PI * rx * rx; },
+    exact: (r) => (1/3) * Math.PI * r * r * (2*r),
+    makeGhost: (r) => new THREE.ConeGeometry(r, 2*r, 32),
+    sliceRadius: (x, r) => r * (x + r) / (2*r)
+  },
+  // 포물면체: A(x) = π·r·(x+r)/2  ← 포물선 y=√x 를 회전; sliceR² = r·(x+r)/2
+  paraboloid: {
+    name: '포물면체',
+    area: (x, r) => Math.PI * r * (x + r) / 2,
+    exact: (r) => (1/2) * Math.PI * r * r * (2*r),   // = π r² h /2, h=2r
+    makeGhost: (r) => {
+      // 커스텀: LatheGeometry 로 포물선 회전체
+      const pts = [];
+      const segs = 40;
+      for (let i = 0; i <= segs; i++) {
+        const t = i / segs;           // t: 0~1
+        const y = -r + 2*r*t;         // y: -r ~ r
+        const rx = Math.sqrt(Math.max(0, r * (y + r) / 2));
+        pts.push(new THREE.Vector2(rx, y));
+      }
+      return new THREE.LatheGeometry(pts, 32);
+    },
+    sliceRadius: (x, r) => Math.sqrt(Math.max(0, r * (x + r) / 2))
+  }
+};
+
+// ─────────────────────────────────────
+// [C] 씬 오브젝트 그룹
+// ─────────────────────────────────────
+let ghostMesh = null;   // 반투명 실제 도형
+let sliceGroup = null;  // 구분구적법 슬라이스들
+
+function clearScene() {
+  if (ghostMesh) { scene.remove(ghostMesh); ghostMesh.geometry.dispose(); ghostMesh = null; }
+  if (sliceGroup) { scene.remove(sliceGroup); sliceGroup = null; }
+}
+
+// ─────────────────────────────────────
+// [D] 씬 다시 그리기
+// ─────────────────────────────────────
+function buildScene(shape, r, n) {
+  clearScene();
+  const S = shapes[shape];
+
+  // (1) 반투명 실제 도형
+  const ghostGeo = S.makeGhost(r);
+  const ghostMat = new THREE.MeshPhongMaterial({
+    color: 0x88aaff,
+    opacity: 0.18,
+    transparent: true,
+    side: THREE.DoubleSide,
+    depthWrite: false
+  });
+  ghostMesh = new THREE.Mesh(ghostGeo, ghostMat);
+  scene.add(ghostMesh);
+
+  // (2) 구분구적법 슬라이스
+  sliceGroup = new THREE.Group();
+  const dx = (2*r) / n;  // 슬라이스 두께
+
+  for (let i = 0; i < n; i++) {
+    // i번째 슬라이스의 x 위치 (왼쪽 끝점 기준 — 구분구적법 왼쪽 합)
+    const xi = -r + i * dx;
+    const sr = S.sliceRadius(xi, r);  // 왼쪽 끝점에서 단면 반지름 계산
+    if (sr <= 0) continue;
+
+    // CylinderGeometry(topR, botR, height, radialSeg)
+    const geo = new THREE.CylinderGeometry(sr, sr, dx, 28, 1);
+    // 색: n이 작으면 진한 파랑, 크면 청록
+    const t = i / Math.max(1, n-1);
+    const color = new THREE.Color().setHSL(0.58 + t * 0.12, 0.9, 0.55);
+    const mat = new THREE.MeshPhongMaterial({ color, opacity: 0.82, transparent: true });
+    const mesh = new THREE.Mesh(geo, mat);
+    // CylinderGeometry는 Y축 방향 → 회전하여 X축 방향으로
+    mesh.rotation.z = Math.PI / 2;
+    mesh.position.x = xi + dx / 2;  // 시각적으로 슬라이스 중앙에 배치 (계산은 왼쪽 끝점 기준)
+    sliceGroup.add(mesh);
+  }
+  scene.add(sliceGroup);
+}
+
+// ─────────────────────────────────────
+// [E] 수치 계산 & 결과 표시
+// ─────────────────────────────────────
+function calcAndDisplay(shape, r, n, rho) {
+  const S = shapes[shape];
+  const dx = (2*r) / n;
+
+  // 구분구적법 근사 부피: Σ A(xᵢ) · dx
+  let approx = 0;
+  for (let i = 0; i < n; i++) {
+    const xi = -r + i * dx;  // 왼쪽 끝점 (n이 작으면 오차 큼, 클수록 줄어듦)
+    approx += S.area(xi, r) * dx;
+  }
+
+  const exact = S.exact(r);
+  const error = Math.abs(approx - exact) / exact * 100;
+  const weight = approx * rho;
+
+  // DOM 업데이트
+  document.getElementById('res-n').textContent = n;
+  document.getElementById('res-approx').textContent = approx.toFixed(4) + ' m³';
+  document.getElementById('res-exact').textContent = exact.toFixed(4) + ' m³';
+  document.getElementById('res-error').textContent = error.toFixed(2) + ' %';
+  document.getElementById('res-weight').textContent = (weight/1000).toFixed(2) + ' 톤 (' + weight.toFixed(0) + ' kg)';
+
+  // 해석 문구
+  let msg = '';
+  if (n <= 5) {
+    msg = `n = ${n}이면 슬라이스가 너무 두꺼워 오차가 큽니다 (${error.toFixed(1)}%). 슬라이더를 오른쪽으로 움직여 보세요.`;
+  } else if (error < 1) {
+    msg = `n = ${n}이면 오차가 ${error.toFixed(2)}%로 매우 작습니다. 급수의 합이 정적분 값에 거의 수렴했습니다!`;
+  } else {
+    msg = `n = ${n}이면 오차 ${error.toFixed(1)}%. n을 더 늘리면 급수의 합이 정적분(${exact.toFixed(3)} m³)에 가까워집니다.`;
+  }
+  document.getElementById('res-interp').textContent = msg;
+}
+
+// ─────────────────────────────────────
+// [F] 슬라이더 / 셀렉트 이벤트
+// ─────────────────────────────────────
+function getValues() {
+  return {
+    shape: document.getElementById('shapeSelect').value,
+    r:     parseFloat(document.getElementById('rSlider').value),
+    n:     parseInt(document.getElementById('nSlider').value),
+    rho:   parseInt(document.getElementById('rhoSlider').value)
+  };
+}
+
+function update() {
+  const {shape, r, n, rho} = getValues();
+  // 배지 업데이트
+  document.getElementById('rVal').textContent = r.toFixed(1);
+  document.getElementById('nVal').textContent = n;
+  document.getElementById('rhoVal').textContent = rho;
+  buildScene(shape, r, n);
+  calcAndDisplay(shape, r, n, rho);
+}
+
+['shapeSelect','rSlider','nSlider','rhoSlider'].forEach(id => {
+  document.getElementById(id).addEventListener('input', update);
+});
+
+// ─────────────────────────────────────
+// [G] 렌더 루프
+// ─────────────────────────────────────
+function resize() {
+  const w = wrap.clientWidth;
+  const h = wrap.clientHeight;
+  renderer.setSize(w, h, false);
+  camera.aspect = w / h;
+  camera.updateProjectionMatrix();
+}
+window.addEventListener('resize', resize);
+
+function animate() {
+  requestAnimationFrame(animate);
+  rotY += 0.008;
+  if (ghostMesh) ghostMesh.rotation.y = rotY;
+  if (sliceGroup) sliceGroup.rotation.y = rotY;
+  renderer.render(scene, camera);
+}
+
+// 초기 실행
+resize();
+update();
+animate();
+</script>
+</body>
+</html>

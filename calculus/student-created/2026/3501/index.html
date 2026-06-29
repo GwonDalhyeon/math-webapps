@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>3501 학생 제작 웹앱</title>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+body{
+    font-family: Arial, sans-serif;
+    margin:0;
+    padding:20px;
+    background:#f4f7fb;
+    line-height:1.6;
+}
+
+.section{
+    background:white;
+    border-radius:12px;
+    padding:20px;
+    margin-bottom:20px;
+    box-shadow:0 2px 8px rgba(0,0,0,0.1);
+}
+
+h1,h2{
+    margin-top:0;
+}
+
+.info-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+    gap:10px;
+}
+
+.canvas-wrap{
+    text-align:center;
+}
+
+canvas{
+    max-width:100%;
+}
+
+.controls{
+    display:flex;
+    flex-wrap:wrap;
+    gap:20px;
+    align-items:center;
+}
+
+label{
+    display:block;
+    font-weight:bold;
+}
+
+.value{
+    color:#0066cc;
+}
+
+#rainCanvas{
+    border:1px solid #ccc;
+    background:#eef7ff;
+    width:100%;
+    max-width:700px;
+}
+
+.result{
+    font-size:18px;
+    font-weight:bold;
+}
+
+@media(max-width:600px){
+    body{
+        padding:10px;
+    }
+}
+</style>
+
+<style>
+  .student-work-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    max-width: 1040px;
+    margin: 0 auto 16px;
+    padding: 10px 12px;
+    border: 1px solid #dbe3ef;
+    border-radius: 8px;
+    background: #f8fafc;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+  .student-work-links a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 36px;
+    padding: 7px 10px;
+    border-radius: 6px;
+    background: #ffffff;
+    color: #1d4ed8;
+    text-decoration: none;
+    font-weight: 700;
+    border: 1px solid #dbe3ef;
+  }
+  .student-work-links a:hover {
+    background: #eff6ff;
+  }
+</style>
+</head>
+<body>
+
+<nav class="student-work-links" aria-label="학생 답안 자료">
+  <a href="../">목록으로</a>
+  <a href="./answer.html">답안 보기</a>
+  <a href="./answer.txt">원문 TXT</a>
+</nav>
+
+
+<!-- =========================
+상단 정보 영역
+========================= -->
+<div class="section">
+    <h1>비 오는 날 얼마나 빨리 움직여야 가장 적게 젖을까?</h1>
+
+    <div class="info-grid">
+        <div><strong>학번</strong> : 3501</div>
+        <div><strong>이름</strong> : 비공개</div>
+        <div><strong>책 제목</strong> : 미적분으로 바라본 하루</div>
+        <div><strong>저자</strong> : 오스카 E. 페르난데스</div>
+        <div><strong>선택한 부분</strong> : 3. 도함수로 이루어진 모든 것</div>
+        <div><strong>관련 미적분 개념</strong> : 도함수(순간변화율), 함수의 그래프</div>
+    </div>
+
+    <p>
+        <strong>웹앱 제작 의도</strong><br>
+        사용자의 이동 속도에 따라 맞는 빗방울의 양이 어떻게 달라지는지
+        그래프와 애니메이션으로 보여주고,
+        그래프의 기울기를 통해 변화율의 의미를 이해하도록 만들었다.
+    </p>
+
+    <p>
+        <strong>사용 방법</strong><br>
+        이동 속도와 빗방울 낙하 속도를 조절한 뒤 재생 버튼을 눌러보세요.
+        그래프와 애니메이션이 함께 변하며 젖는 정도가 어떻게 달라지는지 확인할 수 있습니다.
+    </p>
+</div>
+
+<!-- =========================
+개념 설명 영역
+========================= -->
+<div class="section">
+    <h2>개념 설명</h2>
+
+    <p>
+        책에서는 비 오는 날 사람이 움직이는 속도에 따라 맞는 빗방울의 양이 달라질 수 있다는 내용을 소개한다.
+        이를 함수로 생각하면 "속도 → 맞는 빗방울의 양"의 관계를 그래프로 나타낼 수 있다.
+    </p>
+
+    <p>
+        그래프의 기울기(도함수)는 속도가 조금 변할 때 빗방울의 양이 얼마나 변하는지를 의미한다.
+        따라서 도함수를 이용하면 어떤 속도에서 젖는 양이 가장 적은지 분석할 수 있다.
+    </p>
+</div>
+
+<!-- =========================
+시각화 영역
+========================= -->
+<div class="section">
+    <h2>시각화 영역</h2>
+
+    <div class="canvas-wrap">
+        <canvas id="rainCanvas" width="700" height="250"></canvas>
+    </div>
+
+    <br>
+
+    <canvas id="graphChart"></canvas>
+</div>
+
+<!-- =========================
+조작 영역
+========================= -->
+<div class="section">
+    <h2>조작 영역</h2>
+
+    <div class="controls">
+
+        <div>
+            <label>
+                사람의 이동 속도 :
+                <span id="speedValue" class="value">5</span>
+            </label>
+            <input type="range" id="speedSlider" min="1" max="10" value="5">
+        </div>
+
+        <div>
+            <label>
+                빗방울 낙하 속도 :
+                <span id="rainValue" class="value">5</span>
+            </label>
+            <input type="range" id="rainSlider" min="1" max="10" value="5">
+        </div>
+
+        <button id="playBtn">재생</button>
+
+    </div>
+</div>
+
+<!-- =========================
+결과 해석 영역
+========================= -->
+<div class="section">
+    <h2>결과 해석</h2>
+
+    <div id="resultText" class="result"></div>
+
+    <p>
+        속도를 바꾸면 그래프의 기울기와 빗방울의 양이 달라진다.
+        이를 통해 일상적인 현상도 도함수와 그래프로 분석할 수 있음을 확인할 수 있다.
+    </p>
+</div>
+
+<script>
+
+/* =========================
+슬라이더 값 표시
+========================= */
+const speedSlider = document.getElementById("speedSlider");
+const rainSlider = document.getElementById("rainSlider");
+
+const speedValue = document.getElementById("speedValue");
+const rainValue = document.getElementById("rainValue");
+
+speedSlider.addEventListener("input", updateAll);
+rainSlider.addEventListener("input", updateAll);
+
+/* =========================
+빗방울 양 모델
+(단순 시뮬레이션용)
+========================= */
+function wetAmount(speed, rainSpeed){
+    return (200 / speed) + (rainSpeed * 5);
+}
+
+/* =========================
+그래프 생성
+========================= */
+const ctx = document.getElementById('graphChart');
+
+const graph = new Chart(ctx,{
+    type:'line',
+    data:{
+        labels:[],
+        datasets:[
+            {
+                label:'맞는 빗방울 양',
+                data:[],
+                borderWidth:3
+            },
+            {
+                label:'현재 선택 속도',
+                data:[],
+                pointRadius:7,
+                showLine:false
+            }
+        ]
+    },
+    options:{
+        responsive:true,
+        plugins:{
+            legend:{
+                display:true
+            }
+        },
+        scales:{
+            x:{
+                title:{
+                    display:true,
+                    text:'이동 속도'
+                }
+            },
+            y:{
+                title:{
+                    display:true,
+                    text:'맞는 빗방울 양'
+                }
+            }
+        }
+    }
+});
+
+/* =========================
+그래프 업데이트
+========================= */
+function updateGraph(){
+
+    const rainSpeed = Number(rainSlider.value);
+    const currentSpeed = Number(speedSlider.value);
+
+    const labels = [];
+    const values = [];
+
+    for(let s=1;s<=10;s++){
+        labels.push(s);
+        values.push(wetAmount(s,rainSpeed));
+    }
+
+    graph.data.labels = labels;
+    graph.data.datasets[0].data = values;
+
+    graph.data.datasets[1].data =
+        labels.map(x =>
+            x===currentSpeed
+            ? wetAmount(currentSpeed,rainSpeed)
+            : null
+        );
+
+    graph.update();
+
+    updateResult();
+}
+
+/* =========================
+결과 해석
+========================= */
+function updateResult(){
+
+    const speed = Number(speedSlider.value);
+    const rainSpeed = Number(rainSlider.value);
+
+    const wet = wetAmount(speed,rainSpeed);
+
+    let derivative = -200/(speed*speed);
+
+    document.getElementById("resultText").innerHTML =
+    `
+    현재 이동 속도: ${speed}<br>
+    예상 빗방울 양: ${wet.toFixed(1)}<br>
+    그래프 기울기(변화율) ≈ ${derivative.toFixed(2)}
+    `;
+}
+
+/* =========================
+애니메이션
+========================= */
+const canvas = document.getElementById("rainCanvas");
+const c = canvas.getContext("2d");
+
+let personX = 50;
+let animationRunning = false;
+
+const drops = [];
+
+for(let i=0;i<80;i++){
+    drops.push({
+        x:Math.random()*700,
+        y:Math.random()*250
+    });
+}
+
+function drawScene(){
+
+    c.clearRect(0,0,700,250);
+
+    const rainSpeed = Number(rainSlider.value);
+    const personSpeed = Number(speedSlider.value);
+
+    // 빗방울
+    c.strokeStyle="#3399ff";
+
+    drops.forEach(drop=>{
+
+        c.beginPath();
+        c.moveTo(drop.x,drop.y);
+        c.lineTo(drop.x,drop.y+8);
+        c.stroke();
+
+        drop.y += rainSpeed;
+
+        if(drop.y>250){
+            drop.y=0;
+            drop.x=Math.random()*700;
+        }
+    });
+
+    // 사람
+    c.fillStyle="black";
+    c.beginPath();
+    c.arc(personX,180,10,0,Math.PI*2);
+    c.fill();
+
+    c.fillRect(personX-4,190,8,25);
+
+    if(animationRunning){
+
+        personX += personSpeed;
+
+        if(personX>680){
+            personX = 50;
+            animationRunning = false;
+        }
+    }
+
+    requestAnimationFrame(drawScene);
+}
+
+document.getElementById("playBtn").addEventListener("click",()=>{
+    personX = 50;
+    animationRunning = true;
+});
+
+/* =========================
+전체 업데이트
+========================= */
+function updateAll(){
+
+    speedValue.textContent = speedSlider.value;
+    rainValue.textContent = rainSlider.value;
+
+    updateGraph();
+}
+
+updateAll();
+drawScene();
+
+</script>
+
+</body>
+</html>

@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="3323 학생이 제출한 미적분 독서 연계 웹앱 답안입니다." />
+  <title>3323 답안</title>
+  <link rel="stylesheet" href="../../../../assets/common.css" />
+  <style>
+    .answer-page {
+      max-width: 1040px;
+      margin: 0 auto;
+      padding: 40px 20px;
+    }
+    .answer-nav {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 24px;
+    }
+    .answer-nav a {
+      display: inline-flex;
+      align-items: center;
+      min-height: 38px;
+      padding: 8px 12px;
+      border-radius: 6px;
+      border: 1px solid #dbe3ef;
+      color: #1d4ed8;
+      text-decoration: none;
+      font-weight: 700;
+      background: #fff;
+    }
+    .answer-card {
+      margin: 18px 0;
+      padding: 20px;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      background: #fff;
+      box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
+    }
+    .answer-card h2 {
+      margin-top: 0;
+      font-size: 20px;
+    }
+    .answer-card pre {
+      margin: 0;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+      font-family: "Malgun Gothic", "Apple SD Gothic Neo", system-ui, sans-serif;
+      font-size: 16px;
+      line-height: 1.7;
+      color: #1f2937;
+    }
+  </style>
+</head>
+<body>
+  <main class="answer-page">
+    <nav class="answer-nav" aria-label="답안 이동">
+      <a href="./">웹앱으로</a>
+      <a href="../">목록으로</a>
+      <a href="./answer.txt">원문 TXT</a>
+    </nav>
+
+    <header class="hero">
+      <p class="eyebrow">Student Answer</p>
+      <h1>3323 답안</h1>
+      <p>1구획 모델과 이상적분을 이용한 AUC 상호작용 모델링에 관한 학생 제출 답안입니다. 이름만 제거하고 원문 내용과 수학적 설명은 보존했습니다.</p>
+    </header>
+
+      <article class="answer-card">
+        <h2>1. 학번: 3323</h2>
+        <pre>(내용 없음)</pre>
+      </article>
+
+      <article class="answer-card">
+        <h2>2. 이름: 비공개</h2>
+        <pre>(내용 없음)</pre>
+      </article>
+
+      <article class="answer-card">
+        <h2>3. 책 제목: 쉽게 풀어쓴 제약수학</h2>
+        <pre>(내용 없음)</pre>
+      </article>
+
+      <article class="answer-card">
+        <h2>4. 저자: 김동욱</h2>
+        <pre>(내용 없음)</pre>
+      </article>
+
+      <article class="answer-card">
+        <h2>5. 선택한 부분 또는 주제: 1구획 모델과 이상적분을 이용한 AUC 상호작용 모델링</h2>
+        <pre>(내용 없음)</pre>
+      </article>
+
+      <article class="answer-card">
+        <h2>6. 관련된 미적분 개념: 지수함수의 도함수, 구분구적법</h2>
+        <pre>(내용 없음)</pre>
+      </article>
+
+      <article class="answer-card">
+        <h2>7. 이 부분을 선택한 이유 또는 읽으면서 생긴 질문이나 생각:</h2>
+        <pre>(단순한 감상이 아니라, 어떤 점이 흥미로웠는지, 어떤 의문이 생겼는지 등)
+책을 읽으면서 환자마다 약물에 대해서 각자 다른 배출 속도를 가지고 있을 텐데, 1구획모델에서는 이를 어떻게 반영하는지에 대한 질문이 생겼다. 약물이 얼마나 영향을 미쳤는지 알기 위해 농도 그래프의 아래 면적을 적분하는데, 순간 속도와 농도를 그래프에서 알아낼 수 있으나, 결국 중요한것은 그래프 아래 면적을 구해서 얼마만큼 노출되었을 때, 어떤 효과가 드러나는가에 대해 알아내는 것이라고 생각했다. 그래프 아래 면적을 맞추기 위해서 조정할 수 있는 변수인 소멸속도 상수 k와 초기 투입량을 조절하면 약물 투여 대상 환자의 케이스에 따라 어느 정도의 양을 넣어야 할 지 알려줄 수 있는 웹앱을 만들 수 있을 것 같다고 생각했다.</pre>
+      </article>
+
+      <article class="answer-card">
+        <h2>8. 웹앱으로 보여주고 싶은 핵심 장면 또는 원리:</h2>
+        <pre>(예: 접선의 기울기가 변하는 모습, 구분구적법으로 넓이를 근사하는 과정 등)
+k와 C0 슬라이더 조작에 따른 지수함수 농도 곡선 및 하부 면적(AUC)의 실시간 변동 장면
+임의의 시간 t를 지정했을 때, 지수함수의 도함수를 활용하여 특정 시점의 순간 배설 속도(접선의 기울기)를 시각화하는 장면
+사용자가 목표 AUC를 직접 숫자로 입력하고 고정했을 때, 환자의 대사 능력(k)의 변화에 따라 투여량(C0)이 실시간으로 역산되어 자동 매칭되는 정밀 연동 원리</pre>
+      </article>
+
+      <article class="answer-card">
+        <h2>9. 사용자가 직접 조작할 요소:</h2>
+        <pre>(예: 시간 슬라이더, 초기값 입력창, 재생 버튼 등)
+소멸속도 상수 k 슬라이더, 초기농도 C0 슬라이더, AUC 고정 여부 체크박스(또는 버튼)</pre>
+      </article>
+
+      <article class="answer-card">
+        <h2>10. 조작에 따라 화면에서 달라져야 하는 것:</h2>
+        <pre>(예: 그래프, 수치, 도형, 애니메이션, 접선, 넓이, 부분합 등)
+지수함수 농도 그래프 모양, 선택한 점에서의 접선과 순간 변화율 수치 표시, AUC 면적 시각화 및 수치, AUC 고정 시 한 슬라이더 조작에 따른 상대 슬라이더의 자동 실시간 변동</pre>
+      </article>
+
+      <article class="answer-card">
+        <h2>11. 이 웹앱을 통해 사용자가 이해하길 바라는 내용:</h2>
+        <pre>k(개인별 약물 대사 능력)와 C0(투여량)가 약물의 순간 배설 속도(미분) 및 체내 총 약물 노출량(이상적분인 AUC)에 미치는 영향을 직관적으로 이해하고, AUC를 일정하게 유지하기 위해 투여량과 대사 능력이 어떤 수학적 관계를 가지는지 깨닫게 할 수 있다.</pre>
+      </article>
+
+      <article class="answer-card">
+        <h2>12. 웹앱 상단에 넣을 핵심 설명 문장:</h2>
+        <pre>(이 웹앱이 무엇을 보여주는지 한두 문장으로)
+초기 투여량과 소멸 속도 상수를 조작하여, 약물 농도 곡선의 변화와 이상적분으로 계산되는 AUC 면적을 실시간으로 확인하는 웹앱이다.</pre>
+      </article>
+
+      <article class="answer-card">
+        <h2>13. 웹앱 안에 꼭 넣고 싶은 추가 기능:</h2>
+        <pre>(없으면 '없음'이라고 쓰기)
+AUC 고정/해제 토글 기능 및 이에 따른 변수 자동 연동 기능</pre>
+      </article>
+  </main>
+</body>
+</html>

@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>3515 학생 제작 웹앱</title>
+
+<style>
+    body{
+        margin:0;
+        font-family:'Pretendard',sans-serif;
+        background:#111;
+        color:white;
+        line-height:1.6;
+    }
+
+    header{
+        background:#1b1b1b;
+        padding:20px;
+        border-bottom:3px solid #aa0000;
+    }
+
+    h1{
+        color:#ffcc66;
+        margin-bottom:10px;
+    }
+
+    .container{
+        display:flex;
+        flex-wrap:wrap;
+    }
+
+    .left{
+        flex:1;
+        min-width:350px;
+        padding:20px;
+    }
+
+    .right{
+        width:350px;
+        background:#1c1c1c;
+        padding:20px;
+        border-left:2px solid #333;
+    }
+
+    canvas{
+        width:100%;
+        background:#000;
+        border:2px solid #444;
+        border-radius:10px;
+    }
+
+    .section{
+        margin-bottom:25px;
+    }
+
+    label{
+        display:block;
+        margin-top:15px;
+    }
+
+    input{
+        width:100%;
+        padding:8px;
+        margin-top:5px;
+        background:#222;
+        border:1px solid #555;
+        color:white;
+        border-radius:5px;
+    }
+
+    button{
+        margin-top:15px;
+        padding:10px;
+        width:100%;
+        background:#aa0000;
+        color:white;
+        border:none;
+        border-radius:5px;
+        cursor:pointer;
+    }
+
+    button:hover{
+        background:#dd2222;
+    }
+
+    .result{
+        background:#222;
+        padding:15px;
+        border-radius:10px;
+        margin-top:15px;
+    }
+
+    .formula{
+        color:#ffdd88;
+        font-size:17px;
+    }
+
+    @media(max-width:900px){
+        .container{
+            flex-direction:column;
+        }
+
+        .right{
+            width:auto;
+            border-left:none;
+            border-top:2px solid #333;
+        }
+    }
+</style>
+
+<style>
+  .student-work-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    max-width: 1040px;
+    margin: 0 auto 16px;
+    padding: 10px 12px;
+    border: 1px solid #dbe3ef;
+    border-radius: 8px;
+    background: #f8fafc;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+  .student-work-links a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 36px;
+    padding: 7px 10px;
+    border-radius: 6px;
+    background: #ffffff;
+    color: #1d4ed8;
+    text-decoration: none;
+    font-weight: 700;
+    border: 1px solid #dbe3ef;
+  }
+  .student-work-links a:hover {
+    background: #eff6ff;
+  }
+</style>
+</head>
+<body>
+
+<nav class="student-work-links" aria-label="학생 답안 자료">
+  <a href="../">목록으로</a>
+  <a href="./answer.html">답안 보기</a>
+  <a href="./answer.txt">원문 TXT</a>
+</nav>
+
+
+<header>
+    <h1>이곳을 지나가려는 자 희망을 버려라</h1>
+
+    <p><b>학번:</b> 3515</p>
+    <p><b>이름:</b> 비공개</p>
+    <p><b>책 제목:</b> 단테 신곡</p>
+    <p><b>저자:</b> 단테 델리 알리기에리</p>
+
+    <p><b>선택한 부분:</b> 지옥편의 기하학적 구조</p>
+
+    <p><b>관련 미적분 개념:</b> 등차수열, 정적분, 원뿔의 부피</p>
+
+    <p>
+        <b>웹앱 제작 의도:</b><br>
+        단테의 지옥 구조를 실제 지구 내부의 역원뿔로 가정하여
+        등차수열과 정적분으로 각 지옥의 구조와 부피를 표현하고자 했다.
+    </p>
+
+    <p>
+        <b>사용 방법:</b><br>
+        첫째항과 공차를 입력하면 9개의 지옥 층 비율이 바뀌며,
+        높이를 입력하면 현재 위치한 지옥의 이름이 계산된다.
+    </p>
+</header>
+
+<div class="container">
+
+    <div class="left">
+
+        <div class="section">
+            <h2>개념 설명</h2>
+
+            <p>
+                이 웹앱은 단테 신곡의 지옥 구조를 지구 내부의 거대한 역원뿔이라고 가정한다.
+                각 층의 높이는 등차수열로 나누며,
+                깊이에 따른 단면적 함수를 정적분하여 전체 부피를 계산한다.
+            </p>
+
+            <p class="formula">
+                A(x)=π(x tan15°)²
+            </p>
+
+            <p class="formula">
+                V = ∫ A(x)dx
+            </p>
+        </div>
+
+        <div class="section">
+            <h2>지옥 단면도</h2>
+
+            <canvas id="hellCanvas" width="700" height="700"></canvas>
+        </div>
+
+    </div>
+
+    <div class="right">
+
+        <div class="section">
+            <h2>조작 영역</h2>
+
+            <label>첫째항 (km)</label>
+            <input type="number" id="a1" value="300">
+
+            <label>공차 (km)</label>
+            <input type="number" id="d" value="100">
+
+            <label>현재 높이 입력 (0~6371km)</label>
+            <input type="number" id="heightInput" value="1000">
+
+            <button onclick="updateHell()">지옥 계산하기</button>
+        </div>
+
+        <div class="section">
+            <h2>결과 해석</h2>
+
+            <div class="result">
+                <p id="hellName">현재 지옥: </p>
+                <p id="hellDepth">현재 높이: </p>
+                <p id="totalVolume">전체 지옥 부피: </p>
+
+                <hr>
+
+                <p>
+                    깊이에 따라 원뿔의 반지름이 변하므로
+                    단면적 함수가 달라진다.
+                    이를 정적분하여 전체 부피를 구할 수 있다.
+                </p>
+            </div>
+        </div>
+
+    </div>
+
+</div>
+
+<script>
+
+const canvas = document.getElementById("hellCanvas");
+const ctx = canvas.getContext("2d");
+
+const earthRadius = 6371;
+
+const hells = [
+    "림보",
+    "색욕",
+    "폭식",
+    "탐욕",
+    "분노",
+    "이단",
+    "폭력",
+    "사기",
+    "배신"
+];
+
+const colors = [
+    "#660000",
+    "#880000",
+    "#aa2200",
+    "#cc4400",
+    "#dd6600",
+    "#ee8800",
+    "#ffaa00",
+    "#ffcc33",
+    "#ffee66"
+];
+
+function calculateLayers(a1,d){
+
+    let arr = [];
+    let total = 0;
+
+    for(let i=0;i<9;i++){
+        let value = a1 + i*d;
+        arr.push(value);
+        total += value;
+    }
+
+    return {
+        layers:arr,
+        total:total
+    };
+}
+
+function findHell(height, cumulative){
+
+    for(let i=0;i<cumulative.length;i++){
+        if(height <= cumulative[i]){
+            return hells[i];
+        }
+    }
+
+    return "지옥 밖";
+}
+
+function drawHell(layers,totalHeight){
+
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+
+    const centerX = canvas.width/2;
+    const topY = 50;
+    const bottomY = 650;
+    const maxWidth = 250;
+
+    let cumulative = [];
+
+    let sum = 0;
+
+    for(let i=0;i<layers.length;i++){
+
+        sum += layers[i];
+        cumulative.push(sum);
+
+        let ratio1 = (sum - layers[i]) / totalHeight;
+        let ratio2 = sum / totalHeight;
+
+        let y1 = topY + ratio1*(bottomY-topY);
+        let y2 = topY + ratio2*(bottomY-topY);
+
+        let w1 = ratio1 * maxWidth;
+        let w2 = ratio2 * maxWidth;
+
+        ctx.beginPath();
+
+        ctx.moveTo(centerX-w1,y1);
+        ctx.lineTo(centerX+w1,y1);
+        ctx.lineTo(centerX+w2,y2);
+        ctx.lineTo(centerX-w2,y2);
+
+        ctx.closePath();
+
+        ctx.fillStyle = colors[i];
+        ctx.fill();
+
+        ctx.strokeStyle = "#000";
+        ctx.stroke();
+
+        ctx.fillStyle = "white";
+        ctx.font = "16px sans-serif";
+        ctx.fillText(
+            hells[i],
+            centerX - 20,
+            (y1+y2)/2
+        );
+    }
+
+    ctx.beginPath();
+    ctx.moveTo(centerX,topY);
+    ctx.lineTo(centerX-maxWidth,bottomY);
+    ctx.lineTo(centerX+maxWidth,bottomY);
+    ctx.closePath();
+
+    ctx.strokeStyle="white";
+    ctx.lineWidth=3;
+    ctx.stroke();
+
+    ctx.fillStyle="white";
+    ctx.font="18px sans-serif";
+    ctx.fillText("지표면",centerX-30,bottomY+25);
+
+    ctx.fillText("지구 중심",centerX-40,30);
+
+    return cumulative;
+}
+
+function calculateVolume(){
+
+    const theta = 15 * Math.PI/180;
+
+    const volume =
+        (Math.PI * Math.pow(Math.tan(theta),2) * Math.pow(earthRadius,3))/3;
+
+    return volume.toFixed(0);
+}
+
+function updateHell(){
+
+    const a1 = Number(document.getElementById("a1").value);
+    const d = Number(document.getElementById("d").value);
+    const height = Number(document.getElementById("heightInput").value);
+
+    const data = calculateLayers(a1,d);
+
+    const cumulative = drawHell(data.layers,data.total);
+
+    const scaledHeight =
+        (height/earthRadius) * data.total;
+
+    const currentHell = findHell(scaledHeight,cumulative);
+
+    document.getElementById("hellName").innerHTML =
+        "<b>현재 지옥:</b> " + currentHell;
+
+    document.getElementById("hellDepth").innerHTML =
+        "<b>현재 높이:</b> " + height + " km";
+
+    document.getElementById("totalVolume").innerHTML =
+        "<b>전체 지옥 부피:</b> " +
+        calculateVolume() +
+        " km³";
+}
+
+updateHell();
+
+</script>
+
+</body>
+</html>

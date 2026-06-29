@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3120 학생 제작 웹앱</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #27ae60;
+            --bg-color: #f8f9fa;
+            --card-bg: #ffffff;
+            --border-color: #e2e8f0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: #333;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        /* 영역 공통 스타일 */
+        .section {
+            background-color: var(--card-bg);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            border: 1px solid var(--border-color);
+        }
+
+        h2 {
+            color: var(--primary-color);
+            margin-top: 0;
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 8px;
+            font-size: 1.3rem;
+        }
+
+        /* 1. 상단 정보 영역 */
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .info-item {
+            font-size: 0.95rem;
+        }
+
+        .info-item strong {
+            color: var(--primary-color);
+            display: inline-block;
+            width: 120px;
+        }
+
+        .intro-box {
+            background-color: #ebf5fb;
+            padding: 12px;
+            border-left: 4px solid #3498db;
+            border-radius: 4px;
+            margin-top: 10px;
+            font-size: 0.95rem;
+        }
+
+        /* 3. 시각화 영역 */
+        .visualization-container {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .visualization-container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .canvas-container {
+            position: relative;
+            width: 100%;
+            height: 300px;
+        }
+
+        .animation-box {
+            background-color: #111;
+            border-radius: 6px;
+            position: relative;
+            height: 300px;
+            overflow: hidden;
+        }
+
+        .drone-lane {
+            position: absolute;
+            bottom: 20px;
+            left: 10%;
+            right: 10%;
+            height: 2px;
+            background: dashed #555;
+        }
+
+        .drone {
+            position: absolute;
+            bottom: 12px;
+            left: 10%;
+            width: 24px;
+            height: 24px;
+            background-color: var(--secondary-color);
+            border-radius: 50%;
+            transform: translateX(-50%);
+            transition: left 0.1s linear;
+        }
+
+        .drone::after {
+            content: '🛸';
+            position: absolute;
+            top: -4px;
+            left: -2px;
+            font-size: 20px;
+        }
+
+        /* 4. 조작 영역 */
+        .control-panel {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            align-items: center;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .control-group label {
+            font-weight: bold;
+            font-size: 0.9rem;
+        }
+
+        .btn-container {
+            display: flex;
+            gap: 10px;
+            grid-column: 1 / -1;
+        }
+
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            background-color: var(--primary-color);
+            color: white;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        button:hover {
+            opacity: 0.9;
+        }
+
+        /* 5. 결과 해석 영역 & 추가 기능 */
+        .result-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            background: #fdfefe;
+            padding: 15px;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+        }
+
+        .result-card {
+            text-align: center;
+            padding: 10px;
+            background: #f4f6f7;
+            border-radius: 4px;
+        }
+
+        .result-card .value {
+            font-size: 1.4rem;
+            font-weight: bold;
+            color: #c0392b;
+            margin-top: 5px;
+        }
+    </style>
+
+<style>
+  .student-work-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    max-width: 1040px;
+    margin: 0 auto 16px;
+    padding: 10px 12px;
+    border: 1px solid #dbe3ef;
+    border-radius: 8px;
+    background: #f8fafc;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+  .student-work-links a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 36px;
+    padding: 7px 10px;
+    border-radius: 6px;
+    background: #ffffff;
+    color: #1d4ed8;
+    text-decoration: none;
+    font-weight: 700;
+    border: 1px solid #dbe3ef;
+  }
+  .student-work-links a:hover {
+    background: #eff6ff;
+  }
+</style>
+</head>
+<body>
+
+<nav class="student-work-links" aria-label="학생 답안 자료">
+  <a href="../">목록으로</a>
+  <a href="./answer.html">답안 보기</a>
+  <a href="./answer.txt">원문 TXT</a>
+</nav>
+
+
+<div class="container">
+
+    <div class="section">
+        <h2>[웹앱 상단 필수 정보]</h2>
+        <div class="info-grid">
+            <div class="info-item"><strong>학번:</strong> 3120</div>
+            <div class="info-item"><strong>이름:</strong> 비공개</div>
+            <div class="info-item"><strong>책 제목:</strong> 이상한 나라의 미적분</div>
+            <div class="info-item"><strong>저자:</strong> 김성환</div>
+            <div class="info-item"><strong>선택한 주제:</strong> 미분을 이용한 순간 변화율과 군인의 사격 및 미사일 요격 시스템</div>
+            <div class="info-item"><strong>관련 미적분 개념:</strong> 함수, 미분, 순간 변화율</div>
+        </div>
+        <div class="intro-box">
+            <strong>웹앱 제작 의도:</strong> 미분은 특정 순간의 변화를 분석하는 수학적 도구이다. 드론과 미사일의 움직임을 통해 순간변화율과 미분의 실제 군사 기술 활용 사례를 살펴보자.
+        </div>
+        <div class="intro-box" style="background-color: #fcf3cf; border-left-color: #f39c12;">
+            <strong>사용 방법 안내:</strong> 초기 속도와 가속도를 설정한 후 '애니메이션 재생'을 누르거나, '시간 제어 슬라이더'를 움직여 특정 시점을 선택하세요. 해당 순간의 위치-시간 그래프 위 접선과 드론의 실시간 물리량이 계산됩니다.
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>2. 개념 설명 영역</h2>
+        <p>
+            군사 기술에서 미사일을 요격하거나 적의 드론을 추적하려면, 대상의 **특정 순간의 정확한 속도와 방향(순간 변화율)**을 알아야 합니다.
+            시간에 따른 드론의 위치 함수를 $s(t)$라고 할 때, 매우 짧은 시간 동안의 평균변화율의 극한값인 미분계수 $s'(t)$를 구하면 특정 순간의 '순간 속도'가 됩니다.
+            이 웹앱은 위치-시간 그래프에서 특정 시점의 **접선의 기울기**가 곧 그 순간의 속도(순간변화율)임을 시각적으로 보여줍니다.
+        </p>
+    </div>
+
+    <div class="section">
+        <h2>3. 시각화 영역</h2>
+        <div class="visualization-container">
+            <div class="canvas-container">
+                <canvas id="motionChart"></canvas>
+            </div>
+            <div class="animation-box">
+                <div style="color: white; padding: 10px; font-size: 0.85rem;">드론 실시간 위치 시각화</div>
+                <div class="drone-lane"></div>
+                <div id="drone" class="drone"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>4. 조작 영역</h2>
+        <div class="control-panel">
+            <div class="control-group">
+                <label for="initVelocity">드론 초기 속도 ($v_0$, m/s):</label>
+                <input type="number" id="initVelocity" value="10" min="0" max="50">
+            </div>
+            <div class="control-group">
+                <label for="accelRange">가속도 조절 ($a$, $m/s^2$):</label>
+                <input type="range" id="accelRange" min="-5" max="10" step="0.5" value="2">
+                <span id="accelVal">2 $m/s^2$</span>
+            </div>
+            <div class="control-group" style="grid-column: span 2;">
+                <label for="timeSlider">시간 제어 슬라이더 ($t$, 초):</label>
+                <input type="range" id="timeSlider" min="0" max="10" step="0.1" value="0">
+                <span id="timeVal">0.0 초</span>
+            </div>
+            <div class="btn-container">
+                <button id="playBtn">애니메이션 재생</button>
+                <button id="resetBtn">초기화</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>5. 결과 해석 및 실시간 데이터 (추가 기능 반영)</h2>
+        <div class="result-grid">
+            <div class="result-card">
+                <div>선택 시점 ($t$)</div>
+                <div id="resTime" class="value">0.0 s</div>
+            </div>
+            <div class="result-card">
+                <div>현재 위치 ($s(t)$)</div>
+                <div id="resPos" class="value">0.00 m</div>
+            </div>
+            <div class="result-card">
+                <div>순간 속도 ($v(t) = s'(t)$)</div>
+                <div id="resVel" class="value">10.00 m/s</div>
+            </div>
+            <div class="result-card">
+                <div>설정 가속도 ($a$)</div>
+                <div id="resAcc" class="value">2.00 $m/s^2$</div>
+            </div>
+        </div>
+        <p style="margin-top: 15px; font-size: 0.95rem; color: #2c3e50;">
+            <strong>수학적 해석:</strong> 그래프 상의 빨간색 선은 선택한 시점에서의 **접선**입니다.
+            이 접선의 기울기는 위치 함수를 미분하여 얻은 **순간변화율(순간속도)**을 뜻합니다.
+            가속도가 존재할 때 위치-시간 그래프는 곡선(2차함수)을 그리며, 시간에 따라 접선의 기울기(속도)가 계속해서 변화하는 것을 확인할 수 있습니다.
+            군사 기술에서는 이 유도 법칙을 계산하여 미사일의 궤적을 예측하고 요격 시스템을 제어합니다.
+        </p>
+    </div>
+
+</div>
+
+<script>
+    // 상태 변수 정의
+    let v0 = 10;
+    let a = 2;
+    let t = 0;
+    let animationId = null;
+    let isPlaying = false;
+
+    // DOM 요소
+    const initVelocityInput = document.getElementById('initVelocity');
+    const accelRange = document.getElementById('accelRange');
+    const accelVal = document.getElementById('accelVal');
+    const timeSlider = document.getElementById('timeSlider');
+    const timeVal = document.getElementById('timeVal');
+    const playBtn = document.getElementById('playBtn');
+    const resetBtn = document.getElementById('resetBtn');
+
+    const drone = document.getElementById('drone');
+    const resTime = document.getElementById('resTime');
+    const resPos = document.getElementById('resPos');
+    const resVel = document.getElementById('resVel');
+    const resAcc = document.getElementById('resAcc');
+
+    // Chart.js 초기화
+    const ctx = document.getElementById('motionChart').getContext('2d');
+
+    // 데이터 생성 함수: s(t) = v0*t + 0.5*a*t^2
+    function getPosition(time) {
+        return (v0 * time) + (0.5 * a * time * time);
+    }
+
+    // 도함수 (순간속도): v(t) = s'(t) = v0 + a*t
+    function getVelocity(time) {
+        return v0 + (a * time);
+    }
+
+    function generateGraphData() {
+        let labels = [];
+        let data = [];
+        for (let i = 0; i <= 10; i += 0.5) {
+            labels.push(i);
+            data.push(getPosition(i));
+        }
+        return { labels, data };
+    }
+
+    // 접선 데이터 생성 (선택된 t 근처에서 접선 그리기)
+    function generateTangentData(selectedTime) {
+        let tangentData = [];
+        const currentPos = getPosition(selectedTime);
+        const currentVel = getVelocity(selectedTime); // 접선의 기울기
+
+        for (let i = 0; i <= 10; i += 0.5) {
+            // 접선의 방정식: y = f'(t_sub)*(x - t_sub) + f(t_sub)
+            let y = currentVel * (i - selectedTime) + currentPos;
+            tangentData.push(y);
+        }
+        return tangentData;
+    }
+
+    const graphData = generateGraphData();
+    const motionChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: graphData.labels,
+            datasets: [
+                {
+                    label: '위치-시간 곡선 s(t)',
+                    data: graphData.data,
+                    borderColor: '#2c3e50',
+                    borderWidth: 2,
+                    fill: false,
+                    pointRadius: 0
+                },
+                {
+                    label: '특정 순간의 접선 (기울기=순간속도)',
+                    data: generateTangentData(0),
+                    borderColor: '#c0392b',
+                    borderWidth: 2,
+                    borderDash: [5, 5],
+                    fill: false,
+                    pointRadius: 0
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                x: { title: { display: true, text: '시간 (초)' }, min: 0, max: 10 },
+                y: { title: { display: true, text: '위치 (m)' }, min: 0 }
+            }
+        }
+    });
+
+    // 화면 업데이트 함수
+    function updateUI() {
+        // 입력값 동기화
+        v0 = parseFloat(initVelocityInput.value) || 0;
+        a = parseFloat(accelRange.value);
+        t = parseFloat(timeSlider.value);
+
+        accelVal.innerText = `${a} m/s²`;
+        timeVal.innerText = `${t.toFixed(1)} 초`;
+
+        // 물리 데이터 계산
+        const currentPos = getPosition(t);
+        const currentVel = getVelocity(t);
+
+        // 결과 영역 텍스트 반영 (추가 기능: 위치, 속도, 가속도 동시 표시)
+        resTime.innerText = `${t.toFixed(1)} s`;
+        resPos.innerText = `${currentPos.toFixed(2)} m`;
+        resVel.innerText = `${currentVel.toFixed(2)} m/s`;
+        resAcc.innerText = `${a.toFixed(2)} m/s²`;
+
+        // 드론 애니메이션 위치 업데이트 (최대치 기준 백분율 계산)
+        const maxPos = getPosition(10) || 1;
+        let leftPercent = 10 + (currentPos / maxPos) * 80; // 10% ~ 90% 사이 이동
+        if (leftPercent > 90) leftPercent = 90;
+        if (leftPercent < 10) leftPercent = 10;
+        drone.style.left = `${leftPercent}%`;
+
+        // 그래프 업데이트
+        const updatedMotion = generateGraphData();
+        motionChart.data.datasets[0].data = updatedMotion.data;
+        motionChart.data.datasets[1].data = generateTangentData(t);
+        motionChart.update('none'); // 부드러운 갱신을 위해 'none' 모드 사용
+    }
+
+    // 이벤트 리스너 설정
+    initVelocityInput.addEventListener('input', updateUI);
+    accelRange.addEventListener('input', updateUI);
+    timeSlider.addEventListener('input', updateUI);
+
+    // 애니메이션 루프
+    function animate() {
+        if (!isPlaying) return;
+
+        let currentTime = parseFloat(timeSlider.value);
+        currentTime += 0.05;
+
+        if (currentTime > 10) {
+            currentTime = 10;
+            isPlaying = false;
+            playBtn.innerText = '애니메이션 재생';
+        }
+
+        timeSlider.value = currentTime;
+        updateUI();
+
+        if (isPlaying) {
+            animationId = requestAnimationFrame(animate);
+        }
+    }
+
+    playBtn.addEventListener('click', () => {
+        if (isPlaying) {
+            isPlaying = false;
+            playBtn.innerText = '애니메이션 재생';
+            cancelAnimationFrame(animationId);
+        } else {
+            if (timeSlider.value >= 10) timeSlider.value = 0;
+            isPlaying = true;
+            playBtn.innerText = '정지';
+            animate();
+        }
+    });
+
+    resetBtn.addEventListener('click', () => {
+        isPlaying = false;
+        playBtn.innerText = '애니메이션 재생';
+        cancelAnimationFrame(animationId);
+        timeSlider.value = 0;
+        initVelocityInput.value = 10;
+        accelRange.value = 2;
+        updateUI();
+    });
+
+    // 초기 실행
+    updateUI();
+</script>
+
+</body>
+</html>

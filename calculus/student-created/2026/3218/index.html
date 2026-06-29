@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>3218 학생 제작 웹앱</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+body{font-family:Arial;margin:20px;background:#eef2f7}
+.card{background:white;padding:16px;border-radius:12px;margin-bottom:15px}
+canvas{max-width:100%}
+input[type=range]{width:100%}
+.highlight{font-weight:bold;color:#1a4}
+</style>
+
+<style>
+  .student-work-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    max-width: 1040px;
+    margin: 0 auto 16px;
+    padding: 10px 12px;
+    border: 1px solid #dbe3ef;
+    border-radius: 8px;
+    background: #f8fafc;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+  .student-work-links a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 36px;
+    padding: 7px 10px;
+    border-radius: 6px;
+    background: #ffffff;
+    color: #1d4ed8;
+    text-decoration: none;
+    font-weight: 700;
+    border: 1px solid #dbe3ef;
+  }
+  .student-work-links a:hover {
+    background: #eff6ff;
+  }
+</style>
+</head>
+<body>
+
+<nav class="student-work-links" aria-label="학생 답안 자료">
+  <a href="../">목록으로</a>
+  <a href="./answer.html">답안 보기</a>
+  <a href="./answer.txt">원문 TXT</a>
+</nav>
+
+
+<div class="card">
+<h1>미적분 독서 연계 웹앱</h1>
+<p>학번: 3218 | 이름: 비공개</p>
+<p>책 제목: 공대생도 잘 모르는 재미있는 공학 이야기 / 미적분으로 바라본 하루</p>
+<p>주제: 테일러 급수를 이용한 연료전지 효율 근사 및 열에너지 분석</p>
+<p>관련 개념: 정적분, 미분계수, 테일러 급수</p>
+<p><b>제작 의도:</b> 연료전지 효율과 열에너지 변화를 미적분으로 설명</p>
+</div>
+
+<div class="card">
+<h2>조작 영역</h2>
+시간: <span id="tVal">5</span>
+<input id="t" type="range" min="1" max="10" step="0.1" value="5">
+
+초기온도: <span id="tempVal">50</span>℃
+<input id="temp" type="range" min="20" max="100" value="50">
+
+테일러 차수: <span id="orderVal">2</span>
+<input id="order" type="range" min="1" max="4" value="2">
+</div>
+
+<div class="card">
+<h2>효율 함수와 테일러 급수</h2>
+<canvas id="eff"></canvas>
+</div>
+
+<div class="card">
+<h2>열 공급 - 복사 냉각</h2>
+<canvas id="heat"></canvas>
+</div>
+
+<div class="card">
+<h2>결과 해석</h2>
+<div id="result"></div>
+</div>
+
+<script>
+const effChart=new Chart(document.getElementById("eff"),{
+type:"line",
+data:{labels:[],datasets:[
+{label:"실제 효율",data:[]},
+{label:"테일러 근사",data:[]},
+{label:"현재 접선",data:[]},
+{label:"최대 효율점",data:[]}
+]}
+});
+
+const heatChart=new Chart(document.getElementById("heat"),{
+type:"line",
+data:{labels:[],datasets:[
+{label:"열 공급",data:[]},
+{label:"복사 냉각",data:[]}
+]}
+});
+
+function update(){
+
+let time=+t.value;
+let temp=+document.getElementById("temp").value;
+let order=+document.getElementById("order").value;
+
+tVal.innerText=time.toFixed(1);
+tempVal.innerText=temp;
+orderVal.innerText=order;
+
+let labels=[],real=[],approx=[],tangent=[],peak=[];
+let heatIn=[],cool=[];
+let area=0;
+
+for(let x=0;x<=10;x+=0.2){
+
+labels.push(x.toFixed(1));
+
+let f=Math.exp(-((x-5)*(x-5))/8);
+
+let dx=x-5;
+let coeff=[1,0,-1/8,0,1/128];
+let tf=0;
+for(let n=0;n<=order;n++){
+tf+=coeff[n]*Math.pow(dx,n);
+}
+
+real.push(f);
+approx.push(tf);
+
+let slope=-(x-5)/4*Math.exp(-((x-5)*(x-5))/8);
+
+if(Math.abs(x-time)<0.11){
+for(let z=0;z<=10;z+=0.2){
+let y=f+slope*(z-x);
+tangent.push(y);
+}
+}else if(tangent.length===0){
+}
+
+peak.push(Math.abs(x-5)<0.11?1:null);
+
+let h=(temp/50)*(20+5*Math.sin(x));
+let c=10+0.15*temp+2*Math.cos(x);
+
+heatIn.push(h);
+cool.push(c);
+
+if(x<=time){
+area+=(h-c)*0.2;
+}
+}
+
+if(tangent.length===0){
+for(let i=0;i<labels.length;i++) tangent.push(null);
+}
+
+effChart.data.labels=labels;
+effChart.data.datasets[0].data=real;
+effChart.data.datasets[1].data=approx;
+effChart.data.datasets[2].data=tangent;
+effChart.data.datasets[3].data=peak;
+effChart.update();
+
+heatChart.data.labels=labels;
+heatChart.data.datasets[0].data=heatIn;
+heatChart.data.datasets[1].data=cool;
+heatChart.update();
+
+let actual=Math.exp(-((time-5)*(time-5))/8);
+let derivative=-(time-5)/4*actual;
+
+let dx=time-5;
+let tf=0;
+let coeff=[1,0,-1/8,0,1/128];
+for(let n=0;n<=order;n++) tf+=coeff[n]*Math.pow(dx,n);
+
+let error=Math.abs(actual-tf);
+
+document.getElementById("result").innerHTML=`
+<p class="highlight">현재 미분계수: ${derivative.toFixed(4)}</p>
+<p class="highlight">정적분으로 계산한 누적 순 열에너지: ${area.toFixed(2)}</p>
+<p class="highlight">테일러 근사 오차: ${error.toFixed(4)}</p>
+<p>차수를 높일수록 실제 효율 함수와 근사 함수의 차이가 줄어든다.</p>
+<p>열 공급 곡선과 복사 냉각 곡선 사이의 면적이 실제 순 열에너지를 의미한다.</p>
+<p>접선의 기울기는 현재 시점의 효율 변화율(미분계수)을 나타낸다.</p>`;
+}
+
+document.querySelectorAll("input").forEach(x=>x.addEventListener("input",update));
+update();
+</script>
+</body>
+</html>

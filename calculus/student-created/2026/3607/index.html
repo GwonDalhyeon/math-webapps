@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>3607 학생 제작 웹앱</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+body{font-family:Arial,sans-serif;margin:0;background:#f4f6f9;color:#222}
+header{background:#1f4e79;color:white;padding:20px}
+.section{background:white;margin:15px;padding:20px;border-radius:10px;box-shadow:0 2px 6px rgba(0,0,0,.1)}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+input[type=range]{width:100%}
+.map{display:flex;justify-content:space-around;flex-wrap:wrap}
+.hub{width:140px;text-align:center}
+.light{width:30px;height:30px;border-radius:50%;margin:10px auto;background:green}
+.warning{background:red!important}.safe{background:green!important}
+@media(max-width:900px){.grid{grid-template-columns:1fr}}
+</style>
+
+<style>
+  .student-work-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    max-width: 1040px;
+    margin: 0 auto 16px;
+    padding: 10px 12px;
+    border: 1px solid #dbe3ef;
+    border-radius: 8px;
+    background: #f8fafc;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+  .student-work-links a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 36px;
+    padding: 7px 10px;
+    border-radius: 6px;
+    background: #ffffff;
+    color: #1d4ed8;
+    text-decoration: none;
+    font-weight: 700;
+    border: 1px solid #dbe3ef;
+  }
+  .student-work-links a:hover {
+    background: #eff6ff;
+  }
+</style>
+</head>
+<body>
+
+<nav class="student-work-links" aria-label="학생 답안 자료">
+  <a href="../">목록으로</a>
+  <a href="./answer.html">답안 보기</a>
+  <a href="./answer.txt">원문 TXT</a>
+</nav>
+
+<header>
+<h1>공유 모빌리티 "디지털 욕망의 길" 미적분 시뮬레이터</h1>
+<p><b>학번:</b>3607 | <b>이름:</b>비공개</p>
+<p><b>책 제목:</b>다시 수학이 필요한 순간 / <b>저자:</b>김민형</p>
+<p><b>선택 주제:</b> 제4장 '변화하는 세상의 법칙' (125~144쪽)</p>
+<p><b>관련 미적분 개념:</b> 변화율 방정식(도함수), 정적분, 극대·극소</p>
+<p><b>웹앱 제작 의도:</b> 이벤트에 따라 변화하는 공유 모빌리티 유출입을 미분방정식과 정적분으로 분석하여 과밀·고갈 시점을 예측한다.</p>
+<p><b>사용 방법:</b> 이벤트를 선택하고 유입/유출 속도를 조절해 그래프와 허브 상태 변화를 관찰한다.</p>
+</header>
+
+<div class="section">
+<h2>① 개념 설명 영역</h2>
+<p><b>dX/dt = I(t) - O(t)</b></p>
+<p>유입 속도 I(t)와 유출 속도 O(t)의 차이가 순간 변화율이다. 이를 정적분하면 미래의 자전거 총량 X(t)를 예측할 수 있다.</p>
+</div>
+
+<div class="section">
+<h2>② 조작 영역</h2>
+<label>이벤트 타임라인</label>
+<select id="eventSelect">
+<option value="commute">출퇴근 시간</option>
+<option value="festival">축제 시작 시간</option>
+</select><br><br>
+
+<label>유입 속도 I(t): <span id="inValue">50</span></label>
+<input type="range" id="inflow" min="0" max="100" value="50">
+
+<label>유출 속도 O(t): <span id="outValue">40</span></label>
+<input type="range" id="outflow" min="0" max="100" value="40">
+</div>
+
+<div class="section">
+<h2>③ 시각화 영역</h2>
+<div class="grid">
+<div>
+<h3>변화율 그래프 (dX/dt)</h3>
+<canvas id="rateChart"></canvas>
+</div>
+<div>
+<h3>정적분 누적 총량 그래프 X(t)</h3>
+<canvas id="totalChart"></canvas>
+</div>
+</div>
+
+<h3>지도 기반 다중 허브</h3>
+<div class="map">
+<div class="hub"><b>지하철역</b><div id="light1" class="light"></div><div id="hub1Text"></div></div>
+<div class="hub"><b>축제 행사장</b><div id="light2" class="light"></div><div id="hub2Text"></div></div>
+<div class="hub"><b>도심 광장</b><div id="light3" class="light"></div><div id="hub3Text"></div></div>
+</div>
+</div>
+
+<div class="section">
+<h2>④ 결과 해석 영역</h2>
+<div id="resultText"></div>
+</div>
+
+<script>
+const labels=[]; for(let i=0;i<=24;i++) labels.push(i);
+
+const rateChart=new Chart(document.getElementById("rateChart"),{
+type:"line",
+data:{labels,datasets:[{label:"dX/dt",data:[],borderWidth:3}]}
+});
+
+const totalChart=new Chart(document.getElementById("totalChart"),{
+type:"line",
+data:{labels,datasets:[{label:"X(t)",data:[],borderWidth:3}]}
+});
+
+function updateHub(lightId,textId,value){
+const light=document.getElementById(lightId);
+let state="정상";
+if(value>180||value<20){light.className="light warning"; state=value>180?"과밀 경고":"고갈 경고";}
+else{light.className="light safe";}
+document.getElementById(textId).innerHTML=`예상 수량: ${Math.round(value)}<br>${state}`;
+}
+
+function updateSimulation(){
+const eventType=document.getElementById("eventSelect").value;
+const inflow=+document.getElementById("inflow").value;
+const outflow=+document.getElementById("outflow").value;
+
+document.getElementById("inValue").textContent=inflow;
+document.getElementById("outValue").textContent=outflow;
+
+let total=100, peak=-1e9, peakTime=0;
+const rateData=[], totalData=[];
+
+for(let t=0;t<=24;t++){
+let eventEffect=eventType==="commute"
+? 30*Math.sin((t-6)/24*Math.PI*2)
+: 50*Math.exp(-Math.pow((t-14)/3,2));
+
+let rate=inflow+eventEffect-outflow;
+rateData.push(rate);
+total+=rate*0.2;
+totalData.push(total);
+
+if(total>peak){peak=total; peakTime=t;}
+}
+
+rateChart.data.datasets[0].data=rateData;
+rateChart.update();
+
+totalChart.data.datasets[0].data=totalData;
+totalChart.update();
+
+updateHub("light1","hub1Text",totalData[8]);
+updateHub("light2","hub2Text",totalData[14]);
+updateHub("light3","hub3Text",totalData[20]);
+
+document.getElementById("resultText").innerHTML=
+`현재 계산된 피크 타임은 <b>${peakTime}시</b>입니다.<br><br>
+변화율 dX/dt가 양수이면 자전거가 쌓이고, 음수이면 감소합니다.<br>
+정적분을 통해 누적 총량을 예측할 수 있으며 피크 타임 이전 재배치가 효율적입니다.<br><br>
+<b>추천 재배치 시간: ${peakTime}시 이전</b>`;
+}
+
+["eventSelect","inflow","outflow"].forEach(id=>{
+document.getElementById(id).addEventListener("input",updateSimulation);
+document.getElementById(id).addEventListener("change",updateSimulation);
+});
+
+updateSimulation();
+</script>
+</body>
+</html>

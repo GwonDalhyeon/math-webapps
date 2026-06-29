@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>3601 학생 제작 웹앱</title>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+*{
+    box-sizing:border-box;
+    font-family:Arial, sans-serif;
+}
+
+body{
+    margin:0;
+    background:#f4f6f9;
+    color:#222;
+}
+
+.container{
+    max-width:1200px;
+    margin:auto;
+    padding:20px;
+}
+
+.section{
+    background:white;
+    padding:20px;
+    margin-bottom:20px;
+    border-radius:12px;
+    box-shadow:0 2px 6px rgba(0,0,0,0.1);
+}
+
+h1,h2{
+    margin-top:0;
+}
+
+.info-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(250px,1fr));
+    gap:10px;
+}
+
+.control-group{
+    margin-bottom:15px;
+}
+
+label{
+    font-weight:bold;
+}
+
+input[type="range"]{
+    width:100%;
+}
+
+button{
+    padding:10px 20px;
+    font-size:16px;
+    cursor:pointer;
+}
+
+.visual-area{
+    display:flex;
+    flex-wrap:wrap;
+    gap:20px;
+    align-items:center;
+    justify-content:center;
+}
+
+#rocketCanvas{
+    background:#eef7ff;
+    border:1px solid #ccc;
+    border-radius:10px;
+}
+
+.result-box{
+    font-size:18px;
+    line-height:1.8;
+}
+
+.highlight{
+    color:#0a63c9;
+    font-weight:bold;
+}
+
+@media(max-width:768px){
+    .visual-area{
+        flex-direction:column;
+    }
+}
+</style>
+
+<style>
+  .student-work-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    max-width: 1040px;
+    margin: 0 auto 16px;
+    padding: 10px 12px;
+    border: 1px solid #dbe3ef;
+    border-radius: 8px;
+    background: #f8fafc;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+  .student-work-links a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 36px;
+    padding: 7px 10px;
+    border-radius: 6px;
+    background: #ffffff;
+    color: #1d4ed8;
+    text-decoration: none;
+    font-weight: 700;
+    border: 1px solid #dbe3ef;
+  }
+  .student-work-links a:hover {
+    background: #eff6ff;
+  }
+</style>
+</head>
+<body>
+
+<nav class="student-work-links" aria-label="학생 답안 자료">
+  <a href="../">목록으로</a>
+  <a href="./answer.html">답안 보기</a>
+  <a href="./answer.txt">원문 TXT</a>
+</nav>
+
+
+<div class="container">
+
+    <!-- 1. 상단 정보 영역 -->
+    <div class="section">
+        <h1>미적분 독서 연계 웹앱</h1>
+
+        <div class="info-grid">
+            <div><b>학번</b> : 3601</div>
+            <div><b>이름</b> : 비공개</div>
+            <div><b>책 제목</b> : 미적분의 힘</div>
+            <div><b>저자</b> : 스티븐 스트로가츠</div>
+        </div>
+
+        <p><b>선택한 부분 또는 주제</b><br>
+        미적분을 이용하여 변화하는 현상을 분석하고 미래를 예측하는 원리와 로켓의 상승 운동</p>
+
+        <p><b>관련 미적분 개념</b><br>
+        함수, 미분, 순간변화율, 접선의 기울기, 속도와 가속도</p>
+
+        <p><b>웹앱 제작 의도</b><br>
+        이 웹앱은 로켓의 상승 운동을 통해 미분이 순간속도를 구하는 원리와 실제 항공우주 분야에서 변화율을 분석하는 방법을 보여준다.</p>
+
+        <p><b>사용 방법 안내</b><br>
+        초기 속도를 입력하고 가속도와 시간을 조절해 보세요. 재생 버튼을 누르면 로켓이 상승하며, 그래프의 접선과 순간속도 값이 함께 변화합니다.</p>
+    </div>
+
+    <!-- 2. 개념 설명 영역 -->
+    <div class="section">
+        <h2>개념 설명</h2>
+
+        <p>
+            책을 읽으며 미적분이 단순히 문제를 푸는 수학이 아니라 실제 세계의 변화를 분석하고 미래를 예측하는 도구라는 점이 인상 깊었다.
+            특히 로켓이 상승할 때 특정 순간의 속도를 어떻게 구하는지 궁금했고,
+            미분이 항공우주 분야에서 어떤 역할을 하는지 알아보고 싶었다.
+        </p>
+
+        <p>
+            위치를 나타내는 함수를 미분하면 특정 순간의 속도를 구할 수 있다.
+            그래프에서 접선의 기울기는 그 순간의 변화율을 의미하며,
+            로켓 운동에서는 순간속도를 나타낸다.
+        </p>
+    </div>
+
+    <!-- 3. 시각화 영역 -->
+    <div class="section">
+        <h2>로켓 상승 운동 시각화</h2>
+
+        <div class="visual-area">
+
+            <canvas id="rocketCanvas" width="300" height="400"></canvas>
+
+            <div style="width:600px;max-width:100%;">
+                <canvas id="graphChart"></canvas>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- 4. 조작 영역 -->
+    <div class="section">
+        <h2>조작 영역</h2>
+
+        <div class="control-group">
+            <label>초기 속도 (m/s)</label>
+            <input type="number" id="v0" value="20">
+        </div>
+
+        <div class="control-group">
+            <label>가속도 : <span id="accValue">5</span> m/s²</label>
+            <input type="range" id="acceleration" min="0" max="20" value="5">
+        </div>
+
+        <div class="control-group">
+            <label>시간 : <span id="timeValue">2</span> 초</label>
+            <input type="range" id="timeSlider" min="0" max="10" step="0.1" value="2">
+        </div>
+
+        <button id="playBtn">애니메이션 재생</button>
+    </div>
+
+    <!-- 5. 결과 해석 영역 -->
+    <div class="section">
+        <h2>결과 해석</h2>
+
+        <div class="result-box">
+            현재 고도 :
+            <span id="heightText" class="highlight"></span>
+            m
+            <br>
+
+            순간속도 :
+            <span id="velocityText" class="highlight"></span>
+            m/s
+            <br><br>
+
+            위치 함수의 그래프에서 접선의 기울기는 특정 순간의 속도를 의미한다.
+            시간을 바꾸면 접선의 기울기와 순간속도가 함께 변하는 것을 확인할 수 있다.
+            이를 통해 미분이 실제 항공우주 분야에서 운동을 분석하고 미래 상태를 예측하는 데 활용될 수 있음을 이해할 수 있다.
+        </div>
+    </div>
+
+</div>
+
+<script>
+
+// 초기 설정
+const canvas = document.getElementById("rocketCanvas");
+const ctx = canvas.getContext("2d");
+
+const accSlider = document.getElementById("acceleration");
+const timeSlider = document.getElementById("timeSlider");
+
+const accValue = document.getElementById("accValue");
+const timeValue = document.getElementById("timeValue");
+
+const heightText = document.getElementById("heightText");
+const velocityText = document.getElementById("velocityText");
+
+// 위치 함수
+// h(t) = v0*t + (1/2)a*t²
+function height(t){
+    const v0 = Number(document.getElementById("v0").value);
+    const a = Number(accSlider.value);
+    return v0*t + 0.5*a*t*t;
+}
+
+// 미분한 속도 함수
+// v(t)=v0+at
+function velocity(t){
+    const v0 = Number(document.getElementById("v0").value);
+    const a = Number(accSlider.value);
+    return v0 + a*t;
+}
+
+// 그래프 데이터 생성
+function generateData(){
+
+    let points=[];
+
+    for(let t=0;t<=10;t+=0.2){
+        points.push({
+            x:t,
+            y:height(t)
+        });
+    }
+
+    return points;
+}
+
+// 접선 생성
+function tangentLine(t){
+
+    const slope = velocity(t);
+    const y0 = height(t);
+
+    let arr=[];
+
+    for(let x=t-2;x<=t+2;x+=0.1){
+
+        let y = y0 + slope*(x-t);
+
+        arr.push({
+            x:x,
+            y:y
+        });
+    }
+
+    return arr;
+}
+
+const chart = new Chart(
+document.getElementById("graphChart"),
+{
+    type:"scatter",
+    data:{
+        datasets:[
+            {
+                label:"고도 그래프",
+                data:generateData(),
+                showLine:true
+            },
+            {
+                label:"접선",
+                data:tangentLine(2),
+                showLine:true
+            },
+            {
+                label:"선택 시점",
+                data:[{x:2,y:height(2)}],
+                pointRadius:6
+            }
+        ]
+    },
+    options:{
+        responsive:true,
+        scales:{
+            x:{
+                title:{
+                    display:true,
+                    text:"시간(초)"
+                }
+            },
+            y:{
+                title:{
+                    display:true,
+                    text:"고도"
+                }
+            }
+        }
+    }
+});
+
+// 로켓 그림
+function drawRocket(){
+
+    const t = Number(timeSlider.value);
+
+    const h = height(t);
+
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+
+    ctx.fillStyle="#dceeff";
+    ctx.fillRect(0,0,300,400);
+
+    const y = 350 - Math.min(h/5,300);
+
+    ctx.fillStyle="gray";
+    ctx.fillRect(140,y,20,60);
+
+    ctx.beginPath();
+    ctx.moveTo(140,y);
+    ctx.lineTo(150,y-20);
+    ctx.lineTo(160,y);
+    ctx.fillStyle="red";
+    ctx.fill();
+
+    ctx.fillStyle="orange";
+    ctx.beginPath();
+    ctx.moveTo(145,y+60);
+    ctx.lineTo(150,y+80);
+    ctx.lineTo(155,y+60);
+    ctx.fill();
+}
+
+// 화면 업데이트
+function update(){
+
+    const t = Number(timeSlider.value);
+
+    accValue.textContent = accSlider.value;
+    timeValue.textContent = t.toFixed(1);
+
+    const h = height(t);
+    const v = velocity(t);
+
+    heightText.textContent = h.toFixed(2);
+    velocityText.textContent = v.toFixed(2);
+
+    chart.data.datasets[0].data = generateData();
+    chart.data.datasets[1].data = tangentLine(t);
+    chart.data.datasets[2].data = [{x:t,y:h}];
+
+    chart.update();
+
+    drawRocket();
+}
+
+accSlider.addEventListener("input",update);
+timeSlider.addEventListener("input",update);
+document.getElementById("v0").addEventListener("input",update);
+
+// 애니메이션
+let playing=false;
+
+document.getElementById("playBtn").addEventListener("click",()=>{
+
+    if(playing) return;
+
+    playing=true;
+
+    let t=0;
+
+    const interval=setInterval(()=>{
+
+        timeSlider.value=t;
+        update();
+
+        t+=0.1;
+
+        if(t>10){
+            clearInterval(interval);
+            playing=false;
+        }
+
+    },80);
+
+});
+
+update();
+
+</script>
+
+</body>
+</html>

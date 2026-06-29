@@ -1,0 +1,453 @@
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>3217 학생 제작 웹앱</title>
+<!-- Chart.js CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+body{
+font-family: "Pretendard", sans-serif;
+margin:0;
+background:#f4f7fb;
+color:#222;
+line-height:1.6;
+}
+.container{
+max-width:1200px;
+margin:auto;
+padding:20px;
+}
+.card{
+background:white;
+border-radius:16px;
+padding:20px;
+margin-bottom:20px;
+box-shadow:0 4px 12px rgba(0,0,0,0.08);
+}
+h1,h2{
+margin-top:0;
+}
+.info-grid{
+display:grid;
+grid-template-columns:1fr 1fr;
+gap:10px;
+}
+.controls{
+display:grid;
+grid-template-columns:1fr 1fr;
+gap:20px;
+}
+
+.control-item{
+background:#f1f5ff;
+padding:12px;
+border-radius:12px;
+}
+input[type=range]{
+width:100%;
+}
+.value{
+font-weight:bold;
+color:#0055cc;
+}
+#statusBox{
+font-size:18px;
+font-weight:bold;
+margin-top:10px;
+color:#006600;
+}
+.result{
+background:#eef7ff;
+padding:15px;
+border-radius:12px;
+margin-top:15px;
+}
+canvas{
+background:white;
+}
+button{
+padding:10px 16px;
+border:none;
+border-radius:10px;
+background:#0055cc;
+color:white;
+cursor:pointer;
+margin-top:10px;
+}
+button:hover{
+background:#003f99;
+}
+
+@media(max-width:768px){
+.info-grid,
+.controls{
+grid-template-columns:1fr;
+}
+}
+</style>
+
+<style>
+  .student-work-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    max-width: 1040px;
+    margin: 0 auto 16px;
+    padding: 10px 12px;
+    border: 1px solid #dbe3ef;
+    border-radius: 8px;
+    background: #f8fafc;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+  .student-work-links a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 36px;
+    padding: 7px 10px;
+    border-radius: 6px;
+    background: #ffffff;
+    color: #1d4ed8;
+    text-decoration: none;
+    font-weight: 700;
+    border: 1px solid #dbe3ef;
+  }
+  .student-work-links a:hover {
+    background: #eff6ff;
+  }
+</style>
+</head>
+<body>
+
+<nav class="student-work-links" aria-label="학생 답안 자료">
+  <a href="../">목록으로</a>
+  <a href="./answer.html">답안 보기</a>
+  <a href="./answer.txt">원문 TXT</a>
+</nav>
+
+<div class="container">
+<!-- 상단 정보 영역 -->
+<div class="card">
+<h1>명반응과 암반응의 관계</h1>
+<div class="info-grid">
+<div><strong>학번:</strong> 3217</div>
+<div><strong>이름:</strong> 비공개</div>
+<div><strong>책 제목:</strong> 생명과학||</div>
+<div><strong>저자:</strong> 오현선, 구향모, 유해미, 강희정, 정종우, 김대준</div>
+<div><strong>선택한 부분 또는 주제:</strong> 명반응과 암반응의 관계</div>
+<div><strong>관련 미적분 개념:</strong> 속도와 가속도</div>
+</div>
+<hr>
+<p>
+<strong>웹앱 제작 의도:</strong><br>
+명반응 이후 암반응이 뒤따라 발생한다는 과정을
+그래프의 변화와 시간 지연으로 표현하려고 했다.
+</p>
+<p>
+<strong>사용 방법:</strong><br>
+시간, 에너지 전달 효율, 빛 세기 등을 조절하면
+명반응과 암반응 그래프가 어떻게 변하는지 볼 수 있다.
+</p>
+</div>
+<!-- 개념 설명 영역 -->
+<div class="card">
+<h2>개념 설명</h2>
+<p>
+명반응은 빛 에너지를 받아 빠르게 반응하는 과정이다.
+이후 일정 시간이 지나 암반응이 뒤따라 진행된다.
+</p>
+
+<p>
+이 웹앱에서는 명반응 그래프가 먼저 증가하고,
+암반응 그래프가 약간 늦게 따라오는 모습을 통해
+“명반응 후 암반응”이라는 관계를 표현했다.
+</p>
+<p>
+그래프의 기울기는 변화 속도를 의미한다.
+기울기가 클수록 반응 속도가 빠르다는 뜻이다.
+</p>
+</div>
+<!-- 시각화 영역 -->
+<div class="card">
+<h2>시각화 영역</h2>
+<canvas id="reactionChart"></canvas>
+<div id="statusBox">
+현재 상태: 명반응 진행 중
+</div>
+</div>
+<!-- 조작 영역 -->
+<div class="card">
+<h2>조작 영역</h2>
+<div class="controls">
+<div class="control-item">
+<label>
+시간 (t):
+<span class="value" id="timeValue">5</span>
+</label>
+<input type="range" id="timeSlider" min="0" max="20" step="0.1" value="5">
+</div>
+<div class="control-item">
+<label>
+에너지 전달 효율 (k):
+<span class="value" id="kValue">1</span>
+</label>
+<input type="range" id="kSlider" min="0.5" max="3" step="0.1" value="1">
+</div>
+<div class="control-item">
+<label>
+
+명반응 → 암반응 지연 시간 (τ):
+<span class="value" id="tauValue">2</span>
+</label>
+<input type="range" id="tauSlider" min="0" max="10" step="0.1" value="2">
+</div>
+<div class="control-item">
+<label>
+빛 세기 (a):
+<span class="value" id="aValue">1</span>
+</label>
+<input type="range" id="aSlider" min="0.5" max="5" step="0.1" value="1">
+</div>
+<div class="control-item">
+<label>
+빛 변화 속도 (b):
+<span class="value" id="bValue">0.5</span>
+</label>
+<input type="range" id="bSlider" min="0.1" max="2" step="0.1" value="0.5">
+</div>
+</div>
+<button id="playBtn">자동 재생</button>
+</div>
+<!-- 결과 해석 영역 -->
+<div class="card">
+<h2>결과 해석 영역</h2>
+<div class="result">
+<p id="speedText">
+현재 순간 반응 속도: 0
+</p>
+<p id="accelText">
+현재 증가 속도 변화: 0
+</p>
+<p>
+명반응 그래프가 먼저 상승한 뒤,
+암반응 그래프가 시간 차이를 두고 따라오는 것을 통해
+명반응 이후 암반응이 진행된다는 점을 표현하였다.
+</p>
+</div>
+</div>
+
+</div>
+<script>
+/*
+==========================================
+명반응 / 암반응 웹앱
+학생 수행평가용 예제
+==========================================
+*/
+/* HTML 요소 가져오기 */
+const timeSlider = document.getElementById("timeSlider");
+const kSlider = document.getElementById("kSlider");
+const tauSlider = document.getElementById("tauSlider");
+const aSlider = document.getElementById("aSlider");
+const bSlider = document.getElementById("bSlider");
+const playBtn = document.getElementById("playBtn");
+const timeValue = document.getElementById("timeValue");
+const kValue = document.getElementById("kValue");
+const tauValue = document.getElementById("tauValue");
+const aValue = document.getElementById("aValue");
+const bValue = document.getElementById("bValue");
+const speedText = document.getElementById("speedText");
+const accelText = document.getElementById("accelText");
+const statusBox = document.getElementById("statusBox");
+/*
+==========================================
+그래프 생성
+==========================================
+*/
+const ctx = document.getElementById('reactionChart');
+const chart = new Chart(ctx, {
+type: 'line',
+data: {
+labels: [],
+datasets: [
+{
+label: '명반응 L(t)',
+data: [],
+borderWidth: 3,
+tension: 0.3
+},
+{
+
+label: '암반응 D(t)',
+data: [],
+borderWidth: 3,
+tension: 0.3
+}
+]
+},
+options: {
+responsive:true,
+animation:false,
+scales:{
+x:{
+title:{
+display:true,
+text:'시간'
+}
+},
+y:{
+title:{
+display:true,
+text:'반응량'
+}
+}
+}
+}
+});
+/*
+==========================================
+명반응 함수
+L(t)
+초기에는 빠르게 증가하고
+점점 일정한 속도로 변함
+==========================================
+*/
+function lightReaction(t, a, b, k){
+return a * (1 - Math.exp(-b * t)) * k * 10;
+}
+/*
+==========================================
+암반응 함수
+D(t)
+명반응보다 τ 만큼 늦게 반응
+==========================================
+*/
+function darkReaction(t, tau, a, b, k){
+
+if(t < tau){
+return 0;
+}
+return 0.8 * lightReaction(t - tau, a, b, k);
+}
+/*
+==========================================
+그래프 업데이트 함수
+==========================================
+*/
+function updateChart(){
+// 슬라이더 값 가져오기
+let currentTime = Number(timeSlider.value);
+let k = Number(kSlider.value);
+let tau = Number(tauSlider.value);
+let a = Number(aSlider.value);
+let b = Number(bSlider.value);
+// 화면 값 표시
+timeValue.textContent = currentTime;
+kValue.textContent = k;
+tauValue.textContent = tau;
+aValue.textContent = a;
+bValue.textContent = b;
+let labels = [];
+let lightData = [];
+let darkData = [];
+/*
+==========================================
+그래프 데이터 생성
+==========================================
+*/
+for(let t=0; t<=20; t+=0.2){
+labels.push(t.toFixed(1));
+let L = lightReaction(t, a, b, k);
+let D = darkReaction(t, tau, a, b, k);
+lightData.push(L);
+darkData.push(D);
+}
+
+// 그래프 반영
+chart.data.labels = labels;
+chart.data.datasets[0].data = lightData;
+chart.data.datasets[1].data = darkData;
+chart.update();
+/*
+==========================================
+현재 순간 반응 속도 계산
+미분 개념 간단 구현
+==========================================
+*/
+let dt = 0.01;
+let currentL = lightReaction(currentTime, a, b, k);
+let nextL = lightReaction(currentTime + dt, a, b, k);
+// 변화율
+let speed = (nextL - currentL) / dt;
+// 증가속도 변화(가속도 느낌)
+let nextNextL = lightReaction(currentTime + 2*dt, a, b, k);
+let speed2 = (nextNextL - nextL) / dt;
+let accel = (speed2 - speed) / dt;
+speedText.innerHTML =
+"현재 순간 반응 속도(미분값): "
++ speed.toFixed(2);
+accelText.innerHTML =
+"현재 증가 속도 변화: "
++ accel.toFixed(2);
+/*
+==========================================
+현재 상태 문구
+==========================================
+*/
+if(currentTime < tau){
+statusBox.innerHTML =
+"현재 상태: 명반응 진행 중 → 아직 암반응 전";
+}
+else{
+
+statusBox.innerHTML =
+"현재 상태: 명반응 이후 암반응 진행 중";
+}
+}
+/*
+==========================================
+슬라이더 이벤트
+==========================================
+*/
+timeSlider.addEventListener("input", updateChart);
+kSlider.addEventListener("input", updateChart);
+tauSlider.addEventListener("input", updateChart);
+aSlider.addEventListener("input", updateChart);
+bSlider.addEventListener("input", updateChart);
+/*
+==========================================
+자동 재생 기능
+==========================================
+*/
+let playing = false;
+let interval;
+playBtn.addEventListener("click", function(){
+if(!playing){
+playing = true;
+playBtn.textContent = "정지";
+interval = setInterval(function(){
+let current = Number(timeSlider.value);
+current += 0.2;
+if(current > 20){
+current = 0;
+}
+timeSlider.value = current;
+updateChart();
+}, 100);
+}else{
+
+playing = false;
+playBtn.textContent = "자동 재생";
+clearInterval(interval);
+}
+});
+/*
+==========================================
+처음 실행
+==========================================
+*/
+updateChart();
+</script>
+</body>
+</html>

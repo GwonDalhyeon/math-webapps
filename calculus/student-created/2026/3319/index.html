@@ -1,0 +1,1014 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3319 학생 제작 웹앱</title>
+    <!-- Tailwind CSS 사용으로 깔끔하고 반응형인 레이아웃 구성 -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* 가상 조이스틱 영역의 기본 스크롤 및 터치 동작 방지 */
+        .joystick-boundary {
+            touch-action: none;
+        }
+    </style>
+
+<style>
+  .student-work-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    max-width: 1040px;
+    margin: 0 auto 16px;
+    padding: 10px 12px;
+    border: 1px solid #dbe3ef;
+    border-radius: 8px;
+    background: #f8fafc;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+  .student-work-links a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 36px;
+    padding: 7px 10px;
+    border-radius: 6px;
+    background: #ffffff;
+    color: #1d4ed8;
+    text-decoration: none;
+    font-weight: 700;
+    border: 1px solid #dbe3ef;
+  }
+  .student-work-links a:hover {
+    background: #eff6ff;
+  }
+</style>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans min-h-screen pb-12">
+
+<nav class="student-work-links" aria-label="학생 답안 자료">
+  <a href="../">목록으로</a>
+  <a href="./answer.html">답안 보기</a>
+  <a href="./answer.txt">원문 TXT</a>
+</nav>
+
+
+    <!-- 1. 상단 정보 영역 -->
+    <header class="bg-indigo-900 text-white py-8 px-4 shadow-md">
+        <div class="max-w-6xl mx-auto">
+            <div class="flex flex-wrap justify-between items-center gap-4 border-b border-indigo-700 pb-4 mb-4">
+                <div>
+                    <span class="bg-indigo-700 text-indigo-200 text-xs font-semibold px-2.5 py-1 rounded-full uppercase">미적분 독서 연계 웹앱</span>
+                    <h1 class="text-3xl font-bold mt-1">드론 제어와 미적분의 쓸모</h1>
+                </div>
+                <div class="text-right text-sm text-indigo-200">
+                    <p><strong>학번 :</strong> 3319 | <strong>이름 :</strong> 비공개</p>
+                    <p><strong>도서 :</strong> 미적분의 쓸모 (저자: 한화택)</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
+                <div class="bg-indigo-950 p-4 rounded-lg border border-indigo-800">
+                    <p class="text-indigo-300 font-semibold mb-1">■ 선택한 부분 또는 주제</p>
+                    <p class="text-white">드론을 제어하는 부분 (호버링 및 비행 제어)</p>
+                    <p class="text-indigo-300 font-semibold mt-3 mb-1">■ 관련된 미적분 개념</p>
+                    <p class="text-white">변위/회전각, 속도/각속도, 가속도/각가속도 이계도함수 및 실시간 적분 관계</p>
+                </div>
+                <div class="bg-indigo-950 p-4 rounded-lg border border-indigo-800">
+                    <p class="text-indigo-300 font-semibold mb-1">■ 웹앱 제작 의도</p>
+                    <p class="text-white">드론의 호버링 및 쿼드콥터 이동 물리 메커니즘을 <b>탑다운(Top-down) 시점</b>으로 구현하고, 실제 조종법인 <b>모드 2(Mode 2) 컨트롤러</b>를 조작하며 미적분 제어 법칙을 학습합니다.</p>
+                    <p class="text-indigo-300 font-semibold mt-3 mb-1">■ 사용 방법 안내</p>
+                    <p class="text-white">상단의 <b>[Scene 1]</b> 또는 <b>[Scene 2]</b> 탭을 클릭해 모드를 전환하세요. Scene 2에서는 키보드의 <b>W, A, S, D 키(Throttle / Rudder)</b>와 <b>방향 키(Elevator / Aileron)</b>를 사용하여 드론의 가속도, 속도, 위치 수치 변화를 관찰하며 비행할 수 있습니다.</p>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-6xl mx-auto px-4 mt-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
+
+        <!-- 왼쪽 단: 개념 설명 및 조작 영역 -->
+        <div class="lg:col-span-1 flex flex-col gap-8">
+
+            <!-- 2. 개념 설명 영역 -->
+            <section class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                <h2 class="text-xl font-bold text-slate-900 border-b pb-2 mb-4 flex items-center gap-2">
+                    <span class="text-indigo-600">💡</span> 개념 설명
+                </h2>
+                <div class="space-y-4 text-sm text-slate-600 leading-relaxed">
+                    <p>
+                        드론(쿼드콥터)이 일정한 자세와 방향을 제어하며 비행하기 위해서는 4개 프로펠러의 속도를 실시간으로 독립 제어해야 합니다.
+                    </p>
+                    <p>
+                        드론 내부 컴퓨터는 센서 데이터로부터 기울어짐 변위 및 방향 변위인 <strong>회전각($\theta$)</strong>을 감지하고, 이의 순간 변화율인 <strong>각속도($\omega = d\theta/dt$)</strong>와 <strong>각가속도($\alpha = d^2\theta/dt^2$)</strong>를 계산하여 제자리 회전을 통제합니다.
+                    </p>
+                    <p>
+                        이와 동시에 기체의 2차원 병진 이동 역시 미적분학의 연속 적분 관계식을 그대로 따릅니다.
+                    </p>
+                    <ul class="list-disc pl-5 space-y-1 bg-slate-50 p-3 rounded-lg border border-slate-100 font-medium">
+                        <li><strong>위치 ($x, y$):</strong> 기준 원점(0, 0) 대비 좌표 변위</li>
+                        <li><strong>속도 ($v_x, v_y$):</strong> 위치의 1계 도함수 ($\frac{dx}{dt}, \frac{dy}{dt}$)</li>
+                        <li><strong>가속도 ($a_x, a_y$):</strong> 위치의 2계 도함수 ($\frac{d^2x}{dt^2}, \frac{d^2y}{dt^2}$)</li>
+                    </ul>
+                    <p>
+                        드론은 4개의 로터 회전 방향을 서로 교차시킴으로써 각 모터가 생성하는 <strong>반작용 토크(Reaction Torque)</strong>를 상쇄합니다. 1, 3번은 시계반대방향(CCW)으로 회전하고, 2, 4번은 시계방향(CW)으로 회전하게 설계하여 회전수 편차만으로 제자리 수평 회전(Yaw) 각가속도를 생성해 냅니다.
+                    </p>
+                </div>
+            </section>
+
+            <!-- 4. 조작 영역 -->
+            <section class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                <h2 class="text-xl font-bold text-slate-900 border-b pb-2 mb-4 flex items-center gap-2">
+                    <span class="text-indigo-600">🎛️</span> 조작 패널
+                </h2>
+
+                <!-- Scene 1 조작 영역 (풍속 조절) -->
+                <div id="control-scene1" class="block space-y-4">
+                    <div class="bg-amber-50 border border-amber-200 p-3 rounded-xl mb-2">
+                        <p class="text-xs text-amber-800 font-medium">✓ <b>[Scene 1: 풍속 호버링]</b> 모드입니다. 바람이 불어도 기체가 옆으로 밀려 흘러가지 않고, 바람 부는 방향으로 살짝 기울여 양력으로 제자리를 꼿꼿이 사수하는 자동 위치 유지 메커니즘을 관찰합니다.</p>
+                    </div>
+                    <div>
+                        <div class="flex justify-between items-center mb-2">
+                            <label for="wind-slider" class="text-sm font-semibold text-slate-700">풍향 및 풍속</label>
+                            <span id="wind-val" class="text-sm font-bold text-indigo-600">0.0 m/s</span>
+                        </div>
+                        <input type="range" id="wind-slider" min="-5" max="5" step="0.5" value="0"
+                               class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600">
+                        <div class="flex justify-between text-xs text-slate-400 mt-1">
+                            <span>← 서풍 (우측 밀림 힘)</span>
+                            <span>무풍</span>
+                            <span>동풍 (좌측 밀림 힘) →</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Scene 2 조작 영역 (모드 2 조종기) -->
+                <div id="control-scene2" class="hidden space-y-4">
+                    <div class="bg-emerald-50 border border-emerald-200 p-3 rounded-xl mb-4">
+                        <p class="text-xs text-emerald-800 font-medium">✓ <b>[Scene 2: 모드 2 조종 비행]</b>입니다. 양손 마우스 드래그 외에도 아래 키보드 단축키를 이용해 드론을 비행시킬 수 있습니다.</p>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <!-- 왼쪽 조이스틱 (Throttle & Rudder) -->
+                        <div class="flex flex-col items-center">
+                            <span class="text-xs font-bold text-slate-700 mb-1 text-center">왼쪽 스틱<br>(Throttle / Rudder)</span>
+                            <div id="left-joystick-boundary" class="joystick-boundary w-32 h-32 bg-slate-100 rounded-full border border-slate-300 relative flex items-center justify-center shadow-inner cursor-pointer">
+                                <div class="absolute w-full h-[1px] bg-slate-200"></div>
+                                <div class="absolute h-full w-[1px] bg-slate-200"></div>
+                                <div id="left-joystick-stick" class="w-8 h-8 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 rounded-full shadow absolute cursor-grab flex items-center justify-center transition-all duration-75">
+                                    <span class="w-2.5 h-2.5 bg-indigo-300 rounded-full"></span>
+                                </div>
+                            </div>
+                            <div class="flex justify-between w-full px-1 text-[10px] text-slate-400 mt-1">
+                                <span>↺ Rudder 좌 [A]</span>
+                                <span>Throttle [W/S]</span>
+                                <span>Rudder 우 [D] ↻</span>
+                            </div>
+                        </div>
+
+                        <!-- 오른쪽 조이스틱 (Elevator & Aileron) -->
+                        <div class="flex flex-col items-center">
+                            <span class="text-xs font-bold text-slate-700 mb-1 text-center">오른쪽 스틱<br>(Elevator / Aileron)</span>
+                            <div id="right-joystick-boundary" class="joystick-boundary w-32 h-32 bg-slate-100 rounded-full border border-slate-300 relative flex items-center justify-center shadow-inner cursor-pointer">
+                                <div class="absolute w-full h-[1px] bg-slate-200"></div>
+                                <div class="absolute h-full w-[1px] bg-slate-200"></div>
+                                <div id="right-joystick-stick" class="w-8 h-8 bg-red-500 hover:bg-red-600 active:bg-red-700 rounded-full shadow absolute cursor-grab flex items-center justify-center transition-all duration-75">
+                                    <span class="w-2.5 h-2.5 bg-red-300 rounded-full"></span>
+                                </div>
+                            </div>
+                            <div class="flex justify-between w-full px-1 text-[10px] text-slate-400 mt-1">
+                                <span>← Aileron 좌 [←]</span>
+                                <span>Elevator [↑/↓]</span>
+                                <span>Aileron 우 [→] →</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 키보드 전용 가이드 데칼 -->
+                    <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs text-slate-500 space-y-1 mt-2">
+                        <p class="font-semibold text-slate-700 text-center border-b pb-1 mb-1.5">⌨️ 키보드 조종기 가이드</p>
+                        <div class="flex justify-between"><span>왼쪽 스틱 (고도/요회전) :</span><span class="font-mono font-bold text-indigo-600 bg-indigo-50 px-1 rounded">W, A, S, D</span></div>
+                        <div class="flex justify-between"><span>오른쪽 스틱 (롤/피치이동) :</span><span class="font-mono font-bold text-red-600 bg-red-50 px-1 rounded">←, ↑, ↓, →</span></div>
+                    </div>
+                </div>
+            </section>
+
+        </div>
+
+        <!-- 오른쪽/중앙 단: 시각화 및 결과 해석 영역 -->
+        <div class="lg:col-span-2 flex flex-col gap-8">
+
+            <!-- 3. 시각화 영역 -->
+            <section class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex-1 flex flex-col">
+
+                <!-- 씬 선택 탭 -->
+                <div class="flex border-b border-slate-200 mb-6">
+                    <button id="tab-scene1" class="flex-1 py-3 text-center border-b-2 border-indigo-600 font-bold text-indigo-600 focus:outline-none transition-all duration-200">
+                        Scene 1: 풍속과 위치 호버링 제어
+                    </button>
+                    <button id="tab-scene2" class="flex-1 py-3 text-center border-b-2 border-transparent text-slate-500 font-semibold hover:text-slate-800 hover:border-slate-300 focus:outline-none transition-all duration-200">
+                        Scene 2: 모드 2 조종 및 이동 비행 (탑다운 쿼드콥터)
+                    </button>
+                </div>
+
+                <!-- 4개 프로펠러 실시간 RPM 모니터링 수치판 -->
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-4 text-xs">
+                    <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-100 text-center">
+                        <span class="text-slate-400 block font-medium">모터 1 (오른쪽 전방 / CCW)</span>
+                        <span id="motor1-val" class="text-base font-bold text-emerald-600">1000</span> <span class="text-slate-500">rpm</span>
+                    </div>
+                    <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-100 text-center">
+                        <span class="text-slate-400 block font-medium">모터 2 (왼쪽 전방 / CW)</span>
+                        <span id="motor2-val" class="text-base font-bold text-emerald-600">1000</span> <span class="text-slate-500">rpm</span>
+                    </div>
+                    <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-100 text-center">
+                        <span class="text-slate-400 block font-medium">모터 3 (왼쪽 후방 / CCW)</span>
+                        <span id="motor3-val" class="text-base font-bold text-emerald-600">1000</span> <span class="text-slate-500">rpm</span>
+                    </div>
+                    <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-100 text-center">
+                        <span class="text-slate-400 block font-medium">모터 4 (오른쪽 후방 / CW)</span>
+                        <span id="motor4-val" class="text-base font-bold text-emerald-600">1000</span> <span class="text-slate-500">rpm</span>
+                    </div>
+                </div>
+
+                <!-- 선형 비행 및 회전 물리량 통합 실시간 모니터링 대시보드 -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <!-- 회전 물리량 (변위, 속도, 가속도) -->
+                    <div class="bg-indigo-50/50 p-3 rounded-xl border border-indigo-100 text-xs space-y-1">
+                        <div class="font-bold text-indigo-900 border-b border-indigo-100 pb-1 mb-1 text-center">🔄 회전 각운동 물리량</div>
+                        <div class="flex justify-between">
+                            <span class="text-slate-500 font-medium">회전각 (θ - Heading)</span>
+                            <span id="angle-val" class="font-extrabold text-indigo-700">0.0°</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-slate-500 font-medium">각속도 (ω = dθ/dt)</span>
+                            <span id="omega-val" class="font-extrabold text-indigo-700">0.00 rad/s</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-slate-500 font-medium">각가속도 (α = d²θ/dt²)</span>
+                            <span id="alpha-val" class="font-extrabold text-indigo-700">0.00 rad/s²</span>
+                        </div>
+                    </div>
+
+                    <!-- 선형 비행 물리량 (위치, 속도, 가속도) -->
+                    <div class="bg-emerald-50/50 p-3 rounded-xl border border-emerald-100 text-xs space-y-1">
+                        <div class="font-bold text-emerald-900 border-b border-emerald-100 pb-1 mb-1 text-center">🚀 선형 병진운동 물리량</div>
+                        <div class="flex justify-between">
+                            <span class="text-slate-500 font-medium">현재 위치 (x, y)</span>
+                            <span id="pos-val" class="font-extrabold text-emerald-700">(0.00, 0.00) m</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-slate-500 font-medium">비행 속도 (vx, vy)</span>
+                            <span id="vel-val" class="font-extrabold text-emerald-700">(0.00, 0.00) m/s</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-slate-500 font-medium">비행 가속도 (ax, ay)</span>
+                            <span id="acc-val" class="font-extrabold text-emerald-700">(0.00, 0.00) m/s²</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 시각화 메인 캔버스 -->
+                <div class="relative bg-slate-950 rounded-xl overflow-hidden flex-1 min-h-[350px] border border-slate-800">
+                    <canvas id="drone-canvas" class="w-full h-full block"></canvas>
+
+                    <!-- 현재 모드 오버레이 배지 -->
+                    <div class="absolute top-3 left-3 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-lg text-white text-xs flex items-center gap-2 border border-white/10">
+                        <span class="w-2.5 h-2.5 rounded-full bg-indigo-400 animate-ping"></span>
+                        <span id="mode-badge-text">Scene 1: 풍속 호버링 모드</span>
+                    </div>
+
+                    <!-- 가이드 정보 오버레이 -->
+                    <div class="absolute bottom-3 right-3 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-lg text-slate-300 text-[11px] flex flex-col gap-1 border border-white/10">
+                        <div class="flex items-center gap-1.5">
+                            <span class="w-2 h-2 rounded-full bg-red-500"></span> <span>전방 가이드 LED (빨간색)</span>
+                        </div>
+                        <div class="flex items-center gap-1.5">
+                            <span class="w-2 h-2 rounded-full bg-indigo-500"></span> <span>후방 가이드 LED (파란색)</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 5. 결과 해석 영역 -->
+            <section class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                <h2 class="text-xl font-bold text-slate-900 border-b pb-2 mb-4 flex items-center gap-2">
+                    <span class="text-indigo-600">📊</span> 미적분학적 결과 해석
+                </h2>
+
+                <!-- Scene 1 전용 해석 -->
+                <div id="analysis-scene1" class="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm text-slate-600">
+                    <div class="space-y-3">
+                        <h3 class="font-bold text-slate-800 flex items-center gap-1">
+                            <span class="inline-block w-2 h-2 rounded-full bg-amber-500"></span>
+                            바람 저항과 임계 감쇄(Damping) 기법
+                        </h3>
+                        <p class="leading-relaxed">
+                            물리적 제어계에서 각속도 오차의 미분 제어($D$) 성분이 부족하면 시스템이 지속해서 요동쳐 발산(와리가리하다 날아가는 현상)하게 됩니다. 미적분 이계도함수를 이용한 실시간 제동력 계수를 증가시켜 드론이 요동을 빠르게 흡수하고 제자리에 멈춥니다.
+                        </p>
+                    </div>
+                    <div class="space-y-3">
+                        <h3 class="font-bold text-slate-800 flex items-center gap-1">
+                            <span class="inline-block w-2 h-2 rounded-full bg-indigo-500"></span>
+                            물리량 적분을 통한 수렴 제어
+                        </h3>
+                        <p class="leading-relaxed">
+                            바람의 미는 힘과 제어기 복원력이 가상 벡터 평면 위에서 완벽히 일치하여 수평 속도를 영(0)으로 누적 적분합니다. 위치 편차와 각속도의 미묘한 보정을 통해 맞바람 방향으로 비스듬히 수평을 유지해 정상상태 오차를 소거합니다.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Scene 2 전용 해석 -->
+                <div id="analysis-scene2" class="hidden grid grid-cols-1 md:grid-cols-2 gap-6 text-sm text-slate-600">
+                    <div class="space-y-3">
+                        <h3 class="font-bold text-slate-800 flex items-center gap-1">
+                            <span class="inline-block w-2 h-2 rounded-full bg-emerald-500"></span>
+                            반작용 토크 상쇄와 Rudder(Yaw) 제어 역학
+                        </h3>
+                        <p class="leading-relaxed">
+                            드론 프로펠러는 돌 때 반대 방향으로 바디를 비틀려는 <b>반작용 토크</b>를 만듭니다. 시계반대방향(CCW)으로 회전하는 1, 3번과 시계방향(CW)으로 회전하는 2, 4번 로터의 회전 비율 차이를 실시간 미적분으로 연산 배합하여, 기체 전체의 정교한 회전각 변화를 제어합니다.
+                        </p>
+                    </div>
+                    <div class="space-y-3">
+                        <h3 class="font-bold text-slate-800 flex items-center gap-1">
+                            <span class="inline-block w-2 h-2 rounded-full bg-indigo-500"></span>
+                            이동 평면 속 미적분 연산 구조
+                        </h3>
+                        <p class="leading-relaxed">
+                            오른쪽 스틱의 Elevator를 앞으로 밀면 전방 로터(1, 2)의 RPM이 줄어들고, 후방 로터(3, 4)의 RPM이 가속화됩니다. 이에 따른 물리적인 고도 밀어냄 불균형이 전진 추력 가속도를 생성하며 기체를 매끄럽게 전진시킵니다.
+                        </p>
+                    </div>
+                </div>
+            </section>
+
+        </div>
+    </main>
+
+    <!-- 푸터 -->
+    <footer class="max-w-6xl mx-auto px-4 mt-12 text-center text-xs text-slate-400">
+        <p>© 2026 3319 비공개. 본 웹앱은 미적분 실생활 독서 활동 연계 프로젝트의 일환으로 제작되었습니다.</p>
+    </footer>
+
+    <!-- 자바스크립트 로직 -->
+    <script>
+        // --- 1. 상태 변수 및 물리 엔진 초기값 ---
+        const canvas = document.getElementById('drone-canvas');
+        const ctx = canvas.getContext('2d');
+
+        let currentScene = 'scene1';
+
+        // 탑다운 비행 상태 변수 (물리 데이터)
+        let posX = 0;                   // 드론 중앙 상대 X 좌표 (위치, m)
+        let posY = 0;                   // 드론 중앙 상대 Y 좌표 (위치, m)
+        let velX = 0;                   // X축 비행 속도 (vx, m/s)
+        let velY = 0;                   // Y축 비행 속도 (vy, m/s)
+        let accX = 0;                   // X축 비행 가속도 (ax, m/s²)
+        let accY = 0;                   // Y축 비행 가속도 (ay, m/s²)
+        let altitude = 1.0;             // 고도 스케일 배율 (0.6 ~ 1.6)
+
+        let angle = 0;                  // 쿼드콥터 회전각 (theta, 라디안)
+        let angularVelocity = 0;        // 각속도 (omega)
+        let angularAcceleration = 0;   // 각가속도 (alpha)
+
+        // 조작 정보 수치화
+        let windSpeed = 0;              // 풍속 세기
+
+        // 모드 2 조종기 입력값
+        let leftStickX = 0;             // Rudder (요회전)
+        let leftStickY = 0;             // Throttle (고도 증감)
+        let rightStickX = 0;            // Aileron (롤) : 좌우 수평이동
+        let rightStickY = 0;            // Elevator (피치) : 전후 수평이동
+
+        // 키보드 키 매핑용 구조
+        const keysPressed = {};
+
+        // 4개 프로펠러 기본 RPM
+        // 1: 오른쪽 전방 (FR/CCW), 2: 왼쪽 전방 (FL/CW), 3: 왼쪽 후방 (RL/CCW), 4: 오른쪽 후방 (RR/CW)
+        const baseRPM = 1000;
+        let motor1 = 1000;              // 오른쪽 전방 (FR / CCW)
+        let motor2 = 1000;              // 왼쪽 전방 (FL / CW)
+        let motor3 = 1000;              // 왼쪽 후방 (RL / CCW)
+        let motor4 = 1000;              // 오른쪽 후방 (RR / CW)
+
+        // 프로펠러 개별 애니메이션 축적 각도값 (실시간 RPM 값의 변화가 적분 연산처럼 더해짐)
+        let propellerAngle1 = 0;        // 모터 1 (CCW)
+        let propellerAngle2 = 0;        // 모터 2 (CW)
+        let propellerAngle3 = 0;        // 모터 3 (CCW)
+        let propellerAngle4 = 0;        // 모터 4 (CW)
+
+        // --- 2. DOM 엘리먼트 수치 수집 및 연결 ---
+        const tabScene1 = document.getElementById('tab-scene1');
+        const tabScene2 = document.getElementById('tab-scene2');
+        const controlScene1 = document.getElementById('control-scene1');
+        const controlScene2 = document.getElementById('control-scene2');
+        const analysisScene1 = document.getElementById('analysis-scene1');
+        const analysisScene2 = document.getElementById('analysis-scene2');
+        const modeBadgeText = document.getElementById('mode-badge-text');
+
+        const windSlider = document.getElementById('wind-slider');
+        const windValDisplay = document.getElementById('wind-val');
+
+        const motor1Display = document.getElementById('motor1-val');
+        const motor2Display = document.getElementById('motor2-val');
+        const motor3Display = document.getElementById('motor3-val');
+        const motor4Display = document.getElementById('motor4-val');
+
+        const angleDisplay = document.getElementById('angle-val');
+        const omegaDisplay = document.getElementById('omega-val');
+        const alphaDisplay = document.getElementById('alpha-val');
+
+        // 새롭게 확장된 선형 운동 디스플레이 바인딩
+        const posDisplay = document.getElementById('pos-val');
+        const velDisplay = document.getElementById('vel-val');
+        const accDisplay = document.getElementById('acc-val');
+
+        // --- 3. 탭 전환 기능 구현 ---
+        function switchScene(scene) {
+            currentScene = scene;
+
+            // 모든 연산값 완전히 초기화
+            angle = 0;
+            angularVelocity = 0;
+            angularAcceleration = 0;
+            posX = 0;
+            posY = 0;
+            velX = 0;
+            velY = 0;
+            accX = 0;
+            accY = 0;
+            altitude = 1.0;
+
+            if (scene === 'scene1') {
+                tabScene1.className = "flex-1 py-3 text-center border-b-2 border-indigo-600 font-bold text-indigo-600 focus:outline-none";
+                tabScene2.className = "flex-1 py-3 text-center border-b-2 border-transparent text-slate-500 font-semibold hover:text-slate-800 hover:border-slate-300 focus:outline-none";
+
+                controlScene1.classList.remove('hidden');
+                controlScene2.classList.add('hidden');
+                analysisScene1.classList.remove('hidden');
+                analysisScene2.classList.add('hidden');
+                modeBadgeText.innerText = "Scene 1: 풍속 호버링 모드";
+
+                resetJoysticks();
+            } else {
+                tabScene2.className = "flex-1 py-3 text-center border-b-2 border-indigo-600 font-bold text-indigo-600 focus:outline-none";
+                tabScene1.className = "flex-1 py-3 text-center border-b-2 border-transparent text-slate-500 font-semibold hover:text-slate-800 hover:border-slate-300 focus:outline-none";
+
+                controlScene2.classList.remove('hidden');
+                controlScene1.classList.add('hidden');
+                analysisScene2.classList.remove('hidden');
+                analysisScene1.classList.add('hidden');
+                modeBadgeText.innerText = "Scene 2: 모드 2 조종 비행 모드";
+
+                // 풍속 리셋
+                windSpeed = 0;
+                windSlider.value = 0;
+                windValDisplay.innerText = "0.0 m/s";
+            }
+        }
+
+        tabScene1.addEventListener('click', () => switchScene('scene1'));
+        tabScene2.addEventListener('click', () => switchScene('scene2'));
+
+        // --- 4. 슬라이더 이벤트 매핑 ---
+        windSlider.addEventListener('input', (e) => {
+            if (currentScene === 'scene1') {
+                windSpeed = parseFloat(e.target.value);
+                windValDisplay.innerText = `${windSpeed.toFixed(1)} m/s`;
+            }
+        });
+
+        // --- 5. 모드 2 조이스틱 조종 드래그 로직 ---
+        const leftStick = document.getElementById('left-joystick-stick');
+        const leftBoundary = document.getElementById('left-joystick-boundary');
+        const rightStick = document.getElementById('right-joystick-stick');
+        const rightBoundary = document.getElementById('right-joystick-boundary');
+
+        let isLeftDragging = false;
+        let isRightDragging = false;
+
+        function setupJoystick(stickEl, boundaryEl, updateCallback, resetCallback, isLeft) {
+            let isDragging = false;
+            const boundaryRadius = boundaryEl.offsetWidth / 2;
+
+            function processMove(clientX, clientY) {
+                const rect = boundaryEl.getBoundingClientRect();
+                const centerX = rect.left + rect.width / 2;
+                const centerY = rect.top + rect.height / 2;
+
+                let dx = clientX - centerX;
+                let dy = clientY - centerY;
+
+                const maxRange = rect.width / 2 - 16;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+
+                if (distance > maxRange) {
+                    dx = (dx / distance) * maxRange;
+                    dy = (dy / distance) * maxRange;
+                }
+
+                stickEl.style.left = `${rect.width / 2 + dx - 16}px`;
+                stickEl.style.top = `${rect.height / 2 + dy - 16}px`;
+
+                // -1.0 ~ 1.0 비율 연산화
+                updateCallback(dx / maxRange, dy / maxRange);
+            }
+
+            const start = (e) => {
+                if (currentScene !== 'scene2') return; // Scene 2 모드에서만 작동
+                isDragging = true;
+                if (isLeft) isLeftDragging = true; else isRightDragging = true;
+                stickEl.style.cursor = 'grabbing';
+                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                processMove(clientX, clientY);
+            };
+
+            const move = (e) => {
+                if (!isDragging) return;
+                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                processMove(clientX, clientY);
+            };
+
+            const stop = () => {
+                if (!isDragging) return;
+                isDragging = false;
+                if (isLeft) isLeftDragging = false; else isRightDragging = false;
+                stickEl.style.cursor = 'grab';
+
+                stickEl.style.transition = 'all 0.15s ease-out';
+                stickEl.style.left = 'calc(50% - 16px)';
+                stickEl.style.top = 'calc(50% - 16px)';
+
+                resetCallback();
+                setTimeout(() => { stickEl.style.transition = 'none'; }, 150);
+            };
+
+            stickEl.addEventListener('mousedown', start);
+            boundaryEl.addEventListener('mousedown', start);
+            window.addEventListener('mousemove', move);
+            window.addEventListener('mouseup', stop);
+
+            stickEl.addEventListener('touchstart', start, { passive: true });
+            boundaryEl.addEventListener('touchstart', start, { passive: true });
+            window.addEventListener('touchmove', move, { passive: false });
+            window.addEventListener('touchend', stop);
+        }
+
+        // 왼쪽 조이스틱 (Throttle & Rudder) 바인딩
+        setupJoystick(
+            leftStick,
+            leftBoundary,
+            (x, y) => {
+                leftStickX = x;         // Rudder 입력값 (가로)
+                leftStickY = -y;        // Throttle 입력값 (세로)
+            },
+            () => {
+                leftStickX = 0;
+                leftStickY = 0;
+            },
+            true
+        );
+
+        // 오른쪽 조이스틱 (Aileron & Elevator) 바인딩
+        setupJoystick(
+            rightStick,
+            rightBoundary,
+            (x, y) => {
+                rightStickX = x;        // Aileron (좌우 수평이동 롤)
+                rightStickY = y;        // Elevator (전후 수평이동 피치 - 밀면 전진)
+            },
+            () => {
+                rightStickX = 0;
+                rightStickY = 0;
+            },
+            false
+        );
+
+        function resetJoysticks() {
+            leftStickX = 0; leftStickY = 0;
+            rightStickX = 0; rightStickY = 0;
+            leftStick.style.left = 'calc(50% - 16px)';
+            leftStick.style.top = 'calc(50% - 16px)';
+            rightStick.style.left = 'calc(50% - 16px)';
+            rightStick.style.top = 'calc(50% - 16px)';
+        }
+
+        // --- 5-1. 컴퓨터 키보드 조종 기능 구현 ---
+        window.addEventListener('keydown', (e) => {
+            // Scene 2일 때만 키 입력 허용 및 화살표 키에 의한 화면 스크롤 기본 동작 방지
+            if (currentScene === 'scene2') {
+                const keys = ['w', 's', 'a', 'd', 'W', 'S', 'A', 'D', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'];
+                if (keys.includes(e.key)) {
+                    keysPressed[e.key.toLowerCase()] = true;
+                    e.preventDefault();
+                }
+            }
+        });
+
+        window.addEventListener('keyup', (e) => {
+            if (currentScene === 'scene2') {
+                keysPressed[e.key.toLowerCase()] = false;
+            }
+        });
+
+        // 프레임 루프 내부에서 키 입력을 스무스하게 보간 적용하는 헬퍼 함수
+        function updateKeyboardControls() {
+            if (currentScene !== 'scene2') return;
+
+            // 마우스 드래그 조작 중이 아닐 때만 키보드 값 매핑
+            if (!isLeftDragging) {
+                // 왼쪽 스틱 보간 (Throttle & Rudder)
+                let targetLeftX = 0;
+                let targetLeftY = 0;
+
+                if (keysPressed['w']) targetLeftY = 1.0;
+                if (keysPressed['s']) targetLeftY = -1.0;
+                if (keysPressed['a']) targetLeftX = -1.0;
+                if (keysPressed['d']) targetLeftX = 1.0;
+
+                // 스틱 값이 중심(0) 혹은 타겟 방향으로 반응성 있게 점진 이동
+                leftStickX += (targetLeftX - leftStickX) * 0.18;
+                leftStickY += (targetLeftY - leftStickY) * 0.18;
+
+                // 가상 조종기 원판의 물리적 스틱 시각 반영
+                const leftBoundaryRect = leftBoundary.getBoundingClientRect();
+                const maxRange = leftBoundaryRect.width / 2 - 16;
+                leftStick.style.left = `${leftBoundaryRect.width / 2 + (leftStickX * maxRange) - 16}px`;
+                leftStick.style.top = `${leftBoundaryRect.height / 2 - (leftStickY * maxRange) - 16}px`;
+            }
+
+            if (!isRightDragging) {
+                // 오른쪽 스틱 보간 (Elevator & Aileron)
+                let targetRightX = 0;
+                let targetRightY = 0;
+
+                if (keysPressed['arrowup']) targetRightY = -1.0;    // 위 화살표: 전진
+                if (keysPressed['arrowdown']) targetRightY = 1.0;   // 아래 화살표: 후진
+                if (keysPressed['arrowleft']) targetRightX = -1.0;   // 왼쪽 화살표: 좌 평행이동
+                if (keysPressed['arrowright']) targetRightX = 1.0;   // 오른쪽 화살표: 우 평행이동
+
+                rightStickX += (targetRightX - rightStickX) * 0.18;
+                rightStickY += (targetRightY - rightStickY) * 0.18;
+
+                const rightBoundaryRect = rightBoundary.getBoundingClientRect();
+                const maxRange = rightBoundaryRect.width / 2 - 16;
+                rightStick.style.left = `${rightBoundaryRect.width / 2 + (rightStickX * maxRange) - 16}px`;
+                rightStick.style.top = `${rightBoundaryRect.height / 2 + (rightStickY * maxRange) - 16}px`;
+            }
+        }
+
+        // --- 6. 캔버스 반응형 리사이징 ---
+        function resizeCanvas() {
+            const rect = canvas.parentElement.getBoundingClientRect();
+            canvas.width = rect.width;
+            canvas.height = rect.height;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        // --- 7. 물리 시뮬레이션 메인 루프 ---
+        function loop() {
+            const dt = 0.016; // 60fps 가정 dt = 0.016초
+
+            // 실시간 키보드 입력 스무스 보간 반영
+            updateKeyboardControls();
+
+            if (currentScene === 'scene1') {
+                // [Scene 1] 풍속과 위치 호버링 자동제어 모드
+                resetJoysticks();
+
+                // 1) 외부 바람 힘에 의한 가속도 발생 (windSpeed가 수평 가속도를 유발)
+                const windForceX = windSpeed * 22;
+
+                // 가속도 계산: ax = 바람의 힘
+                accX = windForceX;
+                accY = 0; // Scene 1에서는 수직 외풍 배제
+
+                // 2) 자율 위치 및 속도 임계 감쇄 복원 제어 (PID 튜닝)
+                const targetAngle = (posX * 0.0015) + (velX * 0.045);
+
+                // 급격한 기동 제한 (각도 한계 고정)
+                const clampedTargetAngle = Math.max(-0.4, Math.min(0.4, targetAngle));
+                const angleError = clampedTargetAngle - angle;
+
+                // 회전각 복원용 이계도함수(각가속도) 제어 규칙
+                const restoreTorque = 15.0 * angleError - 7.2 * angularVelocity;
+
+                angularAcceleration = restoreTorque;
+                angularVelocity += angularAcceleration * dt;
+
+                // 각속도 리미터 (회전 속도 상한선 Clamping)
+                angularVelocity = Math.max(-4.0, Math.min(4.0, angularVelocity));
+                angle += angularVelocity * dt;
+
+                // 기울어진 각도(angle)에 의해 생성되는 좌우 추진 벡터력 반영
+                // 기체가 기운 각도의 반대 성분 방향으로 가해져 수평력을 상쇄시킵니다.
+                const thrustForceX = -angle * 450;
+
+                // 최종 합산 알짜 가속도: ax = 바람가속도 + 자세기울임 복원가속도
+                accX = windForceX + thrustForceX;
+
+                // 가속도를 1차 적분하여 속도 계산 (v = v + a * dt)
+                velX += accX * dt;
+
+                // 기체 평행 이동 속도 리미터 및 마찰 감쇄 강화 (안정화)
+                velX = Math.max(-10, Math.min(10, velX));
+                velX *= 0.91;
+
+                // 속도를 1차 적분(가속도의 2차 적분)하여 최종 위치 좌표 계산 (x = x + v * dt)
+                posX += velX;
+                posY = 0; // 호버링 Scene 1 에서는 세로 이동 없음
+
+                // 화면 경계 이탈 방지
+                const boundX = (canvas.width / 2) - 80;
+                if (posX > boundX) { posX = boundX; velX = 0; accX = 0; }
+                if (posX < -boundX) { posX = -boundX; velX = 0; accX = 0; }
+
+                // 드론이 바람에 대항하여 원점을 지키기 위해 추진력을 동적 분배하는 상태 가시화
+                const motorOffset = angle * 600;
+                // 모터 1,4는 우측 / 모터 2,3은 좌측
+                motor1 = Math.round(baseRPM + motorOffset);
+                motor2 = Math.round(baseRPM - motorOffset);
+                motor3 = Math.round(baseRPM - motorOffset);
+                motor4 = Math.round(baseRPM + motorOffset);
+
+            } else {
+                // [Scene 2] 모드 2 조종기 비행 제어 모드 (탑다운 뷰)
+                // 1) 고도 조절 (Throttle - Left Stick Y)
+                altitude += leftStickY * 0.015;
+                altitude = Math.max(0.6, Math.min(1.6, altitude)); // 고도 제한 최저 0.6배 ~ 최고 1.6배 크기
+
+                // 2) 제자리 회전 제어 (Rudder - Left Stick X)
+                const rudderInput = leftStickX * 3.5;
+                const autoStabilizeTorque = -1.2 * angularVelocity; // 회전 댐핑 복원
+
+                angularAcceleration = rudderInput + autoStabilizeTorque;
+                angularVelocity += angularAcceleration * dt;
+                angle += angularVelocity * dt;
+
+                // 3) 평행 이동 제어 (Aileron & Elevator - Right Stick X, Y)
+                // 스틱 입력을 가속도(ax, ay) 성분으로 즉각 정의합니다.
+                accX = rightStickX * 18;
+                accY = rightStickY * 18;
+
+                // 가속도를 1차 적분하여 속도 성분 도출
+                velX += accX * dt;
+                velY += accY * dt;
+
+                // 마찰 계수 (미끄럼 방지 제동 효과)
+                velX *= 0.94;
+                velY *= 0.94;
+
+                // 속도를 다시 적분하여 위치 성분 도출 (최종 드론 좌표 변경)
+                posX += velX;
+                posY += velY;
+
+                // 화면 이탈 가이드 경계선 처리 및 이탈 시 속도/가속도 제어
+                const boundaryWidth = (canvas.width / 2) - 80;
+                const boundaryHeight = (canvas.height / 2) - 80;
+
+                if (posX > boundaryWidth) { posX = boundaryWidth; velX = 0; accX = 0; }
+                if (posX < -boundaryWidth) { posX = -boundaryWidth; velX = 0; accX = 0; }
+                if (posY > boundaryHeight) { posY = boundaryHeight; velY = 0; accY = 0; }
+                if (posY < -boundaryHeight) { posY = -boundaryHeight; velY = 0; accY = 0; }
+
+                // --- 모드 2 기반 실시간 4개 모터의 RPM 동적 연산 매핑 식 ---
+                const throttleGain = (altitude - 1.0) * 600; // 고도 가상 스케일에 연동
+                const elevatorGain = rightStickY * 250;    // Elevator 보정치 (음수: 전진 조작, 양수: 후진 조작)
+                const aileronGain = rightStickX * 250;     // Aileron 보정치 (음수: 좌 조작, 양수: 우 조작)
+                const rudderGain = leftStickX * 250;       // Rudder 보정치 (음수: 좌회전 조작, 양수: 우회전 조작)
+
+                // 1: 오른쪽 전방 (FR / CCW), 2: 왼쪽 전방 (FL / CW), 3: 왼쪽 후방 (RL / CCW), 4: 오른쪽 후방 (RR / CW)
+                motor1 = Math.round(baseRPM + throttleGain + elevatorGain - aileronGain + rudderGain);
+                motor2 = Math.round(baseRPM + throttleGain + elevatorGain + aileronGain - rudderGain);
+                motor3 = Math.round(baseRPM + throttleGain - elevatorGain + aileronGain + rudderGain);
+                motor4 = Math.round(baseRPM + throttleGain - elevatorGain - aileronGain - rudderGain);
+            }
+
+            // 실시간 상단 미적분/RPM 데이터 전송
+            motor1Display.innerText = Math.max(0, motor1);
+            motor2Display.innerText = Math.max(0, motor2);
+            motor3Display.innerText = Math.max(0, motor3);
+            motor4Display.innerText = Math.max(0, motor4);
+
+            // 각도 물리량 표기
+            angleDisplay.innerText = `${(angle * (180 / Math.PI)).toFixed(1)}°`;
+            omegaDisplay.innerText = `${angularVelocity.toFixed(2)} rad/s`;
+            alphaDisplay.innerText = `${angularAcceleration.toFixed(2)} rad/s²`;
+
+            // [추가] 선형 물리량 실시간 디스플레이 바인딩 (실제 물리적 m 단위처럼 스케일링 표기)
+            // 위치 수치는 캔버스 픽셀 좌표를 임의의 드론 물리 척도(1px = 0.05m)로 변환해 현실성을 높였습니다.
+            const scaleFactor = 0.05;
+            posDisplay.innerText = `(${ (posX * scaleFactor).toFixed(2) }, ${ (-posY * scaleFactor).toFixed(2) }) m`;
+            velDisplay.innerText = `(${ (velX * scaleFactor * 10).toFixed(2) }, ${ (-velY * scaleFactor * 10).toFixed(2) }) m/s`;
+            accDisplay.innerText = `(${ (accX * scaleFactor * 10).toFixed(2) }, ${ (-accY * scaleFactor * 10).toFixed(2) }) m/s²`;
+
+            // Canvas 그리기
+            draw();
+
+            requestAnimationFrame(loop);
+        }
+
+        // --- 8. 탑다운 쿼드콥터 및 시각화 드로잉 ---
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            const cx = canvas.width / 2;
+            const cy = canvas.height / 2;
+
+            // 1) 격자무늬 배경
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.03)';
+            ctx.lineWidth = 1;
+            const gridSize = 40;
+
+            // 움직임에 따른 스크롤 좌표 오프셋
+            const scrollX = -posX % gridSize;
+            const scrollY = -posY % gridSize;
+
+            for (let x = scrollX; x < canvas.width; x += gridSize) {
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, canvas.height);
+                ctx.stroke();
+            }
+            for (let y = scrollY; y < canvas.height; y += gridSize) {
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(canvas.width, y);
+                ctx.stroke();
+            }
+
+            // 2) 바람 가로 흐름선 (Scene 1만 해당)
+            if (currentScene === 'scene1' && windSpeed !== 0) {
+                ctx.strokeStyle = 'rgba(129, 140, 248, 0.25)';
+                ctx.lineWidth = 1.5;
+                const sign = Math.sign(windSpeed);
+                for (let i = 0; i < 6; i++) {
+                    const yPos = 50 + (i * 60);
+                    const speedOffset = (Date.now() * 0.12 * windSpeed) % 180;
+                    const startX = sign > 0 ? -100 + speedOffset : canvas.width + 100 + speedOffset;
+                    ctx.beginPath();
+                    ctx.moveTo(startX, yPos);
+                    ctx.lineTo(startX + 40 * sign, yPos);
+                    ctx.stroke();
+                }
+            }
+
+            // 3) 드론 기준점 및 중앙 십자 보조선
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.06)';
+            ctx.setLineDash([4, 4]);
+            ctx.beginPath();
+            ctx.moveTo(cx, 0); ctx.lineTo(cx, canvas.height);
+            ctx.moveTo(0, cy); ctx.lineTo(canvas.width, cy);
+            ctx.stroke();
+            ctx.setLineDash([]); // 대시 리셋
+
+            // 4) 쿼드콥터 드론 탑다운 그리기 시작
+            ctx.save();
+
+            // 현재의 물리 좌표 대입
+            ctx.translate(cx + posX, cy + posY);
+
+            // 회전각(theta) 적용
+            ctx.rotate(angle);
+
+            // 고도 스케일 배율 적용
+            ctx.scale(altitude, altitude);
+
+            // 쿼드콥터 대각선 암(Arm) 바디 그리기 (X자 구성)
+            ctx.strokeStyle = '#475569';
+            ctx.lineWidth = 8;
+            ctx.lineCap = 'round';
+
+            // 암 1: 후방좌측 - 전방우측 (모터 3에서 모터 1로 연결)
+            ctx.beginPath();
+            ctx.moveTo(-50, 50);
+            ctx.lineTo(50, -50);
+            ctx.stroke();
+
+            // 암 2: 전방좌측 - 후방우측 (모터 2에서 모터 4로 연결)
+            ctx.beginPath();
+            ctx.moveTo(-50, -50);
+            ctx.lineTo(50, 50);
+            ctx.stroke();
+
+            // 실시간 물리 시간에 따르는 프로펠러 회전각 누적 (각각의 실시간 RPM에 엄밀하게 비례)
+            propellerAngle1 -= Math.max(0, motor1) * 0.0003; // CCW (반시계)
+            propellerAngle2 += Math.max(0, motor2) * 0.0003; // CW (시계)
+            propellerAngle3 -= Math.max(0, motor3) * 0.0003; // CCW (반시계)
+            propellerAngle4 += Math.max(0, motor4) * 0.0003; // CW (시계)
+
+            // 프로펠러 프레임 서포트 원반 및 속도에 최적화된 블레이드 회전 렌더링
+            // 모터 1 (오른쪽 전방 - FR / CCW, 우측 상단 50, -50)
+            drawMotorRotor(50, -50, motor1, propellerAngle1, 'rgba(239, 68, 68, 0.12)', 'rgba(239, 68, 68, 0.85)');
+            // 모터 2 (왼쪽 전방 - FL / CW, 좌측 상단 -50, -50)
+            drawMotorRotor(-50, -50, motor2, propellerAngle2, 'rgba(239, 68, 68, 0.12)', 'rgba(239, 68, 68, 0.85)');
+            // 모터 3 (왼쪽 후방 - RL / CCW, 좌측 하단 -50, 50)
+            drawMotorRotor(-50, 50, motor3, propellerAngle3, 'rgba(59, 130, 246, 0.12)', 'rgba(59, 130, 246, 0.85)');
+            // 모터 4 (오른쪽 후방 - RR / CW, 우측 하단 50, 50)
+            drawMotorRotor(50, 50, motor4, propellerAngle4, 'rgba(59, 130, 246, 0.12)', 'rgba(59, 130, 246, 0.85)');
+
+            // 드론 정가운데 메인 허브 바디
+            ctx.fillStyle = '#1e293b';
+            ctx.strokeStyle = '#64748b';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.arc(0, 0, 22, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+
+            // 전방 방향 화살표 표시 (빨간색 고휘도 가이드 삼각 화살표)
+            ctx.fillStyle = '#ef4444';
+            ctx.beginPath();
+            ctx.moveTo(0, -18);
+            ctx.lineTo(-8, -5);
+            ctx.lineTo(8, -5);
+            ctx.closePath();
+            ctx.fill();
+
+            // 메인 돔 카메라 렌즈
+            ctx.fillStyle = '#0f172a';
+            ctx.beginPath();
+            ctx.arc(0, -6, 8, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.restore(); // 물리 스택 리셋
+        }
+
+        // 모터 및 프로펠러 원반 탑다운 렌더링 함수
+        function drawMotorRotor(x, y, rpm, currentAngle, trailColor, bladeColor) {
+            ctx.save();
+            ctx.translate(x, y);
+
+            // 모터 회전자 하우징 코어
+            ctx.fillStyle = '#334155';
+            ctx.beginPath();
+            ctx.arc(0, 0, 8, 0, Math.PI * 2);
+            ctx.fill();
+
+            // 회전 속도에 비례한 가이드 원반 반투명 흐름 가이드 그리기
+            ctx.fillStyle = trailColor;
+            ctx.beginPath();
+            ctx.arc(0, 0, 32, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.arc(0, 0, 32, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // --- 고속 회전 시 블러(잔상) 효과 시각화 ---
+            if (rpm > 700) {
+                const blurLayers = Math.min(5, Math.floor(rpm / 300));
+                const blurOpacity = Math.max(0.05, 0.3 - (rpm * 0.0001));
+
+                ctx.strokeStyle = bladeColor.replace('0.85', blurOpacity.toFixed(2));
+                ctx.lineWidth = 2.5;
+
+                for (let i = 1; i <= blurLayers; i++) {
+                    ctx.save();
+                    ctx.rotate(currentAngle + (i * 0.04));
+                    ctx.beginPath();
+                    ctx.moveTo(-30, 0);
+                    ctx.lineTo(30, 0);
+                    ctx.stroke();
+                    ctx.restore();
+
+                    ctx.save();
+                    ctx.rotate(currentAngle - (i * 0.04));
+                    ctx.beginPath();
+                    ctx.moveTo(-30, 0);
+                    ctx.lineTo(30, 0);
+                    ctx.stroke();
+                    ctx.restore();
+                }
+            }
+
+            // 실시간 비례 누적 각도로 변환해 프로펠러 메인 2엽 블레이드 렌더링
+            ctx.save();
+            ctx.rotate(currentAngle);
+            ctx.strokeStyle = bladeColor;
+            ctx.lineWidth = 3.5;
+            ctx.lineCap = 'round';
+            ctx.beginPath();
+            ctx.moveTo(-30, 0);
+            ctx.lineTo(30, 0);
+            ctx.stroke();
+            ctx.restore();
+
+            // 날개 중앙 축 고정핀
+            ctx.fillStyle = '#f8fafc';
+            ctx.beginPath();
+            ctx.arc(0, 0, 3, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.restore();
+        }
+
+        // 초기 시작 루프 호출
+        window.onload = function() {
+            loop();
+        }
+    </script>
+</body>
+</html>

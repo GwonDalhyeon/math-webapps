@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>3503 학생 제작 웹앱</title>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+body{
+    font-family: Arial, sans-serif;
+    margin:0;
+    padding:20px;
+    background:#f5f7fb;
+    color:#222;
+}
+
+.section{
+    background:white;
+    padding:18px;
+    margin-bottom:18px;
+    border-radius:12px;
+    box-shadow:0 2px 8px rgba(0,0,0,0.08);
+}
+
+h1,h2{
+    margin-top:0;
+}
+
+.info-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(250px,1fr));
+    gap:10px;
+}
+
+.control-group{
+    margin-bottom:15px;
+}
+
+label{
+    font-weight:bold;
+}
+
+.value{
+    color:#1565c0;
+    font-weight:bold;
+}
+
+canvas{
+    max-width:100%;
+}
+
+.result-box{
+    background:#eef6ff;
+    padding:15px;
+    border-radius:10px;
+    margin-top:10px;
+    line-height:1.7;
+}
+
+.math{
+    font-family: "Times New Roman", serif;
+    background:#f1f1f1;
+    padding:10px;
+    border-radius:8px;
+    margin-top:10px;
+}
+
+@media(max-width:700px){
+    body{
+        padding:10px;
+    }
+}
+</style>
+
+<style>
+  .student-work-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    max-width: 1040px;
+    margin: 0 auto 16px;
+    padding: 10px 12px;
+    border: 1px solid #dbe3ef;
+    border-radius: 8px;
+    background: #f8fafc;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+  .student-work-links a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 36px;
+    padding: 7px 10px;
+    border-radius: 6px;
+    background: #ffffff;
+    color: #1d4ed8;
+    text-decoration: none;
+    font-weight: 700;
+    border: 1px solid #dbe3ef;
+  }
+  .student-work-links a:hover {
+    background: #eff6ff;
+  }
+</style>
+</head>
+<body>
+
+<nav class="student-work-links" aria-label="학생 답안 자료">
+  <a href="../">목록으로</a>
+  <a href="./answer.html">답안 보기</a>
+  <a href="./answer.txt">원문 TXT</a>
+</nav>
+
+
+<!-- ========================= -->
+<!-- 1. 상단 정보 영역 -->
+<!-- ========================= -->
+<div class="section">
+    <h1>푸리에 급수로 복합 파동 속 성분 찾기</h1>
+
+    <div class="info-grid">
+        <div><strong>학번</strong><br>3503</div>
+        <div><strong>이름</strong><br>비공개</div>
+        <div><strong>책 제목</strong><br>수학으로 이해하는 파동</div>
+        <div><strong>저자</strong><br>Transnational college of LEX</div>
+        <div><strong>선택한 부분 또는 주제</strong><br>푸리에 급수를 통해 복합 파동 내의 단순 파동을 찾아내는 방법</div>
+        <div><strong>관련 미적분 개념</strong><br>정적분</div>
+    </div>
+
+    <hr>
+
+    <p>
+        <strong>웹앱 제작 의도</strong><br>
+        해당 웹앱은 푸리에 급수를 활용하여 복합 파동 내에 포함된 사인 성분과 코사인 성분을 찾아내는 과정을 보여준다.
+    </p>
+
+    <p>
+        <strong>사용 방법 안내</strong><br>
+        사인파의 주파수(f₁), 코사인파의 주파수(f₂), 푸리에 계수의 차수(n)를 조절해 보세요.
+        그래프와 푸리에 계수 aₙ, bₙ이 어떻게 변하는지 확인할 수 있습니다.
+    </p>
+</div>
+
+<!-- ========================= -->
+<!-- 2. 개념 설명 영역 -->
+<!-- ========================= -->
+<div class="section">
+    <h2>개념 설명</h2>
+
+    <p>
+        복합 파동이 여러 개의 사인파와 코사인파의 합으로 이루어져 있다고 가정하자.
+        푸리에 급수에서는 정적분을 이용하여 특정 차수 n의 성분이 실제로 포함되어 있는지 확인할 수 있다.
+    </p>
+
+    <p>
+        n번째 성분이 포함되어 있으면 해당 계수(aₙ 또는 bₙ)가 크게 나타나고,
+        포함되어 있지 않으면 적분값이 0이 되어 사라진다.
+    </p>
+
+    <div class="math">
+        aₙ = (1/π)∫f(x)cos(nx)dx<br>
+        bₙ = (1/π)∫f(x)sin(nx)dx
+    </div>
+
+    <p>
+        이 웹앱은 정적분을 이용해 복합 파동 속에 어떤 주파수 성분이 들어 있는지 찾아내는 원리를 시각적으로 보여준다.
+    </p>
+</div>
+
+<!-- ========================= -->
+<!-- 3. 시각화 영역 -->
+<!-- ========================= -->
+<div class="section">
+    <h2>시각화 영역</h2>
+
+    <canvas id="waveChart"></canvas>
+
+    <div class="result-box">
+        <strong>aₙ :</strong> <span id="anValue">0</span><br>
+        <strong>bₙ :</strong> <span id="bnValue">0</span>
+    </div>
+</div>
+
+<!-- ========================= -->
+<!-- 4. 조작 영역 -->
+<!-- ========================= -->
+<div class="section">
+    <h2>조작 영역</h2>
+
+    <div class="control-group">
+        <label>
+            사인파 주파수 f₁ :
+            <span id="f1Label" class="value">2</span>
+        </label><br>
+        <input type="range" id="f1" min="1" max="10" value="2">
+    </div>
+
+    <div class="control-group">
+        <label>
+            코사인파 주파수 f₂ :
+            <span id="f2Label" class="value">5</span>
+        </label><br>
+        <input type="range" id="f2" min="1" max="10" value="5">
+    </div>
+
+    <div class="control-group">
+        <label>
+            푸리에 계수 차수 n :
+            <span id="nLabel" class="value">2</span>
+        </label><br>
+        <input type="range" id="n" min="1" max="10" value="2">
+    </div>
+</div>
+
+<!-- ========================= -->
+<!-- 5. 결과 해석 영역 -->
+<!-- ========================= -->
+<div class="section">
+    <h2>결과 해석</h2>
+
+    <div id="interpretation" class="result-box">
+        결과가 여기에 표시됩니다.
+    </div>
+
+    <p>
+        읽으면서 흥미로웠던 점:
+        aₙ과 bₙ에 n값을 넣어가다 보면 복합 파동에 존재하지 않는 성분은
+        0이 되어 사라지고, 실제로 존재하는 성분만 남게 되어
+        복합 파동을 구성하는 단순 파동을 찾아낼 수 있다는 점이 흥미로웠다.
+    </p>
+</div>
+
+<script>
+
+// 그래프 x값 생성
+const xs = [];
+for(let i=0;i<=500;i++){
+    xs.push(i * 2 * Math.PI / 500);
+}
+
+// Chart.js 그래프 생성
+const ctx = document.getElementById("waveChart");
+
+const chart = new Chart(ctx,{
+    type:"line",
+    data:{
+        labels:xs,
+        datasets:[
+            {
+                label:"복합 파동",
+                data:[],
+                borderWidth:3
+            },
+            {
+                label:"sin(nx)",
+                data:[],
+                borderWidth:2
+            },
+            {
+                label:"cos(nx)",
+                data:[],
+                borderWidth:2
+            }
+        ]
+    },
+    options:{
+        responsive:true,
+        animation:false,
+        scales:{
+            x:{
+                title:{
+                    display:true,
+                    text:"x"
+                }
+            },
+            y:{
+                min:-3,
+                max:3
+            }
+        }
+    }
+});
+
+// 이론적으로 0이어야 하는 값의 수치오차 제거
+function cleanValue(v){
+    if(Math.abs(v) < 1e-10){
+        return 0;
+    }
+    return Number(v.toFixed(6));
+}
+
+function update(){
+
+    const f1 = Number(document.getElementById("f1").value);
+    const f2 = Number(document.getElementById("f2").value);
+    const n = Number(document.getElementById("n").value);
+
+    document.getElementById("f1Label").textContent = f1;
+    document.getElementById("f2Label").textContent = f2;
+    document.getElementById("nLabel").textContent = n;
+
+    const composite = [];
+    const sinN = [];
+    const cosN = [];
+
+    // 복합파동 = sin(f1 x) + cos(f2 x)
+    for(let x of xs){
+        composite.push(Math.sin(f1*x)+Math.cos(f2*x));
+        sinN.push(Math.sin(n*x));
+        cosN.push(Math.cos(n*x));
+    }
+
+    chart.data.datasets[0].data = composite;
+    chart.data.datasets[1].data = sinN;
+    chart.data.datasets[2].data = cosN;
+    chart.update();
+
+    // --------------------------
+    // 푸리에 계수 계산
+    // 복합파동이 정확히
+    // sin(f1x)+cos(f2x)
+    // 형태이므로 직교성을 이용
+    // --------------------------
+
+    let an = 0;
+    let bn = 0;
+
+    if(n === f2){
+        an = 1;
+    }
+
+    if(n === f1){
+        bn = 1;
+    }
+
+    an = cleanValue(an);
+    bn = cleanValue(bn);
+
+    document.getElementById("anValue").textContent = an;
+    document.getElementById("bnValue").textContent = bn;
+
+    let text = "";
+
+    if(an !== 0){
+        text += `n=${n}인 코사인 성분이 복합 파동에 포함되어 있으므로 aₙ=${an} 입니다.<br>`;
+    }else{
+        text += `n=${n}인 코사인 성분은 복합 파동에 포함되어 있지 않아 aₙ=0 입니다.<br>`;
+    }
+
+    if(bn !== 0){
+        text += `n=${n}인 사인 성분이 복합 파동에 포함되어 있으므로 bₙ=${bn} 입니다.<br>`;
+    }else{
+        text += `n=${n}인 사인 성분은 복합 파동에 포함되어 있지 않아 bₙ=0 입니다.<br>`;
+    }
+
+    if(an === 0 && bn === 0){
+        text += "<br>현재 선택한 n은 복합 파동을 구성하는 성분이 아닙니다.";
+    }else{
+        text += "<br>현재 선택한 n은 복합 파동을 구성하는 실제 성분입니다.";
+    }
+
+    document.getElementById("interpretation").innerHTML = text;
+}
+
+document.querySelectorAll("input").forEach(el=>{
+    el.addEventListener("input",update);
+});
+
+update();
+
+</script>
+
+</body>
+</html>

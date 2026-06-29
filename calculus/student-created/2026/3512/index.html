@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>3512 학생 제작 웹앱</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+body{font-family:Arial,sans-serif;margin:20px;background:#f4f7fb;line-height:1.6}
+.section{background:white;padding:15px;margin-bottom:15px;border-radius:10px;box-shadow:0 2px 5px rgba(0,0,0,0.1)}
+h1,h2{color:#1e3a5f} input,button{padding:8px;margin:5px} canvas{max-width:100%}
+.info-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:10px}
+.value-box{font-weight:bold;color:#0d47a1}
+</style>
+
+<style>
+  .student-work-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    max-width: 1040px;
+    margin: 0 auto 16px;
+    padding: 10px 12px;
+    border: 1px solid #dbe3ef;
+    border-radius: 8px;
+    background: #f8fafc;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+  .student-work-links a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 36px;
+    padding: 7px 10px;
+    border-radius: 6px;
+    background: #ffffff;
+    color: #1d4ed8;
+    text-decoration: none;
+    font-weight: 700;
+    border: 1px solid #dbe3ef;
+  }
+  .student-work-links a:hover {
+    background: #eff6ff;
+  }
+</style>
+</head>
+<body>
+
+<nav class="student-work-links" aria-label="학생 답안 자료">
+  <a href="../">목록으로</a>
+  <a href="./answer.html">답안 보기</a>
+  <a href="./answer.txt">원문 TXT</a>
+</nav>
+
+<div class="section">
+<h1>위치 · 속도 · 가속도의 미분 관계</h1>
+<div class="info-grid">
+<div><b>학번</b> : 3512</div><div><b>이름</b> : 비공개</div>
+<div><b>책 제목</b> : 알기 쉬운 미적분</div><div><b>저자</b> : 실바누스 P. 톰슨</div>
+<div><b>선택한 부분 또는 주제</b> : 시간에 따라 변하는 물체의 위치, 속도, 가속도의 관계와 이를 미분을 이용하여 분석하는 과정</div>
+<div><b>관련 미적분 개념</b> : 미분법, 시간에 대한 변화</div>
+</div><hr>
+<p><b>웹앱 제작 의도</b><br>위치의 변화를 미분하면 속도를, 속도의 변화를 미분하면 가속도를 얻을 수 있다. 시간에 따른 운동을 그래프로 직접 확인해 보자.</p>
+<p><b>사용 방법</b><br>위치함수를 입력한 뒤 그래프 생성 또는 재생 버튼을 눌러 확인한다.</p>
+</div>
+
+<div class="section"><h2>개념 설명</h2>
+<p>위치 함수 s(t)를 미분하면 속도 v(t), 속도를 미분하면 가속도 a(t)가 된다.</p>
+</div>
+
+<div class="section">
+<h2>조작 영역</h2>
+<label>위치함수 입력 :</label>
+<input type="text" id="funcInput" value="t*t">
+<button onclick="drawGraphs()">그래프 생성</button>
+<button onclick="togglePlay()">재생</button><br><br>
+<label>시간 :</label>
+<input type="range" id="timeSlider" min="0" max="10" step="0.1" value="0">
+<span id="timeText">0</span>초
+</div>
+
+<div class="section">
+<h2>시각화 영역</h2>
+<canvas id="positionChart"></canvas><br>
+<canvas id="velocityChart"></canvas><br>
+<canvas id="accelerationChart"></canvas><hr>
+<p>현재 위치 : <span class="value-box" id="posValue">0</span></p>
+<p>현재 속도 : <span class="value-box" id="velValue">0</span></p>
+<p>현재 가속도 : <span class="value-box" id="accValue">0</span></p>
+</div>
+
+<script>
+function f(t){try{return Function("t","return "+document.getElementById("funcInput").value)(t);}catch{return 0;}}
+function derivative(t){const h=0.0001;return (f(t+h)-f(t-h))/(2*h);}
+function secondDerivative(t){const h=0.0001;return (f(t+h)-2*f(t)+f(t-h))/(h*h);}
+let positionChart,velocityChart,accelerationChart;
+function drawGraphs(){
+let x=[],pos=[],vel=[],acc=[];
+for(let t=0;t<=10;t+=0.1){x.push(t.toFixed(1));pos.push(f(t));vel.push(derivative(t));acc.push(secondDerivative(t));}
+if(positionChart)positionChart.destroy(); if(velocityChart)velocityChart.destroy(); if(accelerationChart)accelerationChart.destroy();
+positionChart=new Chart(document.getElementById("positionChart"),{type:"line",data:{labels:x,datasets:[{label:"위치",data:pos}]}});
+velocityChart=new Chart(document.getElementById("velocityChart"),{type:"line",data:{labels:x,datasets:[{label:"속도",data:vel}]}});
+accelerationChart=new Chart(document.getElementById("accelerationChart"),{type:"line",data:{labels:x,datasets:[{label:"가속도",data:acc}]}});
+updateValues();
+}
+function updateValues(){
+let t=Number(document.getElementById("timeSlider").value);
+document.getElementById("timeText").innerText=t.toFixed(1);
+document.getElementById("posValue").innerText=f(t).toFixed(2);
+document.getElementById("velValue").innerText=derivative(t).toFixed(2);
+document.getElementById("accValue").innerText=secondDerivative(t).toFixed(2);
+}
+document.getElementById("timeSlider").addEventListener("input",updateValues);
+let playing=false,timer;
+function togglePlay(){if(!playing){playing=true;timer=setInterval(()=>{let s=document.getElementById("timeSlider");let v=parseFloat(s.value)+0.1;if(v>10)v=0;s.value=v;updateValues();},100);}else{playing=false;clearInterval(timer);}}
+drawGraphs();
+</script>
+</body></html>

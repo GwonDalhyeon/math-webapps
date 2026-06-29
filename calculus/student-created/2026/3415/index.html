@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>3415 학생 제작 웹앱</title>
+<style>
+body { font-family: Arial; margin: 20px; }
+.section { margin-bottom: 20px; }
+canvas { border: 1px solid #ccc; background: #fff; }
+.controls { margin-top: 10px; }
+</style>
+
+<style>
+  .student-work-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    max-width: 1040px;
+    margin: 0 auto 16px;
+    padding: 10px 12px;
+    border: 1px solid #dbe3ef;
+    border-radius: 8px;
+    background: #f8fafc;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+  .student-work-links a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 36px;
+    padding: 7px 10px;
+    border-radius: 6px;
+    background: #ffffff;
+    color: #1d4ed8;
+    text-decoration: none;
+    font-weight: 700;
+    border: 1px solid #dbe3ef;
+  }
+  .student-work-links a:hover {
+    background: #eff6ff;
+  }
+</style>
+</head>
+
+<body>
+
+<nav class="student-work-links" aria-label="학생 답안 자료">
+  <a href="../">목록으로</a>
+  <a href="./answer.html">답안 보기</a>
+  <a href="./answer.txt">원문 TXT</a>
+</nav>
+
+
+<div class="section">
+<h2>그래프의 기울기를 통해 주식 가격의 변화 속도 이해</h2>
+<p><b>학번:</b> 3415</p>
+<p><b>이름:</b> 비공개</p>
+<p><b>책:</b> 알기 쉬운 미적분</p>
+<p><b>저자:</b> 실바누스 P. 톰슨</p>
+<p><b>주제:</b> 주식 시장의 가격 변동과 기복 분석</p>
+<p><b>관련 개념:</b> 미분, 순간변화율, 그래프의 기울기, 적분</p>
+<p><b>제작 의도:</b> 그래프의 기울기를 통해 주식 가격의 변화 속도와 전환 지점을 이해하도록 한다.</p>
+<p><b>사용 방법:</b> 슬라이더를 움직이거나 재생 버튼을 눌러 그래프를 확인하고, 접선과 변화율을 비교한다.</p>
+</div>
+
+<div class="section">
+<h3>개념 설명</h3>
+<p>
+그래프의 한 점에서의 기울기는 그 순간의 변화 속도를 의미한다.
+주식 그래프에서는 이 기울기를 통해 가격이 얼마나 빠르게 오르거나 내리는지 알 수 있다.
+</p>
+</div>
+
+<div class="section">
+<canvas id="graph" width="700" height="400"></canvas>
+</div>
+
+<div class="section controls">
+시간: <input type="range" id="slider" min="0" max="100" value="50">
+<button onclick="togglePlay()">재생</button>
+
+<br><br>
+
+그래프:
+<select id="type">
+<option value="1">완만한 상승</option>
+<option value="2">급등락</option>
+<option value="3">파동형</option>
+</select>
+
+확대/축소:
+<input type="range" id="zoom" min="1" max="5" value="2">
+
+<br><br>
+
+<label><input type="checkbox" id="tangentToggle" checked> 접선 표시</label>
+<label><input type="checkbox" id="zeroToggle" checked> 변화율 0 표시</label>
+
+<br><br>
+
+구간:
+<input type="number" id="start" value="20"> ~
+<input type="number" id="end" value="80">
+
+<p id="slopeText"></p>
+</div>
+
+<div class="section">
+<h3>결과 해석</h3>
+<p>
+접선의 기울기가 클수록 가격이 빠르게 상승하고, 음수이면 하락한다.
+기울기가 0에 가까운 지점은 상승과 하락이 바뀌는 지점이다.
+</p>
+</div>
+
+<script>
+const canvas = document.getElementById("graph");
+const ctx = canvas.getContext("2d");
+
+const slider = document.getElementById("slider");
+const typeSelect = document.getElementById("type");
+const zoomSlider = document.getElementById("zoom");
+const tangentToggle = document.getElementById("tangentToggle");
+const zeroToggle = document.getElementById("zeroToggle");
+const startInput = document.getElementById("start");
+const endInput = document.getElementById("end");
+const slopeText = document.getElementById("slopeText");
+
+let playing = false;
+let interval;
+
+function f(x){
+    if(typeSelect.value==1) return 0.02*x*x;
+    if(typeSelect.value==2) return Math.sin(x/5)*50+x;
+    if(typeSelect.value==3) return Math.sin(x/10)*100;
+}
+
+function derivative(x){
+    let h=0.1;
+    return (f(x+h)-f(x))/h;
+}
+
+function draw(){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+
+    let zoom=zoomSlider.value;
+
+    ctx.beginPath();
+    for(let x=0;x<100;x++){
+        let y=f(x);
+        let px=x*7;
+        let py=300-y/zoom;
+        if(x==0) ctx.moveTo(px,py);
+        else ctx.lineTo(px,py);
+    }
+    ctx.stroke();
+
+    let x=slider.value;
+    let y=f(x);
+    let px=x*7;
+    let py=300-y/zoom;
+
+    ctx.fillStyle="rgba(255,0,0,0.1)";
+    ctx.fillRect(startInput.value*7,0,(endInput.value-startInput.value)*7,400);
+
+    ctx.fillStyle="red";
+    ctx.beginPath();
+    ctx.arc(px,py,5,0,Math.PI*2);
+    ctx.fill();
+
+    let slope=derivative(x);
+    slopeText.innerText="변화율: "+slope.toFixed(2);
+
+    if(tangentToggle.checked){
+        ctx.beginPath();
+        let dx=50;
+        ctx.moveTo(px-dx,py+(slope/zoom)*dx);
+        ctx.lineTo(px+dx,py-(slope/zoom)*dx);
+        ctx.strokeStyle="blue";
+        ctx.stroke();
+    }
+
+    if(zeroToggle.checked){
+        ctx.fillStyle="green";
+        for(let i=0;i<100;i++){
+            if(Math.abs(derivative(i))<0.2){
+                let y=f(i);
+                ctx.beginPath();
+                ctx.arc(i*7,300-y/zoom,3,0,Math.PI*2);
+                ctx.fill();
+            }
+        }
+    }
+}
+
+function togglePlay(){
+    playing=!playing;
+    if(playing){
+        interval=setInterval(()=>{
+            slider.value=(parseInt(slider.value)+1)%100;
+            draw();
+        },60);
+    }else clearInterval(interval);
+}
+
+slider.oninput=draw;
+typeSelect.onchange=draw;
+zoomSlider.oninput=draw;
+startInput.oninput=draw;
+endInput.oninput=draw;
+tangentToggle.onchange=draw;
+zeroToggle.onchange=draw;
+
+draw();
+</script>
+
+</body>
+</html>

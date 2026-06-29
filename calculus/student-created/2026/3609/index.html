@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>3609 학생 제작 웹앱</title>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 20px;
+        background: #f5f7fb;
+        line-height: 1.6;
+    }
+
+    .container {
+        max-width: 1100px;
+        margin: auto;
+    }
+
+    .section {
+        background: white;
+        margin-bottom: 20px;
+        padding: 20px;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+
+    h1, h2 {
+        margin-top: 0;
+    }
+
+    .controls {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        align-items: center;
+    }
+
+    button {
+        padding: 8px 15px;
+        cursor: pointer;
+    }
+
+    input[type=range] {
+        width: 250px;
+    }
+
+    #result {
+        font-size: 1.1rem;
+        font-weight: bold;
+    }
+
+    canvas {
+        max-height: 500px;
+    }
+</style>
+
+<style>
+  .student-work-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    max-width: 1040px;
+    margin: 0 auto 16px;
+    padding: 10px 12px;
+    border: 1px solid #dbe3ef;
+    border-radius: 8px;
+    background: #f8fafc;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+  .student-work-links a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 36px;
+    padding: 7px 10px;
+    border-radius: 6px;
+    background: #ffffff;
+    color: #1d4ed8;
+    text-decoration: none;
+    font-weight: 700;
+    border: 1px solid #dbe3ef;
+  }
+  .student-work-links a:hover {
+    background: #eff6ff;
+  }
+</style>
+</head>
+<body>
+
+<nav class="student-work-links" aria-label="학생 답안 자료">
+  <a href="../">목록으로</a>
+  <a href="./answer.html">답안 보기</a>
+  <a href="./answer.txt">원문 TXT</a>
+</nav>
+
+
+<div class="container">
+
+    <!-- 상단 정보 영역 -->
+    <div class="section">
+        <h1>미적분 독서 연계 웹앱</h1>
+
+        <p><strong>학번:</strong> 3609</p>
+        <p><strong>이름:</strong> 비공개</p>
+        <p><strong>책 제목:</strong> 이상한 나라의 미적분</p>
+        <p><strong>저자:</strong> 김성훈</p>
+        <p><strong>선택한 부분 또는 주제:</strong> 작은 변화가 모여 전체를 설명하는 적분의 원리</p>
+        <p><strong>관련 미적분 개념:</strong> 적분, 구분구적법, 극한</p>
+
+        <p>
+            <strong>웹앱 제작 의도:</strong><br>
+            이 웹앱은 구분구적법을 통해 곡선 아래 넓이를 근사하여
+            직사각형의 개수가 증가할수록 적분값에 가까워지는 과정을 보여준다.
+        </p>
+
+        <p>
+            <strong>사용 방법:</strong><br>
+            슬라이더나 버튼으로 직사각형 개수를 조절해 보세요.
+            직사각형이 많아질수록 넓이의 근사값이 실제 넓이에 가까워지는 모습을 확인할 수 있습니다.
+        </p>
+    </div>
+
+    <!-- 개념 설명 영역 -->
+    <div class="section">
+        <h2>개념 설명</h2>
+
+        <p>
+            책에서 설명한 것처럼 적분은 작은 부분들을 계속 더하여 전체를 구하는 과정이다.
+            구분구적법은 곡선 아래 넓이를 여러 개의 직사각형으로 나누어 근사한다.
+        </p>
+
+        <p>
+            직사각형 개수가 증가할수록 오차가 줄어들고,
+            극한 개념을 통해 실제 넓이(적분값)에 가까워진다.
+        </p>
+    </div>
+
+    <!-- 시각화 영역 -->
+    <div class="section">
+        <h2>시각화 영역</h2>
+        <canvas id="graph"></canvas>
+    </div>
+
+    <!-- 조작 영역 -->
+    <div class="section">
+        <h2>조작 영역</h2>
+
+        <div class="controls">
+            <label>
+                직사각형 개수:
+                <span id="nValue">4</span>
+            </label>
+
+            <input type="range" id="slider" min="1" max="50" value="4">
+
+            <button id="increaseBtn">증가</button>
+            <button id="decreaseBtn">감소</button>
+            <button id="resetBtn">재설정</button>
+        </div>
+    </div>
+
+    <!-- 결과 해석 영역 -->
+    <div class="section">
+        <h2>결과 해석</h2>
+
+        <p id="result"></p>
+
+        <p>
+            직사각형 개수가 많아질수록 곡선 아래 영역을 더 정밀하게 표현할 수 있다.
+            이것이 적분이 작은 부분들을 모아 전체를 구하는 원리이다.
+        </p>
+    </div>
+
+</div>
+
+<script>
+/*
+    함수: y = x²
+    구간: [0, 1]
+
+    실제 적분값:
+    ∫x²dx = 1/3 ≈ 0.333333
+*/
+
+const realArea = 1 / 3;
+
+const slider = document.getElementById("slider");
+const nValue = document.getElementById("nValue");
+const result = document.getElementById("result");
+
+const ctx = document.getElementById("graph");
+
+const chart = new Chart(ctx, {
+    type: "bar",
+    data: {
+        datasets: [
+            {
+                type: "line",
+                label: "y = x²",
+                data: [],
+                borderWidth: 3,
+                pointRadius: 0
+            },
+            {
+                label: "구분구적법 직사각형",
+                data: []
+            }
+        ]
+    },
+    options: {
+        responsive: true,
+        scales: {
+            x: {
+                type: "linear",
+                min: 0,
+                max: 1
+            },
+            y: {
+                min: 0,
+                max: 1
+            }
+        }
+    }
+});
+
+function updateGraph(n) {
+
+    nValue.textContent = n;
+
+    const lineData = [];
+
+    for(let x = 0; x <= 1.001; x += 0.02){
+        lineData.push({
+            x: x,
+            y: x * x
+        });
+    }
+
+    const width = 1 / n;
+
+    const rectData = [];
+    let area = 0;
+
+    for(let i = 0; i < n; i++){
+
+        const x = i * width;
+        const height = x * x;
+
+        area += height * width;
+
+        rectData.push({
+            x: x + width / 2,
+            y: height
+        });
+    }
+
+    chart.data.datasets[0].data = lineData;
+    chart.data.datasets[1].data = rectData;
+    chart.data.datasets[1].barPercentage = 1;
+    chart.data.datasets[1].categoryPercentage = 1;
+
+    chart.update();
+
+    const error = Math.abs(realArea - area);
+
+    result.innerHTML =
+        `
+        직사각형 개수: ${n}개<br>
+        구분구적법 근사 넓이: ${area.toFixed(6)}<br>
+        실제 적분값(1/3): ${realArea.toFixed(6)}<br>
+        오차: ${error.toFixed(6)}
+        `;
+}
+
+slider.addEventListener("input", () => {
+    updateGraph(Number(slider.value));
+});
+
+document.getElementById("increaseBtn").addEventListener("click", () => {
+    if(Number(slider.value) < 50){
+        slider.value = Number(slider.value) + 1;
+        updateGraph(Number(slider.value));
+    }
+});
+
+document.getElementById("decreaseBtn").addEventListener("click", () => {
+    if(Number(slider.value) > 1){
+        slider.value = Number(slider.value) - 1;
+        updateGraph(Number(slider.value));
+    }
+});
+
+document.getElementById("resetBtn").addEventListener("click", () => {
+    slider.value = 4;
+    updateGraph(4);
+});
+
+updateGraph(4);
+</script>
+
+</body>
+</html>

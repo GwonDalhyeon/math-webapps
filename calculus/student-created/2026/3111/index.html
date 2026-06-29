@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>3111 학생 제작 웹앱</title>
+
+<!-- Chart.js CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+    body{
+        font-family: Arial, sans-serif;
+        margin:0;
+        padding:20px;
+        background:#f4f6f9;
+        line-height:1.6;
+    }
+
+    .section{
+        background:white;
+        padding:20px;
+        margin-bottom:20px;
+        border-radius:10px;
+        box-shadow:0 2px 5px rgba(0,0,0,0.1);
+    }
+
+    h1,h2{
+        color:#2c3e50;
+    }
+
+    .info p{
+        margin:5px 0;
+    }
+
+    .control{
+        display:flex;
+        flex-direction:column;
+        gap:10px;
+    }
+
+    input[type=range]{
+        width:100%;
+    }
+
+    button{
+        padding:10px;
+        border:none;
+        background:#3498db;
+        color:white;
+        border-radius:5px;
+        cursor:pointer;
+    }
+
+    button:hover{
+        background:#2980b9;
+    }
+
+    canvas{
+        max-width:100%;
+    }
+
+    .result{
+        font-size:18px;
+        font-weight:bold;
+    }
+
+    @media(max-width:600px){
+        body{
+            padding:10px;
+        }
+    }
+</style>
+
+<style>
+  .student-work-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    max-width: 1040px;
+    margin: 0 auto 16px;
+    padding: 10px 12px;
+    border: 1px solid #dbe3ef;
+    border-radius: 8px;
+    background: #f8fafc;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+  .student-work-links a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 36px;
+    padding: 7px 10px;
+    border-radius: 6px;
+    background: #ffffff;
+    color: #1d4ed8;
+    text-decoration: none;
+    font-weight: 700;
+    border: 1px solid #dbe3ef;
+  }
+  .student-work-links a:hover {
+    background: #eff6ff;
+  }
+</style>
+</head>
+<body>
+
+<nav class="student-work-links" aria-label="학생 답안 자료">
+  <a href="../">목록으로</a>
+  <a href="./answer.html">답안 보기</a>
+  <a href="./answer.txt">원문 TXT</a>
+</nav>
+
+
+<!-- 1. 상단 정보 영역 -->
+<div class="section info">
+    <h1>복잡해 보여도 변수는 하나다</h1>
+
+    <p><strong>학번:</strong> 3111</p>
+    <p><strong>이름:</strong> 비공개</p>
+    <p><strong>책 제목:</strong> 미적분 초딩도 풀만큼 쉽게 풀자</p>
+    <p><strong>저자:</strong> 조안호</p>
+    <p><strong>선택한 부분 또는 주제:</strong> 복잡해 보여도 변수는 하나다</p>
+    <p><strong>관련 미적분 개념:</strong> 정적분</p>
+
+    <p>
+        <strong>웹앱 제작 의도:</strong>
+        나는 이 부분을 통해 미적분에서 변수를 찾는 것이 중요하다는 점을 알게 되었고,
+        복잡한 수식을 새로운 시각으로 볼 수 있게 되어 이 주제를 선택했다.
+    </p>
+
+    <p>
+        <strong>사용 방법:</strong>
+        아래 x값 슬라이더를 움직여 그래프 위의 점과 결과값이 어떻게 변하는지 확인한다.
+    </p>
+
+    <p style="color:#e74c3c;font-weight:bold;">
+        x값 하나만 바꿔도 그래프와 결과가 함께 변한다.
+        이를 통해 복잡한 함수도 하나의 변수로 이해할 수 있다.
+    </p>
+</div>
+
+<!-- 2. 개념 설명 영역 -->
+<div class="section">
+    <h2>개념 설명</h2>
+
+    <p>
+        이 웹앱은 하나의 변수 x가 변할 때 그래프의 점과 결과값이 함께 변하는 모습을 보여준다.
+        식이 복잡해 보이더라도 실제로 사용자가 바꾸는 값은 x 하나뿐이라는 점을 확인할 수 있다.
+    </p>
+
+    <p>
+        정적분은 그래프 아래 넓이를 구하는 개념이며,
+        이 과정에서도 어떤 변수가 변하는지 이해하는 것이 중요하다.
+    </p>
+</div>
+
+<!-- 3. 시각화 영역 -->
+<div class="section">
+    <h2>시각화 영역</h2>
+    <canvas id="graph"></canvas>
+</div>
+
+<!-- 4. 조작 영역 -->
+<div class="section">
+    <h2>조작 영역</h2>
+
+    <div class="control">
+
+        <label>
+            x값 :
+            <span id="xValue">0</span>
+        </label>
+
+        <input
+            type="range"
+            id="slider"
+            min="-10"
+            max="10"
+            value="0"
+            step="1">
+
+        <button onclick="resetSlider()">
+            초기화
+        </button>
+
+    </div>
+</div>
+
+<!-- 5. 결과 해석 영역 -->
+<div class="section">
+    <h2>결과 해석 영역</h2>
+
+    <div class="result" id="resultText">
+        현재 x = 0, y = 0
+    </div>
+
+    <p>
+        사용자는 x값 하나만 변경했지만 그래프 위의 점과 y값이 함께 변화한다.
+        이를 통해 복잡한 함수도 결국 하나의 변수 변화에 의해 결정된다는 점을 이해할 수 있다.
+    </p>
+</div>
+
+<script>
+
+/*
+    함수 정의
+    예시 함수: y = x²
+    학생이 이해하기 쉬운 형태 사용
+*/
+function f(x){
+    return x*x;
+}
+
+/*
+    그래프 데이터 생성
+*/
+const labels = [];
+const values = [];
+
+for(let x=-10; x<=10; x++){
+    labels.push(x);
+    values.push(f(x));
+}
+
+/*
+    차트 생성
+*/
+const ctx = document.getElementById('graph');
+
+const chart = new Chart(ctx,{
+    type:'line',
+    data:{
+        labels:labels,
+        datasets:[
+            {
+                label:'y = x²',
+                data:values,
+                borderWidth:2
+            },
+            {
+                label:'현재 점',
+                data:[{x:0,y:0}],
+                type:'scatter',
+                pointRadius:8
+            }
+        ]
+    },
+    options:{
+        responsive:true,
+        scales:{
+            x:{
+                title:{
+                    display:true,
+                    text:'x'
+                }
+            },
+            y:{
+                title:{
+                    display:true,
+                    text:'y'
+                }
+            }
+        }
+    }
+});
+
+const slider = document.getElementById("slider");
+const xValue = document.getElementById("xValue");
+const resultText = document.getElementById("resultText");
+
+/*
+    슬라이더 변경 시 실행
+*/
+slider.addEventListener("input", updateGraph);
+
+function updateGraph(){
+
+    const x = Number(slider.value);
+    const y = f(x);
+
+    xValue.textContent = x;
+
+    chart.data.datasets[1].data = [{x:x,y:y}];
+    chart.update();
+
+    resultText.innerHTML =
+        "현재 x = " + x +
+        ", y = " + y;
+}
+
+/*
+    초기화 버튼
+*/
+function resetSlider(){
+
+    slider.value = 0;
+    updateGraph();
+
+}
+
+/* 최초 실행 */
+updateGraph();
+
+</script>
+
+</body>
+</html>

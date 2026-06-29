@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3406 학생 제작 웹앱</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        /* 기본 스타일 및 반응형 설정 */
+        body {
+            font-family: 'Malgun Gothic', sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f8f9fa;
+        }
+        h1, h2, h3 { color: #2c3e50; }
+        section {
+            background-color: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        /* 1. 상단 정보 영역 */
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            background-color: #e9ecef;
+            padding: 15px;
+            border-radius: 5px;
+        }
+        .info-grid div { margin-bottom: 5px; }
+        .highlight { color: #d35400; font-weight: bold; }
+
+        /* 3. 시각화 영역과 4. 조작 영역 분리 */
+        .interactive-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        .visualization-area {
+            flex: 2;
+            min-width: 300px;
+        }
+        .control-area {
+            flex: 1;
+            min-width: 250px;
+            background-color: #f1f8ff;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #cce5ff;
+        }
+
+        /* 폼 요소 스타일 */
+        label { display: block; margin-top: 15px; font-weight: bold; }
+        input[type="range"], input[type="number"] {
+            width: 100%;
+            margin-top: 8px;
+        }
+        button {
+            width: 100%;
+            padding: 10px;
+            margin-top: 15px;
+            border: none;
+            border-radius: 5px;
+            background-color: #007bff;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        button:hover { background-color: #0056b3; }
+        .btn-secondary { background-color: #6c757d; }
+        .btn-secondary:hover { background-color: #5a6268; }
+        .btn-success { background-color: #28a745; }
+        .btn-success:hover { background-color: #218838; }
+
+        /* 5. 결과 해석 영역 */
+        .result-area {
+            background-color: #e8f5e9;
+            border: 1px solid #c8e6c9;
+        }
+        .result-item {
+            font-size: 1.1em;
+            margin: 10px 0;
+        }
+        .alarm {
+            color: #d32f2f;
+            font-weight: bold;
+            animation: blink 1s infinite;
+            display: none;
+        }
+        @keyframes blink { 50% { opacity: 0; } }
+
+        /* 추가 기능: 사례 소개 */
+        #case-study-content {
+            display: none;
+            margin-top: 15px;
+            padding: 15px;
+            background-color: #fff3cd;
+            border-left: 5px solid #ffc107;
+        }
+    </style>
+
+<style>
+  .student-work-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    max-width: 1040px;
+    margin: 0 auto 16px;
+    padding: 10px 12px;
+    border: 1px solid #dbe3ef;
+    border-radius: 8px;
+    background: #f8fafc;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+  .student-work-links a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 36px;
+    padding: 7px 10px;
+    border-radius: 6px;
+    background: #ffffff;
+    color: #1d4ed8;
+    text-decoration: none;
+    font-weight: 700;
+    border: 1px solid #dbe3ef;
+  }
+  .student-work-links a:hover {
+    background: #eff6ff;
+  }
+</style>
+</head>
+<body>
+
+<nav class="student-work-links" aria-label="학생 답안 자료">
+  <a href="../">목록으로</a>
+  <a href="./answer.html">답안 보기</a>
+  <a href="./answer.txt">원문 TXT</a>
+</nav>
+
+
+    <section>
+        <h2>📚 웹앱 정보</h2>
+        <div class="info-grid">
+            <div><strong>학번:</strong> 3406</div>
+            <div><strong>이름:</strong> 비공개</div>
+            <div><strong>책 제목:</strong> 미적분의 쓸모</div>
+            <div><strong>저자:</strong> 한화택</div>
+            <div style="grid-column: 1 / -1;"><strong>선택한 부분/주제:</strong> 인공지능이 빅데이터를 학습하는 방법</div>
+            <div style="grid-column: 1 / -1;"><strong>관련 미적분 개념:</strong> 도함수, 접선의 기울기, 함수의 최대와 최소, 극소와 극대</div>
+        </div>
+        <p><strong>💡 제작 의도:</strong> 반응 온도에 따른 생산량 변화를 분석하여 미분을 이용한 화학 공정 최적화 과정을 알아봅시다.</p>
+        <p><strong>🛠️ 사용 방법:</strong> 하단의 조작 영역에서 '반응 온도' 슬라이더와 '반응 시간'을 설정한 후 [공정 시작] 버튼을 누르세요. 그래프와 수치의 변화를 관찰하며 최적의 조건을 찾아보세요.</p>
+    </section>
+
+    <section>
+        <h2>📖 개념 및 배경 설명</h2>
+        <p>인공지능이 데이터를 학습할 때 오류 함수를 만들고, <strong>함수의 기울기(미분)</strong>를 통해 실제 결과와 예측 결과의 차이를 계산하여 오류를 줄이는 방향(경사하강법)으로 스스로 수정한다는 점이 인상적이었습니다. 하지만 미분과 최적화를 통해 오차를 줄이는 과정이 정교해도, 기준(데이터)이 부정확하면 가짜 뉴스 등 잘못된 방향으로 학습할 수 있다는 의문도 들었습니다.</p>
+        <p>이러한 <strong>'미분을 이용한 최적화 원리'</strong>는 인공지능뿐만 아니라 <strong>화학 공정</strong>에서도 핵심적으로 사용됩니다. 화학 반응 시 온도가 너무 낮으면 반응이 느리고, 너무 높으면 부반응이 증가하거나 효율이 떨어집니다. 이 웹앱은 미적분의 극대/극소 개념과 변화율을 활용하여, 생산량이 최대가 되는 <strong>'최적 온도'</strong>를 찾는 과정을 시각적으로 보여줍니다.</p>
+    </section>
+
+    <div class="interactive-container">
+        <section class="visualization-area">
+            <h2>📈 시각화 영역</h2>
+            <canvas id="yieldChart"></canvas>
+        </section>
+
+        <section class="control-area">
+            <h2>⚙️ 조작 영역</h2>
+
+            <label for="tempSlider">반응 온도 (°C): <span id="tempValue">200</span>°C</label>
+            <input type="range" id="tempSlider" min="100" max="500" step="5" value="200">
+
+            <label for="timeInput">반응 시간 (초):</label>
+            <input type="number" id="timeInput" min="1" max="10" value="5">
+
+            <button id="startBtn">▶ 공정 시작</button>
+            <button id="autoFindBtn" class="btn-success">🎯 최적 조건 자동 찾기</button>
+            <button id="resetBtn" class="btn-secondary">↺ 초기화</button>
+        </section>
+    </div>
+
+    <section class="result-area">
+        <h2>📊 결과 해석</h2>
+        <div class="result-item"><strong>현재 설정 온도:</strong> <span id="resTemp">200</span> °C</div>
+        <div class="result-item"><strong>현재 생산량 변화율(접선의 기울기):</strong> <span id="resDerivative">---</span></div>
+        <div class="result-item"><strong>예상 최대 생산량 (효율):</strong> <span id="resMaxYield">---</span> %</div>
+        <div class="result-item"><strong>실제 생산량 (시간 경과 적용):</strong> <span id="resCurrentYield" class="highlight">0.00</span> %</div>
+        <hr>
+        <div class="result-item"><strong>최적 조건과의 차이:</strong> <span id="resDifference">---</span></div>
+        <div id="optimalAlarm" class="alarm">🔔 알림: 최적 온도(최대 생산량 지점)에 도달했습니다! 접선의 기울기가 0이 됩니다.</div>
+    </section>
+
+    <section>
+        <h2>➕ 추가 기능</h2>
+        <button id="caseStudyBtn">📖 실제 화학 공정 적용 사례 보기</button>
+        <div id="caseStudyContent" style="display: none; margin-top: 15px; padding: 15px; background-color: #eef2f5; border-left: 5px solid #3498db;">
+            <h3>실제 공정에서의 미분과 최적화</h3>
+            <ul>
+                <li><strong>암모니아 합성 공정 (하버-보슈법):</strong> 고온 고압 조건에서 수율을 극대화하기 위해 반응 속도와 화학 평형 간의 최적화 함수를 미분하여 가장 효율적인 온도를 찾습니다.</li>
+                <li><strong>석유 화학 촉매 반응:</strong> 촉매의 활성도는 온도에 따라 극대점을 가집니다. 도함수를 이용해 활성도가 꺾이는 지점(극대값)을 실시간으로 추적합니다.</li>
+                <li><strong>에틸렌 생산 공정:</strong> 열분해 과정에서 부생성물을 최소화하고 에틸렌 수율을 최대화하는 온도 지점을 미적분학의 최적화 기법으로 계산합니다.</li>
+            </ul>
+        </div>
+    </section>
+
+    <script>
+        // 수학적 모델링: 생산량(Yield)은 특정 온도(T_OPT)에서 위로 볼록한 이차함수 형태를 띤다고 가정.
+        const T_OPT = 320; // 최적 온도 (극대점)
+        const MAX_YIELD = 100; // 최대 생산량(%)
+        const a = MAX_YIELD / Math.pow(180, 2); // 온도 140~500 사이에서 유효하도록 계수 설정
+
+        // 온도에 따른 목표 생산량 계산 함수 f(x)
+        function calculateTargetYield(temp) {
+            let y = -a * Math.pow(temp - T_OPT, 2) + MAX_YIELD;
+            return Math.max(0, y); // 생산량은 0 이하로 내려가지 않음
+        }
+
+        // 온도에 따른 접선의 기울기(미분값) 계산 함수 f'(x)
+        function calculateDerivative(temp) {
+            return -2 * a * (temp - T_OPT);
+        }
+
+        // DOM 요소 가져오기
+        const tempSlider = document.getElementById('tempSlider');
+        const tempValue = document.getElementById('tempValue');
+        const timeInput = document.getElementById('timeInput');
+        const startBtn = document.getElementById('startBtn');
+        const autoFindBtn = document.getElementById('autoFindBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const caseStudyBtn = document.getElementById('caseStudyBtn');
+        const caseStudyContent = document.getElementById('caseStudyContent');
+
+        const resTemp = document.getElementById('resTemp');
+        const resDerivative = document.getElementById('resDerivative');
+        const resMaxYield = document.getElementById('resMaxYield');
+        const resCurrentYield = document.getElementById('resCurrentYield');
+        const resDifference = document.getElementById('resDifference');
+        const optimalAlarm = document.getElementById('optimalAlarm');
+
+        // Chart.js 초기화
+        const ctx = document.getElementById('yieldChart').getContext('2d');
+
+        // 배경 이차함수 데이터 생성
+        const backgroundData = [];
+        for(let t = 100; t <= 500; t += 10) {
+            backgroundData.push({x: t, y: calculateTargetYield(t)});
+        }
+
+        const yieldChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                datasets: [
+                    {
+                        label: '온도별 예상 생산량 곡선',
+                        data: backgroundData,
+                        borderColor: '#adb5bd',
+                        borderWidth: 2,
+                        fill: false,
+                        pointRadius: 0,
+                        tension: 0.4
+                    },
+                    {
+                        label: '현재 공정 상태',
+                        data: [{x: 200, y: 0}], // 초기 위치
+                        backgroundColor: '#e74c3c',
+                        borderColor: '#e74c3c',
+                        pointRadius: 8,
+                        pointHoverRadius: 10,
+                        showLine: false
+                    },
+                    {
+                        label: '접선 (변화율)',
+                        data: [], // 동적으로 업데이트됨
+                        borderColor: '#3498db',
+                        borderWidth: 2,
+                        borderDash: [5, 5],
+                        pointRadius: 0,
+                        fill: false
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    x: { type: 'linear', position: 'bottom', title: { display: true, text: '반응 온도 (°C)' }, min: 100, max: 500 },
+                    y: { title: { display: true, text: '생산량 (%)' }, min: 0, max: 110 }
+                },
+                animation: { duration: 0 } // 커스텀 애니메이션을 위해 기본 애니메이션 끄기
+            }
+        });
+
+        let animationInterval;
+        let isRunning = false;
+
+        // UI 업데이트 함수
+        function updateUI(temp, currentYield, isAnimating = false) {
+            let targetYield = calculateTargetYield(temp);
+            let derivative = calculateDerivative(temp);
+
+            // 텍스트 업데이트
+            tempValue.textContent = temp;
+            resTemp.textContent = temp;
+            resMaxYield.textContent = targetYield.toFixed(2);
+            resCurrentYield.textContent = currentYield.toFixed(2);
+            resDerivative.textContent = derivative.toFixed(3);
+
+            // 최적 조건과의 차이
+            let diff = MAX_YIELD - targetYield;
+            if(diff < 0.1) {
+                resDifference.textContent = "최적 조건에 도달했습니다!";
+                optimalAlarm.style.display = "block";
+            } else {
+                resDifference.textContent = `최대 생산량 대비 ${diff.toFixed(2)}% 부족합니다.`;
+                optimalAlarm.style.display = "none";
+            }
+
+            // 그래프 업데이트 (점 위치 이동)
+            yieldChart.data.datasets[1].data = [{x: temp, y: currentYield}];
+
+            // 접선 업데이트 (애니메이션 중이 아닐 때 목표 수율 기준으로 그림)
+            let tanX1 = temp - 40;
+            let tanX2 = temp + 40;
+            let baseYield = isAnimating ? currentYield : targetYield;
+            let tanY1 = baseYield + derivative * (-40);
+            let tanY2 = baseYield + derivative * (40);
+            yieldChart.data.datasets[2].data = [{x: tanX1, y: tanY1}, {x: tanX2, y: tanY2}];
+
+            yieldChart.update();
+        }
+
+        // 슬라이더 이벤트 (온도 변경)
+        tempSlider.addEventListener('input', (e) => {
+            if(isRunning) return; // 공정 중에는 슬라이더 무시
+            let temp = parseFloat(e.target.value);
+            // 슬라이더 조작 시에는 생산량이 0이라고 가정 (아직 공정 시작 전)
+            updateUI(temp, 0, false);
+        });
+
+        // 공정 시작 버튼 (애니메이션)
+        startBtn.addEventListener('click', () => {
+            if(isRunning) return;
+            isRunning = true;
+            tempSlider.disabled = true;
+
+            let temp = parseFloat(tempSlider.value);
+            let timeSec = parseFloat(timeInput.value);
+            let targetYield = calculateTargetYield(temp);
+
+            let currentYield = 0;
+            let frames = 60; // 60프레임 기준
+            let intervalTime = (timeSec * 1000) / frames;
+            let yieldIncrement = targetYield / frames;
+
+            clearInterval(animationInterval);
+            animationInterval = setInterval(() => {
+                currentYield += yieldIncrement;
+                if(currentYield >= targetYield) {
+                    currentYield = targetYield;
+                    clearInterval(animationInterval);
+                    isRunning = false;
+                    tempSlider.disabled = false;
+                }
+                updateUI(temp, currentYield, true);
+            }, intervalTime);
+        });
+
+        // 최적 조건 자동 찾기 버튼 (슬라이더가 최적 온도로 스르륵 이동)
+        autoFindBtn.addEventListener('click', () => {
+            if(isRunning) return;
+            let currentTemp = parseFloat(tempSlider.value);
+            let step = currentTemp < T_OPT ? 2 : -2;
+
+            let autoInterval = setInterval(() => {
+                currentTemp += step;
+                if((step > 0 && currentTemp >= T_OPT) || (step < 0 && currentTemp <= T_OPT)) {
+                    currentTemp = T_OPT;
+                    clearInterval(autoInterval);
+                }
+                tempSlider.value = currentTemp;
+                updateUI(currentTemp, 0, false);
+            }, 20);
+        });
+
+        // 초기화 버튼
+        resetBtn.addEventListener('click', () => {
+            clearInterval(animationInterval);
+            isRunning = false;
+            tempSlider.disabled = false;
+            tempSlider.value = 200;
+            timeInput.value = 5;
+            updateUI(200, 0, false);
+        });
+
+        // 추가 기능: 사례 소개 토글
+        caseStudyBtn.addEventListener('click', () => {
+            if (caseStudyContent.style.display === "none") {
+                caseStudyContent.style.display = "block";
+                caseStudyBtn.textContent = "📖 실제 화학 공정 적용 사례 닫기";
+            } else {
+                caseStudyContent.style.display = "none";
+                caseStudyBtn.textContent = "📖 실제 화학 공정 적용 사례 보기";
+            }
+        });
+
+        // 초기 화면 설정
+        updateUI(200, 0, false);
+    </script>
+</body>
+</html>

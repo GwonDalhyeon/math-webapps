@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>3618 학생 제작 웹앱</title>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+    *{
+        box-sizing:border-box;
+        font-family:'Malgun Gothic',sans-serif;
+    }
+
+    body{
+        margin:0;
+        background:#f5f7fb;
+        color:#222;
+        line-height:1.6;
+    }
+
+    .container{
+        width:95%;
+        max-width:1200px;
+        margin:auto;
+        padding:20px;
+    }
+
+    .section{
+        background:white;
+        margin-bottom:20px;
+        padding:20px;
+        border-radius:15px;
+        box-shadow:0 2px 10px rgba(0,0,0,0.08);
+    }
+
+    h1,h2{
+        color:#1f4e79;
+    }
+
+    .info-grid{
+        display:grid;
+        grid-template-columns:repeat(auto-fit,minmax(250px,1fr));
+        gap:10px;
+    }
+
+    .info-box{
+        background:#eef5ff;
+        padding:10px;
+        border-radius:10px;
+    }
+
+    .slider-container{
+        text-align:center;
+    }
+
+    input[type=range]{
+        width:80%;
+    }
+
+    #result{
+        font-size:18px;
+        font-weight:bold;
+    }
+
+    .highlight{
+        color:#d62828;
+    }
+
+    @media(max-width:768px){
+        canvas{
+            max-height:350px;
+        }
+    }
+</style>
+
+<style>
+  .student-work-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    max-width: 1040px;
+    margin: 0 auto 16px;
+    padding: 10px 12px;
+    border: 1px solid #dbe3ef;
+    border-radius: 8px;
+    background: #f8fafc;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+  .student-work-links a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 36px;
+    padding: 7px 10px;
+    border-radius: 6px;
+    background: #ffffff;
+    color: #1d4ed8;
+    text-decoration: none;
+    font-weight: 700;
+    border: 1px solid #dbe3ef;
+  }
+  .student-work-links a:hover {
+    background: #eff6ff;
+  }
+</style>
+</head>
+
+<body>
+
+<nav class="student-work-links" aria-label="학생 답안 자료">
+  <a href="../">목록으로</a>
+  <a href="./answer.html">답안 보기</a>
+  <a href="./answer.txt">원문 TXT</a>
+</nav>
+
+
+<div class="container">
+
+    <!-- 상단 정보 영역 -->
+    <div class="section">
+        <h1>주식으로 알아보는 미분과 변곡점</h1>
+
+        <div class="info-grid">
+
+            <div class="info-box">
+                <strong>학번</strong><br>
+                3618
+            </div>
+
+            <div class="info-box">
+                <strong>이름</strong><br>
+                비공개
+            </div>
+
+            <div class="info-box">
+                <strong>책 제목</strong><br>
+                수학책을 탈출한 미적분
+            </div>
+
+            <div class="info-box">
+                <strong>저자</strong><br>
+                류치
+            </div>
+
+            <div class="info-box">
+                <strong>선택한 주제</strong><br>
+                주식으로 알아보는 미분
+            </div>
+
+            <div class="info-box">
+                <strong>관련 미적분 개념</strong><br>
+                미분, 변곡점
+            </div>
+
+        </div>
+
+        <br>
+
+        <p>
+            <strong>웹앱 제작 의도</strong><br>
+            주가 그래프의 기울기와 변곡점을 통해 가격 변화의 속도와
+            추세 전환 시점을 확인할 수 있다.
+        </p>
+
+        <p>
+            <strong>사용 방법</strong><br>
+            아래 슬라이더를 움직이면 특정 날짜의 위치로 이동한다.
+            접선의 기울기(미분값)와 변곡점을 확인하며 주가 변화의 의미를 이해해 보자.
+        </p>
+    </div>
+
+    <!-- 개념 설명 영역 -->
+    <div class="section">
+        <h2>개념 설명</h2>
+
+        <p>
+            <strong>미분</strong>은 특정 순간의 변화율을 의미한다.
+            주식에서는 특정 시점에서 주가가 얼마나 빠르게 오르거나 내리는지 나타낸다.
+        </p>
+
+        <p>
+            <strong>변곡점</strong>은 그래프의 휘어지는 방향이 바뀌는 지점이다.
+            주식 그래프에서는 상승 추세와 하락 추세의 변화 가능성을 보여주는 중요한 지점이 될 수 있다.
+        </p>
+
+        <p>
+            이 웹앱에서는 날짜를 이동하면서 접선의 기울기와 변곡점을 함께 관찰할 수 있다.
+        </p>
+    </div>
+
+    <!-- 시각화 영역 -->
+    <div class="section">
+        <h2>주가 그래프 시각화</h2>
+
+        <canvas id="stockChart"></canvas>
+    </div>
+
+    <!-- 조작 영역 -->
+    <div class="section">
+        <h2>시간(날짜) 조작</h2>
+
+        <div class="slider-container">
+
+            <p>
+                현재 날짜:
+                <span id="dayValue">0</span>일
+            </p>
+
+            <input
+                type="range"
+                id="daySlider"
+                min="0"
+                max="100"
+                value="0">
+
+        </div>
+    </div>
+
+    <!-- 결과 해석 영역 -->
+    <div class="section">
+        <h2>결과 해석</h2>
+
+        <div id="result">
+            날짜를 선택하세요.
+        </div>
+    </div>
+
+</div>
+
+<script>
+
+// -------------------------
+// 가상의 주가 데이터 생성
+// -------------------------
+// 주가 흐름이 상승 → 둔화 → 하락 → 상승하도록 만들어
+// 변곡점이 보이게 구성
+
+const labels = [];
+const prices = [];
+
+for(let x=0;x<=100;x++){
+
+    labels.push(x);
+
+    let y =
+        0.002*Math.pow(x-50,3)
+        -0.15*(x-50)
+        +100;
+
+    prices.push(y);
+}
+
+// -------------------------
+// 변곡점 계산
+// cubic 형태라 x=50 부근
+// -------------------------
+
+const inflectionIndex = 50;
+
+// -------------------------
+// 차트 생성
+// -------------------------
+
+const ctx = document.getElementById('stockChart');
+
+const chart = new Chart(ctx,{
+    type:'line',
+    data:{
+        labels:labels,
+        datasets:[
+        {
+            label:'주가 그래프',
+            data:prices,
+            borderWidth:3,
+            tension:0.3
+        },
+        {
+            label:'선택한 위치',
+            data:[],
+            pointRadius:8,
+            showLine:false
+        },
+        {
+            label:'변곡점',
+            data:[
+                {
+                    x:inflectionIndex,
+                    y:prices[inflectionIndex]
+                }
+            ],
+            pointRadius:10,
+            showLine:false
+        }]
+    },
+    options:{
+        responsive:true,
+        plugins:{
+            legend:{
+                display:true
+            }
+        },
+        scales:{
+            x:{
+                title:{
+                    display:true,
+                    text:'날짜'
+                }
+            },
+            y:{
+                title:{
+                    display:true,
+                    text:'주가'
+                }
+            }
+        }
+    }
+});
+
+// -------------------------
+// 슬라이더 조작
+// -------------------------
+
+const slider = document.getElementById('daySlider');
+const dayValue = document.getElementById('dayValue');
+const result = document.getElementById('result');
+
+function updateGraph(){
+
+    let i = Number(slider.value);
+
+    dayValue.textContent = i;
+
+    let y = prices[i];
+
+    // 중앙차분으로 기울기 계산
+    let slope;
+
+    if(i===0){
+        slope = prices[1]-prices[0];
+    }
+    else if(i===100){
+        slope = prices[100]-prices[99];
+    }
+    else{
+        slope = (prices[i+1]-prices[i-1])/2;
+    }
+
+    chart.data.datasets[1].data = [
+        {
+            x:i,
+            y:y
+        }
+    ];
+
+    chart.update();
+
+    let interpretation="";
+
+    if(Math.abs(i-inflectionIndex)<=2){
+        interpretation =
+        "<span class='highlight'>변곡점 부근입니다.</span><br>" +
+        "그래프의 휘어짐이 바뀌는 지점으로, 추세 전환 가능성을 생각해 볼 수 있습니다.";
+    }
+    else if(slope>0){
+        interpretation =
+        "현재 기울기(미분값)는 <strong>" +
+        slope.toFixed(2) +
+        "</strong> 입니다.<br>주가가 상승하는 방향으로 움직이고 있습니다.";
+    }
+    else{
+        interpretation =
+        "현재 기울기(미분값)는 <strong>" +
+        slope.toFixed(2) +
+        "</strong> 입니다.<br>주가가 하락하는 방향으로 움직이고 있습니다.";
+    }
+
+    result.innerHTML =
+    "<strong>선택 날짜 :</strong> " + i + "일<br>" +
+    "<strong>주가 :</strong> " + y.toFixed(2) + "<br><br>" +
+    interpretation +
+    "<br><br>" +
+    "미분은 특정 순간의 주가 변화율을 나타내며, 변곡점은 상승 추세와 하락 추세가 바뀌는 중요한 지점이 될 수 있다.";
+}
+
+slider.addEventListener("input",updateGraph);
+
+updateGraph();
+
+</script>
+
+</body>
+</html>

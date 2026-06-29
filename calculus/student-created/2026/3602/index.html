@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>3602 학생 제작 웹앱</title>
+  <style>
+    :root {
+      --bg: #eef3f8;
+      --panel: #ffffff;
+      --ink: #18212f;
+      --muted: #5f6c7b;
+      --line: #d6dee8;
+      --blue: #2563eb;
+      --green: #0f9f6e;
+      --red: #d84242;
+      --amber: #d97706;
+      --sky: #dff2ff;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Arial, "Noto Sans KR", sans-serif;
+      color: var(--ink);
+      background: var(--bg);
+    }
+
+    header {
+      padding: 22px 28px 16px;
+      background: #102033;
+      color: #ffffff;
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: 26px;
+      font-weight: 800;
+      letter-spacing: 0;
+    }
+
+    header p {
+      margin: 0;
+      max-width: 1050px;
+      line-height: 1.55;
+      color: #d9e8ff;
+      font-size: 15px;
+    }
+
+    main {
+      display: grid;
+      grid-template-columns: minmax(280px, 360px) minmax(420px, 1fr) minmax(320px, 420px);
+      gap: 16px;
+      padding: 16px;
+      max-width: 1500px;
+      margin: 0 auto;
+    }
+
+    section {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 16px;
+    }
+
+    h2 {
+      margin: 0 0 12px;
+      font-size: 18px;
+    }
+
+    .meta {
+      display: grid;
+      gap: 8px;
+      margin-bottom: 14px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.45;
+    }
+
+    .control { margin: 14px 0; }
+
+    .control label {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 8px;
+      font-weight: 700;
+      font-size: 14px;
+    }
+
+    .value {
+      color: var(--blue);
+      white-space: nowrap;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--blue);
+    }
+
+    .buttons {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 14px;
+    }
+
+    button {
+      min-height: 42px;
+      border: 0;
+      border-radius: 6px;
+      background: var(--blue);
+      color: #ffffff;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    button.secondary { background: #405061; }
+
+    button:focus-visible,
+    input:focus-visible {
+      outline: 3px solid #93c5fd;
+      outline-offset: 2px;
+    }
+
+    .sim-panel {
+      min-height: 720px;
+      display: grid;
+      gap: 12px;
+      grid-template-rows: auto 1fr auto;
+    }
+
+    #rocketCanvas {
+      width: 100%;
+      height: auto;
+      aspect-ratio: 5 / 6;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: var(--sky);
+    }
+
+    .readouts {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+    }
+
+    .metric {
+      padding: 10px;
+      background: #f5f8fc;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+    }
+
+    .metric span {
+      display: block;
+      margin-bottom: 5px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .metric strong { font-size: 17px; }
+
+    .status {
+      min-height: 54px;
+      padding: 12px;
+      border-radius: 6px;
+      background: #eef6ff;
+      border: 1px solid #bfdbfe;
+      font-weight: 800;
+      line-height: 1.45;
+    }
+
+    .status.success {
+      color: #05603a;
+      background: #e8fff4;
+      border-color: #9ee6c5;
+    }
+
+    .status.fail {
+      color: #a72d2d;
+      background: #fff0f0;
+      border-color: #f3b5b5;
+    }
+
+    .chart-stack {
+      display: grid;
+      gap: 12px;
+    }
+
+    .chart {
+      min-height: 202px;
+      display: grid;
+      gap: 8px;
+    }
+
+    .chart canvas {
+      width: 100%;
+      height: 150px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: #ffffff;
+    }
+
+    .note {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.55;
+    }
+
+    @media (max-width: 1180px) {
+      main { grid-template-columns: 340px 1fr; }
+      .chart-stack {
+        grid-column: 1 / -1;
+        grid-template-columns: repeat(3, 1fr);
+      }
+    }
+
+    @media (max-width: 820px) {
+      header { padding: 18px 16px 14px; }
+      main {
+        grid-template-columns: 1fr;
+        padding: 10px;
+      }
+      .sim-panel { min-height: 0; }
+      .readouts,
+      .chart-stack { grid-template-columns: 1fr 1fr; }
+    }
+
+    @media (max-width: 560px) {
+      h1 { font-size: 22px; }
+      .readouts,
+      .chart-stack,
+      .buttons { grid-template-columns: 1fr; }
+    }
+  </style>
+
+<style>
+  .student-work-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    max-width: 1040px;
+    margin: 0 auto 16px;
+    padding: 10px 12px;
+    border: 1px solid #dbe3ef;
+    border-radius: 8px;
+    background: #f8fafc;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+  .student-work-links a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 36px;
+    padding: 7px 10px;
+    border-radius: 6px;
+    background: #ffffff;
+    color: #1d4ed8;
+    text-decoration: none;
+    font-weight: 700;
+    border: 1px solid #dbe3ef;
+  }
+  .student-work-links a:hover {
+    background: #eff6ff;
+  }
+</style>
+</head>
+<body>
+
+<nav class="student-work-links" aria-label="학생 답안 자료">
+  <a href="../">목록으로</a>
+  <a href="./answer.html">답안 보기</a>
+  <a href="./answer.txt">원문 TXT</a>
+</nav>
+
+  <header>
+    <h1>로켓 추진체 착륙 시뮬레이션</h1>
+    <p>SpaceX 스타십의 Belly-Flop 하강과 착륙 전 회전 과정을 단순화하여, 속도·가속도·회전각·각속도가 착륙 성공 여부에 어떻게 영향을 주는지 보여준다.</p>
+  </header>
+
+  <main>
+    <section>
+      <h2>조작 영역</h2>
+      <div class="meta">
+        <div><strong>학번/이름</strong> 3602 비공개</div>
+        <div><strong>도서</strong> 미적분의 쓸모 / 한화택</div>
+        <div><strong>주제</strong> 혁명의 시작, 순간 속도를 계산하라</div>
+      </div>
+
+      <div class="control">
+        <label for="mass">로켓의 무게 <span class="value" id="massValue">1500 kg</span></label>
+        <input type="range" id="mass" min="1000" max="3000" step="50" value="1500">
+      </div>
+
+      <div class="control">
+        <label for="thrust">엔진 추력 <span class="value" id="thrustValue">14000 N</span></label>
+        <input type="range" id="thrust" min="5000" max="25000" step="250" value="14000">
+      </div>
+
+      <div class="control">
+        <label for="angle">초기 기울기 <span class="value" id="angleValue">5°</span></label>
+        <input type="range" id="angle" min="-20" max="20" step="1" value="5">
+      </div>
+
+      <div class="buttons">
+        <button type="button" id="startBtn">시뮬레이션 시작</button>
+        <button type="button" class="secondary" id="resetBtn">초기화</button>
+      </div>
+
+      <p class="note" style="margin-top: 14px;">하강 속도는 위치의 변화율, 가속도는 속도의 변화율이다. 회전각의 변화율인 각속도도 착륙 안정성에 영향을 준다.</p>
+    </section>
+
+    <section class="sim-panel">
+      <div>
+        <h2>착륙 장면</h2>
+        <p class="note">로켓은 Belly-Flop 자세로 하강한 뒤 엔진 재점화 구간에서 수직 자세로 돌아오도록 제어된다.</p>
+      </div>
+      <canvas id="rocketCanvas" width="700" height="840" aria-label="로켓 착륙 시뮬레이션 화면"></canvas>
+      <div class="status" id="status">시뮬레이션 전</div>
+    </section>
+
+    <section>
+      <h2>실시간 데이터</h2>
+      <div class="readouts">
+        <div class="metric"><span>속도</span><strong id="velocityText">0.0 m/s</strong></div>
+        <div class="metric"><span>가속도</span><strong id="accText">0.0 m/s²</strong></div>
+        <div class="metric"><span>회전각</span><strong id="thetaText">5.0°</strong></div>
+        <div class="metric"><span>각속도</span><strong id="omegaText">0.0 °/s</strong></div>
+      </div>
+
+      <div class="chart-stack" style="margin-top: 12px;">
+        <div class="chart">
+          <h2>속도 그래프</h2>
+          <canvas id="velocityChart" width="420" height="170"></canvas>
+        </div>
+        <div class="chart">
+          <h2>가속도 그래프</h2>
+          <canvas id="accChart" width="420" height="170"></canvas>
+        </div>
+        <div class="chart">
+          <h2>각속도 그래프</h2>
+          <canvas id="omegaChart" width="420" height="170"></canvas>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const controls = {
+      mass: document.getElementById("mass"),
+      thrust: document.getElementById("thrust"),
+      angle: document.getElementById("angle"),
+      start: document.getElementById("startBtn"),
+      reset: document.getElementById("resetBtn")
+    };
+
+    const labels = {
+      mass: document.getElementById("massValue"),
+      thrust: document.getElementById("thrustValue"),
+      angle: document.getElementById("angleValue")
+    };
+
+    const readouts = {
+      velocity: document.getElementById("velocityText"),
+      acc: document.getElementById("accText"),
+      theta: document.getElementById("thetaText"),
+      omega: document.getElementById("omegaText"),
+      status: document.getElementById("status")
+    };
+
+    const rocketCanvas = document.getElementById("rocketCanvas");
+    const rocketCtx = rocketCanvas.getContext("2d");
+    const chartCanvases = {
+      velocity: document.getElementById("velocityChart"),
+      acceleration: document.getElementById("accChart"),
+      omega: document.getElementById("omegaChart")
+    };
+
+    const groundY = 760;
+    const dt = 0.08;
+    const maxSamples = 140;
+    let frameId = null;
+    let running = false;
+    let state;
+    let history;
+
+    function resetState() {
+      cancelAnimationFrame(frameId);
+      frameId = null;
+      running = false;
+      state = {
+        t: 0,
+        altitude: 620,
+        velocity: 12,
+        acceleration: 0,
+        theta: Number(controls.angle.value),
+        omega: 0,
+        flame: 0
+      };
+      history = { time: [], velocity: [], acceleration: [], omega: [] };
+      updateLabels();
+      updateReadouts();
+      setStatus("시뮬레이션 전", "");
+      drawAll();
+    }
+
+    function updateLabels() {
+      labels.mass.textContent = `${controls.mass.value} kg`;
+      labels.thrust.textContent = `${controls.thrust.value} N`;
+      labels.angle.textContent = `${controls.angle.value}°`;
+    }
+
+    function setStatus(text, mode) {
+      readouts.status.className = `status ${mode || ""}`.trim();
+      readouts.status.textContent = text;
+    }
+
+    function updateReadouts() {
+      readouts.velocity.textContent = `${state.velocity.toFixed(1)} m/s`;
+      readouts.acc.textContent = `${state.acceleration.toFixed(1)} m/s²`;
+      readouts.theta.textContent = `${state.theta.toFixed(1)}°`;
+      readouts.omega.textContent = `${state.omega.toFixed(1)} °/s`;
+    }
+
+    function pushHistory() {
+      history.time.push(state.t.toFixed(1));
+      history.velocity.push(state.velocity);
+      history.acceleration.push(state.acceleration);
+      history.omega.push(state.omega);
+      for (const key of Object.keys(history)) {
+        if (history[key].length > maxSamples) history[key].shift();
+      }
+    }
+
+    function simulateStep() {
+      const mass = Number(controls.mass.value);
+      const thrust = Number(controls.thrust.value);
+      const gravity = 9.8;
+      const engineStartAltitude = 250;
+      const engineRatio = state.altitude < engineStartAltitude ? 1 : 0.34;
+      const thrustAcc = (thrust / mass) * engineRatio;
+      const drag = Math.min(5.5, Math.abs(state.velocity) * 0.045);
+
+      state.acceleration = gravity - thrustAcc - drag;
+      state.velocity += state.acceleration * dt;
+      state.velocity = Math.max(-12, Math.min(42, state.velocity));
+      state.altitude -= state.velocity * dt * 6;
+      state.t += dt;
+      state.flame = engineRatio;
+
+      const targetTheta = state.altitude < engineStartAltitude ? 0 : 78;
+      const correction = (targetTheta - state.theta) * 0.06;
+      state.omega += correction;
+      state.omega *= 0.74;
+      state.theta += state.omega * dt * 3.4;
+
+      if (state.altitude <= 0) {
+        state.altitude = 0;
+        running = false;
+        cancelAnimationFrame(frameId);
+        frameId = null;
+        const softSpeed = Math.abs(state.velocity) <= 8;
+        const upright = Math.abs(state.theta) <= 12;
+        if (softSpeed && upright) {
+          setStatus("착륙 성공: 속도와 회전각이 안정 범위에 들어왔다.", "success");
+        } else {
+          setStatus("착륙 실패: 속도 또는 회전각이 너무 커서 안정 착륙 조건을 벗어났다.", "fail");
+        }
+      } else {
+        setStatus("하강 중: 속도·가속도·회전각을 계속 계산하며 착륙을 제어한다.", "");
+      }
+    }
+
+    function drawRocketScene() {
+      const ctx = rocketCtx;
+      const w = rocketCanvas.width;
+      const h = rocketCanvas.height;
+      ctx.clearRect(0, 0, w, h);
+
+      const sky = ctx.createLinearGradient(0, 0, 0, h);
+      sky.addColorStop(0, "#cdeeff");
+      sky.addColorStop(1, "#f8fbff");
+      ctx.fillStyle = sky;
+      ctx.fillRect(0, 0, w, h);
+
+      ctx.strokeStyle = "rgba(37, 99, 235, 0.3)";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      for (let i = 0; i < history.time.length; i += 1) {
+        const px = 350 + Math.sin(i * 0.08) * 38;
+        const py = 95 + (i / Math.max(1, maxSamples)) * 620;
+        if (i === 0) ctx.moveTo(px, py);
+        else ctx.lineTo(px, py);
+      }
+      ctx.stroke();
+
+      ctx.fillStyle = "#425466";
+      ctx.fillRect(0, groundY, w, h - groundY);
+      ctx.fillStyle = "#0f9f6e";
+      ctx.fillRect(0, groundY, w, 18);
+      ctx.fillStyle = "#d9e5f0";
+      ctx.fillRect(270, groundY - 8, 160, 8);
+
+      const rocketY = 70 + (620 - state.altitude) / 620 * (groundY - 130);
+      const rocketX = 350 + Math.sin(state.t * 0.7) * 30;
+
+      ctx.save();
+      ctx.translate(rocketX, rocketY);
+      ctx.rotate((state.theta * Math.PI) / 180);
+
+      ctx.fillStyle = "#f3f6fa";
+      roundedRect(ctx, -22, -76, 44, 136, 20);
+      ctx.fill();
+      ctx.strokeStyle = "#1f2a37";
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      ctx.fillStyle = "#1f2a37";
+      ctx.beginPath();
+      ctx.moveTo(-18, -73);
+      ctx.lineTo(18, -73);
+      ctx.lineTo(0, -108);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.fillStyle = "#d84242";
+      ctx.fillRect(-18, -20, 36, 16);
+      ctx.fillStyle = "#233449";
+      ctx.fillRect(-31, 26, 18, 26);
+      ctx.fillRect(13, 26, 18, 26);
+      ctx.fillStyle = "#77b7ff";
+      ctx.beginPath();
+      ctx.arc(0, -42, 10, 0, Math.PI * 2);
+      ctx.fill();
+
+      if (state.flame > 0) {
+        const flame = Math.max(24, state.flame * 52 + Math.abs(state.acceleration) * 1.6);
+        const flameGradient = ctx.createLinearGradient(0, 54, 0, 54 + flame);
+        flameGradient.addColorStop(0, "#fff3a3");
+        flameGradient.addColorStop(0.42, "#ff9f1c");
+        flameGradient.addColorStop(1, "rgba(216,66,66,0)");
+        ctx.fillStyle = flameGradient;
+        ctx.beginPath();
+        ctx.moveTo(-14, 56);
+        ctx.lineTo(14, 56);
+        ctx.lineTo(0, 56 + flame);
+        ctx.closePath();
+        ctx.fill();
+      }
+
+      ctx.restore();
+
+      ctx.fillStyle = "#18212f";
+      ctx.font = "18px Arial";
+      ctx.fillText(`고도 ${Math.round(state.altitude)} m`, 22, 34);
+      ctx.fillText(`시간 ${state.t.toFixed(1)} s`, 22, 60);
+    }
+
+    function roundedRect(ctx, x, y, width, height, radius) {
+      ctx.beginPath();
+      ctx.moveTo(x + radius, y);
+      ctx.lineTo(x + width - radius, y);
+      ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+      ctx.lineTo(x + width, y + height - radius);
+      ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+      ctx.lineTo(x + radius, y + height);
+      ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+      ctx.lineTo(x, y + radius);
+      ctx.quadraticCurveTo(x, y, x + radius, y);
+      ctx.closePath();
+    }
+
+    function drawChart(canvas, values, label, color, unit) {
+      const ctx = canvas.getContext("2d");
+      const w = canvas.width;
+      const h = canvas.height;
+      ctx.clearRect(0, 0, w, h);
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, w, h);
+      ctx.strokeStyle = "#d6dee8";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(42, 16);
+      ctx.lineTo(42, h - 28);
+      ctx.lineTo(w - 12, h - 28);
+      ctx.stroke();
+
+      ctx.fillStyle = "#5f6c7b";
+      ctx.font = "13px Arial";
+      ctx.fillText(label, 12, 16);
+
+      if (values.length < 2) {
+        ctx.fillText("시뮬레이션을 시작하면 그래프가 나타납니다.", 56, 88);
+        return;
+      }
+
+      const min = Math.min(...values, 0);
+      const max = Math.max(...values, 1);
+      const pad = Math.max(1, (max - min) * 0.18);
+      const low = min - pad;
+      const high = max + pad;
+
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      values.forEach((value, index) => {
+        const x = 42 + (index / (maxSamples - 1)) * (w - 58);
+        const y = h - 28 - ((value - low) / (high - low)) * (h - 50);
+        if (index === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      });
+      ctx.stroke();
+
+      const last = values[values.length - 1];
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      const x = 42 + ((values.length - 1) / (maxSamples - 1)) * (w - 58);
+      const y = h - 28 - ((last - low) / (high - low)) * (h - 50);
+      ctx.arc(x, y, 4, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = "#18212f";
+      ctx.fillText(`${last.toFixed(1)} ${unit}`, w - 92, 18);
+    }
+
+    function drawAll() {
+      drawRocketScene();
+      drawChart(chartCanvases.velocity, history.velocity, "속도", "#2563eb", "m/s");
+      drawChart(chartCanvases.acceleration, history.acceleration, "가속도", "#d97706", "m/s²");
+      drawChart(chartCanvases.omega, history.omega, "각속도", "#0f9f6e", "°/s");
+    }
+
+    function tick() {
+      if (!running) return;
+      simulateStep();
+      pushHistory();
+      updateReadouts();
+      drawAll();
+      if (running) frameId = requestAnimationFrame(tick);
+    }
+
+    function startSimulation() {
+      if (running) return;
+      if (state.altitude <= 0) resetState();
+      running = true;
+      setStatus("하강 중: 속도와 회전각을 계산하고 있다.", "");
+      frameId = requestAnimationFrame(tick);
+    }
+
+    [controls.mass, controls.thrust, controls.angle].forEach((input) => {
+      input.addEventListener("input", () => {
+        updateLabels();
+        if (!running && input === controls.angle) {
+          state.theta = Number(controls.angle.value);
+          updateReadouts();
+          drawAll();
+        }
+      });
+    });
+
+    controls.start.addEventListener("click", startSimulation);
+    controls.reset.addEventListener("click", resetState);
+
+    resetState();
+  </script>
+</body>
+</html>

@@ -1,0 +1,765 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>3116 학생 제작 웹앱</title>
+
+  <style>
+    /* ── 기본 리셋 및 폰트 ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0d1117;
+      --surface:   #161b22;
+      --border:    #30363d;
+      --accent1:   #58a6ff;   /* 수면 역치 - 파랑 계열 */
+      --accent2:   #f78166;   /* 수면 압력 - 산호 계열 */
+      --zone-fat:  rgba(247,129,102,0.18);  /* 피로도 구간 */
+      --zone-wake: rgba(88,166,255,0.18);   /* 각성 가능 구간 */
+      --text:      #e6edf3;
+      --muted:     #8b949e;
+      --tag-bg:    #21262d;
+    }
+
+    body {
+      font-family: 'Pretendard', 'Noto Sans KR', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 24px 16px 60px;
+    }
+
+    /* ── 상단 정보 카드 ── */
+    .info-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px 28px;
+      max-width: 860px;
+      margin: 0 auto 32px;
+    }
+    .info-card h1 {
+      font-size: 1.35rem;
+      font-weight: 700;
+      color: var(--accent1);
+      margin-bottom: 16px;
+      letter-spacing: -0.02em;
+    }
+    .meta-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 10px 24px;
+    }
+    .meta-row { display: flex; gap: 8px; align-items: baseline; font-size: 0.88rem; }
+    .meta-label {
+      color: var(--muted);
+      white-space: nowrap;
+      min-width: 90px;
+    }
+    .meta-value { color: var(--text); line-height: 1.5; }
+    .tag {
+      display: inline-block;
+      background: var(--tag-bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 2px 8px;
+      font-size: 0.78rem;
+      color: var(--accent1);
+    }
+    .notice-missing {
+      background: #161b22;
+      border-left: 3px solid #d29922;
+      border-radius: 4px;
+      padding: 8px 12px;
+      font-size: 0.82rem;
+      color: #d29922;
+      margin-top: 14px;
+    }
+
+    /* ── 섹션 공통 ── */
+    .section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 22px 24px;
+      max-width: 860px;
+      margin: 0 auto 20px;
+    }
+    .section-title {
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 14px;
+    }
+
+    /* ── 개념 설명 ── */
+    .concept-body { font-size: 0.9rem; line-height: 1.75; color: var(--text); }
+    .concept-body strong { color: var(--accent1); }
+    .concept-body em    { color: var(--accent2); font-style: normal; }
+
+    /* ── 조작 영역 ── */
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 20px;
+      align-items: flex-start;
+    }
+    .ctrl-group { display: flex; flex-direction: column; gap: 6px; min-width: 200px; flex: 1; }
+    .ctrl-label  { font-size: 0.82rem; color: var(--muted); }
+    .ctrl-value  { font-size: 1.05rem; font-weight: 600; color: var(--text); }
+
+    input[type=range] {
+      -webkit-appearance: none;
+      width: 100%;
+      height: 6px;
+      border-radius: 3px;
+      background: var(--border);
+      outline: none;
+    }
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 16px; height: 16px;
+      border-radius: 50%;
+      background: var(--accent1);
+      cursor: pointer;
+    }
+    /* 수면 압력 슬라이더는 산호색 */
+    input.red-thumb::-webkit-slider-thumb { background: var(--accent2); }
+
+    .btn-row { display: flex; gap: 10px; flex-wrap: wrap; }
+    button {
+      padding: 8px 16px;
+      border-radius: 7px;
+      border: 1px solid var(--border);
+      background: var(--tag-bg);
+      color: var(--text);
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    button:hover { background: #2d333b; }
+    button.primary {
+      background: var(--accent1);
+      color: #0d1117;
+      border-color: transparent;
+      font-weight: 600;
+    }
+    button.primary:hover { background: #79c0ff; }
+
+    /* ── select 스타일 ── */
+    select.time-select {
+      width: 100%;
+      padding: 8px 12px;
+      background: var(--tag-bg);
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      color: var(--text);
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      outline: none;
+      appearance: none;
+      -webkit-appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%238b949e' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 12px center;
+      padding-right: 32px;
+    }
+    select.time-select:focus { border-color: var(--accent1); }
+    select.time-select option { background: #21262d; }
+
+    /* ── 시각화 ── */
+    .chart-wrap {
+      position: relative;
+      width: 100%;
+    }
+    canvas#mainChart {
+      width: 100% !important;
+      display: block;
+    }
+
+    /* 범례 */
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      margin-top: 14px;
+    }
+    .legend-item { display: flex; align-items: center; gap: 6px; font-size: 0.8rem; color: var(--muted); }
+    .legend-dot  { width: 12px; height: 12px; border-radius: 50%; }
+
+    /* ── 결과 해석 ── */
+    .result-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      margin-bottom: 16px;
+    }
+    @media (max-width: 480px) { .result-grid { grid-template-columns: 1fr; } }
+
+    .result-box {
+      border-radius: 8px;
+      padding: 14px 16px;
+      border: 1px solid var(--border);
+    }
+    .result-box.fatigue { border-left: 3px solid var(--accent2); }
+    .result-box.wake    { border-left: 3px solid var(--accent1); }
+    .result-box .rb-label { font-size: 0.75rem; color: var(--muted); margin-bottom: 4px; }
+    .result-box .rb-val   { font-size: 1.6rem; font-weight: 700; }
+    .result-box.fatigue .rb-val { color: var(--accent2); }
+    .result-box.wake    .rb-val { color: var(--accent1); }
+    .result-box .rb-unit  { font-size: 0.75rem; color: var(--muted); margin-left: 4px; }
+
+    .interp {
+      background: #161b22;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 14px 16px;
+      font-size: 0.88rem;
+      line-height: 1.7;
+      color: var(--text);
+    }
+    .interp strong { color: var(--accent1); }
+    .interp .warn  { color: var(--accent2); font-weight: 600; }
+
+    /* ── 반응형 ── */
+    @media (max-width: 600px) {
+      .controls { flex-direction: column; }
+      .meta-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+
+<style>
+  .student-work-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    max-width: 1040px;
+    margin: 0 auto 16px;
+    padding: 10px 12px;
+    border: 1px solid #dbe3ef;
+    border-radius: 8px;
+    background: #f8fafc;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+  .student-work-links a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 36px;
+    padding: 7px 10px;
+    border-radius: 6px;
+    background: #ffffff;
+    color: #1d4ed8;
+    text-decoration: none;
+    font-weight: 700;
+    border: 1px solid #dbe3ef;
+  }
+  .student-work-links a:hover {
+    background: #eff6ff;
+  }
+</style>
+</head>
+<body>
+
+<nav class="student-work-links" aria-label="학생 답안 자료">
+  <a href="../">목록으로</a>
+  <a href="./answer.html">답안 보기</a>
+  <a href="./answer.txt">원문 TXT</a>
+</nav>
+
+
+<!-- ════════════════════════════════
+     1. 상단 정보 영역
+════════════════════════════════ -->
+<div class="info-card">
+  <h1>수면의 규칙성이 각성 정도와 각성 가능 시간에 미치는 영향</h1>
+  <div class="meta-grid">
+    <div class="meta-row"><span class="meta-label">학번</span><span class="meta-value">3116</span></div>
+    <div class="meta-row"><span class="meta-label">이름</span><span class="meta-value">비공개</span></div>
+    <div class="meta-row"><span class="meta-label">책 제목</span><span class="meta-value">수학이 생명의 언어라면</span></div>
+    <div class="meta-row"><span class="meta-label">저자</span><span class="meta-value">김재경</span></div>
+    <div class="meta-row"><span class="meta-label">선택한 주제</span><span class="meta-value">수면의 규칙성이 각성 정도와 각성 가능 시간에 미치는 영향</span></div>
+    <div class="meta-row"><span class="meta-label">미적분 개념</span><span class="meta-value"><span class="tag">적분 — 넓이</span></span></div>
+    <div class="meta-row" style="grid-column:1/-1;">
+      <span class="meta-label">선택 이유</span>
+      <span class="meta-value">적분을 통한 함수의 구간별 넓이를 비교해 각성 정도와 각성할 수 있는 시간의 범위를 비교하기 위해서</span>
+    </div>
+    <div class="meta-row" style="grid-column:1/-1;">
+      <span class="meta-label">웹앱 의도</span>
+      <span class="meta-value">수면 역치 함수와 수면 압력 함수의 그래프를 비교하고, 각 구간의 넓이(적분)를 통해 수면을 줄이면 각성 가능한 정도가 어떻게 달라지는지 보여준다.</span>
+    </div>
+    <div class="meta-row" style="grid-column:1/-1;">
+      <span class="meta-label">사용 방법</span>
+      <span class="meta-value">취침 시각과 기상 시각을 선택하면, 수면 압력 함수가 바뀌고 각성 가능 구간 넓이(적분값)가 실시간으로 갱신됩니다.</span>
+    </div>
+  </div>
+  <div class="notice-missing">⚠ 12번 항목(웹앱 상단 핵심 설명 문장)은 미입력 상태입니다.</div>
+</div>
+
+<!-- ════════════════════════════════
+     2. 개념 설명 영역
+════════════════════════════════ -->
+<div class="section">
+  <div class="section-title">개념 설명</div>
+  <div class="concept-body">
+    <strong>수면 역치 함수</strong>는 신체가 잠들 수 있는 기준값으로, 주기함수 형태를 띱니다. 이 웹앱에서는 수면 역치보다 <em>살짝 낮게 이동된 곡선</em>을 기준선으로 사용합니다.<br><br>
+    <em>수면 압력 함수</em>는 깨어 있는 동안 서서히 증가하고, 잠자는 동안 감소하는 구조를 가집니다.<br><br>
+    두 함수가 교차하는 지점을 기준으로 두 가지 구간이 생깁니다.<br>
+    • <strong style="color:var(--accent2)">피로도 구간</strong> : 수면 압력 ＞ 수면 역치 → 잠들기 쉬운 상태, 각성 어려움<br>
+    • <strong style="color:var(--accent1)">각성 가능 구간</strong> : 수면 압력 ＜ 수면 역치 → 깨어 있을 수 있는 상태<br><br>
+    각 구간의 <strong>넓이(정적분)</strong>는 해당 상태가 지속되는 강도×시간을 의미합니다.<br>
+    수면을 줄이면 수면 압력이 수면 역치에 도달하지 못하거나 도달하는 시점이 달라져, 다음 각성 가능 구간의 넓이가 줄어드는 것을 확인할 수 있습니다.
+  </div>
+</div>
+
+<!-- ════════════════════════════════
+     3. 조작 영역
+════════════════════════════════ -->
+<div class="section">
+  <div class="section-title">조작 영역</div>
+  <div class="controls">
+
+    <!-- 취침 시각 -->
+    <div class="ctrl-group">
+      <div class="ctrl-label">🌙 취침 시각</div>
+      <select id="bedTime" class="time-select"></select>
+      <div style="font-size:0.78rem;color:var(--muted);margin-top:2px">잠드는 시각을 선택합니다.</div>
+    </div>
+
+    <!-- 기상 시각 -->
+    <div class="ctrl-group">
+      <div class="ctrl-label">☀️ 기상 시각</div>
+      <select id="wakeTime" class="time-select"></select>
+      <div style="font-size:0.78rem;color:var(--muted);margin-top:2px">일어나는 시각을 선택합니다.</div>
+    </div>
+
+    <!-- 수면 시간 표시 + 초기화 -->
+    <div class="ctrl-group" style="justify-content:space-between;">
+      <div>
+        <div class="ctrl-label">⏱ 총 수면 시간</div>
+        <div class="ctrl-value"><span id="sleepDurDisplay">—</span></div>
+      </div>
+      <div class="btn-row" style="margin-top:10px;">
+        <button class="primary" onclick="resetDefaults()">기본값으로 초기화</button>
+      </div>
+    </div>
+
+  </div>
+  <!-- 오류 메시지 (취침=기상 등 예외) -->
+  <div id="timeError" style="display:none;margin-top:12px;padding:8px 12px;background:#161b22;border-left:3px solid #f78166;border-radius:4px;font-size:0.82rem;color:#f78166;"></div>
+</div>
+
+<!-- ════════════════════════════════
+     4. 시각화 영역
+════════════════════════════════ -->
+<div class="section">
+  <div class="section-title">시각화 영역</div>
+  <div class="chart-wrap">
+    <canvas id="mainChart"></canvas>
+  </div>
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:var(--accent1)"></div>수면 역치 함수</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#79c0ff;opacity:.6"></div>기준선 (역치 − 이동)</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--accent2)"></div>수면 압력 함수</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--zone-fat);border:1px solid var(--accent2)"></div>피로도 구간 (수면압력 ＞ 역치)</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--zone-wake);border:1px solid var(--accent1)"></div>각성 가능 구간 (수면압력 ＜ 역치)</div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════
+     5. 결과 해석 영역
+════════════════════════════════ -->
+<div class="section">
+  <div class="section-title">결과 해석</div>
+  <div class="result-grid">
+    <div class="result-box fatigue">
+      <div class="rb-label">피로도 구간 넓이 (적분값)</div>
+      <div><span class="rb-val" id="fatArea">—</span><span class="rb-unit">단위·시간</span></div>
+      <div style="font-size:0.78rem;color:var(--muted);margin-top:6px">수면 압력이 역치를 초과한 구간의 강도×시간 합산</div>
+    </div>
+    <div class="result-box wake">
+      <div class="rb-label">각성 가능 구간 넓이 (적분값)</div>
+      <div><span class="rb-val" id="wakeArea">—</span><span class="rb-unit">단위·시간</span></div>
+      <div style="font-size:0.78rem;color:var(--muted);margin-top:6px">수면 압력이 역치보다 낮은 구간의 강도×시간 합산</div>
+    </div>
+  </div>
+  <div class="interp" id="interpText">그래프를 조작하면 해석이 여기에 나타납니다.</div>
+</div>
+
+<!-- ════════════════════════════════
+     JavaScript
+════════════════════════════════ -->
+<script>
+// ── 상수 및 설정 ──────────────────────────────────────────────
+const TOTAL_HOURS = 24;
+const N  = 480;           // 샘플 포인트 수
+const dt = TOTAL_HOURS / N;
+
+// 수면 역치 함수: -cos 기반, 주기 24시간
+// t=0(06:00)에서 최솟값, t=12(18:00)에서 최댓값
+// X축은 06:00 기점이므로 실제 시각 = (t + 6) % 24
+const THRESHOLD_AMP    = 1.1;   // 진폭 (굴곡 뚜렷하게)
+const THRESHOLD_CENTER = 2.2;   // 중심값
+const THRESHOLD_PERIOD = 24;    // 주기(시간)
+const BASELINE_OFFSET  = 0.3;   // 기준선 = 역치 - offset
+const RISE_RATE        = 0.13;  // 각성 중 압력 증가 기울기 (고정, 완만)
+
+// X축 표시용: 인덱스 i → 실제 시각 문자열 (06:00 기점)
+function idxToTimeStr(i) {
+  const h = ((Math.round(i * dt) + 6) % 24);
+  return String(h).padStart(2, '0') + ':00';
+}
+
+// 실제 시각(0~23) → 그래프 내부 t값 (06:00 기점, 0~24)
+function clockToT(hour) {
+  return (hour - 6 + 24) % 24;
+}
+
+// ── 수면 역치 함수 T(t) ──
+// -cos 사용: t=0(06:00)에서 최솟값, t=12(18:00)에서 최댓값
+function threshold(t) {
+  return THRESHOLD_CENTER - THRESHOLD_AMP * Math.cos(2 * Math.PI * t / THRESHOLD_PERIOD);
+}
+
+// 기준선 B(t) = T(t) - offset
+function baseline(t) {
+  return threshold(t) - BASELINE_OFFSET;
+}
+
+// ── 수면 압력 함수 P(t) 생성 ──
+// bedT, wakeT: 내부 t값 (0~24, 06:00 기점)
+// 하루 구조: 06:00부터 bedT까지 각성(압력 증가) → bedT~wakeT 수면(압력 감소) → wakeT~30h 각성
+// wakeT < bedT(예: 자정 이후 기상)이면 wakeT += 24 처리
+function buildPressure(bedT, wakeT) {
+  // 수면이 자정을 넘기는 경우 처리 (내부 t 기준)
+  // bedT: 취침 내부t, wakeT: 기상 내부t
+  // 수면 구간: bedT ~ (bedT + sleepDur), 각성 나머지
+  const sleepDur = ((wakeT - bedT) + 24) % 24;
+  const pressure = new Array(N).fill(0);
+
+  // 초기값: 전날 기상 직후 낮은 수준에서 시작
+  let p = 0.5;
+
+  for (let i = 0; i < N; i++) {
+    const t = i * dt; // 0~24 (06:00 기점)
+    pressure[i] = p;
+
+    // t가 수면 구간에 해당하는지 판단
+    // 수면: bedT <= t < bedT+sleepDur (mod 처리)
+    const inSleep = (sleepDur > 0) && isInSleep(t, bedT, sleepDur);
+
+    if (inSleep) {
+      // 수면: 압력 선형 감소
+      const peakP = getPeakPressure(bedT, sleepDur);
+      const decayRate = peakP / sleepDur;
+      p -= decayRate * dt;
+      if (p < 0.1) p = 0.1;
+    } else {
+      // 각성: 압력 완만하게 증가
+      p += RISE_RATE * dt;
+    }
+  }
+  return pressure;
+}
+
+// t가 수면 구간[bedT, bedT+sleepDur) 안에 있는지 확인
+function isInSleep(t, bedT, sleepDur) {
+  const end = bedT + sleepDur;
+  if (end <= 24) {
+    return t >= bedT && t < end;
+  } else {
+    // 자정을 넘기는 수면
+    return t >= bedT || t < (end - 24);
+  }
+}
+
+// bedT 시점의 압력 추정 (각성 시간 × 기울기)
+function getPeakPressure(bedT, sleepDur) {
+  // 각성 시간: 24 - sleepDur
+  const awakeDur = 24 - sleepDur;
+  return 0.5 + RISE_RATE * awakeDur;
+}
+
+// ── 적분 계산 (좌 리만 합) ──
+function calcAreas(pressureArr) {
+  let fatArea  = 0;
+  let wakeArea = 0;
+  for (let i = 0; i < N; i++) {
+    const thr  = threshold(i * dt);
+    const diff = pressureArr[i] - thr;
+    if (diff > 0) fatArea  += diff * dt;
+    else          wakeArea += (-diff) * dt;
+  }
+  return { fatArea, wakeArea };
+}
+
+// ── Canvas 설정 ──
+const canvas = document.getElementById('mainChart');
+const ctx    = canvas.getContext('2d');
+const PAD    = { top: 24, right: 20, bottom: 50, left: 52 };
+
+function resizeCanvas() {
+  const dpr = window.devicePixelRatio || 1;
+  const w   = canvas.parentElement.clientWidth;
+  const h   = Math.max(320, Math.round(w * 0.48));
+  canvas.style.width  = w + 'px';
+  canvas.style.height = h + 'px';
+  canvas.width  = w * dpr;
+  canvas.height = h * dpr;
+  ctx.scale(dpr, dpr);
+}
+
+function toX(t, W) {
+  return PAD.left + (t / TOTAL_HOURS) * (W - PAD.left - PAD.right);
+}
+function toY(v, yMin, yMax, H) {
+  return PAD.top + (1 - (v - yMin) / (yMax - yMin)) * (H - PAD.top - PAD.bottom);
+}
+
+// ── 그래프 그리기 ──
+function drawChart(tArr, bArr, pArr, bedT, wakeT) {
+  const W = canvas.clientWidth;
+  const H = canvas.clientHeight;
+
+  const allVals = [...tArr, ...bArr, ...pArr];
+  const dataMin = Math.min(...allVals);
+  const dataMax = Math.max(...allVals);
+  const margin  = (dataMax - dataMin) * 0.15;
+  const yMin = dataMin - margin;
+  const yMax = dataMax + margin;
+
+  ctx.clearRect(0, 0, W, H);
+  ctx.fillStyle = '#161b22';
+  ctx.fillRect(0, 0, W, H);
+
+  // Y축 그리드 & 눈금
+  ctx.font = '11px sans-serif';
+  ctx.textAlign = 'right';
+  for (let k = 0; k <= 5; k++) {
+    const v  = yMin + (yMax - yMin) * (k / 5);
+    const py = toY(v, yMin, yMax, H);
+    ctx.strokeStyle = 'rgba(48,54,61,0.7)';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([]);
+    ctx.beginPath();
+    ctx.moveTo(PAD.left, py);
+    ctx.lineTo(W - PAD.right, py);
+    ctx.stroke();
+    ctx.fillStyle = '#8b949e';
+    ctx.fillText(v.toFixed(1), PAD.left - 6, py + 4);
+  }
+
+  // X축 눈금: 06:00 기점, 2시간 간격
+  ctx.textAlign = 'center';
+  for (let step = 0; step <= 12; step++) {
+    const t  = step * 2;                         // 내부 t (0,2,4,...,24)
+    const px = toX(t, W);
+    const py = H - PAD.bottom;
+    ctx.strokeStyle = 'rgba(48,54,61,0.5)';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([]);
+    ctx.beginPath();
+    ctx.moveTo(px, PAD.top);
+    ctx.lineTo(px, py + 5);
+    ctx.stroke();
+    // 실제 시각: (t + 6) % 24
+    const realH = (t + 6) % 24;
+    ctx.fillStyle = '#8b949e';
+    ctx.font = '11px sans-serif';
+    ctx.fillText(String(realH).padStart(2,'0') + ':00', px, py + 18);
+  }
+
+  // 수면 구간 배경 음영
+  const sleepDur = ((wakeT - bedT) + 24) % 24;
+  if (sleepDur > 0) {
+    ctx.fillStyle = 'rgba(30,40,60,0.55)';
+    const bedEnd = bedT + sleepDur;
+    if (bedEnd <= 24) {
+      const x1 = toX(bedT, W), x2 = toX(bedEnd, W);
+      ctx.fillRect(x1, PAD.top, x2 - x1, H - PAD.top - PAD.bottom);
+    } else {
+      // 자정을 넘기는 경우: 두 조각으로
+      ctx.fillRect(toX(bedT, W), PAD.top, toX(24, W) - toX(bedT, W), H - PAD.top - PAD.bottom);
+      ctx.fillRect(toX(0, W),   PAD.top, toX(bedEnd - 24, W) - toX(0, W), H - PAD.top - PAD.bottom);
+    }
+    // 수면 구간 레이블
+    ctx.fillStyle = 'rgba(88,130,200,0.5)';
+    ctx.font = '10px sans-serif';
+    ctx.textAlign = 'center';
+    const midT  = bedT + sleepDur / 2;
+    const midTw = midT <= 24 ? midT : midT - 24;
+    ctx.fillText('수면', toX(midTw, W), PAD.top + 14);
+  }
+
+  // 축 테두리
+  ctx.strokeStyle = '#30363d';
+  ctx.lineWidth = 1.5;
+  ctx.setLineDash([]);
+  ctx.strokeRect(PAD.left, PAD.top, W - PAD.left - PAD.right, H - PAD.top - PAD.bottom);
+
+  // 영역 채우기 헬퍼
+  function fillBetween(upperArr, lowerArr, color, condition) {
+    ctx.fillStyle = color;
+    let open = false;
+    ctx.beginPath();
+    for (let i = 0; i < N; i++) {
+      const px = toX(i * dt, W);
+      if (condition(i)) {
+        const py = toY(upperArr[i], yMin, yMax, H);
+        if (!open) { ctx.moveTo(px, py); open = true; }
+        else ctx.lineTo(px, py);
+      } else {
+        if (open) {
+          for (let j = i - 1; j >= 0 && condition(j); j--)
+            ctx.lineTo(toX(j * dt, W), toY(lowerArr[j], yMin, yMax, H));
+          ctx.closePath(); ctx.fill();
+          ctx.beginPath(); open = false;
+        }
+      }
+    }
+    if (open) {
+      for (let j = N - 1; j >= 0 && condition(j); j--)
+        ctx.lineTo(toX(j * dt, W), toY(lowerArr[j], yMin, yMax, H));
+      ctx.closePath(); ctx.fill();
+    }
+  }
+
+  // 각성 가능 구간 (역치 > 압력)
+  fillBetween(tArr, pArr, 'rgba(88,166,255,0.20)', i => tArr[i] > pArr[i]);
+  // 피로도 구간 (압력 > 역치)
+  fillBetween(pArr, tArr, 'rgba(247,129,102,0.24)', i => pArr[i] > tArr[i]);
+
+  // 선 그리기 헬퍼
+  function drawLine(arr, color, width, dash) {
+    ctx.strokeStyle = color;
+    ctx.lineWidth   = width;
+    ctx.setLineDash(dash || []);
+    ctx.lineJoin    = 'round';
+    ctx.beginPath();
+    for (let i = 0; i < N; i++) {
+      const px = toX(i * dt, W);
+      const py = toY(arr[i], yMin, yMax, H);
+      i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
+    }
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  drawLine(bArr, 'rgba(121,192,255,0.45)', 1.5, [6, 5]); // 기준선
+  drawLine(tArr, '#58a6ff', 2.5);                         // 수면 역치
+  drawLine(pArr, '#f78166', 2.8);                         // 수면 압력
+
+  // Y축 레이블
+  ctx.save();
+  ctx.translate(13, H / 2);
+  ctx.rotate(-Math.PI / 2);
+  ctx.fillStyle = '#8b949e';
+  ctx.font = '11px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('압력 / 역치 값', 0, 0);
+  ctx.restore();
+}
+
+// ── select 옵션 채우기 (30분 단위, 00:00~23:30) ──
+function fillTimeSelect(selectEl, defaultHour) {
+  for (let h = 0; h < 24; h++) {
+    for (let m of [0, 30]) {
+      const opt = document.createElement('option');
+      const val = h + m / 60;          // 실제 시각 (소수, 예: 23.5 = 23:30)
+      const label = String(h).padStart(2,'0') + ':' + (m === 0 ? '00' : '30');
+      opt.value = val;
+      opt.textContent = label;
+      if (h === defaultHour && m === 0) opt.selected = true;
+      selectEl.appendChild(opt);
+    }
+  }
+}
+
+// ── 메인 업데이트 ──
+function update() {
+  const bedClock  = parseFloat(document.getElementById('bedTime').value);   // 실제 시각
+  const wakeClock = parseFloat(document.getElementById('wakeTime').value);  // 실제 시각
+
+  // 수면 시간 계산 (자정 넘기기 대응)
+  const sleepDur = ((wakeClock - bedClock) + 24) % 24;
+
+  const errEl = document.getElementById('timeError');
+  if (sleepDur === 0) {
+    errEl.style.display = 'block';
+    errEl.textContent   = '취침 시각과 기상 시각이 같습니다. 다른 시각을 선택해주세요.';
+    return;
+  }
+  errEl.style.display = 'none';
+
+  // 총 수면 시간 표시
+  const sh = Math.floor(sleepDur);
+  const sm = Math.round((sleepDur - sh) * 60);
+  document.getElementById('sleepDurDisplay').textContent =
+    sh + '시간' + (sm > 0 ? ' ' + sm + '분' : '');
+
+  // 내부 t값으로 변환 (06:00 기점)
+  const bedT  = clockToT(bedClock);
+  const wakeT = clockToT(wakeClock);
+
+  // 함수 배열 계산
+  const tArr = Array.from({ length: N }, (_, i) => threshold(i * dt));
+  const bArr = Array.from({ length: N }, (_, i) => baseline(i * dt));
+  const pArr = buildPressure(bedT, wakeT);
+
+  resizeCanvas();
+  drawChart(tArr, bArr, pArr, bedT, wakeT);
+
+  // 적분값
+  const { fatArea, wakeArea } = calcAreas(pArr);
+  document.getElementById('fatArea').textContent  = fatArea.toFixed(2);
+  document.getElementById('wakeArea').textContent = wakeArea.toFixed(2);
+
+  // 해석 문구
+  const ratio = wakeArea / (fatArea + wakeArea + 0.001);
+  const bedLabel  = String(Math.floor(bedClock)).padStart(2,'0') + ':' + (bedClock % 1 ? '30' : '00');
+  const wakeLabel = String(Math.floor(wakeClock)).padStart(2,'0') + ':' + (wakeClock % 1 ? '30' : '00');
+
+  let interpHTML = `
+    취침 <strong>${bedLabel}</strong> → 기상 <strong>${wakeLabel}</strong>
+    (수면 ${sh}시간${sm > 0 ? ' ' + sm + '분' : ''})<br><br>
+    각성 가능 구간 넓이 = <strong style="color:var(--accent1)">${wakeArea.toFixed(2)}</strong> &nbsp;/&nbsp;
+    피로도 구간 넓이 = <strong style="color:var(--accent2)">${fatArea.toFixed(2)}</strong><br>
+    전체 중 각성 가능 비율: `;
+
+  if (ratio >= 0.55) {
+    interpHTML += `<strong>${(ratio*100).toFixed(1)}%</strong><br>
+      → 수면이 충분해 각성 가능 구간이 넓습니다. 깨어 있는 동안 각성 상태를 유지하기 좋은 조건입니다.`;
+  } else if (ratio >= 0.35) {
+    interpHTML += `<strong class="warn">${(ratio*100).toFixed(1)}%</strong><br>
+      → 수면이 다소 부족합니다. 각성 가능 구간이 줄어들어 낮 시간대 집중력이 떨어질 수 있습니다.`;
+  } else {
+    interpHTML += `<strong class="warn">${(ratio*100).toFixed(1)}%</strong><br>
+      → <span class="warn">수면이 크게 부족합니다.</span> 수면 압력이 역치를 크게 초과해 각성 가능 구간이 매우 좁아집니다.`;
+  }
+
+  document.getElementById('interpText').innerHTML = interpHTML;
+}
+
+function resetDefaults() {
+  // 기본: 취침 23:00, 기상 07:00
+  document.getElementById('bedTime').value  = 23;
+  document.getElementById('wakeTime').value = 7;
+  update();
+}
+
+// ── 초기화: select 채우기 ──
+fillTimeSelect(document.getElementById('bedTime'),  23);
+fillTimeSelect(document.getElementById('wakeTime'), 7);
+
+document.getElementById('bedTime').addEventListener('change', update);
+document.getElementById('wakeTime').addEventListener('change', update);
+window.addEventListener('resize', update);
+
+update();
+</script>
+</body>
+</html>

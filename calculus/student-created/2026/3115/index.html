@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3115 학생 제작 웹앱</title>
+    <!-- 그래프 시각화를 위한 Chart.js CDN 라이브러리 추가 -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        /* 기본 스타일 및 레이아웃 설정 (반응형 대응) */
+        body {
+            font-family: 'Malgun Gothic', dotum, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            background-color: #f7f9fa;
+            color: #333;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: #ffffff;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+        }
+        /* 각 영역 구분 스타일 */
+        section {
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #e9ecef;
+        }
+        section:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+        h2 {
+            color: #0056b3;
+            font-size: 20px;
+            margin-top: 0;
+            margin-bottom: 15px;
+        }
+        /* 1. 상단 정보 영역 스타일 */
+        .info-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 15px;
+        }
+        .info-table th, .info-table td {
+            border: 1px solid #dee2e6;
+            padding: 10px;
+            text-align: left;
+            font-size: 15px;
+        }
+        .info-table th {
+            background-color: #e9ecef;
+            width: 25%;
+        }
+        .intro-box {
+            background-color: #e8f4fd;
+            border-left: 5px solid #2196f3;
+            padding: 15px;
+            border-radius: 0 4px 4px 0;
+            margin-top: 10px;
+        }
+        /* 2. 개념 설명 영역 스타일 */
+        .concept-box {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            font-size: 15px;
+        }
+        /* 3. 시각화 영역 스타일 */
+        .chart-wrapper {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+        }
+        @media (min-width: 768px) {
+            .chart-wrapper {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+        .chart-container {
+            position: relative;
+            height: 280px;
+            width: 100%;
+        }
+        /* 4. 조작 영역 스타일 */
+        .control-panel {
+            background-color: #f1f3f5;
+            padding: 20px;
+            border-radius: 8px;
+        }
+        .control-group {
+            margin-bottom: 15px;
+        }
+        .control-group:last-child {
+            margin-bottom: 0;
+        }
+        .control-group label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 5px;
+            font-size: 15px;
+        }
+        .control-group input[type="range"] {
+            width: 100%;
+            margin-top: 5px;
+        }
+        .value-display {
+            color: #d941c1;
+            font-weight: bold;
+            float: right;
+        }
+        /* 5. 결과 해석 영역 스타일 */
+        .result-panel {
+            background-color: #e6fffa;
+            border-left: 5px solid #319795;
+            padding: 15px;
+            border-radius: 0 4px 4px 0;
+        }
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 10px;
+            margin-top: 10px;
+            margin-bottom: 15px;
+        }
+        .summary-card {
+            background: #ffffff;
+            padding: 10px;
+            border: 1px solid #b2f5ea;
+            border-radius: 4px;
+            text-align: center;
+        }
+        .summary-card div:first-child {
+            font-size: 13px;
+            color: #4a5568;
+        }
+        .summary-card div:last-child {
+            font-size: 16px;
+            font-weight: bold;
+            color: #2c7a7b;
+            margin-top: 5px;
+        }
+        .interpretation-text {
+            font-size: 15px;
+            font-weight: bold;
+            color: #2d3748;
+            background: #ffffff;
+            padding: 10px;
+            border-radius: 4px;
+            border: 1px dashed #319795;
+        }
+    </style>
+
+<style>
+  .student-work-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    max-width: 1040px;
+    margin: 0 auto 16px;
+    padding: 10px 12px;
+    border: 1px solid #dbe3ef;
+    border-radius: 8px;
+    background: #f8fafc;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+  .student-work-links a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 36px;
+    padding: 7px 10px;
+    border-radius: 6px;
+    background: #ffffff;
+    color: #1d4ed8;
+    text-decoration: none;
+    font-weight: 700;
+    border: 1px solid #dbe3ef;
+  }
+  .student-work-links a:hover {
+    background: #eff6ff;
+  }
+</style>
+</head>
+<body>
+
+<nav class="student-work-links" aria-label="학생 답안 자료">
+  <a href="../">목록으로</a>
+  <a href="./answer.html">답안 보기</a>
+  <a href="./answer.txt">원문 TXT</a>
+</nav>
+
+
+<div class="container">
+
+    <!-- 1. 상단 정보 영역 -->
+    <section id="top-info">
+        <h2>[1] 웹앱 기본 정보</h2>
+        <table class="info-table">
+            <tr>
+                <th>학번 / 이름</th>
+                <td>3115 / 비공개</td>
+                <th>책 제목 / 저자</th>
+                <td>미적분의 쓸모 / 한화택</td>
+            </tr>
+            <tr>
+                <th>선택한 주제</th>
+                <td>적분으로 투자하라</td>
+                <th>관련 미적분 개념</th>
+                <td>적분</td>
+            </tr>
+        </table>
+        <div class="intro-box">
+            <strong>핵심 설명 (웹앱 제작 의도):</strong> 티끌 모아 태산<br>
+            <span style="font-size: 14px; color: #495057; display:block; margin-top: 5px;">
+                * 사용 방법 안내: 아래 조작 영역의 슬라이더를 마우스나 터치로 움직여보세요. 값이 바뀜에 따라 누적 투자금액, 수익 그래프, 단가가 실시간으로 누적 및 변화하는 모습을 확인할 수 있습니다.
+            </span>
+        </div>
+    </section>
+
+    <!-- 2. 개념 설명 영역 -->
+    <section id="concept-explanation">
+        <h2>[2] 미적분 개념 설명</h2>
+        <div class="concept-box">
+            <p style="margin: 0;">
+                책의 <strong>'적분으로 투자하라'</strong> 단원과 관련된 미적분 개념은 <strong>'적분(Integration)'</strong>입니다. <br>
+                매월 일정한 금액을 적립식으로 투자하는 것은, 시간이 흐름에 따라 잘게 쪼개진 작은 투자금(변수)들이 계속해서 더해져 커다란 하나의 면적(자산)을 형성해 나가는 과정과 같습니다. 즉, 시간에 따른 투자 금액의 연속적인 합을 구하는 수학적 행위가 바로 적분의 원리입니다.
+            </p>
+        </div>
+    </section>
+
+    <!-- 3. 시각화 영역 -->
+    <section id="visualization">
+        <h2>[3] 시각화 영역 (꾸준한 투자의 장기적인 효과)</h2>
+        <div class="chart-wrapper">
+            <div>
+                <h3 style="font-size:14px; text-align:center; margin-top:0;">누적 투자금액과 수익 그래프 변화</h3>
+                <div class="chart-container">
+                    <canvas id="assetChart"></canvas>
+                </div>
+            </div>
+            <div>
+                <h3 style="font-size:14px; text-align:center; margin-top:0;">평균 매입 단가와 주가 변동 변화</h3>
+                <div class="chart-container">
+                    <canvas id="priceChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 4. 조작 영역 -->
+    <section id="controls">
+        <h2>[4] 조작 영역</h2>
+        <div class="control-panel">
+            <div class="control-group">
+                <label for="monthlyAmt">월 투자 금액
+                    <span id="monthlyAmtVal" class="value-display">300,000 원</span>
+                </label>
+                <input type="range" id="monthlyAmt" min="100000" max="1000000" step="50000" value="300000">
+            </div>
+
+            <div class="control-group">
+                <label for="period">투자 기간
+                    <span id="periodVal" class="value-display">36 개월</span>
+                </label>
+                <input type="range" id="period" min="12" max="120" step="12" value="36">
+            </div>
+
+            <div class="control-group">
+                <label for="volatility">주가 변동 정도
+                    <span id="volatilityVal" class="value-display">20 %</span>
+                </label>
+                <input type="range" id="volatility" min="5" max="50" step="5" value="20">
+            </div>
+        </div>
+    </section>
+
+    <!-- 5. 결과 해석 영역 -->
+    <section id="results">
+        <h2>[5] 결과 해석 영역</h2>
+        <div class="result-panel">
+            <div class="summary-grid">
+                <div class="summary-card">
+                    <div>최종 누적 투자금액</div>
+                    <div id="resPrincipal">0 원</div>
+                </div>
+                <div class="summary-card">
+                    <div>최종 자산 총액</div>
+                    <div id="resAsset">0 원</div>
+                </div>
+                <div class="summary-card">
+                    <div>최종 수익 (수익률)</div>
+                    <div id="resProfit">0 원 (0%)</div>
+                </div>
+                <div class="summary-card">
+                    <div>최종 평균 매입 단가</div>
+                    <div id="resAvgPrice">0 원</div>
+                </div>
+            </div>
+            <div class="interpretation-text">
+                해석: 적분의 작은 투자라도 점점 모이면 큰 성과를 만들어 낸다는 것을 알았으면 좋겠다.
+            </div>
+        </div>
+    </section>
+
+</div>
+
+<script>
+    // 각 슬라이더 DOM 요소 가져오기
+    const monthlyAmtInput = document.getElementById('monthlyAmt');
+    const periodInput = document.getElementById('period');
+    const volatilityInput = document.getElementById('volatility');
+
+    // Chart.js 그래프 생성을 위한 canvas 컨텍스트 가져오기
+    const ctxAsset = document.getElementById('assetChart').getContext('2d');
+    const ctxPrice = document.getElementById('priceChart').getContext('2d');
+
+    // 1번째 그래프: 누적 투자금액 및 수익 그래프 초기화
+    let assetChart = new Chart(ctxAsset, {
+        type: 'line',
+        data: {
+            labels: [],
+            datasets: [
+                {
+                    label: '누적 투자금액 (원)',
+                    data: [],
+                    borderColor: '#a0aec0',
+                    backgroundColor: 'rgba(160, 174, 192, 0.1)',
+                    fill: true,
+                    tension: 0.1
+                },
+                {
+                    label: '최종 자산 총액 (원)',
+                    data: [],
+                    borderColor: '#3182ce',
+                    backgroundColor: 'rgba(49, 130, 206, 0.2)',
+                    fill: true,
+                    tension: 0.1
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: { beginAtZero: true }
+            }
+        }
+    });
+
+    // 2번째 그래프: 주가 및 평균 매입 단가 그래프 초기화
+    let priceChart = new Chart(ctxPrice, {
+        type: 'line',
+        data: {
+            labels: [],
+            datasets: [
+                {
+                    label: '월별 주가 (원)',
+                    data: [],
+                    borderColor: '#e53e3e',
+                    borderDash: [5, 5],
+                    fill: false,
+                    tension: 0.3
+                },
+                {
+                    label: '평균 매입 단가 (원)',
+                    data: [],
+                    borderColor: '#319795',
+                    borderWidth: 3,
+                    fill: false,
+                    tension: 0.1
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: { beginAtZero: false }
+            }
+        }
+    });
+
+    // 시각화 계산 및 갱신 함수
+    function calculateAndRender() {
+        // 사용자가 조작한 슬라이더 값 읽어오기
+        const monthlyAmt = parseInt(monthlyAmtInput.value);
+        const period = parseInt(periodInput.value);
+        const volatility = parseInt(volatilityInput.value);
+
+        // 화면 텍스트 실시간 반영
+        document.getElementById('monthlyAmtVal').innerText = monthlyAmt.toLocaleString() + " 원";
+        document.getElementById('periodVal').innerText = period + " 개월";
+        document.getElementById('volatilityVal').innerText = volatility + " %";
+
+        // 계산을 위한 배열 데이터 초기화
+        let labels = [];
+        let principalData = [];
+        let totalAssetData = [];
+        let stockPriceData = [];
+        let avgPriceData = [];
+
+        let totalPrincipal = 0; // 누적 투자금액
+        let totalShares = 0;    // 누적 주식수
+        const basePrice = 10000; // 초기 주가 (만 원으로 설정)
+
+        // 설정된 개월 수만큼 루프(적분 계산 과정 시뮬레이션)
+        for (let t = 1; t <= period; t++) {
+            labels.push(t + "월");
+
+            // 주기적인 주가 변동 함수 생성 (사인파와 변동 강도 활용)
+            let fluctuation = (volatility / 100) * Math.sin(t / 2.5);
+            // 장기 투자 우상향을 표현하기 위해 매달 0.4%씩 기초 단가 소폭 상승 반영
+            let currentPrice = basePrice * (1 + (0.004 * t) + fluctuation);
+            if (currentPrice < 1000) currentPrice = 1000; // 주가 최솟값 제한 방어 코드
+
+            totalPrincipal += monthlyAmt; // 매달 티끌(월 투자금)을 누적적합
+            let currentSharesBought = monthlyAmt / currentPrice; // 이번 달 매수 수량
+            totalShares += currentSharesBought; // 매달 구매한 주식 총합 적분
+
+            let currentAssetValue = totalShares * currentPrice; // 최종 자산 가치
+            let currentAvgPrice = totalPrincipal / totalShares; // 평균 매입 단가
+
+            // 그래프 데이터 배열에 추가
+            principalData.push(totalPrincipal);
+            totalAssetData.push(Math.round(currentAssetValue));
+            stockPriceData.push(Math.round(currentPrice));
+            avgPriceData.push(Math.round(currentAvgPrice));
+        }
+
+        // 결과 최종값 계산
+        const finalAsset = totalAssetData[totalAssetData.length - 1];
+        const finalProfit = finalAsset - totalPrincipal;
+        const finalReturnRate = ((finalProfit / totalPrincipal) * 100).toFixed(2);
+        const finalAvgPrice = avgPriceData[avgPriceData.length - 1];
+
+        // 결과 해석 영역 수치 업데이트
+        document.getElementById('resPrincipal').innerText = totalPrincipal.toLocaleString() + " 원";
+        document.getElementById('resAsset').innerText = finalAsset.toLocaleString() + " 원";
+        document.getElementById('resProfit').innerText = finalProfit.toLocaleString() + " 원 (" + finalReturnRate + "%)";
+        document.getElementById('resAvgPrice').innerText = Math.round(finalAvgPrice).toLocaleString() + " 원";
+
+        // Chart 1 데이터 주입 및 업데이트
+        assetChart.data.labels = labels;
+        assetChart.data.datasets[0].data = principalData;
+        assetChart.data.datasets[1].data = totalAssetData;
+        assetChart.update();
+
+        // Chart 2 데이터 주입 및 업데이트
+        priceChart.data.labels = labels;
+        priceChart.data.datasets[0].data = stockPriceData;
+        priceChart.data.datasets[1].data = avgPriceData;
+        priceChart.update();
+    }
+
+    // 슬라이더 조작 시 계산 함수 호출 이벤트 연결
+    monthlyAmtInput.addEventListener('input', calculateAndRender);
+    periodInput.addEventListener('input', calculateAndRender);
+    volatilityInput.addEventListener('input', calculateAndRender);
+
+    // 최초 실행 시 기본값으로 그래프 렌더링
+    calculateAndRender();
+</script>
+
+</body>
+</html>

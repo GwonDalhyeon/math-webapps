@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3121 학생 제작 웹앱</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* 커스텀 폰트 및 미세 조정 */
+        @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@400;600;700;800&family=Fira+Code:wght@400;500&display=swap');
+        body {
+            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+        }
+        .code-font {
+            font-family: 'Fira Code', monospace;
+        }
+        /* 슬라이더 스타일 커스텀 */
+        input[type=range] {
+            accent-color: #3b82f6;
+        }
+    </style>
+
+<style>
+  .student-work-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    max-width: 1040px;
+    margin: 0 auto 16px;
+    padding: 10px 12px;
+    border: 1px solid #dbe3ef;
+    border-radius: 8px;
+    background: #f8fafc;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+  .student-work-links a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 36px;
+    padding: 7px 10px;
+    border-radius: 6px;
+    background: #ffffff;
+    color: #1d4ed8;
+    text-decoration: none;
+    font-weight: 700;
+    border: 1px solid #dbe3ef;
+  }
+  .student-work-links a:hover {
+    background: #eff6ff;
+  }
+</style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen pb-12">
+
+<nav class="student-work-links" aria-label="학생 답안 자료">
+  <a href="../">목록으로</a>
+  <a href="./answer.html">답안 보기</a>
+  <a href="./answer.txt">원문 TXT</a>
+</nav>
+
+
+    <!-- 상단 내비게이션 바 -->
+    <header class="bg-slate-900 text-white py-5 px-6 shadow-md mb-8">
+        <div class="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
+            <div>
+                <h1 class="text-2xl font-bold tracking-tight flex items-center gap-2">
+                    <span class="text-blue-400">⚡</span> 미적분의 쓸모: 경사하강법 시뮬레이터
+                </h1>
+                <p class="text-slate-400 text-xs mt-1">인공지능이 최적의 해(오차가 가장 작은 상태)를 찾아가는 미분 원리 탐구</p>
+            </div>
+            <div class="bg-slate-800 px-4 py-2 rounded-lg border border-slate-700 text-sm">
+                <span class="text-slate-400">제작자:</span> <strong class="text-white">3121 비공개</strong>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-6xl mx-auto px-4 grid grid-cols-1 lg:grid-cols-12 gap-8">
+
+        <!-- 왼쪽 사이드바: 정보 및 조작 영역 (4/12) -->
+        <section class="lg:col-span-5 flex flex-col gap-6">
+
+            <!-- 학생 정보 카드 -->
+            <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
+                <h2 class="text-lg font-bold text-slate-900 border-b border-slate-100 pb-3 mb-4 flex items-center gap-2">
+                    <span class="w-2.5 h-2.5 rounded-full bg-blue-500"></span> 독서 기반 수행 과제 정보
+                </h2>
+                <div class="grid grid-cols-3 gap-y-3 text-sm">
+                    <div class="text-slate-400 font-medium">대상 도서</div>
+                    <div class="col-span-2 text-slate-800 font-semibold">미적분의 쓸모 (한화택 저)</div>
+
+                    <div class="text-slate-400 font-medium">탐구 주제</div>
+                    <div class="col-span-2 text-slate-800">인공지능이 빅데이터를 학습하는 방법</div>
+
+                    <div class="text-slate-400 font-medium">미적분 개념</div>
+                    <div class="col-span-2"><span class="bg-blue-50 text-blue-700 text-xs px-2.5 py-1 rounded-full font-semibold">순간변화율 (미분)</span> <span class="bg-teal-50 text-teal-700 text-xs px-2.5 py-1 rounded-full font-semibold">접선의 방정식</span></div>
+
+                    <div class="text-slate-400 font-medium">제작 의도</div>
+                    <div class="col-span-2 text-slate-600 text-xs leading-relaxed">
+                        인공지능 머신러닝의 핵심 최적화 알고리즘인 '경사하강법'을 수학적으로 구현하고 실시간 접선 변화와 수식 연동을 시각화하여, 고등학교 수준의 미분 개념이 첨단 인공지능에 어떻게 직관적으로 구현되는지 이해를 돕고자 합니다.
+                    </div>
+                </div>
+            </div>
+
+            <!-- 개념 설명 카드 -->
+            <div class="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-6 border border-blue-100">
+                <h3 class="text-base font-bold text-blue-950 mb-2 flex items-center gap-1.5">
+                    💡 핵심 미적분 원리
+                </h3>
+                <p class="text-xs text-blue-900 leading-relaxed">
+                    오차를 뜻하는 목적 함수 $f(x)$가 주어졌을 때, 임의의 점 $x$에서 도함수 $f'(x)$(접선의 기울기)를 구합니다.
+                    기울기가 <strong>양수(+)</strong>라면 왼쪽으로 이동해야 오차가 줄어들고, <strong>음수(-)</strong>라면 오른쪽으로 이동해야 줄어듭니다.
+                    따라서, 기울기 값의 반대 방향으로 학습률($\eta$)만큼씩 이동하는 공식 <span class="code-font bg-white/80 px-1 rounded text-red-600 font-semibold">$x \leftarrow x - \eta f'(x)$</span>을 반복하여 오차의 극솟값(기울기 0)을 탐색합니다.
+                </p>
+            </div>
+
+            <!-- 조작 패널 -->
+            <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
+                <h2 class="text-lg font-bold text-slate-900 border-b border-slate-100 pb-3 mb-5 flex items-center gap-2">
+                    🔧 매개변수 실시간 설정
+                </h2>
+
+                <!-- 오차 함수 종류 선택 -->
+                <div class="mb-5">
+                    <label class="block text-sm font-semibold text-slate-700 mb-2">대상 오차 함수 $f(x)$ 선택</label>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button id="func1Btn" onclick="selectFunction(1)" class="py-2 px-3 rounded-lg border text-xs font-semibold transition-all shadow-sm bg-blue-500 text-white border-blue-500">
+                            기본 2차 함수<br><span class="text-[10px] opacity-90">$f(x) = x^2$</span>
+                        </button>
+                        <button id="func2Btn" onclick="selectFunction(2)" class="py-2 px-3 rounded-lg border text-xs font-semibold transition-all shadow-sm bg-white text-slate-600 border-slate-200 hover:bg-slate-50">
+                            다중 극소 함수<br><span class="text-[10px] opacity-90">$f(x) = x^4 - 6x^2$</span>
+                        </button>
+                    </div>
+                    <p id="funcExplain" class="text-[11px] text-slate-500 mt-2">
+                        * 기본 2차 함수는 하나의 전역 극솟값만 존재하여 매끄럽게 수렴합니다.
+                    </p>
+                </div>
+
+                <!-- 시작 위치 x 조절 -->
+                <div class="mb-4">
+                    <div class="flex justify-between items-center mb-1">
+                        <label for="startX" class="text-sm font-semibold text-slate-700">시작 위치 설정 ($x$)</label>
+                        <span id="startX_val" class="text-sm font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded">3.0</span>
+                    </div>
+                    <input type="range" id="startX" min="-4" max="4" step="0.1" value="3.0" oninput="updateInitialState()" class="w-full h-2 bg-slate-200 rounded-lg cursor-pointer">
+                    <div class="flex justify-between text-[10px] text-slate-400 mt-1">
+                        <span>x = -4.0</span>
+                        <span>x = 0.0</span>
+                        <span>x = 4.0</span>
+                    </div>
+                </div>
+
+                <!-- 학습률 η 조절 -->
+                <div class="mb-5">
+                    <div class="flex justify-between items-center mb-1">
+                        <label for="learningRate" class="text-sm font-semibold text-slate-700">학습률 ($\eta$, Learning Rate)</label>
+                        <span id="lr_val" class="text-sm font-bold text-teal-600 bg-teal-50 px-2 py-0.5 rounded">0.10</span>
+                    </div>
+                    <input type="range" id="learningRate" min="0.01" max="1.1" step="0.01" value="0.10" oninput="updateLRDisplay()" class="w-full h-2 bg-slate-200 rounded-lg cursor-pointer">
+                    <div class="flex justify-between text-[10px] text-slate-400 mt-1">
+                        <span>0.01 (느림/안정)</span>
+                        <span>1.10 (급격/진동)</span>
+                    </div>
+                </div>
+
+                <!-- 탐색 간격/속도 조절 -->
+                <div class="mb-6">
+                    <div class="flex justify-between items-center mb-1">
+                        <label for="stepSpeed" class="text-sm font-semibold text-slate-700">업데이트 간격 (시간)</label>
+                        <span id="speed_val" class="text-sm font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded">300ms</span>
+                    </div>
+                    <input type="range" id="stepSpeed" min="50" max="1500" step="50" value="300" oninput="updateSpeedDisplay()" class="w-full h-2 bg-slate-200 rounded-lg cursor-pointer">
+                </div>
+
+                <!-- 컨트롤 버튼 그룹 -->
+                <div class="flex gap-2.5">
+                    <button id="startBtn" onclick="startLearning()" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-xl shadow-md shadow-blue-200 transition-all flex items-center justify-center gap-2 text-sm">
+                        <span>▶</span> 학습 시작
+                    </button>
+                    <button id="pauseBtn" onclick="pauseLearning()" disabled class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-600 disabled:opacity-50 disabled:pointer-events-none font-bold py-3 px-4 rounded-xl transition-all flex items-center justify-center gap-2 text-sm">
+                        <span>⏸</span> 일시정지
+                    </button>
+                    <button onclick="updateInitialState()" class="bg-rose-500 hover:bg-rose-600 text-white font-bold p-3 rounded-xl shadow-md shadow-rose-100 transition-all text-sm" title="초기화">
+                        ↺ 초기화
+                    </button>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- 오른쪽 메인: 시각화 및 결과 분석 대시보드 (7/12) -->
+        <section class="lg:col-span-7 flex flex-col gap-6">
+
+            <!-- 시각화 캔버스 카드 -->
+            <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 flex flex-col items-center">
+                <div class="w-full flex justify-between items-center mb-4">
+                    <h3 class="font-bold text-slate-800 text-md flex items-center gap-1.5">
+                        📈 오차 함수 그래프 & 접선 실시간 시각화
+                    </h3>
+                    <!-- 상태 표시 배지 -->
+                    <span id="statusBadge" class="bg-slate-100 text-slate-600 text-xs font-bold px-3 py-1 rounded-full border border-slate-200">
+                        대기 중
+                    </span>
+                </div>
+
+                <div class="w-full bg-slate-50 rounded-xl p-2 border border-slate-100 overflow-hidden flex justify-center">
+                    <canvas id="graphCanvas" class="w-full max-w-[550px] aspect-[4/3] bg-white rounded-lg cursor-crosshair shadow-inner"></canvas>
+                </div>
+                <div class="w-full mt-3 flex justify-between text-[11px] text-slate-400">
+                    <span>* 캔버스를 클릭하여 새로운 시작점 $x$를 직접 정할 수도 있습니다.</span>
+                    <span>가로축: $x$, 세로축: $y$ (오차 수치)</span>
+                </div>
+            </div>
+
+            <!-- 결과 해석 판넬 (대시보드 형태로 리뉴얼) -->
+            <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
+                <h3 class="font-bold text-slate-800 text-md border-b border-slate-100 pb-3 mb-4 flex items-center gap-1.5">
+                    📊 미적분 기반 실시간 데이터 연산 결과
+                </h3>
+
+                <!-- 주요 계측 정보 Grid -->
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                    <div class="bg-slate-50 p-3 rounded-xl border border-slate-100 text-center">
+                        <span class="text-[11px] text-slate-400 font-semibold block mb-1">현재 상태 (x)</span>
+                        <span id="currentX" class="code-font text-lg font-bold text-blue-600">0.00</span>
+                    </div>
+                    <div class="bg-slate-50 p-3 rounded-xl border border-slate-100 text-center">
+                        <span class="text-[11px] text-slate-400 font-semibold block mb-1">현재 오차 (y)</span>
+                        <span id="currentY" class="code-font text-lg font-bold text-purple-600">0.00</span>
+                    </div>
+                    <div class="bg-slate-50 p-3 rounded-xl border border-slate-100 text-center">
+                        <span class="text-[11px] text-slate-400 font-semibold block mb-1">순간 기울기 (f')</span>
+                        <span id="currentSlope" class="code-font text-lg font-bold text-rose-600">0.00</span>
+                    </div>
+                    <div class="bg-slate-50 p-3 rounded-xl border border-slate-100 text-center col-span-1">
+                        <span class="text-[11px] text-slate-400 font-semibold block mb-1">학습 스텝 진행 수</span>
+                        <span id="stepCount" class="code-font text-lg font-bold text-slate-700">0회</span>
+                    </div>
+                </div>
+
+                <!-- 접선의 방정식 수식 박스 -->
+                <div class="bg-slate-900 text-slate-100 p-4 rounded-xl mb-4 flex flex-col md:flex-row justify-between items-center gap-3">
+                    <div>
+                        <span class="text-[10px] text-slate-400 font-semibold block uppercase tracking-wider">Tangent Equation (접선의 방정식)</span>
+                        <span id="tangentEq" class="code-font text-sm md:text-base font-bold text-yellow-300">y = 0.00(x - 0.00) + 0.00</span>
+                    </div>
+                    <div class="text-[10px] text-slate-400 text-right">
+                        점 $(x_1, f(x_1))$에서의 접선:<br>
+                        $y - f(x_1) = f'(x_1)(x - x_1)$
+                    </div>
+                </div>
+
+                <!-- 지능형 해석 메시지 보드 -->
+                <div class="bg-amber-50 border border-amber-200/60 p-4 rounded-xl text-xs md:text-sm text-amber-800 leading-relaxed flex gap-2.5">
+                    <span class="text-base">📢</span>
+                    <div>
+                        <strong class="block mb-0.5 text-amber-900">시뮬레이션 설명 분석</strong>
+                        <span id="interpretationText">
+                            학습을 시작하면 위 공식과 기울기의 성질에 기반하여 점이 점진적으로 이동합니다.
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 실시간 학습 경로 히스토리 로그 -->
+            <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
+                <div class="flex justify-between items-center border-b border-slate-100 pb-3 mb-3">
+                    <h3 class="font-bold text-slate-800 text-md flex items-center gap-1.5">
+                        📜 실시간 학습 경로 기록 (History Log)
+                    </h3>
+                    <span class="text-[11px] text-slate-400 font-semibold">최근 최대 5개 기록</span>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-xs text-left text-slate-600">
+                        <thead class="bg-slate-50 text-slate-400 uppercase text-[10px]">
+                            <tr>
+                                <th class="py-2 px-3 rounded-l-lg">Step</th>
+                                <th class="py-2 px-3">이전위치 ($x$)</th>
+                                <th class="py-2 px-3">기울기 ($f'(x)$)</th>
+                                <th class="py-2 px-3">이동 변화량 ($-\eta f'$)</th>
+                                <th class="py-2 px-3 rounded-r-lg">다음위치 ($x_{next}$)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="historyTableBody">
+                            <tr>
+                                <td colspan="5" class="py-4 text-center text-slate-400 italic">아직 생성된 학습 내역이 없습니다.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </section>
+
+    </main>
+
+    <script>
+        // --- 글로벌 상수 및 설정 ---
+        const canvas = document.getElementById('graphCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // 반응형으로 캔버스 실제 렌더링 픽셀 크기 보정 (DPI 스케일링 방지)
+        function resizeCanvas() {
+            const width = canvas.clientWidth;
+            const height = canvas.clientHeight;
+            if (canvas.width !== width || canvas.height !== height) {
+                canvas.width = width;
+                canvas.height = height;
+            }
+        }
+
+        // --- 오차 함수 풀 (1. 이차함수, 2. 다차함수) ---
+        let currentFuncType = 1;
+
+        const functions = {
+            1: {
+                f: (x) => x * x,
+                df: (x) => 2 * x,
+                minX: -5,
+                maxX: 5,
+                minY: -5,
+                maxY: 20,
+                explain: "* 기본 2차 함수($f(x) = x^2$)는 볼록한 단일 최솟값(전역 극솟값)이 존재하여 수렴이 매끄럽고 명확합니다."
+            },
+            2: {
+                // f(x) = 0.1 * (x^4 - 6x^2 + 5)
+                f: (x) => 0.1 * (Math.pow(x, 4) - 6 * x * x + 5),
+                df: (x) => 0.1 * (4 * Math.pow(x, 3) - 12 * x),
+                minX: -5,
+                maxX: 5,
+                minY: -5,
+                maxY: 15,
+                explain: "* 다중 극소 함수($f(x) = 0.1(x^4 - 6x^2 + 5)$)는 극솟값 2개(Local Minimum 2개)와 극댓값 1개(x=0)가 존재하여, 시작값 설정에 따라 어느 한쪽 골짜기로 수렴하게 됩니다. 인공지능이 실제 겪는 다차원 손실공간 탐색의 문제를 잘 설명해줍니다."
+            }
+        };
+
+        // --- 알고리즘 연동 상태 변수 ---
+        let currentX = 3.0;
+        let learningRate = 0.10;
+        let stepSpeed = 300; // ms
+        let stepCount = 0;
+        let isLearning = false;
+        let timerId = null;
+        let historyList = [];
+
+        // --- 캔버스 좌표계 매핑 함수 ---
+        function getMapFuncs() {
+            const info = functions[currentFuncType];
+            const marginX = info.maxX - info.minX;
+            const marginY = info.maxY - info.minY;
+
+            return {
+                mapX: (x) => ((x - info.minX) / marginX) * canvas.width,
+                mapY: (y) => canvas.height - (((y - info.minY) / marginY) * canvas.height),
+                unmapX: (px) => (px / canvas.width) * marginX + info.minX
+            };
+        }
+
+        // --- 시각화 렌더링 함수 ---
+        function drawScene() {
+            resizeCanvas();
+            const { mapX, mapY } = getMapFuncs();
+            const info = functions[currentFuncType];
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // 1. 격자선 (Grid Lines) 및 축 그리기
+            ctx.strokeStyle = '#f1f5f9';
+            ctx.lineWidth = 1;
+
+            // 수직 격자선
+            for (let x = Math.ceil(info.minX); x < info.maxX; x++) {
+                ctx.beginPath();
+                ctx.moveTo(mapX(x), 0);
+                ctx.lineTo(mapX(x), canvas.height);
+                ctx.stroke();
+            }
+            // 수평 격자선
+            for (let y = Math.ceil(info.minY); y < info.maxY; y += 2) {
+                ctx.beginPath();
+                ctx.moveTo(0, mapY(y));
+                ctx.lineTo(canvas.width, mapY(y));
+                ctx.stroke();
+            }
+
+            // X축, Y축 강조선
+            ctx.strokeStyle = '#cbd5e1';
+            ctx.lineWidth = 1.5;
+            // X축
+            if (info.minY <= 0 && info.maxY >= 0) {
+                ctx.beginPath();
+                ctx.moveTo(0, mapY(0));
+                ctx.lineTo(canvas.width, mapY(0));
+                ctx.stroke();
+            }
+            // Y축
+            if (info.minX <= 0 && info.maxX >= 0) {
+                ctx.beginPath();
+                ctx.moveTo(mapX(0), 0);
+                ctx.lineTo(mapX(0), canvas.height);
+                ctx.stroke();
+            }
+
+            // 2. 오차 함수 곡선 그리기
+            ctx.strokeStyle = '#1e293b'; // 어두운 차콜색 곡선
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            const stepSize = (info.maxX - info.minX) / 150;
+            for (let x = info.minX; x <= info.maxX; x += stepSize) {
+                let px = mapX(x);
+                let py = mapY(info.f(x));
+                if (x === info.minX) ctx.moveTo(px, py);
+                else ctx.lineTo(px, py);
+            }
+            ctx.stroke();
+
+            // 3. 현재 탐색점에서의 접선 그리기
+            const y = info.f(currentX);
+            const slope = info.df(currentX);
+
+            // 접선 방정식: Y = slope * (X - currentX) + y
+            const xLeft = info.minX;
+            const yLeft = slope * (xLeft - currentX) + y;
+            const xRight = info.maxX;
+            const yRight = slope * (xRight - currentX) + y;
+
+            ctx.strokeStyle = '#ef4444'; // 접선은 산뜻한 네온빛 레드색
+            ctx.lineWidth = 2;
+            ctx.setLineDash([4, 4]); // 점선 형태 처리로 보조선 느낌 강화
+            ctx.beginPath();
+            ctx.moveTo(mapX(xLeft), mapY(yLeft));
+            ctx.lineTo(mapX(xRight), mapY(yRight));
+            ctx.stroke();
+            ctx.setLineDash([]); // 다시 원복
+
+            // 4. 경사하강 진행 시 전체 이동 경로를 그리기 (히스토리가 쌓였을 때)
+            if (historyList.length > 0) {
+                ctx.strokeStyle = '#3b82f6';
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.moveTo(mapX(historyList[0].prevX), mapY(info.f(historyList[0].prevX)));
+                for (let h of historyList) {
+                    ctx.lineTo(mapX(h.nextX), mapY(info.f(h.nextX)));
+                }
+                ctx.stroke();
+
+                // 이동 중간 경로 점들 그리기
+                for (let h of historyList) {
+                    ctx.fillStyle = '#60a5fa';
+                    ctx.beginPath();
+                    ctx.arc(mapX(h.nextX), mapY(info.f(h.nextX)), 3.5, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+
+            // 5. 현재 지점 포인트(에이전트 점) 시각화
+            ctx.fillStyle = '#3b82f6'; // 메인 마커 블루
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 2.5;
+            ctx.shadowColor = 'rgba(59, 130, 246, 0.4)';
+            ctx.shadowBlur = 10;
+            ctx.beginPath();
+            ctx.arc(mapX(currentX), mapY(y), 8, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+            ctx.shadowBlur = 0; // 그림자 초기화
+        }
+
+        // --- 사용 조작 업데이트 & 인터랙션 로직 ---
+
+        // 함수 전환 토글
+        function selectFunction(type) {
+            if (isLearning) {
+                pauseLearning();
+            }
+            currentFuncType = type;
+
+            // 슬라이더 범위 조절 (이차함수와 사차함수 각각 조작하기 알맞은 영역 맵핑)
+            const slider = document.getElementById('startX');
+            if (type === 1) {
+                slider.min = "-4";
+                slider.max = "4";
+                slider.value = "3.0";
+                document.getElementById('func1Btn').className = "py-2 px-3 rounded-lg border text-xs font-semibold transition-all shadow-sm bg-blue-500 text-white border-blue-500";
+                document.getElementById('func2Btn').className = "py-2 px-3 rounded-lg border text-xs font-semibold transition-all shadow-sm bg-white text-slate-600 border-slate-200 hover:bg-slate-50";
+            } else {
+                slider.min = "-4";
+                slider.max = "4";
+                slider.value = "3.4"; // 극소점 두 개를 넘나들 수 있는 기본 오른쪽 위
+                document.getElementById('func1Btn').className = "py-2 px-3 rounded-lg border text-xs font-semibold transition-all shadow-sm bg-white text-slate-600 border-slate-200 hover:bg-slate-50";
+                document.getElementById('func2Btn').className = "py-2 px-3 rounded-lg border text-xs font-semibold transition-all shadow-sm bg-blue-500 text-white border-blue-500";
+            }
+
+            document.getElementById('funcExplain').innerHTML = functions[type].explain;
+            updateInitialState();
+        }
+
+        // 시작위치 슬라이더 반영 및 상태 초기화
+        function updateInitialState() {
+            pauseLearning();
+
+            currentX = parseFloat(document.getElementById('startX').value);
+            document.getElementById('startX_val').innerText = currentX.toFixed(1);
+
+            stepCount = 0;
+            historyList = [];
+
+            updateBadge("대기 중", "bg-slate-100 text-slate-600 border-slate-200");
+            updateUI();
+            drawScene();
+            renderHistoryTable();
+        }
+
+        // 학습률 실시간 반영
+        function updateLRDisplay() {
+            learningRate = parseFloat(document.getElementById('learningRate').value);
+            document.getElementById('lr_val').innerText = learningRate.toFixed(2);
+            updateUI();
+        }
+
+        // 속도 실시간 반영
+        function updateSpeedDisplay() {
+            stepSpeed = parseInt(document.getElementById('stepSpeed').value);
+            document.getElementById('speed_val').innerText = stepSpeed + "ms";
+        }
+
+        // 결과 대시보드 데이터 바인딩
+        function updateUI() {
+            const info = functions[currentFuncType];
+            const curY = info.f(currentX);
+            const slope = info.df(currentX);
+
+            document.getElementById('currentX').innerText = currentX.toFixed(3);
+            document.getElementById('currentY').innerText = curY.toFixed(3);
+            document.getElementById('currentSlope').innerText = slope.toFixed(3);
+            document.getElementById('stepCount').innerText = stepCount + "회";
+
+            // 접선의 방정식 정식 포맷 구성
+            const signX = currentX >= 0 ? "-" : "+";
+            const absX = Math.abs(currentX).toFixed(3);
+            const signY = curY >= 0 ? "+" : "-";
+            const absY = Math.abs(curY).toFixed(3);
+
+            document.getElementById('tangentEq').innerHTML =
+                `y = ${slope.toFixed(3)}(x ${signX} ${absX}) ${signY} ${absY}`;
+
+            // 오차 상태에 따른 인공지능 탐색 설명 도출
+            let interpText = "";
+            if (Math.abs(slope) < 0.005) {
+                interpText = "🎉 기울기가 거의 0이 되었습니다! 학습을 성공적으로 수렴하여 최적의 파라미터(오차 극솟값 지점)를 완벽히 찾아내었습니다.";
+            } else if (Math.abs(currentX) > 10) {
+                interpText = "⚠️ 경고: 수치가 너무 커져 발산하고 있습니다. 학습률($\\eta$)이 지나치게 커서 가파른 벽을 딛고 올라가버렸습니다. 학습률을 낮춘 후 초기화하세요!";
+            } else if (learningRate >= 0.85) {
+                interpText = "🔄 경고: 학습률이 너무 높은 상태(과대 학습률)입니다. 점이 극솟값을 중심으로 좌우로 너무 크게 건너뛰는 진동(Overshooting) 현상이 보일 수 있습니다.";
+            } else if (learningRate <= 0.03) {
+                interpText = "⏱️ 정보: 학습률이 너무 작아 한 번에 움직이는 스텝 폭이 좁습니다. 학습 속도는 안정적이나 수렴까지 시간이 다소 걸릴 수 있습니다.";
+            } else {
+                interpText = "📉 탐색 중: 기울기가 <strong>" + (slope > 0 ? "양수(+)" : "음수(-)") + "</strong>이므로, 수렴 공식에 의해 점이 <strong>" + (slope > 0 ? "왼쪽(음의 방향)" : "오른쪽(양의 방향)") + "</strong>으로 이동하며 오차를 축소합니다.";
+            }
+            document.getElementById('interpretationText').innerHTML = interpText;
+        }
+
+        // 상태 배지 클래스 제어
+        function updateBadge(text, classStr) {
+            const badge = document.getElementById('statusBadge');
+            badge.innerText = text;
+            badge.className = "text-xs font-bold px-3 py-1 rounded-full border " + classStr;
+        }
+
+        // --- 경사하강법 제어 엔진 ---
+
+        // 단일 Step 계산 및 애니메이션 함수
+        function step() {
+            if (!isLearning) return;
+
+            const info = functions[currentFuncType];
+            const slope = info.df(currentX);
+            const prevX = currentX;
+
+            // 핵심 공식: x_next = x - η * df(x)
+            const deltaX = -learningRate * slope;
+            const nextX = currentX + deltaX;
+
+            // 기록(History Log) 관리
+            historyList.unshift({
+                step: stepCount + 1,
+                prevX: prevX,
+                slope: slope,
+                deltaX: deltaX,
+                nextX: nextX
+            });
+
+            // 최대 5개까지만 유지
+            if (historyList.length > 5) {
+                historyList.pop();
+            }
+
+            // 위치 이동 갱신
+            currentX = nextX;
+            stepCount++;
+
+            drawScene();
+            updateUI();
+            renderHistoryTable();
+
+            // 종료 및 예외 처리 조건
+            if (Math.abs(slope) < 0.005) {
+                // 수렴 완료
+                isLearning = false;
+                updateBadge("수렴 완료 (성공)", "bg-emerald-50 text-emerald-700 border-emerald-200");
+                document.getElementById('startBtn').disabled = false;
+                document.getElementById('pauseBtn').disabled = true;
+                return;
+            }
+
+            if (Math.abs(currentX) > 15) {
+                // 발산
+                isLearning = false;
+                updateBadge("학습 실패 (발산)", "bg-rose-50 text-rose-700 border-rose-200");
+                document.getElementById('startBtn').disabled = false;
+                document.getElementById('pauseBtn').disabled = true;
+                return;
+            }
+
+            // 예약 속도 단위로 다음 스텝 재호출
+            timerId = setTimeout(step, stepSpeed);
+        }
+
+        // 학습 작동 실행
+        function startLearning() {
+            if (isLearning) return;
+            isLearning = true;
+            document.getElementById('startBtn').disabled = true;
+            document.getElementById('pauseBtn').disabled = false;
+            updateBadge("학습 진행 중", "bg-blue-50 text-blue-700 border-blue-200");
+            step();
+        }
+
+        // 학습 일시 정지
+        function pauseLearning() {
+            isLearning = false;
+            if (timerId) {
+                clearTimeout(timerId);
+                timerId = null;
+            }
+            document.getElementById('startBtn').disabled = false;
+            document.getElementById('pauseBtn').disabled = true;
+            updateBadge("일시 정지", "bg-amber-50 text-amber-700 border-amber-200");
+        }
+
+        // 테이블 히스토리 렌더링
+        function renderHistoryTable() {
+            const tbody = document.getElementById('historyTableBody');
+            if (historyList.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="py-4 text-center text-slate-400 italic">아직 생성된 학습 내역이 없습니다.</td></tr>`;
+                return;
+            }
+
+            let html = "";
+            for (let item of historyList) {
+                html += `
+                <tr class="border-b border-slate-100 hover:bg-slate-50 transition-colors">
+                    <td class="py-2.5 px-3 font-bold text-slate-700">#${item.step}</td>
+                    <td class="py-2.5 px-3 code-font font-medium">${item.prevX.toFixed(4)}</td>
+                    <td class="py-2.5 px-3 code-font text-rose-600 font-semibold">${item.slope.toFixed(4)}</td>
+                    <td class="py-2.5 px-3 code-font text-teal-600 font-semibold">${item.deltaX.toFixed(4)}</td>
+                    <td class="py-2.5 px-3 code-font text-blue-600 font-bold">${item.nextX.toFixed(4)}</td>
+                </tr>
+                `;
+            }
+            tbody.innerHTML = html;
+        }
+
+        // --- 마우스 인터랙션: 그래프 캔버스를 임의로 터치/클릭하면 그 위치에서 시작하도록 ---
+        canvas.addEventListener('mousedown', function(event) {
+            const rect = canvas.getBoundingClientRect();
+            const clickX = event.clientX - rect.left;
+
+            const { unmapX } = getMapFuncs();
+            let newX = unmapX(clickX);
+
+            // 해당 x값으로 수치 동기화
+            const info = functions[currentFuncType];
+            if (newX >= info.minX && newX <= info.maxX) {
+                document.getElementById('startX').value = newX.toFixed(1);
+                updateInitialState();
+            }
+        });
+
+        // 초기 앱 설정 진입점
+        window.onload = function() {
+            selectFunction(1); // 1번 2차 함수로 초기 기동
+        };
+
+        // 창 크기가 달라져 캔버스가 뭉개질 수 있으므로 반응형 이벤트 수렴
+        window.addEventListener('resize', () => {
+            drawScene();
+        });
+    </script>
+</body>
+</html>

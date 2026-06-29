@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>3605 학생 제작 웹앱</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+body{font-family:Arial,sans-serif;margin:0;background:#f4f7fb}
+.container{max-width:1200px;margin:auto;padding:20px}
+.card{background:#fff;padding:20px;border-radius:16px;margin-bottom:18px;box-shadow:0 2px 10px rgba(0,0,0,.08)}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px}
+.item{background:#eef4ff;padding:12px;border-radius:10px}
+h1,h2{margin-top:0}
+input[type=range]{width:100%}
+.value{font-weight:bold;color:#0b63ce}
+.result{font-size:1.05rem}
+canvas{max-height:500px}
+</style>
+
+<style>
+  .student-work-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    max-width: 1040px;
+    margin: 0 auto 16px;
+    padding: 10px 12px;
+    border: 1px solid #dbe3ef;
+    border-radius: 8px;
+    background: #f8fafc;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+  .student-work-links a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 36px;
+    padding: 7px 10px;
+    border-radius: 6px;
+    background: #ffffff;
+    color: #1d4ed8;
+    text-decoration: none;
+    font-weight: 700;
+    border: 1px solid #dbe3ef;
+  }
+  .student-work-links a:hover {
+    background: #eff6ff;
+  }
+</style>
+</head>
+<body>
+
+<nav class="student-work-links" aria-label="학생 답안 자료">
+  <a href="../">목록으로</a>
+  <a href="./answer.html">답안 보기</a>
+  <a href="./answer.txt">원문 TXT</a>
+</nav>
+
+<div class="container">
+
+<div class="card">
+<h1>도시를 연결하는 곡선 기하학</h1>
+<p><b>도시의 도로와 철도는 곡선의 변화율과 곡률을 고려하여 설계된다. 이 웹앱은 곡선의 형태와 미분의 관계를 시각적으로 보여준다.</b></p>
+
+<div class="grid">
+<div class="item"><b>학번</b><br>3605</div>
+<div class="item"><b>이름</b><br>비공개</div>
+<div class="item"><b>책 제목</b><br>미적분의 쓸모</div>
+<div class="item"><b>저자</b><br>한화택</div>
+<div class="item"><b>선택한 부분</b><br>도시를 연결하는 곡선 기하학</div>
+<div class="item"><b>관련 개념</b><br>이계도함수</div>
+</div>
+
+<p><b>웹앱 제작 의도</b><br>
+곡선의 모양이 변할 때 접선의 기울기와 곡률이 어떻게 달라지는지 보여주고,
+이 계산이 실제 도로·철도 설계에 활용됨을 설명한다.</p>
+
+<p><b>사용 방법</b><br>
+① 곡률 조절 슬라이더를 움직인다. ② 그래프와 접선을 관찰한다.
+③ 접선 기울기, 곡률, 이계도함수의 변화를 확인한다.</p>
+</div>
+
+<div class="card">
+<h2>개념 설명</h2>
+<p>
+함수의 기울기는 1차 미분으로 구할 수 있고, 곡선이 얼마나 휘어지는지는 이계도함수와 관련이 있다.
+곡선이 급하게 휘면 차량이 받는 힘이 커지므로 실제 도로와 철도 설계에서는 곡률을 고려해야 한다.
+</p>
+</div>
+
+<div class="card">
+<h2>시각화 영역</h2>
+<canvas id="graph"></canvas>
+</div>
+
+<div class="card">
+<h2>조작 영역</h2>
+<p>곡선의 굽은 정도(a): <span id="aVal" class="value">0.5</span></p>
+<input id="slider" type="range" min="0.1" max="2.0" step="0.1" value="0.5">
+</div>
+
+<div class="card result">
+<h2>결과 해석 영역</h2>
+<p>현재 위치 x = 1</p>
+<p>접선 기울기(y') : <span id="slope"></span></p>
+<p>이계도함수(y'') : <span id="second"></span></p>
+<p>곡률 : <span id="curve"></span></p>
+<p id="meaning"></p>
+</div>
+
+</div>
+
+<script>
+const ctx=document.getElementById("graph");
+
+const chart=new Chart(ctx,{
+type:"line",
+data:{datasets:[
+{label:"곡선 y=ax²",data:[],borderWidth:3,pointRadius:0},
+{label:"접선",data:[],borderDash:[8,6],borderWidth:3,pointRadius:0},
+{label:"현재 위치",data:[],pointRadius:6,showLine:false}
+]},
+options:{
+responsive:true,
+animation:false,
+scales:{x:{type:"linear",min:-5,max:5}}
+}
+});
+
+function update(){
+const a=parseFloat(slider.value);
+aVal.textContent=a.toFixed(1);
+
+let curveData=[];
+for(let x=-5;x<=5;x+=0.1){
+curveData.push({x:x,y:a*x*x});
+}
+
+const x0=1;
+const y0=a*x0*x0;
+const slope=2*a*x0;
+const second=2*a;
+
+let tangent=[];
+for(let x=-5;x<=5;x+=0.1){
+tangent.push({x:x,y:y0+slope*(x-x0)});
+}
+
+const curvature=Math.abs(second)/Math.pow(1+slope*slope,1.5);
+
+chart.data.datasets[0].data=curveData;
+chart.data.datasets[1].data=tangent;
+chart.data.datasets[2].data=[{x:x0,y:y0}];
+chart.update();
+
+document.getElementById("slope").textContent=slope.toFixed(3);
+document.getElementById("second").textContent=second.toFixed(3);
+document.getElementById("curve").textContent=curvature.toFixed(3);
+
+document.getElementById("meaning").innerHTML=
+"곡선의 굽은 정도가 커질수록 이계도함수 값이 증가하고 곡선이 더 빠르게 휘어진다. 이러한 계산은 실제 도시의 도로와 철도 곡선 설계에서 안전성과 승차감을 고려하는 데 활용된다.";
+}
+
+slider.addEventListener("input",update);
+update();
+</script>
+</body>
+</html>

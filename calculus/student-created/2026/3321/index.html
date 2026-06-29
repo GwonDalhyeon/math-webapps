@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>3321 학생 제작 웹앱</title>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+*{
+    box-sizing:border-box;
+    font-family:'맑은 고딕',sans-serif;
+}
+
+body{
+    margin:0;
+    background:#f4f7fb;
+    padding:20px;
+}
+
+.section{
+    background:white;
+    padding:20px;
+    margin-bottom:20px;
+    border-radius:15px;
+    box-shadow:0 2px 10px rgba(0,0,0,0.1);
+}
+
+h1,h2{
+    color:#1f4e79;
+}
+
+.info-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(250px,1fr));
+    gap:10px;
+}
+
+.info-box{
+    background:#eef5ff;
+    padding:12px;
+    border-radius:10px;
+}
+
+.controls{
+    text-align:center;
+}
+
+button{
+    padding:10px 15px;
+    margin:5px;
+    border:none;
+    border-radius:8px;
+    cursor:pointer;
+    background:#4a90e2;
+    color:white;
+}
+
+button:hover{
+    background:#357abd;
+}
+
+input[type=range]{
+    width:80%;
+}
+
+canvas{
+    max-width:100%;
+}
+
+#islandCanvas{
+    border:1px solid #ccc;
+    display:block;
+    margin:auto;
+    background:#fdfdfd;
+}
+
+.result{
+    font-size:18px;
+    margin:10px 0;
+}
+
+@media(max-width:768px){
+    #islandCanvas{
+        width:100%;
+        height:auto;
+    }
+}
+</style>
+
+<style>
+  .student-work-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    max-width: 1040px;
+    margin: 0 auto 16px;
+    padding: 10px 12px;
+    border: 1px solid #dbe3ef;
+    border-radius: 8px;
+    background: #f8fafc;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+  .student-work-links a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 36px;
+    padding: 7px 10px;
+    border-radius: 6px;
+    background: #ffffff;
+    color: #1d4ed8;
+    text-decoration: none;
+    font-weight: 700;
+    border: 1px solid #dbe3ef;
+  }
+  .student-work-links a:hover {
+    background: #eff6ff;
+  }
+</style>
+</head>
+
+<body>
+
+<nav class="student-work-links" aria-label="학생 답안 자료">
+  <a href="../">목록으로</a>
+  <a href="./answer.html">답안 보기</a>
+  <a href="./answer.txt">원문 TXT</a>
+</nav>
+
+
+<div class="section">
+
+<h1>미적분 독서 연계 웹앱</h1>
+
+<div class="info-grid">
+
+<div class="info-box"><b>학번</b><br>3321</div>
+
+<div class="info-box"><b>이름</b><br>비공개</div>
+
+<div class="info-box"><b>책 제목</b><br>수학, 인문으로 수를 읽다</div>
+
+<div class="info-box"><b>저자</b><br>이광연</div>
+
+<div class="info-box">
+<b>선택한 부분</b><br>
+불규칙한 형태의 섬의 넓이를 구하는 과정과 구분구적법의 원리
+</div>
+
+<div class="info-box">
+<b>관련 미적분 개념</b><br>
+구분구적법, 정적분, 극한
+</div>
+
+<div class="info-box">
+<b>웹앱 제작 의도</b><br>
+섬의 넓이를 작은 도형들의 합으로 근사하는 과정을 통해
+구분구적법과 정적분의 원리를 이해한다.
+</div>
+
+<div class="info-box">
+<b>사용 방법</b><br>
+격자 크기를 조절하고 버튼을 눌러 섬의 넓이가 어떻게
+근사되는지 관찰한다.
+</div>
+
+</div>
+
+<p>
+<b>
+"섬의 넓이를 작은 도형들의 합으로 근사해 보며,
+구분구적법과 정적분의 원리를 직접 탐구해 봅시다."
+</b>
+</p>
+
+</div>
+
+<div class="section">
+
+<h2>개념 설명</h2>
+
+<p>
+구분구적법은 복잡한 도형을 작은 직사각형으로 나누어 넓이를 근사하는 방법이다.
+직사각형의 개수를 늘릴수록 실제 넓이에 가까워지며,
+이 과정을 극한으로 확장한 개념이 정적분이다.
+</p>
+
+</div>
+
+<div class="section controls">
+
+<h2>조작 영역</h2>
+
+<p>격자 크기: <span id="gridValue">40</span> px</p>
+
+<input type="range"
+id="gridSlider"
+min="10"
+max="60"
+step="5"
+value="40">
+
+<br>
+
+<button onclick="increaseGrid()">격자 감소</button>
+<button onclick="decreaseGrid()">격자 증가</button>
+<button onclick="playAnimation()">애니메이션 재생</button>
+<button onclick="resetApp()">초기화</button>
+
+</div>
+
+<div class="section">
+
+<h2>시각화 영역</h2>
+
+<canvas id="islandCanvas" width="600" height="400"></canvas>
+
+</div>
+
+<div class="section">
+
+<h2>결과</h2>
+
+<div class="result">
+근사 넓이:
+<span id="approxArea">0</span>
+</div>
+
+<div class="result">
+실제 넓이:
+<span id="realArea">65000</span>
+</div>
+
+<div class="result">
+오차:
+<span id="errorValue">0</span>
+</div>
+
+</div>
+
+<div class="section">
+
+<h2>수렴 그래프</h2>
+
+<canvas id="graph"></canvas>
+
+</div>
+
+<div class="section">
+
+<h2>결과 해석</h2>
+
+<p id="interpretation">
+
+격자의 크기를 줄이면 더 많은 직사각형으로 섬을 표현할 수 있다.
+따라서 실제 넓이에 점점 가까워지며,
+이를 통해 정적분의 핵심 아이디어인 극한의 개념을 이해할 수 있다.
+
+</p>
+
+</div>
+
+<script>
+
+const canvas=document.getElementById("islandCanvas");
+const ctx=canvas.getContext("2d");
+
+const slider=document.getElementById("gridSlider");
+
+let gridSize=40;
+
+const REAL_AREA=65000;
+
+let graphData=[];
+
+function islandEquation(x,y){
+
+    return (
+        ((x-300)*(x-300))/45000+
+        ((y-200)*(y-200))/20000+
+        Math.sin(x/50)*0.1+
+        Math.cos(y/40)*0.1
+    )<1;
+
+}
+
+function drawIsland(){
+
+    ctx.clearRect(0,0,600,400);
+
+    ctx.fillStyle="#7fc97f";
+
+    for(let x=0;x<600;x++){
+
+        for(let y=0;y<400;y++){
+
+            if(islandEquation(x,y)){
+
+                ctx.fillRect(x,y,1,1);
+
+            }
+
+        }
+
+    }
+
+}
+
+function drawGrid(){
+
+    let area=0;
+
+    ctx.strokeStyle="rgba(0,0,255,0.3)";
+
+    for(let x=0;x<600;x+=gridSize){
+
+        for(let y=0;y<400;y+=gridSize){
+
+            let centerX=x+gridSize/2;
+            let centerY=y+gridSize/2;
+
+            if(islandEquation(centerX,centerY)){
+
+                ctx.fillStyle="rgba(100,149,237,0.4)";
+
+                ctx.fillRect(x,y,gridSize,gridSize);
+
+                area+=gridSize*gridSize;
+
+            }
+
+            ctx.strokeRect(x,y,gridSize,gridSize);
+
+        }
+
+    }
+
+    document.getElementById("approxArea")
+    .textContent=Math.round(area);
+
+    document.getElementById("errorValue")
+    .textContent=Math.abs(
+        REAL_AREA-Math.round(area)
+    );
+
+    graphData.push({
+        grid:gridSize,
+        area:area
+    });
+
+    updateChart();
+
+}
+
+function render(){
+
+    drawIsland();
+
+    drawGrid();
+
+}
+
+slider.addEventListener("input",function(){
+
+    gridSize=Number(this.value);
+
+    document.getElementById("gridValue")
+    .textContent=gridSize;
+
+    render();
+
+});
+
+function increaseGrid(){
+
+    if(gridSize<60){
+
+        gridSize+=5;
+
+        slider.value=gridSize;
+
+        slider.dispatchEvent(
+            new Event("input")
+        );
+
+    }
+
+}
+
+function decreaseGrid(){
+
+    if(gridSize>10){
+
+        gridSize-=5;
+
+        slider.value=gridSize;
+
+        slider.dispatchEvent(
+            new Event("input")
+        );
+
+    }
+
+}
+
+function playAnimation(){
+
+    gridSize=60;
+
+    slider.value=60;
+
+    graphData=[];
+
+    let interval=setInterval(function(){
+
+        render();
+
+        gridSize-=5;
+
+        slider.value=gridSize;
+
+        document.getElementById("gridValue")
+        .textContent=gridSize;
+
+        if(gridSize<=10){
+
+            clearInterval(interval);
+
+        }
+
+    },800);
+
+}
+
+function resetApp(){
+
+    gridSize=40;
+
+    slider.value=40;
+
+    graphData=[];
+
+    render();
+
+}
+
+const chart=new Chart(
+
+document.getElementById("graph"),
+
+{
+
+type:"line",
+
+data:{
+
+labels:[],
+
+datasets:[
+
+{
+
+label:"근사 넓이",
+
+data:[],
+
+borderWidth:3,
+
+tension:0.3
+
+},
+
+{
+
+label:"실제 넓이",
+
+data:[],
+
+borderDash:[5,5]
+
+}
+
+]
+
+},
+
+options:{
+
+responsive:true,
+
+animation:{
+
+duration:800
+
+}
+
+}
+
+}
+
+);
+
+function updateChart(){
+
+    chart.data.labels=
+    graphData.map(d=>d.grid);
+
+    chart.data.datasets[0].data=
+    graphData.map(d=>d.area);
+
+    chart.data.datasets[1].data=
+    graphData.map(()=>REAL_AREA);
+
+    chart.update();
+
+}
+
+render();
+
+</script>
+
+</body>
+</html>

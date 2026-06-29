@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3306 학생 제작 웹앱</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary-color: #e63946;
+            --secondary-color: #457b9d;
+            --background-color: #f8f9fa;
+            --card-background: #ffffff;
+            --text-color: #1d3557;
+        }
+
+        body {
+            font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header, section {
+            background: var(--card-background);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+
+        h1 {
+            color: var(--primary-color);
+            font-size: 1.8rem;
+            margin-top: 0;
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 10px;
+        }
+
+        h2 {
+            color: var(--secondary-color);
+            font-size: 1.4rem;
+            margin-top: 0;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 8px;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .info-item {
+            background: #f1f5f9;
+            padding: 12px;
+            border-radius: 6px;
+        }
+
+        .info-item strong {
+            display: block;
+            color: #4a5568;
+            font-size: 0.9rem;
+            margin-bottom: 4px;
+        }
+
+        .grid-layout {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .grid-layout {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .control-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .input-group label {
+            font-weight: bold;
+            font-size: 0.95rem;
+        }
+
+        input[type="number"], input[type="range"] {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            box-sizing: border-box;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 10px;
+        }
+
+        button {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .btn-primary { background-color: var(--primary-color); color: white; }
+        .btn-primary:hover { background-color: #c82333; }
+        .btn-secondary { background-color: #6c757d; color: white; }
+        .btn-secondary:hover { background-color: #5a6268; }
+
+        .vessel-visualization {
+            background: #2d3748;
+            border-radius: 8px;
+            padding: 20px;
+            position: relative;
+            height: 120px;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+        }
+
+        .vessel-wall {
+            position: absolute;
+            left: 0;
+            right: 0;
+            background: rgba(230, 57, 70, 0.2);
+            border-top: 4px solid #e63946;
+            border-bottom: 4px solid #e63946;
+            transition: height 0.1s ease;
+        }
+
+        .blood-particle {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background: #ef4444;
+            border-radius: 50%;
+            animation: flow linear infinite;
+        }
+
+        @keyframes flow {
+            0% { left: -10px; }
+            100% { left: 100%; }
+        }
+
+        .result-box {
+            background: #edf2f7;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid var(--primary-color);
+            margin-top: 15px;
+            font-size: 1.05rem;
+        }
+
+        .disease-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        .disease-table th, .disease-table td {
+            border: 1px solid #cbd5e1;
+            padding: 8px;
+            text-align: center;
+            font-size: 0.9rem;
+        }
+
+        .disease-table th { background-color: #f1f5f9; }
+
+        .formula {
+            background: #f8fafc;
+            padding: 8px;
+            border-radius: 4px;
+            font-family: 'Courier New', Courier, monospace;
+            font-weight: bold;
+            display: inline-block;
+            margin: 4px 0;
+        }
+    </style>
+
+<style>
+  .student-work-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    max-width: 1040px;
+    margin: 0 auto 16px;
+    padding: 10px 12px;
+    border: 1px solid #dbe3ef;
+    border-radius: 8px;
+    background: #f8fafc;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+  .student-work-links a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 36px;
+    padding: 7px 10px;
+    border-radius: 6px;
+    background: #ffffff;
+    color: #1d4ed8;
+    text-decoration: none;
+    font-weight: 700;
+    border: 1px solid #dbe3ef;
+  }
+  .student-work-links a:hover {
+    background: #eff6ff;
+  }
+</style>
+</head>
+<body>
+
+<nav class="student-work-links" aria-label="학생 답안 자료">
+  <a href="../">목록으로</a>
+  <a href="./answer.html">답안 보기</a>
+  <a href="./answer.txt">원문 TXT</a>
+</nav>
+
+
+<div class="container">
+
+    <header>
+        <h1>미적분 독서 연계 웹앱 탐구 활동</h1>
+        <div class="info-grid">
+            <div class="info-item"><strong>학번 / 이름</strong>3306 / 비공개</div>
+            <div class="info-item"><strong>책 제목 / 저자</strong>미적분으로 바라본 하루 / 오스카 E. 페르난데스</div>
+            <div class="info-item"><strong>선택한 부분 또는 주제</strong>포이죄유의 법칙을 이용하여 혈류 유동률과 혈관 반지름의 관계를 미분으로 분석한 부분</div>
+            <div class="info-item"><strong>관련 미적분 개념</strong>미분과 도함수</div>
+        </div>
+        <div class="info-item" style="margin-top: 10px;">
+            <strong>웹앱 제작 의도</strong>
+            혈관 반지름이 아주 조금 변해도 혈류량은 크게 달라진다. 미분을 이용해 우리 몸의 혈액순환 원리를 탐구해 보자.
+        </div>
+        <div class="info-item" style="margin-top: 10px; background-color: #eef2ff; border-left: 4px solid var(--secondary-color);">
+            <strong>사용 방법 안내</strong>
+            초기 반지름(r)과 혈류 유동률 증가율(df/f)을 입력한 후, '혈관 반지름 변화 슬라이더(dr)'를 조작하여 실시간 변화를 관찰하세요. 애니메이션 버튼을 통해 역동적인 흐름 변화를 비교할 수 있습니다.
+        </div>
+    </header>
+
+    <div class="grid-layout">
+
+        <div class="left-column">
+            <section>
+                <h2>4. 조작 영역</h2>
+                <div class="control-panel">
+                    <div class="input-group">
+                        <label for="input-r">초기 혈관 반지름 입력창 (r):</label>
+                        <input type="number" id="input-r" value="1.0" step="0.1" min="0.1">
+                    </div>
+
+                    <div class="input-group">
+                        <label for="input-dff">혈류 유동률 증가율 입력창 (df/f):</label>
+                        <input type="number" id="input-dff" value="0.04" step="0.01" placeholder="예: 0.04 (4%)">
+                    </div>
+
+                    <div class="input-group">
+                        <label id="label-dr" for="slider-dr">혈관 반지름 변화 슬라이더 (dr): 0.00</label>
+                        <input type="range" id="slider-dr" min="-0.5" max="0.5" step="0.005" value="0">
+                    </div>
+
+                    <div class="btn-group">
+                        <button class="btn-secondary" id="btn-reset">초기화</button>
+                        <button class="btn-primary" id="btn-animate">변화 재생 애니메이션</button>
+                    </div>
+                </div>
+            </section>
+
+            <section>
+                <h2>5. 결과 해석 영역</h2>
+                <div class="result-box" id="result-text">
+                    반지름 0.00% 증가 → 혈류량 0.00% 증가
+                </div>
+                <div style="margin-top: 15px;">
+                    <p><strong>수학적 근사 연산 결과:</strong></p>
+                    <div>- df ≈ f'(r)dr 근사치: <span id="calc-df" class="formula">0.0000</span></div>
+                    <div>- df/f = 4(dr/r) 관계식 검증: <span id="calc-ratio" class="formula">0.0000 = 4 * 0.0000</span></div>
+                </div>
+
+                <div style="margin-top: 20px; border-top: 1px dashed #ccc; padding-top: 15px;">
+                    <p><strong>⚠️ 혈관 질환 상황 체험 (동맥경화 등):</strong></p>
+                    <table class="disease-table">
+                        <thead>
+                            <tr>
+                                <th>혈관 반지름 감소율</th>
+                                <th>혈류량 감소율 (f(r) = kr⁴ 기준)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>5% 감소</td>
+                                <td id="disease-5" style="color: #e63946; font-weight: bold;">-18.55%</td>
+                            </tr>
+                            <tr>
+                                <td>10% 감소</td>
+                                <td id="disease-10" style="color: #e63946; font-weight: bold;">-34.39%</td>
+                            </tr>
+                            <tr>
+                                <td>20% 감소</td>
+                                <td id="disease-20" style="color: #e63946; font-weight: bold;">-59.04%</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </div>
+
+        <div class="right-column">
+            <section>
+                <h2>2. 개념 설명 영역</h2>
+                <p>
+                    포이죄유의 법칙에 따르면 혈관을 흐르는 혈류 유동률 $f(r)$은 혈관 반지름 $r$의 4제곱에 비례합니다. 즉,
+                    <span class="formula">f(r) = kr⁴ (k는 상수)</span> 입니다.
+                </p>
+                <p>
+                    양변을 미분하면 도함수 <span class="formula">f'(r) = 4kr³</span>을 얻으며, 미분 원리를 이용한 선형 근사식은 다음과 같습니다.
+                </p>
+                <div class="formula" style="display: block; text-align: center;">df ≈ f'(r)dr</div>
+                <div class="formula" style="display: block; text-align: center;">df/f = 4(dr/r)</div>
+                <p>
+                    이 식은 <strong>반지름의 미세한 변화율(dr/r)의 4배만큼 혈류량 변화율(df/f)이 결정됨</strong>을 뜻합니다. 즉, 반지름이 약 1%만 증가해도 혈류량은 무려 4% 증가하게 됩니다.
+                </p>
+            </section>
+
+            <section>
+                <h2>3. 시각화 영역</h2>
+
+                <p><strong>물리적 혈관 굵기 및 흐름 속도 실시간 시각화:</strong></p>
+                <div class="vessel-visualization" id="vessel-container">
+                    <div class="vessel-wall" id="vessel-bar" style="height: 60px; top: 30px;"></div>
+                </div>
+
+                <p style="margin-top: 20px;"><strong>f(r) = kr⁴ 그래프 및 접선 기하학적 표시:</strong></p>
+                <div style="position: relative; height:250px; width:100%">
+                    <canvas id="graphCanvas"></canvas>
+                </div>
+            </section>
+        </div>
+
+    </div>
+</div>
+
+<script>
+    // 상태 변수 정의
+    const k = 1; // 연산 편의를 위한 비례상수 고정
+    let chart = null;
+    let animationInterval = null;
+    let isAnimating = false;
+
+    // DOM 요소 캐싱
+    const inputR = document.getElementById('input-r');
+    const inputDff = document.getElementById('input-dff');
+    const sliderDr = document.getElementById('slider-dr');
+    const labelDr = document.getElementById('label-dr');
+    const resultText = document.getElementById('result-text');
+    const calcDf = document.getElementById('calc-df');
+    const calcRatio = document.getElementById('calc-ratio');
+    const vesselBar = document.getElementById('vessel-bar');
+    const vesselContainer = document.getElementById('vessel-container');
+    const btnReset = document.getElementById('btn-reset');
+    const btnAnimate = document.getElementById('btn-animate');
+
+    // 초기화 및 이벤트 리스너 등록
+    window.addEventListener('DOMContentLoaded', () => {
+        initChart();
+        updateAll();
+        createParticles(15);
+
+        // 이벤트 바인딩
+        inputR.addEventListener('input', updateAll);
+        inputDff.addEventListener('input', updateAll);
+        sliderDr.addEventListener('input', updateAll);
+        btnReset.addEventListener('click', resetValues);
+        btnAnimate.addEventListener('click', toggleAnimation);
+    });
+
+    // 혈액 입자 생성기
+    function createParticles(count) {
+        for(let i=0; i<count; i++) {
+            const particle = document.createElement('div');
+            particle.classList.add('blood-particle');
+            particle.style.top = `${Math.random() * 80 + 10}%`;
+            particle.style.animationDelay = `${Math.random() * 2}s`;
+            // 기본 속도 지정
+            particle.style.animationDuration = '2s';
+            vesselContainer.appendChild(particle);
+        }
+    }
+
+    // 데이터 업데이트 메인 함수
+    function updateAll() {
+        const r = parseFloat(inputR.value) || 1.0;
+        const dr = parseFloat(sliderDr.value);
+
+        // 레이블 및 계산값 연산
+        labelDr.innerText = `혈관 반지름 변화 슬라이더 (dr): ${dr.toFixed(3)}`;
+
+        const currentR = r + dr;
+        if(currentR < 0.1) return; // 양수 조건 제한
+
+        // 미분을 통한 이론적 예측치 계산
+        const fr = k * Math.pow(r, 4);
+        const f_prime_r = 4 * k * Math.pow(r, 3);
+        const df = f_prime_r * dr;
+
+        const dr_r = dr / r;
+        const df_f_approx = 4 * dr_r;
+
+        // 실제 수치 변화율 계산 (결과 출력용)
+        const currentF = k * Math.pow(currentR, 4);
+        const realFIncreaseRate = ((currentF - fr) / fr) * 100;
+        const realRIncreaseRate = (dr / r) * 100;
+
+        // 결과 자동 갱신 문구 출력
+        resultText.innerText = `반지름 ${realRIncreaseRate.toFixed(2)}% ${realRIncreaseRate >= 0 ? '증가' : '감소'} → 혈류량 ${realFIncreaseRate.toFixed(2)}% ${realFIncreaseRate >= 0 ? '증가' : '감소'}`;
+
+        // 수학적 수식 계산 출력
+        calcDf.innerText = df.toFixed(4);
+        calcRatio.innerText = `${(df / fr).toFixed(4)} ≈ 4 * ${dr_r.toFixed(4)}`;
+
+        // 시각화 1: 혈관 두께 및 혈류 애니메이션 속도 실시간 제어
+        const baseHeight = 60;
+        const newHeight = baseHeight * (currentR / r);
+        vesselBar.style.height = `${newHeight}px`;
+        vesselBar.style.top = `${(120 - newHeight)/2}px`;
+
+        // 애니메이션 속도 제어 (혈류량 비례)
+        const particles = document.querySelectorAll('.blood-particle');
+        const velocityRatio = currentF / fr;
+        let duration = 2 / (velocityRatio > 0.1 ? velocityRatio : 0.1);
+        if(duration > 10) duration = 10; // 무한정 느려짐 방지
+
+        particles.forEach(p => {
+            p.style.animationDuration = `${duration}s`;
+        });
+
+        // 질환 데이터 업데이트
+        updateDiseaseTable(r);
+
+        // 시각화 2: 그래프 점 위치 및 접선 업데이트
+        updateChart(r, currentR, fr, f_prime_r);
+    }
+
+    // 질환 계산 테이블 동적 업데이트
+    function updateDiseaseTable(r) {
+        const fr = k * Math.pow(r, 4);
+        [-0.05, -0.10, -0.20].forEach((rate, idx) => {
+            const reducedR = r * (1 + rate);
+            const reducedF = k * Math.pow(reducedR, 4);
+            const dropRate = ((reducedF - fr) / fr) * 100;
+            const ids = ['disease-5', 'disease-10', 'disease-20'];
+            document.getElementById(ids[idx]).innerText = `${dropRate.toFixed(2)}% 감소`;
+        });
+    }
+
+    // Chart.js 그래프 초기화
+    function initChart() {
+        const ctx = document.getElementById('graphCanvas').getContext('2d');
+        chart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                datasets: [
+                    {
+                        label: 'f(r) = kr⁴',
+                        data: [],
+                        borderColor: '#457b9d',
+                        borderWidth: 2,
+                        pointRadius: 0,
+                        fill: false
+                    },
+                    {
+                        label: '현재 상태 (r + dr)',
+                        data: [],
+                        borderColor: '#e63946',
+                        backgroundColor: '#e63946',
+                        pointRadius: 6,
+                        showLine: false
+                    },
+                    {
+                        label: 'r에서의 접선(선형근사)',
+                        data: [],
+                        borderColor: '#ffa200',
+                        borderDash: [5, 5],
+                        borderWidth: 1.5,
+                        pointRadius: 0,
+                        fill: false
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: { type: 'linear', position: 'bottom', title: { display: true, text: '반지름 r' }, min: 0, max: 2 },
+                    y: { type: 'linear', title: { display: true, text: '혈류 유동률 f(r)' }, min: 0, max: 16 }
+                },
+                plugins: {
+                    legend: { labels: { boxWidth: 12 } }
+                }
+            }
+        });
+    }
+
+    // 그래프 데이터 동적 갱신
+    function updateChart(r, currentR, fr, f_prime_r) {
+        if(!chart) return;
+
+        // 1. 메인 곡선 데이터 생성 f(r) = r^4
+        const curveData = [];
+        for(let x = 0; x <= 2.0; x += 0.05) {
+            curveData.push({x: x, y: k * Math.pow(x, 4)});
+        }
+
+        // 2. 현재 조작된 점 위치
+        const currentPoint = [{x: currentR, y: k * Math.pow(currentR, 4)}];
+
+        // 3. r에서의 접선 방정식 데이터 생성: y = f'(r)(x - r) + f(r)
+        const tangentData = [];
+        for(let x = r - 0.4; x <= r + 0.4; x += 0.1) {
+            if (x >= 0 && x <= 2.0) {
+                const y = f_prime_r * (x - r) + fr;
+                tangentData.push({x: x, y: y});
+            }
+        }
+
+        // 데이터 적용 및 차트 리프레시
+        chart.data.datasets[0].data = curveData;
+        chart.data.datasets[1].data = currentPoint;
+        chart.data.datasets[2].data = tangentData;
+        chart.update('none'); // 매끄러운 갱신을 위해 애니메이션 효과 제거
+    }
+
+    // 초기화 버튼 동작
+    function resetValues() {
+        if(isAnimating) toggleAnimation();
+        inputR.value = 1.0;
+        inputDff.value = 0.04;
+        sliderDr.value = 0;
+        updateAll();
+    }
+
+    // 애니메이션 토글 제어
+    function toggleAnimation() {
+        if(isAnimating) {
+            clearInterval(animationInterval);
+            btnAnimate.innerText = "변화 재생 애니메이션";
+            btnAnimate.style.backgroundColor = "var(--primary-color)";
+            isAnimating = false;
+        } else {
+            btnAnimate.innerText = "애니메이션 정지";
+            btnAnimate.style.backgroundColor = "#2b6cb0";
+            isAnimating = true;
+
+            let step = 0.005;
+            animationInterval = setInterval(() => {
+                let currentVal = parseFloat(sliderDr.value);
+                if(currentVal >= 0.3 || currentVal <= -0.3) {
+                    step = -step; // 한계 도달 시 방향 반전 왕복 효과
+                }
+                sliderDr.value = (currentVal + step).toFixed(3);
+                updateAll();
+            }, 30);
+        }
+    }
+</script>
+
+</body>
+</html>

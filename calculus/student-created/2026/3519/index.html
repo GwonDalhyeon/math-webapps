@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3519 학생 제작 웹앱</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --bg-color: #f8fafc;
+            --card-bg: #ffffff;
+            --text-color: #334155;
+            --border-color: #e2e8f0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        header, section {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            color: var(--primary-color);
+            margin-top: 0;
+            font-size: 1.5rem;
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 10px;
+        }
+
+        /* 1. 상단 정보 영역 스타일 */
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            font-size: 0.95rem;
+        }
+
+        .info-item strong {
+            color: var(--primary-color);
+            display: block;
+            margin-bottom: 2px;
+        }
+
+        /* 2. 개념 설명 영역 스타일 */
+        .concept-box {
+            background-color: #eff6ff;
+            border-left: 4px solid var(--primary-color);
+            padding: 15px;
+            border-radius: 0 8px 8px 0;
+        }
+
+        /* 3. 시각화 영역 스타일 */
+        .visualization-box {
+            position: relative;
+            height: 350px;
+            width: 100%;
+        }
+
+        /* 4. 조작 영역 스타일 */
+        .control-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 20px;
+        }
+
+        .control-item {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        label {
+            font-weight: bold;
+            font-size: 0.9rem;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            cursor: pointer;
+        }
+
+        input[type="number"] {
+            padding: 8px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            font-size: 0.95rem;
+        }
+
+        /* 5. 결과 해석 영역 스타일 */
+        .result-box {
+            background-color: #f0fdf4;
+            border-left: 4px solid #16a34a;
+            padding: 15px;
+            border-radius: 0 8px 8px 0;
+        }
+
+        .live-stats {
+            margin-top: 15px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            background: #fff;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: #16a34a;
+        }
+
+        /* 반응형 모바일 대응 */
+        @media (max-width: 600px) {
+            body { padding: 10px; }
+            header, section { padding: 16px; }
+            .live-stats { grid-template-columns: 1fr; }
+        }
+    </style>
+
+<style>
+  .student-work-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    max-width: 1040px;
+    margin: 0 auto 16px;
+    padding: 10px 12px;
+    border: 1px solid #dbe3ef;
+    border-radius: 8px;
+    background: #f8fafc;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+  .student-work-links a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 36px;
+    padding: 7px 10px;
+    border-radius: 6px;
+    background: #ffffff;
+    color: #1d4ed8;
+    text-decoration: none;
+    font-weight: 700;
+    border: 1px solid #dbe3ef;
+  }
+  .student-work-links a:hover {
+    background: #eff6ff;
+  }
+</style>
+</head>
+<body>
+
+<nav class="student-work-links" aria-label="학생 답안 자료">
+  <a href="../">목록으로</a>
+  <a href="./answer.html">답안 보기</a>
+  <a href="./answer.txt">원문 TXT</a>
+</nav>
+
+
+<div class="container">
+
+    <header>
+        <h1>[미적분 독서 연계 웹앱] 학생 정보 및 안내</h1>
+        <div class="info-grid">
+            <div class="info-item"><strong>학번 / 이름</strong>3519 / 비공개</div>
+            <div class="info-item"><strong>책 제목 / 저자</strong>미적분의 쓸모 / 한화택</div>
+            <div class="info-item"><strong>선택한 주제</strong>연이율과 투자 기간에 따른 나의 자산 증가</div>
+            <div class="info-item"><strong>관련 미적분 개념</strong>지수함수의 도함수, 시간에 따른 자산 변화율</div>
+        </div>
+        <hr style="border: 0; border-top: 1px solid var(--border-color); margin: 15px 0;">
+        <p><strong>웹앱 제작 의도:</strong> 연이율과 기본 자산, 투자 기간의 변화에 따라 나타나는 나의 자산 증가 그래프를 실시간으로 확인해 보세요!</p>
+        <p style="font-size: 0.9rem; color: #64748b;"><strong>사용 방법 안내:</strong> 아래 조작 영역에서 연이율, 기본 자산, 투자 기간, 목표 금액을 입력하거나 슬라이더를 움직여 보세요. 그래프와 수치 결과가 실시간으로 변합니다.</p>
+    </header>
+
+    <section>
+        <h1>2. 개념 설명 영역</h1>
+        <div class="concept-box">
+            <p style="margin: 0;">
+                복리로 늘어나는 자산은 수학적으로 지수함수의 형태를 띱니다.
+                이때 <strong>시간에 따른 자산 변화율</strong>은 이 지수함수를 미분한 <strong>지수함수의 도함수</strong>로 나타낼 수 있습니다.
+                조그만 변화율(연이율)의 차이가 장기 투자(시간)와 결합하여 축적되면, 시간이 흐를수록 자산의 증가 기울기(순간 변화율)가 기하급수적으로 가팔라지는 현상을 확인할 수 있습니다.
+            </p>
+        </div>
+    </section>
+
+    <section>
+        <h1>3. 시각화 영역</h1>
+        <div class="visualization-box">
+            <canvas id="assetChart"></canvas>
+        </div>
+    </section>
+
+    <section>
+        <h1>4. 조작 영역</h1>
+        <div class="control-grid">
+            <div class="control-item">
+                <label for="rate">연이율: <span id="rateVal">5</span>%</label>
+                <input type="range" id="rate" min="0" max="20" step="0.1" value="5">
+            </div>
+            <div class="control-item">
+                <label for="principal">기본 자산 (초기 투자금)</label>
+                <input type="number" id="principal" value="1000" min="0" step="10">
+                <span style="font-size:0.8rem; color:#64748b;">단위: 만원</span>
+            </div>
+            <div class="control-item">
+                <label for="period">투자 기간: <span id="periodVal">30</span>년</label>
+                <input type="range" id="period" min="1" max="100" step="1" value="30">
+            </div>
+            <div class="control-item">
+                <label for="target">목표 금액</label>
+                <input type="number" id="target" value="3000" min="0" step="50">
+                <span style="font-size:0.8rem; color:#64748b;">단위: 만원</span>
+            </div>
+        </div>
+    </section>
+
+    <section>
+        <h1>5. 결과 해석 영역</h1>
+        <div class="result-box">
+            <p style="margin: 0;">
+                미적분이 단순히 복잡한 수학 공식에 머무는 것이 아니라, 현실의 재테크와 금융에서 자산의 미래 가치를 예측하는 데 얼마나 유용한지 깨닫기를 바랍니다.
+                또한, 연이율과 기본 자산, 투자 기간이라는 세 가지 변수가 결합했을 때 자산이 기하급수적으로 증가함을 직관적으로 이해할 수 있습니다.
+            </p>
+
+            <div class="live-stats">
+                <div class="stat-item">
+                    <div style="font-size: 0.85rem; color: #64748b;">최종적으로 도달하는 자산의 액수</div>
+                    <div class="stat-value" id="finalAsset">- 만원</div>
+                </div>
+                <div class="stat-item">
+                    <div style="font-size: 0.85rem; color: #64748b;">목표 금액 도달까지 필요한 시간</div>
+                    <div class="stat-value" id="timeToTarget">- 년</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+</div>
+
+<script>
+    // HTML 요소 가져오기
+    const rateInput = document.getElementById('rate');
+    const principalInput = document.getElementById('principal');
+    const periodInput = document.getElementById('period');
+    const targetInput = document.getElementById('target');
+
+    const rateVal = document.getElementById('rateVal');
+    const periodVal = document.getElementById('periodVal');
+    const finalAssetDisplay = document.getElementById('finalAsset');
+    const timeToTargetDisplay = document.getElementById('timeToTarget');
+
+    // Chart.js 초기 설정
+    const ctx = document.getElementById('assetChart').getContext('2d');
+    let assetChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: [],
+            datasets: [{
+                label: '자산 규모 (만원)',
+                data: [],
+                borderColor: '#2563eb',
+                backgroundColor: 'rgba(37, 99, 235, 0.1)',
+                borderWidth: 2,
+                fill: true,
+                pointRadius: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                x: {
+                    title: { display: true, text: '투자 기간 (년)' }
+                },
+                y: {
+                    title: { display: true, text: '자산 (만원)' },
+                    beginAtZero: false
+                }
+            },
+            plugins: {
+                legend: { display: false }
+            }
+        }
+    });
+
+    // 계산 및 업데이트 함수
+    function updateWebApp() {
+        // 입력값 읽기
+        const r = parseFloat(rateInput.value) / 100; // 연이율 (소수점)
+        const P = parseFloat(principalInput.value) || 0; // 초기 투자금
+        const N = parseInt(periodInput.value); // 총 투자 기간 (X축 범위 역동적 조절)
+        const targetMoney = parseFloat(targetInput.value) || 0; // 목표 금액
+
+        // 텍스트 수치 업데이트
+        rateVal.textContent = rateInput.value;
+        periodVal.textContent = N;
+
+        // 1. 그래프 데이터 생성 (연속 복리 또는 이산 복리 중 직관적인 1년 단위 복리식 원리 적용: A = P*(1+r)^t)
+        const labels = [];
+        const data = [];
+        for (let t = 0; t <= N; t++) {
+            labels.push(t);
+            const currentAsset = P * Math.pow(1 + r, t);
+            data.push(Math.round(currentAsset * 10) / 10); // 소수점 첫째자리 반올림
+        }
+
+        // 최종 도달 액수 계산
+        const finalAsset = P * Math.pow(1 + r, N);
+        finalAssetDisplay.textContent = Math.round(finalAsset).toLocaleString() + ' 만원';
+
+        // 2. 목표 금액 도달 기간 역산 (자연로그 공식 유도 활용: t = ln(Target/P) / ln(1+r))
+        if (targetMoney <= P) {
+            timeToTargetDisplay.textContent = '0년 (이미 도달)';
+        } else if (r === 0) {
+            timeToTargetDisplay.textContent = '도달 불가능 (이율 0%)';
+        } else {
+            const yearsNeeded = Math.log(targetMoney / P) / Math.log(1 + r);
+            if (isFinite(yearsNeeded) && yearsNeeded > 0) {
+                timeToTargetDisplay.textContent = yearsNeeded.toFixed(1) + ' 년';
+            } else {
+                timeToTargetDisplay.textContent = '계산 불가';
+            }
+        }
+
+        // 3. 차트 실시간 업데이트 (x축 범위 조작에 따라 유연하게 변경됨)
+        assetChart.data.labels = labels;
+        assetChart.data.datasets[0].data = data;
+        assetChart.update();
+    }
+
+    // 이벤트 리스너 연결 (사용자 조작 시 실시간 즉시 반응)
+    rateInput.addEventListener('input', updateWebApp);
+    principalInput.addEventListener('input', updateWebApp);
+    periodInput.addEventListener('input', updateWebApp);
+    targetInput.addEventListener('input', updateWebApp);
+
+    // 초기 실행
+    updateWebApp();
+</script>
+
+</body>
+</html>

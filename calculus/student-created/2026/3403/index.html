@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>3403 학생 제작 웹앱</title>
+<style>
+*{box-sizing:border-box;font-family:'Malgun Gothic',sans-serif;}
+body{margin:20px;background:#f4f7fb;color:#222;}
+.section{background:white;padding:20px;margin-bottom:20px;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,0.1);}
+h1,h2{color:#1f4e79;}
+.info-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:10px;}
+.grid-container{display:grid;grid-template-columns:repeat(4,60px);gap:5px;justify-content:center;}
+.grid-container input{width:60px;height:60px;text-align:center;font-size:18px;}
+.result-box{background:#eef5ff;padding:15px;margin-top:10px;border-radius:8px;}
+button{padding:10px 20px;font-size:16px;background:#1f4e79;color:white;border:none;border-radius:8px;cursor:pointer;}
+canvas{max-width:100%;}
+</style>
+
+<style>
+  .student-work-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    max-width: 1040px;
+    margin: 0 auto 16px;
+    padding: 10px 12px;
+    border: 1px solid #dbe3ef;
+    border-radius: 8px;
+    background: #f8fafc;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+  .student-work-links a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 36px;
+    padding: 7px 10px;
+    border-radius: 6px;
+    background: #ffffff;
+    color: #1d4ed8;
+    text-decoration: none;
+    font-weight: 700;
+    border: 1px solid #dbe3ef;
+  }
+  .student-work-links a:hover {
+    background: #eff6ff;
+  }
+</style>
+</head>
+<body>
+
+<nav class="student-work-links" aria-label="학생 답안 자료">
+  <a href="../">목록으로</a>
+  <a href="./answer.html">답안 보기</a>
+  <a href="./answer.txt">원문 TXT</a>
+</nav>
+
+<div class="section">
+<h1>CT에 대하여</h1>
+<div class="info-grid">
+<div><b>학번</b> : 3403</div>
+<div><b>이름</b> : 비공개</div>
+<div><b>책 제목</b> : 미적분의 쓸모</div>
+<div><b>저자</b> : 한화택</div>
+<div><b>선택한 부분 또는 주제</b> : CT</div>
+<div><b>관련 미적분 개념</b> : 적분(정적분), 푸리에 변환</div>
+</div>
+<p><b>웹앱 제작 의도</b><br>CT에서 사용하는 라돈 변환과 역변환의 원리를 단순화하여 설명한다.</p>
+<p><b>사용 방법</b><br>4×4 격자에 숫자를 입력한 뒤 계산하기를 누른다.</p>
+</div>
+
+<div class="section">
+<h2>개념 설명</h2>
+<p>CT는 여러 방향에서 얻은 X선 데이터를 이용해 내부 영상을 복원한다. 이 웹앱은 라돈 변환과 역변환을 단순화하여 표현하였다.</p>
+</div>
+
+<div class="section">
+<h2>시각화 영역</h2>
+<canvas id="chart"></canvas>
+</div>
+
+<div class="section">
+<h2>조작 영역</h2>
+<div class="grid-container" id="grid"></div><br>
+<button onclick="calculateRadon()">계산하기</button>
+</div>
+
+<div class="section">
+<h2>결과 해석 영역</h2>
+<div class="result-box"><h3>라돈 변환 결과</h3><div id="radonResult"></div></div>
+<div class="result-box"><h3>역변환 결과</h3><div id="inverseResult"></div></div>
+<div class="result-box"><h3>의미</h3><div id="meaning"></div></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+const gridDiv=document.getElementById("grid");
+for(let i=0;i<16;i++){
+ const input=document.createElement("input");
+ input.type="number"; input.value=Math.floor(Math.random()*10);
+ gridDiv.appendChild(input);
+}
+let chart;
+function drawChart(data){
+ const ctx=document.getElementById("chart");
+ if(chart) chart.destroy();
+ chart=new Chart(ctx,{type:'bar',
+ data:{labels:['0°-1','0°-2','0°-3','0°-4','90°-1','90°-2','90°-3','90°-4'],
+ datasets:[{label:'라돈 변환 값',data:data}]}});
+}
+function calculateRadon(){
+ const values=[...document.querySelectorAll("#grid input")].map(x=>Number(x.value));
+ const matrix=[];
+ for(let i=0;i<4;i++) matrix.push(values.slice(i*4,(i+1)*4));
+ const rowSums=matrix.map(r=>r.reduce((a,b)=>a+b,0));
+ const colSums=[];
+ for(let c=0;c<4;c++){let s=0;for(let r=0;r<4;r++) s+=matrix[r][c]; colSums.push(s);}
+ document.getElementById("radonResult").innerHTML=`0°:${rowSums.join(", ")}<br>90°:${colSums.join(", ")}`;
+ let html="<table border='1'>";
+ for(let r=0;r<4;r++){html+="<tr>";for(let c=0;c<4;c++){html+=`<td>${((rowSums[r]+colSums[c])/8).toFixed(1)}</td>`;}html+="</tr>";}
+ html+="</table>";
+ document.getElementById("inverseResult").innerHTML=html;
+ document.getElementById("meaning").innerText="여러 방향의 투영값을 이용해 원래 영상을 복원하는 CT의 원리를 단순화하여 표현하였다.";
+ drawChart([...rowSums,...colSums]);
+}
+calculateRadon();
+</script>
+</body>
+</html>

@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3616 학생 제작 웹앱</title>
+    <style>
+        /* 기본 스타일 및 반응형 레이아웃 설정 */
+        body {
+            font-family: 'Malgun Gothic', dotum, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+            background-color: #f9f9f9;
+        }
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            background: #fff;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        h1, h2, h3 {
+            color: #2c3e50;
+        }
+        /* 영역 구분을 위한 스타일 */
+        .section {
+            margin-bottom: 25px;
+            padding: 15px;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            background-color: #fafafa;
+        }
+        .info-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        .info-table th, .info-table td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: left;
+        }
+        .info-table th {
+            background-color: #f2f2f2;
+            width: 25%;
+        }
+        /* 조작 영역과 시각화 영역을 가로로 배치 (반응형 대응) */
+        .grid-container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        @media (min-width: 768px) {
+            .grid-container {
+                flex-direction: row;
+            }
+            .control-panel {
+                flex: 1;
+            }
+            .visual-panel {
+                flex: 1.5;
+            }
+        }
+        .control-panel {
+            background-color: #edf2f7;
+        }
+        .visual-panel {
+            background-color: #fff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        .control-group {
+            margin-bottom: 20px;
+        }
+        .control-group label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .control-group input[type="range"] {
+            width: 100%;
+        }
+        .value-display {
+            font-weight: bold;
+            color: #3182ce;
+        }
+        .interpretation-text {
+            font-size: 1.05rem;
+            background-color: #fffaf0;
+            border-left: 4px solid #dd6b20;
+            padding: 10px;
+        }
+        /* Canvas 디자인 기본 설정 */
+        canvas {
+            border: 1px solid #cbd5e0;
+            background-color: #ffffff;
+            max-width: 100%;
+        }
+    </style>
+
+<style>
+  .student-work-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    max-width: 1040px;
+    margin: 0 auto 16px;
+    padding: 10px 12px;
+    border: 1px solid #dbe3ef;
+    border-radius: 8px;
+    background: #f8fafc;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+  .student-work-links a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 36px;
+    padding: 7px 10px;
+    border-radius: 6px;
+    background: #ffffff;
+    color: #1d4ed8;
+    text-decoration: none;
+    font-weight: 700;
+    border: 1px solid #dbe3ef;
+  }
+  .student-work-links a:hover {
+    background: #eff6ff;
+  }
+</style>
+</head>
+<body>
+
+<nav class="student-work-links" aria-label="학생 답안 자료">
+  <a href="../">목록으로</a>
+  <a href="./answer.html">답안 보기</a>
+  <a href="./answer.txt">원문 TXT</a>
+</nav>
+
+
+<div class="container">
+
+    <div class="section">
+        <h2>[웹앱 상단 필수 정보]</h2>
+        <table class="info-table">
+            <tr>
+                <th>학번</th>
+                <td>3616</td>
+            </tr>
+            <tr>
+                <th>이름</th>
+                <td>비공개</td>
+            </tr>
+            <tr>
+                <th>책 제목</th>
+                <td>미적분 놀라운 일상의 공식</td>
+            </tr>
+            <tr>
+                <th>저자</th>
+                <td>구라모토 다카후미</td>
+            </tr>
+            <tr>
+                <th>선택한 부분 또는 주제</th>
+                <td>미분방정식을 이용하여 생물의 개체수 변화를 확인하는 로지스틱 함수</td>
+            </tr>
+            <tr>
+                <th>관련 미적분 개념</th>
+                <td>자연로그, 지수함수, 미분방정식</td>
+            </tr>
+            <tr>
+                <th>웹앱 제작 의도</th>
+                <td>미분방정식을 이용하여 각 조건을 조절함에 따라 변화하는 생물의 개체수 변화를 실시간으로 관찰할 수 있다.</td>
+            </tr>
+            <tr>
+                <th>사용 방법 안내</th>
+                <td style="color: #e53e3e; font-weight: bold;">미입력</td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="section">
+        <h3>2. 개념 설명 영역</h3>
+        <p><strong>주제 선택 이유:</strong> S자 모양의 로지스틱 함수를 구하기 위해 각 단계의 한계점을 파악하고 저항 계수와 같은 조건들을 추가하여 원하는 함수 모양에 도달해나가는 과정이 인상깊었으며 이 주제를 통하여 미분방정식의 유용함을 느끼고 이러한 미분방정식을 통해 미래를 예측 가능하게 하며 이러한 예측 가능성이 물고기의 적당한 어획량, 생물의 환경에 따른 개체수 변화 등을 알 수 있게하는 큰 가치에 대해 알게되어 이 부분을 선택하였다.</p>
+        <p><strong>핵심 원리:</strong> 생물의 개체수가 계속해서 증가하는 것이 아닌 다양한 환경적 요인들에 인하여 도달하는 한계점이 존재한다.</p>
+    </div>
+
+    <div class="grid-container">
+        <div class="section control-panel">
+            <h3>4. 조작 영역</h3>
+
+            <div class="control-group">
+                <label for="sliderN0">초기 생물의 개체수 (N₀): <span id="valN0" class="value-display">10</span></label>
+                <input type="range" id="sliderN0" min="1" max="100" value="10" step="1">
+                <small style="color: #666; display:block;">t = 0일때의 처음 개체수를 조절</small>
+            </div>
+
+            <div class="control-group">
+                <label for="sliderAlpha">생물의 번식력 계수 (α): <span id="valAlpha" class="value-display">0.3</span></label>
+                <input type="range" id="sliderAlpha" min="0.05" max="1.0" value="0.3" step="0.01">
+                <small style="color: #666; display:block;">생물의 번식 속도를 조절</small>
+            </div>
+
+            <div class="control-group">
+                <label for="sliderBeta">환경 저항 계수 (β): <span id="valBeta" class="value-display">0.003</span></label>
+                <input type="range" id="sliderBeta" min="0.0005" max="0.01" value="0.003" step="0.0001">
+                <small style="color: #666; display:block;">먹이, 한정된 공간에 따른 환경 저항 계수를 조절</small>
+            </div>
+        </div>
+
+        <div class="section visual-panel">
+            <h3>3. 시각화 영역</h3>
+            <canvas id="logisticCanvas" width="500" height="350"></canvas>
+            <div style="margin-top: 12px; font-size: 0.85rem; text-align: center; font-weight: bold;">
+                <span style="color: rgb(54, 162, 235);">──</span> 로지스틱 함수 그래프 (N) &nbsp;&nbsp;&nbsp;
+                <span style="color: rgb(255, 99, 132); font-style: italic;">- -</span> 고정 비교용 단순 지수 증가 그래프
+            </div>
+        </div>
+    </div>
+
+    <div class="section">
+        <h3>5. 결과 해석 영역</h3>
+        <div class="interpretation-text">
+            <p><strong>수학적 의미 및 분석:</strong></p>
+            <ul>
+                <li>개체수가 계속해서 증가하지 않고 먹이 또는 공간과 같은 환경적 요인으로 인하여 포화되는 상태가 존재하며 이러한 예측을 통하여 물고기의 어획량, 생물의 별종 방지 대책과 같은 여러 방안들을 알아낼 수 있다.</li>
+                <li>또한 각 조건들을 조정하며 생물들이 어떤 환경에서 더 잘 살아가고 잘 살가지 못하는지를 비교하고 분석할 수 있다.</li>
+                <li>현재 조작된 조건에 따른 <strong>생물 개체수 포화 한계점(점근선 K = α/β): <span id="limitDisplay" style="color: #e53e3e; font-weight: bold;">-</span></strong></li>
+            </ul>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    // 입력 조작 컨트롤러 정의
+    const sliderN0 = document.getElementById('sliderN0');
+    const sliderAlpha = document.getElementById('sliderAlpha');
+    const sliderBeta = document.getElementById('sliderBeta');
+
+    const valN0 = document.getElementById('valN0');
+    const valAlpha = document.getElementById('valAlpha');
+    const valBeta = document.getElementById('valBeta');
+    const limitDisplay = document.getElementById('limitDisplay');
+
+    // 캔버스 그래픽 드로잉 컨텍스트 초기화
+    const canvas = document.getElementById('logisticCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // 실시간 독립형 고정 렌더링 함수
+    function renderApp() {
+        const N0 = parseFloat(sliderN0.value);
+        const alpha = parseFloat(sliderAlpha.value);
+        const beta = parseFloat(sliderBeta.value);
+
+        // 숫자 텍스트 실시간 반영
+        valN0.textContent = N0;
+        valAlpha.textContent = alpha;
+        valBeta.textContent = beta.toFixed(4);
+
+        // 이론상 한계 수용량 계산 K = alpha / beta
+        const K = alpha / beta;
+        limitDisplay.textContent = Math.round(K) + " (α/β)";
+
+        // 1. 화면 초기 청소
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // 여백 프레임 설정
+        const paddingLeft = 55;
+        const paddingRight = 25;
+        const paddingTop = 30;
+        const paddingBottom = 45;
+
+        const graphWidth = canvas.width - paddingLeft - paddingRight;
+        const graphHeight = canvas.height - paddingTop - paddingBottom;
+
+        // X, Y축 도메인 최대 스케일 정의
+        const maxX = 30; // 가로축 시간 최대 범위
+        const maxY = Math.max(K * 1.3, 150); // 세로축 개체수 최대 범위 (스케일 변화 시 찌그러짐 방지 대응)
+
+        // 2. 배경 모눈 격자 및 좌표 수치선 렌더링
+        ctx.strokeStyle = '#e2e8f0';
+        ctx.lineWidth = 1;
+        ctx.fillStyle = '#4a5568';
+        ctx.font = '11px sans-serif';
+
+        // 세로축 (개체수 N) 수치 마킹선 배치
+        for (let i = 0; i <= 5; i++) {
+            const yVal = (maxY / 5) * i;
+            const canvasY = canvas.height - paddingBottom - (yVal / maxY) * graphHeight;
+
+            ctx.beginPath();
+            ctx.moveTo(paddingLeft, canvasY);
+            ctx.lineTo(canvas.width - paddingRight, canvasY);
+            ctx.stroke();
+
+            // Y축 값 텍스트 배치
+            ctx.fillText(Math.round(yVal), paddingLeft - 38, canvasY + 4);
+        }
+
+        // 가로축 (시간 t) 수치 마킹선 배치
+        for (let i = 0; i <= 6; i++) {
+            const xVal = (maxX / 6) * i;
+            const canvasX = paddingLeft + (xVal / maxX) * graphWidth;
+
+            ctx.beginPath();
+            ctx.moveTo(canvasX, paddingTop);
+            ctx.lineTo(canvasX, canvas.height - paddingBottom);
+            ctx.stroke();
+
+            // X축 값 텍스트 배치
+            ctx.fillText(xVal, canvasX - 5, canvas.height - paddingBottom + 18);
+        }
+
+        // 3. 메인 경계축선 선명화 (검은색 테두리 축선 고정)
+        ctx.strokeStyle = '#1a202c';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(paddingLeft, paddingTop);
+        ctx.lineTo(paddingLeft, canvas.height - paddingBottom);
+        ctx.lineTo(canvas.width - paddingRight, canvas.height - paddingBottom);
+        ctx.stroke();
+
+        // [요청 사항 반영] 가로축 이름: 비공개
+        ctx.fillStyle = '#1a202c';
+        ctx.font = 'bold 12px sans-serif';
+        ctx.fillText("시간 (t)", canvas.width - paddingRight - 15, canvas.height - paddingBottom - 10);
+        ctx.fillText("개체수 (N)", paddingLeft - 45, paddingTop - 15);
+
+
+        // 4. 고정 비교용 단순 지수 증가 그래프 드로잉 (N = N₀ * e^(αt)) - 빨간색 대시선
+        ctx.strokeStyle = 'rgb(255, 99, 132)';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([5, 5]);
+        ctx.beginPath();
+
+        let initialExpPoint = true;
+        for (let xPixel = 0; xPixel <= graphWidth; xPixel++) {
+            const t = (xPixel / graphWidth) * maxX;
+            const expN = N0 * Math.exp(alpha * t);
+            const canvasY = canvas.height - paddingBottom - (expN / maxY) * graphHeight;
+
+            if (canvasY >= paddingTop && canvasY <= canvas.height - paddingBottom) {
+                if (initialExpPoint) {
+                    ctx.moveTo(paddingLeft + xPixel, canvasY);
+                    initialExpPoint = false;
+                } else {
+                    ctx.lineTo(paddingLeft + xPixel, canvasY);
+                }
+            }
+        }
+        ctx.stroke();
+        ctx.setLineDash([]); // 패턴 초기화
+
+
+        // 5. [요청 사항 반영] 실시간 유동 변화하는 로지스틱 곡선 드로잉 - 선명한 파란색 실선
+        ctx.strokeStyle = 'rgb(54, 162, 235)';
+        ctx.lineWidth = 3.5;
+        ctx.beginPath();
+
+        for (let xPixel = 0; xPixel <= graphWidth; xPixel++) {
+            const t = (xPixel / graphWidth) * maxX;
+
+            // 로지스틱 함수 거동 공식 연산
+            const ePower = Math.exp(-alpha * t);
+            const logisticN = K / (1 + ((K - N0) / N0) * ePower);
+            const canvasY = canvas.height - paddingBottom - (logisticN / maxY) * graphHeight;
+
+            if (xPixel === 0) {
+                ctx.moveTo(paddingLeft + xPixel, canvasY);
+            } else {
+                ctx.lineTo(paddingLeft + xPixel, canvasY);
+            }
+        }
+        ctx.stroke();
+
+
+        // 6. 점근 수렴선 가이드라인 투사 (K선) - 주황색 점선
+        ctx.strokeStyle = '#ed8936';
+        ctx.lineWidth = 1;
+        ctx.setLineDash([3, 3]);
+        const canvasLimitY = canvas.height - paddingBottom - (K / maxY) * graphHeight;
+
+        if (canvasLimitY >= paddingTop) {
+            ctx.beginPath();
+            ctx.moveTo(paddingLeft, canvasLimitY);
+            ctx.lineTo(canvas.width - paddingRight, canvasLimitY);
+            ctx.stroke();
+            ctx.fillStyle = '#dd6b20';
+            ctx.font = '11px sans-serif';
+            ctx.fillText("포화 한계점(K)", canvas.width - paddingRight - 75, canvasLimitY - 5);
+        }
+        ctx.setLineDash([]); // 패턴 리셋
+    }
+
+    // 컨트롤 요소 입력 동작 시 실시간 동적 바인딩 매핑
+    sliderN0.addEventListener('input', renderApp);
+    sliderAlpha.addEventListener('input', renderApp);
+    sliderBeta.addEventListener('input', renderApp);
+
+    // 최초 로드 시 시스템 초기 기동
+    window.onload = renderApp;
+</script>
+
+</body>
+</html>

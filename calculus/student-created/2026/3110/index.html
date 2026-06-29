@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3110 학생 제작 웹앱</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f9f9f9;
+        }
+        h1, h2, h3 {
+            color: #2c3e50;
+        }
+        section {
+            background-color: #fff;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        /* 영역별 명확한 구분을 위한 스타일 */
+        .info-area { border-left: 5px solid #3498db; }
+        .concept-area { border-left: 5px solid #2ecc71; }
+        .visual-area { border-left: 5px solid #e74c3c; text-align: center; }
+        .control-area { border-left: 5px solid #f39c12; }
+        .result-area { border-left: 5px solid #9b59b6; }
+
+        ul {
+            list-style-type: none;
+            padding: 0;
+        }
+        ul li {
+            margin-bottom: 5px;
+        }
+        .highlight {
+            font-weight: bold;
+            color: #e74c3c;
+        }
+        /* 조작 영역 슬라이더 스타일 */
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin: 20px 0;
+        }
+        input[type=range] {
+            flex-grow: 1;
+            cursor: pointer;
+        }
+        .energy-display {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #2980b9;
+            margin-top: 15px;
+        }
+        canvas {
+            max-width: 100%;
+        }
+    </style>
+
+<style>
+  .student-work-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    max-width: 1040px;
+    margin: 0 auto 16px;
+    padding: 10px 12px;
+    border: 1px solid #dbe3ef;
+    border-radius: 8px;
+    background: #f8fafc;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+  .student-work-links a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 36px;
+    padding: 7px 10px;
+    border-radius: 6px;
+    background: #ffffff;
+    color: #1d4ed8;
+    text-decoration: none;
+    font-weight: 700;
+    border: 1px solid #dbe3ef;
+  }
+  .student-work-links a:hover {
+    background: #eff6ff;
+  }
+</style>
+</head>
+<body>
+
+<nav class="student-work-links" aria-label="학생 답안 자료">
+  <a href="../">목록으로</a>
+  <a href="./answer.html">답안 보기</a>
+  <a href="./answer.txt">원문 TXT</a>
+</nav>
+
+
+    <section class="info-area">
+        <h2>📚 웹앱 기본 정보</h2>
+        <ul>
+            <li><strong>학번:</strong> 3110</li>
+            <li><strong>이름:</strong> 비공개</li>
+            <li><strong>책 제목:</strong> 미적분의 쓸모</li>
+            <li><strong>저자:</strong> 한화택</li>
+            <li><strong>선택한 주제:</strong> 슈뢰딩거 방정식에서 파동함수 곡률과 에너지 관계</li>
+            <li><strong>관련 미적분 개념:</strong> 이계도함수, 곡선의 오목 볼록, 변곡점 등</li>
+            <li><strong>웹앱 제작 의도:</strong> 파동함수 곡률이 증가함에 따라 양자 에너지가 어떻게 상승하는지를 확인해봅니다.</li>
+            <li><strong>사용 방법 안내:</strong> 하단의 '조작 영역'에서 슬라이더를 움직여 양자수 n 값을 변경해보세요.</li>
+        </ul>
+    </section>
+
+    <section class="concept-area">
+        <h2>💡 수학 및 과학 개념 설명</h2>
+        <p>우리가 수학에서 배우는 <strong>이계도함수</strong>와 <strong>곡선의 오목/볼록(곡률)</strong> 개념은 양자역학의 슈뢰딩거 방정식에서 입자의 <strong>에너지</strong>를 결정하는 데 사용됩니다.</p>
+        <p>이계도함수의 절댓값(곡률)이 크다는 것은 그래프가 더 가파르게 휜다는 것을 의미하며, 슈뢰딩거 방정식에서는 이 곡률이 커질수록 양자세계의 에너지가 높아진다는 것을 보여줍니다.</p>
+    </section>
+
+    <section class="visual-area">
+        <h2>📈 파동함수 그래프 (시각화)</h2>
+        <canvas id="waveChart"></canvas>
+        <div class="energy-display">현재 에너지 (E) ∝ <span id="eValue">1</span></div>
+    </section>
+
+    <section class="control-area">
+        <h2>⚙️ 양자수 조작</h2>
+        <p>양자수 n을 1부터 5까지 조절하며 그래프의 곡률(휘어짐)과 에너지의 변화를 관찰하세요.</p>
+        <div class="slider-container">
+            <label for="nSlider" style="font-weight: bold;">양자수 n : <span id="nDisplay">1</span></label>
+            <input type="range" id="nSlider" min="1" max="5" step="1" value="1">
+        </div>
+    </section>
+
+    <section class="result-area">
+        <h2>📊 결과 해석</h2>
+        <p id="interpretationText">
+            양자수 <strong>n=1</strong>일 때의 상태입니다. 그래프가 비교적 완만하며, 에너지가 가장 낮은 바닥 상태를 나타냅니다.
+        </p>
+    </section>
+
+    <script>
+        // 학생이 일부 수정하고 이해하기 쉽도록 변수와 함수를 명확하게 작성했습니다.
+
+        // HTML 요소 가져오기
+        const nSlider = document.getElementById('nSlider');
+        const nDisplay = document.getElementById('nDisplay');
+        const eValue = document.getElementById('eValue');
+        const interpretationText = document.getElementById('interpretationText');
+        const ctx = document.getElementById('waveChart').getContext('2d');
+
+        // x축 데이터 생성 (0부터 1까지 100개의 점)
+        const xValues = [];
+        for (let i = 0; i <= 100; i++) {
+            xValues.push(i / 100);
+        }
+
+        // 파동함수 계산 함수: y = sin(n * pi * x)
+        function calculateWave(n) {
+            return xValues.map(x => Math.sin(n * Math.PI * x));
+        }
+
+        // 초기 차트 생성
+        let waveChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: xValues,
+                datasets: [{
+                    label: '파동함수 (Wave Function)',
+                    data: calculateWave(1),
+                    borderColor: '#e74c3c',
+                    borderWidth: 3,
+                    tension: 0.4, // 곡선을 부드럽게
+                    pointRadius: 0 // 데이터 점 숨기기
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    x: {
+                        title: { display: true, text: '위치 (x)' },
+                        ticks: { display: false } // x축 수치 숨기기 (형태에 집중)
+                    },
+                    y: {
+                        min: -1.5,
+                        max: 1.5,
+                        title: { display: true, text: '진폭 (파동함수의 값)' }
+                    }
+                },
+                animation: {
+                    duration: 300 // 조작 시 부드럽게 변하도록 애니메이션 시간 설정
+                }
+            }
+        });
+
+        // 슬라이더 조작 시 실행되는 함수
+        nSlider.addEventListener('input', function() {
+            const n = parseInt(this.value);
+
+            // 1. 조작 값 업데이트
+            nDisplay.textContent = n;
+
+            // 2. 에너지 값 업데이트 (E는 n의 제곱에 비례)
+            const energy = n * n;
+            eValue.textContent = energy;
+
+            // 3. 그래프 데이터 업데이트 및 다시 그리기
+            waveChart.data.datasets[0].data = calculateWave(n);
+            waveChart.update();
+
+            // 4. 결과 해석 텍스트 업데이트
+            let interpretation = `양자수 <strong>n=${n}</strong>일 때의 상태입니다. `;
+            if (n === 1) {
+                interpretation += "그래프가 비교적 완만하며, 에너지가 가장 낮은 바닥 상태를 나타냅니다.";
+            } else {
+                interpretation += `n 값이 커짐에 따라 파동함수 그래프가 더 가파르게 휘어집니다(<span class="highlight">이계도함수의 절댓값 및 곡률 증가</span>). 이에 따라 양자세계의 에너지(E)도 <strong>${energy}</strong>로 크게 상승하는 것을 확인할 수 있습니다.`;
+            }
+            interpretationText.innerHTML = interpretation;
+        });
+    </script>
+</body>
+</html>
