@@ -42,8 +42,28 @@
       margin-top: 0;
       font-size: 20px;
     }
-    .answer-card pre {
+    .answer-number {
+      margin: 0 0 8px;
+      font-size: 14px;
+      font-weight: 800;
+      color: #2563eb;
+    }
+    .answer-hint {
+      margin: 0 0 12px;
+      padding: 10px 12px;
+      border-left: 3px solid #cbd5e1;
+      background: #f8fafc;
+      color: #64748b;
+      font-size: 15px;
+      line-height: 1.6;
+      white-space: pre-wrap;
+    }
+    .answer-body {
       margin: 0;
+      padding: 14px 16px;
+      border-radius: 8px;
+      border: 1px solid #dbe3ef;
+      background: #f8fafc;
       white-space: pre-wrap;
       overflow-wrap: anywhere;
       font-family: "Malgun Gothic", "Apple SD Gothic Neo", system-ui, sans-serif;
@@ -58,7 +78,6 @@
     <nav class="answer-nav" aria-label="답안 이동">
       <a href="./">웹앱으로</a>
       <a href="../">목록으로</a>
-      <a href="./answer.txt">원문 TXT</a>
     </nav>
 
     <header class="hero">
@@ -68,60 +87,87 @@
     </header>
 
       <article class="answer-card">
-        <h2>1. 학번: 3503</h2>
-        <pre>(내용 없음)</pre>
+        <p class="answer-number">문항 1</p>
+        <h2>학번</h2>
+        <div class="answer-body">3503</div>
       </article>
 
       <article class="answer-card">
-        <h2>2. 이름: 비공개</h2>
-        <pre>(내용 없음)</pre>
+        <p class="answer-number">문항 2</p>
+        <h2>이름</h2>
+        <div class="answer-body">비공개</div>
       </article>
 
       <article class="answer-card">
-        <h2>3. 책 제목: 수학으로 이해하는 파동</h2>
-        <pre>(내용 없음)</pre>
+        <p class="answer-number">문항 3</p>
+        <h2>책 제목</h2>
+        <div class="answer-body">수학으로 이해하는 파동</div>
       </article>
 
       <article class="answer-card">
-        <h2>4. 저자: Transnational college of LEX</h2>
-        <pre>(내용 없음)</pre>
+        <p class="answer-number">문항 4</p>
+        <h2>저자</h2>
+        <div class="answer-body">Transnational college of LEX</div>
       </article>
 
       <article class="answer-card">
-        <h2>5. 선택한 부분 또는 주제: 푸리에 급수를 통해 복합 합수 내의 단순 파동을 찾아내는 방법</h2>
-        <pre>(내용 없음)</pre>
+        <p class="answer-number">문항 5</p>
+        <h2>선택한 부분 또는 주제</h2>
+        <div class="answer-body">푸리에 급수를 통해 복합 합수 내의 단순 파동을 찾아내는 방법</div>
       </article>
 
       <article class="answer-card">
-        <h2>6. 관련된 미적분 개념: 정적분</h2>
-        <pre>7.이 부분을 선택한 이유 또는 읽으면서 생긴 질문이나 생각: an과 bn에 n값을 넣어가다 보면 복합 파동에 존재하지 않는 성분은 an과 bn이 0이 되어 사라지고, 실제로 존재하는 성분만 남게 되어 복합 파동을 구성하는 단순 파동을 찾아낼 수 있다는 점이 흥미로웠다.
-(단순한 감상이 아니라, 어떤 점이 흥미로웠는지, 어떤 의문이 생겼는지 등)
-
-
-
-8.웹앱으로 보여주고 싶은 핵심 장면 또는 원리: 복합파동이 사인파와 코사인파의 합으로 이루어져 있다고 가정하고, 푸리에 급수의 계수인 an과 bn을 계산하는 과정을 보여주고 싶다. 사용자가 사인파의 주파수, 코사인파의 주파수, 그리고 푸리에 계수의 차수 n을 바꾸면 복합파동과 sin(nx), cos(nx)가 함께 변화한다. n번째 성분이 복합파동에 실제로 포함되어 있을 경우 해당 계수(an 또는 bn)가 크게 나타나고, 포함되어 있지 않을 경우 적분값이 0이 되어 사라지는 모습을 보여주고 싶다. 이를 통해 푸리에 급수가 복합 파동 속에 포함된 사인 성분과 코사인 성분을 찾아내는 원리를 시각적으로 이해할 수 있도록 하고 싶다. 계산 과정에서 발생하는 수치적분 오차는 제거하여, 이론적으로 0이 되어야 하는 an과 bn 값은 화면에 0으로 표시한다.
- (예: 접선의 기울기가 변하는 모습, 구분구적법으로 넓이를 근사하는 과정 등)
-
-9.사용자가 직접 조작할 요소: 사인파의 주파수(f₁), 코사인파의 주파수(f₂), 푸리에 계수의 차수(n)
- (예: 시간 슬라이더, 초기값 입력창, 재생 버튼 등)</pre>
+        <p class="answer-number">문항 6</p>
+        <h2>관련된 미적분 개념</h2>
+        <div class="answer-body">정적분</div>
       </article>
 
       <article class="answer-card">
-        <h2>10. 조작에 따라 화면에서 달라져야 하는 것: 복합파동의 그래프, sin(nx) 그래프, cos(nx) 그래프, an의 값, bn의 값, 결과 해석 문구</h2>
-        <pre>(예: 그래프, 수치, 도형, 애니메이션, 접선, 넓이, 부분합 등)
-
-
-11.이 웹앱을 통해 사용자가 이해하길 바라는 내용: 푸리에 급수의 계수 an과 bn을 이용하여 복합 파동 속에 포함된 사인 성분과 코사인 성분을 찾아내는 방법을 이해하기 원함.</pre>
+        <p class="answer-number">문항 7</p>
+        <h2>이 부분을 선택한 이유 또는 읽으면서 생긴 질문이나 생각</h2>
+        <p class="answer-hint">(단순한 감상이 아니라, 어떤 점이 흥미로웠는지, 어떤 의문이 생겼는지 등)</p>
+        <div class="answer-body">an과 bn에 n값을 넣어가다 보면 복합 파동에 존재하지 않는 성분은 an과 bn이 0이 되어 사라지고, 실제로 존재하는 성분만 남게 되어 복합 파동을 구성하는 단순 파동을 찾아낼 수 있다는 점이 흥미로웠다.</div>
       </article>
 
       <article class="answer-card">
-        <h2>12. 웹앱 상단에 넣을 핵심 설명 문장: 해당 웹앱은 푸리에 급수를 활용하여 복합 파동 내에 포함된 사인 성분과 코사인 성분을 찾아내는 과정을 보여준다.</h2>
-        <pre>(이 웹앱이 무엇을 보여주는지 한두 문장으로)</pre>
+        <p class="answer-number">문항 8</p>
+        <h2>웹앱으로 보여주고 싶은 핵심 장면 또는 원리</h2>
+        <p class="answer-hint">(예: 접선의 기울기가 변하는 모습, 구분구적법으로 넓이를 근사하는 과정 등)</p>
+        <div class="answer-body">복합파동이 사인파와 코사인파의 합으로 이루어져 있다고 가정하고, 푸리에 급수의 계수인 an과 bn을 계산하는 과정을 보여주고 싶다. 사용자가 사인파의 주파수, 코사인파의 주파수, 그리고 푸리에 계수의 차수 n을 바꾸면 복합파동과 sin(nx), cos(nx)가 함께 변화한다. n번째 성분이 복합파동에 실제로 포함되어 있을 경우 해당 계수(an 또는 bn)가 크게 나타나고, 포함되어 있지 않을 경우 적분값이 0이 되어 사라지는 모습을 보여주고 싶다. 이를 통해 푸리에 급수가 복합 파동 속에 포함된 사인 성분과 코사인 성분을 찾아내는 원리를 시각적으로 이해할 수 있도록 하고 싶다. 계산 과정에서 발생하는 수치적분 오차는 제거하여, 이론적으로 0이 되어야 하는 an과 bn 값은 화면에 0으로 표시한다.</div>
       </article>
 
       <article class="answer-card">
-        <h2>13. 웹앱 안에 꼭 넣고 싶은 추가 기능: 없음.</h2>
-        <pre>(없으면 '없음'이라고 쓰기)</pre>
+        <p class="answer-number">문항 9</p>
+        <h2>사용자가 직접 조작할 요소</h2>
+        <p class="answer-hint">(예: 시간 슬라이더, 초기값 입력창, 재생 버튼 등)</p>
+        <div class="answer-body">사인파의 주파수(f₁), 코사인파의 주파수(f₂), 푸리에 계수의 차수(n)</div>
+      </article>
+
+      <article class="answer-card">
+        <p class="answer-number">문항 10</p>
+        <h2>조작에 따라 화면에서 달라져야 하는 것</h2>
+        <p class="answer-hint">(예: 그래프, 수치, 도형, 애니메이션, 접선, 넓이, 부분합 등)</p>
+        <div class="answer-body">복합파동의 그래프, sin(nx) 그래프, cos(nx) 그래프, an의 값, bn의 값, 결과 해석 문구</div>
+      </article>
+
+      <article class="answer-card">
+        <p class="answer-number">문항 11</p>
+        <h2>이 웹앱을 통해 사용자가 이해하길 바라는 내용</h2>
+        <div class="answer-body">푸리에 급수의 계수 an과 bn을 이용하여 복합 파동 속에 포함된 사인 성분과 코사인 성분을 찾아내는 방법을 이해하기 원함.</div>
+      </article>
+
+      <article class="answer-card">
+        <p class="answer-number">문항 12</p>
+        <h2>웹앱 상단에 넣을 핵심 설명 문장</h2>
+        <p class="answer-hint">(이 웹앱이 무엇을 보여주는지 한두 문장으로)</p>
+        <div class="answer-body">해당 웹앱은 푸리에 급수를 활용하여 복합 파동 내에 포함된 사인 성분과 코사인 성분을 찾아내는 과정을 보여준다.</div>
+      </article>
+
+      <article class="answer-card">
+        <p class="answer-number">문항 13</p>
+        <h2>웹앱 안에 꼭 넣고 싶은 추가 기능</h2>
+        <p class="answer-hint">(없으면 '없음'이라고 쓰기)</p>
+        <div class="answer-body">없음.</div>
       </article>
   </main>
 </body>

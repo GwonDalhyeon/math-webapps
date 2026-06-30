@@ -42,8 +42,28 @@
       margin-top: 0;
       font-size: 20px;
     }
-    .answer-card pre {
+    .answer-number {
+      margin: 0 0 8px;
+      font-size: 14px;
+      font-weight: 800;
+      color: #2563eb;
+    }
+    .answer-hint {
+      margin: 0 0 12px;
+      padding: 10px 12px;
+      border-left: 3px solid #cbd5e1;
+      background: #f8fafc;
+      color: #64748b;
+      font-size: 15px;
+      line-height: 1.6;
+      white-space: pre-wrap;
+    }
+    .answer-body {
       margin: 0;
+      padding: 14px 16px;
+      border-radius: 8px;
+      border: 1px solid #dbe3ef;
+      background: #f8fafc;
       white-space: pre-wrap;
       overflow-wrap: anywhere;
       font-family: "Malgun Gothic", "Apple SD Gothic Neo", system-ui, sans-serif;
@@ -58,7 +78,6 @@
     <nav class="answer-nav" aria-label="답안 이동">
       <a href="./">웹앱으로</a>
       <a href="../">목록으로</a>
-      <a href="./answer.txt">원문 TXT</a>
     </nav>
 
     <header class="hero">
@@ -68,38 +87,45 @@
     </header>
 
       <article class="answer-card">
-        <h2>1. 학번: 3504</h2>
-        <pre>(내용 없음)</pre>
+        <p class="answer-number">문항 1</p>
+        <h2>학번</h2>
+        <div class="answer-body">3504</div>
       </article>
 
       <article class="answer-card">
-        <h2>2. 이름: 비공개</h2>
-        <pre>(내용 없음)</pre>
+        <p class="answer-number">문항 2</p>
+        <h2>이름</h2>
+        <div class="answer-body">비공개</div>
       </article>
 
       <article class="answer-card">
-        <h2>3. 책 제목: 도시는 무엇으로 사는가</h2>
-        <pre>(내용 없음)</pre>
+        <p class="answer-number">문항 3</p>
+        <h2>책 제목</h2>
+        <div class="answer-body">도시는 무엇으로 사는가</div>
       </article>
 
       <article class="answer-card">
-        <h2>4. 저자: 유현준</h2>
-        <pre>(내용 없음)</pre>
+        <p class="answer-number">문항 4</p>
+        <h2>저자</h2>
+        <div class="answer-body">유현준</div>
       </article>
 
       <article class="answer-card">
-        <h2>5. 선택한 부분 또는 주제:</h2>
-        <pre>도시의 교통 흐름과 효율적인 도로 설계</pre>
+        <p class="answer-number">문항 5</p>
+        <h2>선택한 부분 또는 주제</h2>
+        <div class="answer-body">도시의 교통 흐름과 효율적인 도로 설계</div>
       </article>
 
       <article class="answer-card">
-        <h2>6. 관련된 미적분 개념:</h2>
-        <pre>함수, 미분, 순간변화율</pre>
+        <p class="answer-number">문항 6</p>
+        <h2>관련된 미적분 개념</h2>
+        <div class="answer-body">함수, 미분, 순간변화율</div>
       </article>
 
       <article class="answer-card">
-        <h2>7. 이 부분을 선택한 이유 또는 읽으면서 생긴 질문이나 생각:</h2>
-        <pre>도시는 무엇으로 사는가를 읽으면서 도시를 구성하는 건물과 도로가 단순히 만들어지는 것이 아니라 사람들의 이동과 생활 패턴을 고려하여 설계된다는 점이 인상 깊었다. 특히 도시에서 발생하는 교통 문제를 해결하기 위해 도시공학자들이 다양한 데이터를 분석하고 미래의 교통량을 예측한다는 내용을 읽으며 큰 흥미를 느꼈다. 출퇴근 시간에는 차량이 급격하게 증가하고, 시간이 지나면 다시 감소하는데 이러한 변화가 단순한 현상이 아니라 수학적으로 분석될 수 있다는 점이 신기했다.
+        <p class="answer-number">문항 7</p>
+        <h2>이 부분을 선택한 이유 또는 읽으면서 생긴 질문이나 생각</h2>
+        <div class="answer-body">도시는 무엇으로 사는가를 읽으면서 도시를 구성하는 건물과 도로가 단순히 만들어지는 것이 아니라 사람들의 이동과 생활 패턴을 고려하여 설계된다는 점이 인상 깊었다. 특히 도시에서 발생하는 교통 문제를 해결하기 위해 도시공학자들이 다양한 데이터를 분석하고 미래의 교통량을 예측한다는 내용을 읽으며 큰 흥미를 느꼈다. 출퇴근 시간에는 차량이 급격하게 증가하고, 시간이 지나면 다시 감소하는데 이러한 변화가 단순한 현상이 아니라 수학적으로 분석될 수 있다는 점이 신기했다.
 또한 교통량이 증가하거나 감소하는 속도를 알 수 있다면 교차로나 도로의 규모를 더욱 효율적으로 설계할 수 있을 것이라고 생각했다. 이를 통해 도시공학 분야에서 미적분이 실제로 어떻게 활용되는지 알아보고 싶었고, 특히 미분의 순간변화율 개념이 교통량 변화 분석과 깊은 관련이 있다는 점에 관심이 생겨 이 주제를 선택하게 되었다.
    8. 웹앱으로 보여주고 싶은 핵심 장면 또는 원리:
 하루 동안의 교통량 변화를 함수 그래프로 나타내고, 특정 시점에서의 접선과 순간변화율을 통해 교통량이 얼마나 빠르게 증가하거나 감소하는지 시각적으로 보여주고 싶다. 사용자는 그래프 위의 시간을 조절하면서 출근 시간과 퇴근 시간에 교통량이 급격하게 증가하는 모습을 확인할 수 있으며, 미분을 통해 변화의 정도를 분석하는 과정을 직접 체험할 수 있다.
@@ -122,7 +148,7 @@
    12. 웹앱 상단에 넣을 핵심 설명 문장:
 &quot;도시의 교통량은 시간에 따라 계속 변화합니다. 그래프 위의 점을 움직이며 순간변화율을 확인하고, 미분이 도시의 교통 문제를 분석하고 해결하는 데 어떻게 활용되는지 알아보세요.&quot;
    13. 웹앱 안에 꼭 넣고 싶은 추가 기능:
-교통량이 가장 빠르게 증가하거나 감소하는 시점을 자동으로 표시하는 기능과 함께, 해당 시점의 순간변화율을 계산하여 보여주는 기능을 추가하고 싶다. 또한 실제 도시의 교통 데이터를 예시로 제공하여 사용자가 미적분이 현실 문제 해결에 활용되는 모습을 더욱 쉽게 이해할 수 있도록 하고 싶다.</pre>
+교통량이 가장 빠르게 증가하거나 감소하는 시점을 자동으로 표시하는 기능과 함께, 해당 시점의 순간변화율을 계산하여 보여주는 기능을 추가하고 싶다. 또한 실제 도시의 교통 데이터를 예시로 제공하여 사용자가 미적분이 현실 문제 해결에 활용되는 모습을 더욱 쉽게 이해할 수 있도록 하고 싶다.</div>
       </article>
   </main>
 </body>

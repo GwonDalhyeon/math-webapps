@@ -42,8 +42,28 @@
       margin-top: 0;
       font-size: 20px;
     }
-    .answer-card pre {
+    .answer-number {
+      margin: 0 0 8px;
+      font-size: 14px;
+      font-weight: 800;
+      color: #2563eb;
+    }
+    .answer-hint {
+      margin: 0 0 12px;
+      padding: 10px 12px;
+      border-left: 3px solid #cbd5e1;
+      background: #f8fafc;
+      color: #64748b;
+      font-size: 15px;
+      line-height: 1.6;
+      white-space: pre-wrap;
+    }
+    .answer-body {
       margin: 0;
+      padding: 14px 16px;
+      border-radius: 8px;
+      border: 1px solid #dbe3ef;
+      background: #f8fafc;
       white-space: pre-wrap;
       overflow-wrap: anywhere;
       font-family: "Malgun Gothic", "Apple SD Gothic Neo", system-ui, sans-serif;
@@ -58,7 +78,6 @@
     <nav class="answer-nav" aria-label="답안 이동">
       <a href="./">웹앱으로</a>
       <a href="../">목록으로</a>
-      <a href="./answer.txt">원문 TXT</a>
     </nav>
 
     <header class="hero">
@@ -68,89 +87,108 @@
     </header>
 
       <article class="answer-card">
-        <h2>1. 학번: 3621</h2>
-        <pre>(내용 없음)</pre>
+        <p class="answer-number">문항 1</p>
+        <h2>학번</h2>
+        <div class="answer-body">3621</div>
       </article>
 
       <article class="answer-card">
-        <h2>2. 이름: 비공개</h2>
-        <pre>(내용 없음)</pre>
+        <p class="answer-number">문항 2</p>
+        <h2>이름</h2>
+        <div class="answer-body">비공개</div>
       </article>
 
       <article class="answer-card">
-        <h2>3. 책 제목: 수학이 생명의 언어라면</h2>
-        <pre>(내용 없음)</pre>
+        <p class="answer-number">문항 3</p>
+        <h2>책 제목</h2>
+        <div class="answer-body">수학이 생명의 언어라면</div>
       </article>
 
       <article class="answer-card">
-        <h2>4. 저자: 김재경</h2>
-        <pre>(내용 없음)</pre>
+        <p class="answer-number">문항 4</p>
+        <h2>저자</h2>
+        <div class="answer-body">김재경</div>
       </article>
 
       <article class="answer-card">
-        <h2>5. 선택한 부분 또는 주제: 제3장 우리 몸속의 신비로운 세계, 생체 시계 -&gt; mRNA와 피리어드 단백질의 세포 내 공간 이동 시차 및 음성 피드백 루프 메커니즘</h2>
-        <pre>(내용 없음)</pre>
+        <p class="answer-number">문항 5</p>
+        <h2>선택한 부분 또는 주제</h2>
+        <div class="answer-body">제3장 우리 몸속의 신비로운 세계, 생체 시계 -&gt; mRNA와 피리어드 단백질의 세포 내 공간 이동 시차 및 음성 피드백 루프 메커니즘</div>
       </article>
 
       <article class="answer-card">
-        <h2>6. 관련된 미적분 개념: 시간(t)에 따른 물질 농도의 순간 변화율(도함수), (미분방정식, 오일러 방법을 이용한 적분 변환) &lt;- 그래프 시각화용으로 AI에게 맡길 것</h2>
-        <pre>(내용 없음)</pre>
+        <p class="answer-number">문항 6</p>
+        <h2>관련된 미적분 개념</h2>
+        <div class="answer-body">시간(t)에 따른 물질 농도의 순간 변화율(도함수), (미분방정식, 오일러 방법을 이용한 적분 변환) &lt;- 그래프 시각화용으로 AI에게 맡길 것</div>
       </article>
 
       <article class="answer-card">
-        <h2>7. 이 부분을 선택한 이유 또는 읽으면서 생긴 질문이나 생각:</h2>
-        <pre>생명과학 수업 시간에 세포 내 물질대사나 호르몬의 작용에 대해서 배우면서 ‘음성 피드백’이라는 것을 알게 되었다. 그런데 이 책을 읽으면서 ‘음성 피드백’이 비단 생명과학 시간에 배운 항상성 유지에만 적용되는 것이 아니라 ‘주기’를 만드는 데에도 관여한다는 것을 알게 되었다. 이러한 생체의 주기를 만드는 데 관여하는 변수인 mRNA, 세포질 단백질, 핵 내부 단백질의 농도가 서로 상호작용하며 어떻게 주기를 만드는지, 각 물질의 그래프 사이에 어떤 관계를 찾을 수 있는지, 그리고 이동 속도 또는 분해 속도가 바뀌게 됨에 따라 그래프의 개형이 어떻게 바뀌면서 사람에게 수면 장애 증상이 나타나는지 수학적 모델링을 통해 시각화하여 직접 눈으로 확인하고자 하였다.</pre>
+        <p class="answer-number">문항 7</p>
+        <h2>이 부분을 선택한 이유 또는 읽으면서 생긴 질문이나 생각</h2>
+        <div class="answer-body">생명과학 수업 시간에 세포 내 물질대사나 호르몬의 작용에 대해서 배우면서 ‘음성 피드백’이라는 것을 알게 되었다. 그런데 이 책을 읽으면서 ‘음성 피드백’이 비단 생명과학 시간에 배운 항상성 유지에만 적용되는 것이 아니라 ‘주기’를 만드는 데에도 관여한다는 것을 알게 되었다. 이러한 생체의 주기를 만드는 데 관여하는 변수인 mRNA, 세포질 단백질, 핵 내부 단백질의 농도가 서로 상호작용하며 어떻게 주기를 만드는지, 각 물질의 그래프 사이에 어떤 관계를 찾을 수 있는지, 그리고 이동 속도 또는 분해 속도가 바뀌게 됨에 따라 그래프의 개형이 어떻게 바뀌면서 사람에게 수면 장애 증상이 나타나는지 수학적 모델링을 통해 시각화하여 직접 눈으로 확인하고자 하였다.</div>
       </article>
 
       <article class="answer-card">
-        <h2>8. 웹앱으로 보여주고 싶은 핵심 장면 또는 원리:</h2>
-        <pre>나는 ‘수학이 생명의 언어라면’의 ‘제 3장 우리 몸속의 신비로운 세계, 생체 시계’ 부분을 바탕으로, ‘도함수의 변화와 함수의 그래프’ 개념을 설명하는 웹앱을 만들고 싶다. 사용자가 물질의 반응 속도 조작 슬라이더를 조작하면 생체 주기 그래프의 개형이 변하도록 하고, 이를 통해 각 변수를 조작한 결과 나타나는 변화가 그래프의 개형을 어떻게 변화시키고, 이것이 극대점과 주기 등 그래프의 각 요소의 변화를 어떻게 불러오는지, 그리고 이로 인해 나타나는 수면 장애를 이해할 수 있게 하고 싶다.
+        <p class="answer-number">문항 8</p>
+        <h2>웹앱으로 보여주고 싶은 핵심 장면 또는 원리</h2>
+        <div class="answer-body">나는 ‘수학이 생명의 언어라면’의 ‘제 3장 우리 몸속의 신비로운 세계, 생체 시계’ 부분을 바탕으로, ‘도함수의 변화와 함수의 그래프’ 개념을 설명하는 웹앱을 만들고 싶다. 사용자가 물질의 반응 속도 조작 슬라이더를 조작하면 생체 주기 그래프의 개형이 변하도록 하고, 이를 통해 각 변수를 조작한 결과 나타나는 변화가 그래프의 개형을 어떻게 변화시키고, 이것이 극대점과 주기 등 그래프의 각 요소의 변화를 어떻게 불러오는지, 그리고 이로 인해 나타나는 수면 장애를 이해할 수 있게 하고 싶다.
 
 
-생체 시계 메커니즘의 핵심 물질인 mRNA(M), 세포질 단백질(Rc), 핵 내부 단백질(R)의 시간에 따른 순간 변화율을 나타낸 아래의 3개의 식이 시간에 따라 스스로 일정한 주기를 그리며 진동하는 메커니즘을 시각화하고자 한다.</pre>
+생체 시계 메커니즘의 핵심 물질인 mRNA(M), 세포질 단백질(Rc), 핵 내부 단백질(R)의 시간에 따른 순간 변화율을 나타낸 아래의 3개의 식이 시간에 따라 스스로 일정한 주기를 그리며 진동하는 메커니즘을 시각화하고자 한다.</div>
       </article>
 
       <article class="answer-card">
-        <h2>1. mRNA(M) 농도 변화율: dM/dt = alphaM f(R) - betaM M</h2>
-        <pre>-&gt; 핵 속 단백질 농도(R)가 높아지면 억제 함수 f(R) = 1/(1+R^4) 에 의해 전사 변화율이 감소하는 음성 피드백과 자체 분해 (-betaM M)를 나타낸다.</pre>
+        <p class="answer-number">문항 1</p>
+        <h2>학번</h2>
+        <div class="answer-body">dM/dt = alphaM f(R) - betaM M
+-&gt; 핵 속 단백질 농도(R)가 높아지면 억제 함수 f(R) = 1/(1+R^4) 에 의해 전사 변화율이 감소하는 음성 피드백과 자체 분해 (-betaM M)를 나타낸다.</div>
       </article>
 
       <article class="answer-card">
-        <h2>2. 세포질 단백질(Rc) 농도 변화율: dRc/dt = alphaC M - betaC Rc - alphaR mR</h2>
-        <pre>-&gt; mRNA의 양에 비례하는 번역 생성(alphaC M), 자체 분해(-betaC Rc), 그리고 핵 내부로 이동하며 세포질에서 감소하는 양(-alphaR Rc)을 모두 반영한 값을 나타낸다.</pre>
+        <p class="answer-number">문항 2</p>
+        <h2>이름</h2>
+        <div class="answer-body">dRc/dt = alphaC M - betaC Rc - alphaR mR
+-&gt; mRNA의 양에 비례하는 번역 생성(alphaC M), 자체 분해(-betaC Rc), 그리고 핵 내부로 이동하며 세포질에서 감소하는 양(-alphaR Rc)을 모두 반영한 값을 나타낸다.</div>
       </article>
 
       <article class="answer-card">
-        <h2>3. 핵 내부 단백질 농도 변화율: dR/dt = alphaR Rc - betaR세포</h2>
-        <pre>-&gt; 세포질에서 유입된 단백질(alphaR Rc)과 핵 내부에서 분해되는 소멸량(-betaR R)을 나타낸다.
-+웹앱을 통해 매우 짧은 시간 간격 동안 ‘다음 농도 = 현재 농도 + 변화율’을 계속 반복하여 계산하는 '오일러 방법'을 구현하여, 세 물질의 그래프 곡선이 M -&gt; Rc -&gt; R 순서대로 일정한 시차를 두고 차례대로 극대값을 보이는 생체 시계 메커니즘을 시각화하고자 한다.</pre>
+        <p class="answer-number">문항 3</p>
+        <h2>책 제목</h2>
+        <div class="answer-body">dR/dt = alphaR Rc - betaR세포
+-&gt; 세포질에서 유입된 단백질(alphaR Rc)과 핵 내부에서 분해되는 소멸량(-betaR R)을 나타낸다.
++웹앱을 통해 매우 짧은 시간 간격 동안 ‘다음 농도 = 현재 농도 + 변화율’을 계속 반복하여 계산하는 '오일러 방법'을 구현하여, 세 물질의 그래프 곡선이 M -&gt; Rc -&gt; R 순서대로 일정한 시차를 두고 차례대로 극대값을 보이는 생체 시계 메커니즘을 시각화하고자 한다.</div>
       </article>
 
       <article class="answer-card">
-        <h2>9. 사용자가 직접 조작할 요소:</h2>
-        <pre>핵 내부 이동 속도 변수 (alphaR) 슬라이더: 단백질이 세포질에서 핵 내부로 들어가는 속도이다. 생체 시계 메커니즘의 시차를 만드는 상수이다.
-핵 내부 단백질 분해 속도 변수 (betaR) 슬라이더: 핵 내부에서  전사를 억제하던 단백질이 사라지는 속도이다.</pre>
+        <p class="answer-number">문항 9</p>
+        <h2>사용자가 직접 조작할 요소</h2>
+        <div class="answer-body">핵 내부 이동 속도 변수 (alphaR) 슬라이더: 단백질이 세포질에서 핵 내부로 들어가는 속도이다. 생체 시계 메커니즘의 시차를 만드는 상수이다.
+핵 내부 단백질 분해 속도 변수 (betaR) 슬라이더: 핵 내부에서  전사를 억제하던 단백질이 사라지는 속도이다.</div>
       </article>
 
       <article class="answer-card">
-        <h2>10. 조작에 따라 화면에서 달라져야 하는 것:</h2>
-        <pre>시각화 영역: 슬라이더를 움직이면 세 물질(M, Rc, R)의 파형 변화가 실시간으로 반영되게 하고 싶다. 이동 속도나 분해 속도가 바뀌면 세 곡선 사이의 극대점 간격이 늘어나거나 줄어들고, 이에 따라 그래프 전체의 주기가 늘어나거나 줄어드는 모습이 실시간으로 반영되어 출력되게 하고 싶다. 가로축의 범위는 48시간으로 설정하도록 한다. 또한 각 그래프의 극대점에 강조 표시가 들어가게 하고 싶다.
-결과 해석 영역: M, Rc, R 각각의 그래프가 극대(중 최댓값)인 t의 값을 표시하고, 이때의 다른 그래프들의 기울기를 표시하고자 한다. 그리고 계산 결과에 따라 환자의 상태에 대한 설명 문구가 바뀌게 하고 싶다. (e.g. 주기가 늘어나면 '수면 위상 지연 증후군', 주기가 짧아지면 '수면 위상 전진 증후군', 진동이 멈추면 '생체 시계 작동 정지')</pre>
+        <p class="answer-number">문항 10</p>
+        <h2>조작에 따라 화면에서 달라져야 하는 것</h2>
+        <div class="answer-body">시각화 영역: 슬라이더를 움직이면 세 물질(M, Rc, R)의 파형 변화가 실시간으로 반영되게 하고 싶다. 이동 속도나 분해 속도가 바뀌면 세 곡선 사이의 극대점 간격이 늘어나거나 줄어들고, 이에 따라 그래프 전체의 주기가 늘어나거나 줄어드는 모습이 실시간으로 반영되어 출력되게 하고 싶다. 가로축의 범위는 48시간으로 설정하도록 한다. 또한 각 그래프의 극대점에 강조 표시가 들어가게 하고 싶다.
+결과 해석 영역: M, Rc, R 각각의 그래프가 극대(중 최댓값)인 t의 값을 표시하고, 이때의 다른 그래프들의 기울기를 표시하고자 한다. 그리고 계산 결과에 따라 환자의 상태에 대한 설명 문구가 바뀌게 하고 싶다. (e.g. 주기가 늘어나면 '수면 위상 지연 증후군', 주기가 짧아지면 '수면 위상 전진 증후군', 진동이 멈추면 '생체 시계 작동 정지')</div>
       </article>
 
       <article class="answer-card">
-        <h2>11. 이 웹앱을 통해 사용자가 이해하길 바라는 내용:</h2>
-        <pre>생체 주기의 변화를 일으키는 ‘핵 내부 이동 속도(alphaR)’와 ‘핵 내부 단백질 분해 속도(betaR)’ 변수를 사용자가 직접 조작함으로써, 각 변수를 조작한 결과 나타나는 변화가 그래프의 개형을 어떻게 변화시키고, 또 이것이 극대점과 주기의 변화를 어떻게 불러오는지, 또 이로 인해 어떠한 수면 장애가 나타나는지를 시각적으로 이해하게 하고 싶다.</pre>
+        <p class="answer-number">문항 11</p>
+        <h2>이 웹앱을 통해 사용자가 이해하길 바라는 내용</h2>
+        <div class="answer-body">생체 주기의 변화를 일으키는 ‘핵 내부 이동 속도(alphaR)’와 ‘핵 내부 단백질 분해 속도(betaR)’ 변수를 사용자가 직접 조작함으로써, 각 변수를 조작한 결과 나타나는 변화가 그래프의 개형을 어떻게 변화시키고, 또 이것이 극대점과 주기의 변화를 어떻게 불러오는지, 또 이로 인해 어떠한 수면 장애가 나타나는지를 시각적으로 이해하게 하고 싶다.</div>
       </article>
 
       <article class="answer-card">
-        <h2>12. 웹앱 상단에 넣을 핵심 설명 문장:</h2>
-        <pre>&quot;단백질의 생성과 분해 속도를 조절하며 우리 몸속 생체 시계가 어떻게 일정한 주기의 리듬을 만들어내는지 확인하세요&quot;</pre>
+        <p class="answer-number">문항 12</p>
+        <h2>웹앱 상단에 넣을 핵심 설명 문장</h2>
+        <div class="answer-body">&quot;단백질의 생성과 분해 속도를 조절하며 우리 몸속 생체 시계가 어떻게 일정한 주기의 리듬을 만들어내는지 확인하세요&quot;</div>
       </article>
 
       <article class="answer-card">
-        <h2>13. 웹앱 안에 꼭 넣고 싶은 추가 기능:</h2>
-        <pre>'정상 리듬(24시간)' 버튼을 누르면 슬라이더 값이 최적의 초기 상태로 세팅되는 초기화 기능</pre>
+        <p class="answer-number">문항 13</p>
+        <h2>웹앱 안에 꼭 넣고 싶은 추가 기능</h2>
+        <div class="answer-body">'정상 리듬(24시간)' 버튼을 누르면 슬라이더 값이 최적의 초기 상태로 세팅되는 초기화 기능</div>
       </article>
   </main>
 </body>

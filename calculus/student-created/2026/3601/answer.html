@@ -42,8 +42,28 @@
       margin-top: 0;
       font-size: 20px;
     }
-    .answer-card pre {
+    .answer-number {
+      margin: 0 0 8px;
+      font-size: 14px;
+      font-weight: 800;
+      color: #2563eb;
+    }
+    .answer-hint {
+      margin: 0 0 12px;
+      padding: 10px 12px;
+      border-left: 3px solid #cbd5e1;
+      background: #f8fafc;
+      color: #64748b;
+      font-size: 15px;
+      line-height: 1.6;
+      white-space: pre-wrap;
+    }
+    .answer-body {
       margin: 0;
+      padding: 14px 16px;
+      border-radius: 8px;
+      border: 1px solid #dbe3ef;
+      background: #f8fafc;
       white-space: pre-wrap;
       overflow-wrap: anywhere;
       font-family: "Malgun Gothic", "Apple SD Gothic Neo", system-ui, sans-serif;
@@ -58,7 +78,6 @@
     <nav class="answer-nav" aria-label="답안 이동">
       <a href="./">웹앱으로</a>
       <a href="../">목록으로</a>
-      <a href="./answer.txt">원문 TXT</a>
     </nav>
 
     <header class="hero">
@@ -68,68 +87,87 @@
     </header>
 
       <article class="answer-card">
-        <h2>1. 학번:3601</h2>
-        <pre>(내용 없음)</pre>
+        <p class="answer-number">문항 1</p>
+        <h2>학번</h2>
+        <div class="answer-body">3601</div>
       </article>
 
       <article class="answer-card">
-        <h2>2. 이름:비공개</h2>
-        <pre>(내용 없음)</pre>
+        <p class="answer-number">문항 2</p>
+        <h2>이름</h2>
+        <div class="answer-body">비공개</div>
       </article>
 
       <article class="answer-card">
-        <h2>3. 책 제목:미적분의 힘</h2>
-        <pre>(내용 없음)</pre>
+        <p class="answer-number">문항 3</p>
+        <h2>책 제목</h2>
+        <div class="answer-body">미적분의 힘</div>
       </article>
 
       <article class="answer-card">
-        <h2>4. 저자:스티븐 스트로가츠</h2>
-        <pre>(내용 없음)</pre>
+        <p class="answer-number">문항 4</p>
+        <h2>저자</h2>
+        <div class="answer-body">스티븐 스트로가츠</div>
       </article>
 
       <article class="answer-card">
-        <h2>5. 선택한 부분 또는 주제: 미적분을 이용하여 변화하는 현상을 분석하고 미래를 예측하는 원리와 로켓의 상승 운동</h2>
-        <pre>(내용 없음)</pre>
+        <p class="answer-number">문항 5</p>
+        <h2>선택한 부분 또는 주제</h2>
+        <div class="answer-body">미적분을 이용하여 변화하는 현상을 분석하고 미래를 예측하는 원리와 로켓의 상승 운동</div>
       </article>
 
       <article class="answer-card">
-        <h2>6. 관련된 미적분 개념:함수, 미분, 순간변화율, 접선의 기울기, 속도와 가속도</h2>
-        <pre>(내용 없음)</pre>
+        <p class="answer-number">문항 6</p>
+        <h2>관련된 미적분 개념</h2>
+        <div class="answer-body">함수, 미분, 순간변화율, 접선의 기울기, 속도와 가속도</div>
       </article>
 
       <article class="answer-card">
-        <h2>7. 이 부분을 선택한 이유 또는 읽으면서 생긴 질문이나 생각: 책을 읽으며 미적분이 단순히 문제를 푸는 수학이 아니라 실제 세계의 변화를 분석하고 미래를 예측하는 도구라는 점이 인상 깊었다. 특히 로켓이 상승할 때 특정 순간의 속도를 어떻게 구하는지 궁금했고, 미분이 항공우주 분야에서 어떤 역할을 하는지 알아보고 싶었다.</h2>
-        <pre>(단순한 감상이 아니라, 어떤 점이 흥미로웠는지, 어떤 의문이 생겼는지 등)</pre>
+        <p class="answer-number">문항 7</p>
+        <h2>이 부분을 선택한 이유 또는 읽으면서 생긴 질문이나 생각</h2>
+        <p class="answer-hint">(단순한 감상이 아니라, 어떤 점이 흥미로웠는지, 어떤 의문이 생겼는지 등)</p>
+        <div class="answer-body">책을 읽으며 미적분이 단순히 문제를 푸는 수학이 아니라 실제 세계의 변화를 분석하고 미래를 예측하는 도구라는 점이 인상 깊었다. 특히 로켓이 상승할 때 특정 순간의 속도를 어떻게 구하는지 궁금했고, 미분이 항공우주 분야에서 어떤 역할을 하는지 알아보고 싶었다.</div>
       </article>
 
       <article class="answer-card">
-        <h2>8. 웹앱으로 보여주고 싶은 핵심 장면 또는 원리: 로켓의 고도 변화 그래프에서 특정 시점의 접선과 순간속도를 나타내어, 미분이 실제 운동을 분석하는 데 사용되는 모습을 보여준다.</h2>
-        <pre>(예: 접선의 기울기가 변하는 모습, 구분구적법으로 넓이를 근사하는 과정 등)</pre>
+        <p class="answer-number">문항 8</p>
+        <h2>웹앱으로 보여주고 싶은 핵심 장면 또는 원리</h2>
+        <p class="answer-hint">(예: 접선의 기울기가 변하는 모습, 구분구적법으로 넓이를 근사하는 과정 등)</p>
+        <div class="answer-body">로켓의 고도 변화 그래프에서 특정 시점의 접선과 순간속도를 나타내어, 미분이 실제 운동을 분석하는 데 사용되는 모습을 보여준다.</div>
       </article>
 
       <article class="answer-card">
-        <h2>9. 사용자가 직접 조작할 요소: 초기 속도 입력창, 가속도 슬라이더, 시간 슬라이더, 애니메이션 재생 버튼</h2>
-        <pre>(예: 시간 슬라이더, 초기값 입력창, 재생 버튼 등)</pre>
+        <p class="answer-number">문항 9</p>
+        <h2>사용자가 직접 조작할 요소</h2>
+        <p class="answer-hint">(예: 시간 슬라이더, 초기값 입력창, 재생 버튼 등)</p>
+        <div class="answer-body">초기 속도 입력창, 가속도 슬라이더, 시간 슬라이더, 애니메이션 재생 버튼</div>
       </article>
 
       <article class="answer-card">
-        <h2>10. 조작에 따라 화면에서 달라져야 하는 것: 로켓의 현재 위치, 고도 그래프, 선택한 시점의 접선, 순간속도 값, 현재 고도 값</h2>
-        <pre>(예: 그래프, 수치, 도형, 애니메이션, 접선, 넓이, 부분합 등)</pre>
+        <p class="answer-number">문항 10</p>
+        <h2>조작에 따라 화면에서 달라져야 하는 것</h2>
+        <p class="answer-hint">(예: 그래프, 수치, 도형, 애니메이션, 접선, 넓이, 부분합 등)</p>
+        <div class="answer-body">로켓의 현재 위치, 고도 그래프, 선택한 시점의 접선, 순간속도 값, 현재 고도 값</div>
       </article>
 
       <article class="answer-card">
-        <h2>11. 이 웹앱을 통해 사용자가 이해하길 바라는 내용: 위치의 변화를 나타내는 함수를 미분하면 특정 순간의 속도를 구할 수 있으며, 미적분은 실제 항공우주 분야에서 운동을 분석하고 미래의 상태를 예측하는 데 활용될 수 있다는 점을 이해한다.</h2>
-        <pre>(내용 없음)</pre>
+        <p class="answer-number">문항 11</p>
+        <h2>이 웹앱을 통해 사용자가 이해하길 바라는 내용</h2>
+        <div class="answer-body">위치의 변화를 나타내는 함수를 미분하면 특정 순간의 속도를 구할 수 있으며, 미적분은 실제 항공우주 분야에서 운동을 분석하고 미래의 상태를 예측하는 데 활용될 수 있다는 점을 이해한다.</div>
       </article>
 
       <article class="answer-card">
-        <h2>12. 웹앱 상단에 넣을 핵심 설명 문장: 이 웹앱은 로켓의 상승 운동을 통해 미분이 순간속도를 구하는 원리와 실제 항공우주 분야에서 변화율을 분석하는 방법을 보여준다.</h2>
-        <pre>(이 웹앱이 무엇을 보여주는지 한두 문장으로)</pre>
+        <p class="answer-number">문항 12</p>
+        <h2>웹앱 상단에 넣을 핵심 설명 문장</h2>
+        <p class="answer-hint">(이 웹앱이 무엇을 보여주는지 한두 문장으로)</p>
+        <div class="answer-body">이 웹앱은 로켓의 상승 운동을 통해 미분이 순간속도를 구하는 원리와 실제 항공우주 분야에서 변화율을 분석하는 방법을 보여준다.</div>
       </article>
 
       <article class="answer-card">
-        <h2>13. 웹앱 안에 꼭 넣고 싶은 추가 기능: 없음</h2>
-        <pre>(없으면 '없음'이라고 쓰기)</pre>
+        <p class="answer-number">문항 13</p>
+        <h2>웹앱 안에 꼭 넣고 싶은 추가 기능</h2>
+        <p class="answer-hint">(없으면 '없음'이라고 쓰기)</p>
+        <div class="answer-body">없음</div>
       </article>
   </main>
 </body>

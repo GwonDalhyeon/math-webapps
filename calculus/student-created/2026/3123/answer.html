@@ -42,8 +42,28 @@
       margin-top: 0;
       font-size: 20px;
     }
-    .answer-card pre {
+    .answer-number {
+      margin: 0 0 8px;
+      font-size: 14px;
+      font-weight: 800;
+      color: #2563eb;
+    }
+    .answer-hint {
+      margin: 0 0 12px;
+      padding: 10px 12px;
+      border-left: 3px solid #cbd5e1;
+      background: #f8fafc;
+      color: #64748b;
+      font-size: 15px;
+      line-height: 1.6;
+      white-space: pre-wrap;
+    }
+    .answer-body {
       margin: 0;
+      padding: 14px 16px;
+      border-radius: 8px;
+      border: 1px solid #dbe3ef;
+      background: #f8fafc;
       white-space: pre-wrap;
       overflow-wrap: anywhere;
       font-family: "Malgun Gothic", "Apple SD Gothic Neo", system-ui, sans-serif;
@@ -58,7 +78,6 @@
     <nav class="answer-nav" aria-label="답안 이동">
       <a href="./">웹앱으로</a>
       <a href="../">목록으로</a>
-      <a href="./answer.txt">원문 TXT</a>
     </nav>
 
     <header class="hero">
@@ -68,68 +87,81 @@
     </header>
 
       <article class="answer-card">
-        <h2>1. 학번: 3123</h2>
-        <pre>(내용 없음)</pre>
+        <p class="answer-number">문항 1</p>
+        <h2>학번</h2>
+        <div class="answer-body">3123</div>
       </article>
 
       <article class="answer-card">
-        <h2>2. 이름: 비공개</h2>
-        <pre>(내용 없음)</pre>
+        <p class="answer-number">문항 2</p>
+        <h2>이름</h2>
+        <div class="answer-body">비공개</div>
       </article>
 
       <article class="answer-card">
-        <h2>3. 책 제목: 수학책을 탈출한 미적분</h2>
-        <pre>(내용 없음)</pre>
+        <p class="answer-number">문항 3</p>
+        <h2>책 제목</h2>
+        <div class="answer-body">수학책을 탈출한 미적분</div>
       </article>
 
       <article class="answer-card">
-        <h2>4. 저자: 류치 / 이지수 (지은이/옮긴이)</h2>
-        <pre>(내용 없음)</pre>
+        <p class="answer-number">문항 4</p>
+        <h2>저자</h2>
+        <div class="answer-body">류치 / 이지수 (지은이/옮긴이)</div>
       </article>
 
       <article class="answer-card">
-        <h2>5. 선택한 부분 또는 주제: 효율적인 선택을 위한 극값 조사 및 변곡점 조사와 미분</h2>
-        <pre>(내용 없음)</pre>
+        <p class="answer-number">문항 5</p>
+        <h2>선택한 부분 또는 주제</h2>
+        <div class="answer-body">효율적인 선택을 위한 극값 조사 및 변곡점 조사와 미분</div>
       </article>
 
       <article class="answer-card">
-        <h2>6. 관련된 미적분 개념: 여러가지 미분법, 변곡점, 극값</h2>
-        <pre>(내용 없음)</pre>
+        <p class="answer-number">문항 6</p>
+        <h2>관련된 미적분 개념</h2>
+        <div class="answer-body">여러가지 미분법, 변곡점, 극값</div>
       </article>
 
       <article class="answer-card">
-        <h2>7. 이 부분을 선택한 이유 또는 읽으면서 생긴 질문이나 생각:</h2>
-        <pre>변곡점이 효율적인 선택에 영향을 줄까?</pre>
+        <p class="answer-number">문항 7</p>
+        <h2>이 부분을 선택한 이유 또는 읽으면서 생긴 질문이나 생각</h2>
+        <div class="answer-body">변곡점이 효율적인 선택에 영향을 줄까?</div>
       </article>
 
       <article class="answer-card">
-        <h2>8. 웹앱으로 보여주고 싶은 핵심 장면 또는 원리:</h2>
-        <pre>미적분을 모르고 변곡점을 잘 모르는 사람도 한눈에 변곡점과 그 함수를 미분한 모습을 쉽게 보여주고 싶다.</pre>
+        <p class="answer-number">문항 8</p>
+        <h2>웹앱으로 보여주고 싶은 핵심 장면 또는 원리</h2>
+        <div class="answer-body">미적분을 모르고 변곡점을 잘 모르는 사람도 한눈에 변곡점과 그 함수를 미분한 모습을 쉽게 보여주고 싶다.</div>
       </article>
 
       <article class="answer-card">
-        <h2>9. 사용자가 직접 조작할 요소:</h2>
-        <pre>함수 조절 (고등학교 미적분 범위 내에서 ln, e, sin, cos, tan, sec, csc, cot, 음함수, 적분 함수도 나타내기 가능)</pre>
+        <p class="answer-number">문항 9</p>
+        <h2>사용자가 직접 조작할 요소</h2>
+        <div class="answer-body">함수 조절 (고등학교 미적분 범위 내에서 ln, e, sin, cos, tan, sec, csc, cot, 음함수, 적분 함수도 나타내기 가능)</div>
       </article>
 
       <article class="answer-card">
-        <h2>10. 조작에 따라 화면에서 달라져야 하는 것:</h2>
-        <pre>9번에서 입력한 함수와 그 함수의 도함수와 변곡점의 위치</pre>
+        <p class="answer-number">문항 10</p>
+        <h2>조작에 따라 화면에서 달라져야 하는 것</h2>
+        <div class="answer-body">9번에서 입력한 함수와 그 함수의 도함수와 변곡점의 위치</div>
       </article>
 
       <article class="answer-card">
-        <h2>11. 이 웹앱을 통해 사용자가 이해하길 바라는 내용:</h2>
-        <pre>이 함수의 도함수 개형과 변곡점의 위치</pre>
+        <p class="answer-number">문항 11</p>
+        <h2>이 웹앱을 통해 사용자가 이해하길 바라는 내용</h2>
+        <div class="answer-body">이 함수의 도함수 개형과 변곡점의 위치</div>
       </article>
 
       <article class="answer-card">
-        <h2>12. 웹앱 상단에 넣을 핵심 설명 문장:</h2>
-        <pre>함수의 도함수와 변곡점</pre>
+        <p class="answer-number">문항 12</p>
+        <h2>웹앱 상단에 넣을 핵심 설명 문장</h2>
+        <div class="answer-body">함수의 도함수와 변곡점</div>
       </article>
 
       <article class="answer-card">
-        <h2>13. 웹앱 안에 꼭 넣고 싶은 추가 기능:</h2>
-        <pre>너무 많아져서 지금은 넣기 힘들지만 해당 함수 위의 점에서 그은 접선의 방정식 표시나 밖의 점 (a,b)에서 그은 접선의 방정식 표시를 하고싶다.</pre>
+        <p class="answer-number">문항 13</p>
+        <h2>웹앱 안에 꼭 넣고 싶은 추가 기능</h2>
+        <div class="answer-body">너무 많아져서 지금은 넣기 힘들지만 해당 함수 위의 점에서 그은 접선의 방정식 표시나 밖의 점 (a,b)에서 그은 접선의 방정식 표시를 하고싶다.</div>
       </article>
   </main>
 </body>

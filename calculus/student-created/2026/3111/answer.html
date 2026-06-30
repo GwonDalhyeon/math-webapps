@@ -42,8 +42,28 @@
       margin-top: 0;
       font-size: 20px;
     }
-    .answer-card pre {
+    .answer-number {
+      margin: 0 0 8px;
+      font-size: 14px;
+      font-weight: 800;
+      color: #2563eb;
+    }
+    .answer-hint {
+      margin: 0 0 12px;
+      padding: 10px 12px;
+      border-left: 3px solid #cbd5e1;
+      background: #f8fafc;
+      color: #64748b;
+      font-size: 15px;
+      line-height: 1.6;
+      white-space: pre-wrap;
+    }
+    .answer-body {
       margin: 0;
+      padding: 14px 16px;
+      border-radius: 8px;
+      border: 1px solid #dbe3ef;
+      background: #f8fafc;
       white-space: pre-wrap;
       overflow-wrap: anywhere;
       font-family: "Malgun Gothic", "Apple SD Gothic Neo", system-ui, sans-serif;
@@ -58,7 +78,6 @@
     <nav class="answer-nav" aria-label="답안 이동">
       <a href="./">웹앱으로</a>
       <a href="../">목록으로</a>
-      <a href="./answer.txt">원문 TXT</a>
     </nav>
 
     <header class="hero">
@@ -68,68 +87,81 @@
     </header>
 
       <article class="answer-card">
-        <h2>1. 학번:3111</h2>
-        <pre>(내용 없음)</pre>
+        <p class="answer-number">문항 1</p>
+        <h2>학번</h2>
+        <div class="answer-body">3111</div>
       </article>
 
       <article class="answer-card">
-        <h2>2. 이름:비공개</h2>
-        <pre>(내용 없음)</pre>
+        <p class="answer-number">문항 2</p>
+        <h2>이름</h2>
+        <div class="answer-body">비공개</div>
       </article>
 
       <article class="answer-card">
-        <h2>3. 책 제목:미적분 초딩도 풀만큼 쉅게 풀자</h2>
-        <pre>(내용 없음)</pre>
+        <p class="answer-number">문항 3</p>
+        <h2>책 제목</h2>
+        <div class="answer-body">미적분 초딩도 풀만큼 쉅게 풀자</div>
       </article>
 
       <article class="answer-card">
-        <h2>4. 저자:조안호</h2>
-        <pre>(내용 없음)</pre>
+        <p class="answer-number">문항 4</p>
+        <h2>저자</h2>
+        <div class="answer-body">조안호</div>
       </article>
 
       <article class="answer-card">
-        <h2>5. 선택한 부분 또는 주제:복잡해 보여도 변수는 하나다</h2>
-        <pre>(내용 없음)</pre>
+        <p class="answer-number">문항 5</p>
+        <h2>선택한 부분 또는 주제</h2>
+        <div class="answer-body">복잡해 보여도 변수는 하나다</div>
       </article>
 
       <article class="answer-card">
-        <h2>6. 관련된 미적분 개념:정적분</h2>
-        <pre>(내용 없음)</pre>
+        <p class="answer-number">문항 6</p>
+        <h2>관련된 미적분 개념</h2>
+        <div class="answer-body">정적분</div>
       </article>
 
       <article class="answer-card">
-        <h2>7. 이 부분을 선택한 이유 또는 읽으면서 생긴 질문이나 생각:나는 이 부분을 통해 미적분에서 변수를 찾는 것이 중요하다는 점을 알게 되었고, 복잡한 수식을 새로운 시각으로 볼 수 있게 되어 이 주제를 선택했다</h2>
-        <pre>(내용 없음)</pre>
+        <p class="answer-number">문항 7</p>
+        <h2>이 부분을 선택한 이유 또는 읽으면서 생긴 질문이나 생각</h2>
+        <div class="answer-body">나는 이 부분을 통해 미적분에서 변수를 찾는 것이 중요하다는 점을 알게 되었고, 복잡한 수식을 새로운 시각으로 볼 수 있게 되어 이 주제를 선택했다</div>
       </article>
 
       <article class="answer-card">
-        <h2>8. 웹앱으로 보여주고 싶은 핵심 장면 또는 원리:사용자가 x값 슬라이더를 움직이면 그래프 위의 점이 이동하고, 그에 따라 y값도 함께 변하는 모습</h2>
-        <pre>(내용 없음)</pre>
+        <p class="answer-number">문항 8</p>
+        <h2>웹앱으로 보여주고 싶은 핵심 장면 또는 원리</h2>
+        <div class="answer-body">사용자가 x값 슬라이더를 움직이면 그래프 위의 점이 이동하고, 그에 따라 y값도 함께 변하는 모습</div>
       </article>
 
       <article class="answer-card">
-        <h2>9. 사용자가 직접 조작할 요소:x값 조절 슬라이더</h2>
-        <pre>(내용 없음)</pre>
+        <p class="answer-number">문항 9</p>
+        <h2>사용자가 직접 조작할 요소</h2>
+        <div class="answer-body">x값 조절 슬라이더</div>
       </article>
 
       <article class="answer-card">
-        <h2>10. 조작에 따라 화면에서 달라져야 하는 것:그래프</h2>
-        <pre>(내용 없음)</pre>
+        <p class="answer-number">문항 10</p>
+        <h2>조작에 따라 화면에서 달라져야 하는 것</h2>
+        <div class="answer-body">그래프</div>
       </article>
 
       <article class="answer-card">
-        <h2>11. 이 웹앱을 통해 사용자가 이해하길 바라는 내용:정적분을 더욱 쉅게 이해하길 바란다</h2>
-        <pre>(내용 없음)</pre>
+        <p class="answer-number">문항 11</p>
+        <h2>이 웹앱을 통해 사용자가 이해하길 바라는 내용</h2>
+        <div class="answer-body">정적분을 더욱 쉅게 이해하길 바란다</div>
       </article>
 
       <article class="answer-card">
-        <h2>12. 웹앱 상단에 넣을 핵심 설명 문장:x값 하나만 바꿔도 그래프와 결과가 함께 변한다. 이를 통해 복잡한 함수도 하나의 변수로 이해할 수 있다</h2>
-        <pre>(내용 없음)</pre>
+        <p class="answer-number">문항 12</p>
+        <h2>웹앱 상단에 넣을 핵심 설명 문장</h2>
+        <div class="answer-body">x값 하나만 바꿔도 그래프와 결과가 함께 변한다. 이를 통해 복잡한 함수도 하나의 변수로 이해할 수 있다</div>
       </article>
 
       <article class="answer-card">
-        <h2>13. 웹앱 안에 꼭 넣고 싶은 추가 기능:x값을 초기 상태로 되돌리는 초기화 버튼</h2>
-        <pre>(내용 없음)</pre>
+        <p class="answer-number">문항 13</p>
+        <h2>웹앱 안에 꼭 넣고 싶은 추가 기능</h2>
+        <div class="answer-body">x값을 초기 상태로 되돌리는 초기화 버튼</div>
       </article>
   </main>
 </body>

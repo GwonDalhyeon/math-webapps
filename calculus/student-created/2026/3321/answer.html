@@ -42,8 +42,28 @@
       margin-top: 0;
       font-size: 20px;
     }
-    .answer-card pre {
+    .answer-number {
+      margin: 0 0 8px;
+      font-size: 14px;
+      font-weight: 800;
+      color: #2563eb;
+    }
+    .answer-hint {
+      margin: 0 0 12px;
+      padding: 10px 12px;
+      border-left: 3px solid #cbd5e1;
+      background: #f8fafc;
+      color: #64748b;
+      font-size: 15px;
+      line-height: 1.6;
+      white-space: pre-wrap;
+    }
+    .answer-body {
       margin: 0;
+      padding: 14px 16px;
+      border-radius: 8px;
+      border: 1px solid #dbe3ef;
+      background: #f8fafc;
       white-space: pre-wrap;
       overflow-wrap: anywhere;
       font-family: "Malgun Gothic", "Apple SD Gothic Neo", system-ui, sans-serif;
@@ -58,7 +78,6 @@
     <nav class="answer-nav" aria-label="답안 이동">
       <a href="./">웹앱으로</a>
       <a href="../">목록으로</a>
-      <a href="./answer.txt">원문 TXT</a>
     </nav>
 
     <header class="hero">
@@ -68,68 +87,87 @@
     </header>
 
       <article class="answer-card">
-        <h2>1. 학번: 3321</h2>
-        <pre>(내용 없음)</pre>
+        <p class="answer-number">문항 1</p>
+        <h2>학번</h2>
+        <div class="answer-body">3321</div>
       </article>
 
       <article class="answer-card">
-        <h2>2. 이름: 비공개</h2>
-        <pre>(내용 없음)</pre>
+        <p class="answer-number">문항 2</p>
+        <h2>이름</h2>
+        <div class="answer-body">비공개</div>
       </article>
 
       <article class="answer-card">
-        <h2>3. 책 제목: 수학, 인문으로 수를 읽다.</h2>
-        <pre>(내용 없음)</pre>
+        <p class="answer-number">문항 3</p>
+        <h2>책 제목</h2>
+        <div class="answer-body">수학, 인문으로 수를 읽다.</div>
       </article>
 
       <article class="answer-card">
-        <h2>4. 저자: 이광연</h2>
-        <pre>(내용 없음)</pre>
+        <p class="answer-number">문항 4</p>
+        <h2>저자</h2>
+        <div class="answer-body">이광연</div>
       </article>
 
       <article class="answer-card">
-        <h2>5. 선택한 부분 또는 주제: 불규칙한 형태의 섬의 넓이를 구하는 과정을 통한 구분구적법의 원리해석</h2>
-        <pre>(내용 없음)</pre>
+        <p class="answer-number">문항 5</p>
+        <h2>선택한 부분 또는 주제</h2>
+        <div class="answer-body">불규칙한 형태의 섬의 넓이를 구하는 과정을 통한 구분구적법의 원리해석</div>
       </article>
 
       <article class="answer-card">
-        <h2>6. 관련된 미적분 개념: 구분구적법, 정적분, 극한</h2>
-        <pre>(내용 없음)</pre>
+        <p class="answer-number">문항 6</p>
+        <h2>관련된 미적분 개념</h2>
+        <div class="answer-body">구분구적법, 정적분, 극한</div>
       </article>
 
       <article class="answer-card">
-        <h2>7. 이 부분을 선택한 이유 또는 읽으면서 생긴 질문이나 생각:복잡한 형태를 가진 섬의 넓이를 작은 도형들의 합으로 근사하여 구하는 과정이 인상적이었다. 특히 정확한 값을 바로 구하기 어려운 문제를 단순한 요소로 나누어 해결한다는 점에서 수학적 사고의 특징을 알 수 있었다. 또한 구분구적분이 단순한 계산 기법이 아니라 정적분 개념이 형성되는 과정과 연결된다는 점을 이해하게 되었으며, 추상적인 미적분 개념이 실제 문제해결을 위해 만들어졌음을 알게되었다. 넓이를 구하는 과정을 보니 물체의 부피를 구하는 방법은 무엇이 있을까 의문이 생겼다.</h2>
-        <pre>(단순한 감상이 아니라, 어떤 점이 흥미로웠는지, 어떤 의문이 생겼는지 등)</pre>
+        <p class="answer-number">문항 7</p>
+        <h2>이 부분을 선택한 이유 또는 읽으면서 생긴 질문이나 생각</h2>
+        <p class="answer-hint">(단순한 감상이 아니라, 어떤 점이 흥미로웠는지, 어떤 의문이 생겼는지 등)</p>
+        <div class="answer-body">복잡한 형태를 가진 섬의 넓이를 작은 도형들의 합으로 근사하여 구하는 과정이 인상적이었다. 특히 정확한 값을 바로 구하기 어려운 문제를 단순한 요소로 나누어 해결한다는 점에서 수학적 사고의 특징을 알 수 있었다. 또한 구분구적분이 단순한 계산 기법이 아니라 정적분 개념이 형성되는 과정과 연결된다는 점을 이해하게 되었으며, 추상적인 미적분 개념이 실제 문제해결을 위해 만들어졌음을 알게되었다. 넓이를 구하는 과정을 보니 물체의 부피를 구하는 방법은 무엇이 있을까 의문이 생겼다.</div>
       </article>
 
       <article class="answer-card">
-        <h2>8. 웹앱으로 보여주고 싶은 핵심 장면 또는 원리: 섬의 윤곽 위에 일정한 크기의 격자를 표시하고, 각 격자의 넓이를 합산하여 섬의 전체 넓이를 근사하는 과정, 사용자가 격자의 크기를 조절하면 더 작은 격자를 사용하도록 실제 넓이에 가까워지는 모습을 시각적으로 보여주어 구분구적법의 원리를 이해할 수 있도록 한다.</h2>
-        <pre>(예: 접선의 기울기가 변하는 모습, 구분구적법으로 넓이를 근사하는 과정 등)</pre>
+        <p class="answer-number">문항 8</p>
+        <h2>웹앱으로 보여주고 싶은 핵심 장면 또는 원리</h2>
+        <p class="answer-hint">(예: 접선의 기울기가 변하는 모습, 구분구적법으로 넓이를 근사하는 과정 등)</p>
+        <div class="answer-body">섬의 윤곽 위에 일정한 크기의 격자를 표시하고, 각 격자의 넓이를 합산하여 섬의 전체 넓이를 근사하는 과정, 사용자가 격자의 크기를 조절하면 더 작은 격자를 사용하도록 실제 넓이에 가까워지는 모습을 시각적으로 보여주어 구분구적법의 원리를 이해할 수 있도록 한다.</div>
       </article>
 
       <article class="answer-card">
-        <h2>9. 사용자가 직접 조작할 요소: 격자 크기 조절 슬라이더, 격자개수 증가/감소 버튼, 애니매이션 재생 버튼, 초기상태로 되돌리기 버튼,</h2>
-        <pre>(예: 시간 슬라이더, 초기값 입력창, 재생 버튼 등)</pre>
+        <p class="answer-number">문항 9</p>
+        <h2>사용자가 직접 조작할 요소</h2>
+        <p class="answer-hint">(예: 시간 슬라이더, 초기값 입력창, 재생 버튼 등)</p>
+        <div class="answer-body">격자 크기 조절 슬라이더, 격자개수 증가/감소 버튼, 애니매이션 재생 버튼, 초기상태로 되돌리기 버튼,</div>
       </article>
 
       <article class="answer-card">
-        <h2>10. 조작에 따라 화면에서 달라져야 하는 것: 섬위에 표시되는 격자의 크기와 개수, 계산된 근사 넓이 값, 실제 넓이와 오차, 구분구적 과정 애니매이션, 격자 크기가 감소함에 따라 실제 넓이에 수렴하는 그래프</h2>
-        <pre>(예: 그래프, 수치, 도형, 애니메이션, 접선, 넓이, 부분합 등)</pre>
+        <p class="answer-number">문항 10</p>
+        <h2>조작에 따라 화면에서 달라져야 하는 것</h2>
+        <p class="answer-hint">(예: 그래프, 수치, 도형, 애니메이션, 접선, 넓이, 부분합 등)</p>
+        <div class="answer-body">섬위에 표시되는 격자의 크기와 개수, 계산된 근사 넓이 값, 실제 넓이와 오차, 구분구적 과정 애니매이션, 격자 크기가 감소함에 따라 실제 넓이에 수렴하는 그래프</div>
       </article>
 
       <article class="answer-card">
-        <h2>11. 이 웹앱을 통해 사용자가 이해하길 바라는 내용: 정적분은 단순한 공식을 이요해 값을 구하는 계산과정이 아니라 복잡한 도형의 넓이를 작은 부분으로 나누어 근사한뒤 극한을 통해 정확한 값에 도달하는 사고과정이라는 점을 이해했으면 좋겠다. 또한 현실의 문제를 해결하기 위해 수학의 개념이 아주 많이 활용된다는 점을 알게되었으면 좋겠다.</h2>
-        <pre>(내용 없음)</pre>
+        <p class="answer-number">문항 11</p>
+        <h2>이 웹앱을 통해 사용자가 이해하길 바라는 내용</h2>
+        <div class="answer-body">정적분은 단순한 공식을 이요해 값을 구하는 계산과정이 아니라 복잡한 도형의 넓이를 작은 부분으로 나누어 근사한뒤 극한을 통해 정확한 값에 도달하는 사고과정이라는 점을 이해했으면 좋겠다. 또한 현실의 문제를 해결하기 위해 수학의 개념이 아주 많이 활용된다는 점을 알게되었으면 좋겠다.</div>
       </article>
 
       <article class="answer-card">
-        <h2>12. 웹앱 상단에 넣을 핵심 설명 문장: &quot;섬의 넓이를 작은 도형들의 합으로 근사해 보며, 구분구적법과 정적분의 원리를 직접 탐구해 봅시다.&quot;</h2>
-        <pre>(이 웹앱이 무엇을 보여주는지 한두 문장으로)</pre>
+        <p class="answer-number">문항 12</p>
+        <h2>웹앱 상단에 넣을 핵심 설명 문장</h2>
+        <p class="answer-hint">(이 웹앱이 무엇을 보여주는지 한두 문장으로)</p>
+        <div class="answer-body">&quot;섬의 넓이를 작은 도형들의 합으로 근사해 보며, 구분구적법과 정적분의 원리를 직접 탐구해 봅시다.&quot;</div>
       </article>
 
       <article class="answer-card">
-        <h2>13. 웹앱 안에 꼭 넣고 싶은 추가 기능:격자의 개수가 증가함에 따라 근사 넚이가 실제 넓이에 수렴하는 과정을 그래프로 나타내어, 극한의 개념을 시작적으로 확인할 수 있는 기능.</h2>
-        <pre>(없으면 '없음'이라고 쓰기)</pre>
+        <p class="answer-number">문항 13</p>
+        <h2>웹앱 안에 꼭 넣고 싶은 추가 기능</h2>
+        <p class="answer-hint">(없으면 '없음'이라고 쓰기)</p>
+        <div class="answer-body">격자의 개수가 증가함에 따라 근사 넚이가 실제 넓이에 수렴하는 과정을 그래프로 나타내어, 극한의 개념을 시작적으로 확인할 수 있는 기능.</div>
       </article>
   </main>
 </body>

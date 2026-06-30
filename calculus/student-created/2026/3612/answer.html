@@ -42,8 +42,28 @@
       margin-top: 0;
       font-size: 20px;
     }
-    .answer-card pre {
+    .answer-number {
+      margin: 0 0 8px;
+      font-size: 14px;
+      font-weight: 800;
+      color: #2563eb;
+    }
+    .answer-hint {
+      margin: 0 0 12px;
+      padding: 10px 12px;
+      border-left: 3px solid #cbd5e1;
+      background: #f8fafc;
+      color: #64748b;
+      font-size: 15px;
+      line-height: 1.6;
+      white-space: pre-wrap;
+    }
+    .answer-body {
       margin: 0;
+      padding: 14px 16px;
+      border-radius: 8px;
+      border: 1px solid #dbe3ef;
+      background: #f8fafc;
       white-space: pre-wrap;
       overflow-wrap: anywhere;
       font-family: "Malgun Gothic", "Apple SD Gothic Neo", system-ui, sans-serif;
@@ -58,7 +78,6 @@
     <nav class="answer-nav" aria-label="답안 이동">
       <a href="./">웹앱으로</a>
       <a href="../">목록으로</a>
-      <a href="./answer.txt">원문 TXT</a>
     </nav>
 
     <header class="hero">
@@ -68,75 +87,87 @@
     </header>
 
       <article class="answer-card">
-        <h2>1. 학번:3612</h2>
-        <pre>(내용 없음)</pre>
+        <p class="answer-number">문항 1</p>
+        <h2>학번</h2>
+        <div class="answer-body">3612</div>
       </article>
 
       <article class="answer-card">
-        <h2>2. 이름:비공개</h2>
-        <pre>(내용 없음)</pre>
+        <p class="answer-number">문항 2</p>
+        <h2>이름</h2>
+        <div class="answer-body">비공개</div>
       </article>
 
       <article class="answer-card">
-        <h2>3. 책 제목:사이클로이드</h2>
-        <pre>(내용 없음)</pre>
+        <p class="answer-number">문항 3</p>
+        <h2>책 제목</h2>
+        <div class="answer-body">사이클로이드</div>
       </article>
 
       <article class="answer-card">
-        <h2>4. 저자:황운구</h2>
-        <pre>(내용 없음)</pre>
+        <p class="answer-number">문항 4</p>
+        <h2>저자</h2>
+        <div class="answer-body">황운구</div>
       </article>
 
       <article class="answer-card">
-        <h2>5. 선택한 부분 또는 주제:최단강하선의 시각화</h2>
-        <pre>(내용 없음)</pre>
+        <p class="answer-number">문항 5</p>
+        <h2>선택한 부분 또는 주제</h2>
+        <div class="answer-body">최단강하선의 시각화</div>
       </article>
 
       <article class="answer-card">
-        <h2>6. 관련된 미적분 개념: 매개변수로 나타내어진 함수의 미분법, 곡선의 길이, 속도와 거리</h2>
-        <pre>(내용 없음)</pre>
+        <p class="answer-number">문항 6</p>
+        <h2>관련된 미적분 개념</h2>
+        <div class="answer-body">매개변수로 나타내어진 함수의 미분법, 곡선의 길이, 속도와 거리</div>
       </article>
 
       <article class="answer-card">
-        <h2>7. 이 부분을 선택한 이유 또는 읽으면서 생긴 질문이나 생각:</h2>
-        <pre>(단순한 감상이 아니라, 어떤 점이 흥미로웠는지, 어떤 의문이 생겼는지 등)
-
-학교 수업 시간에 매개변수 미분이나 곡선의 길이 공식을 배울 때는 그냥 복잡한 수식 계산 문제로만 느껴져서 이걸 실제에서 어디에 활용되는지 궁금했었다. 그러다 이 책을 읽으면서 최속 강하 곡선 문제를 풀려고 뉴턴이나 베르누이 같은 엄청난 수학자들이 미적분으로 서로 치열하게 싸웠다는 내용을 알고 흥미가 생겼다.</pre>
+        <p class="answer-number">문항 7</p>
+        <h2>이 부분을 선택한 이유 또는 읽으면서 생긴 질문이나 생각</h2>
+        <p class="answer-hint">(단순한 감상이 아니라, 어떤 점이 흥미로웠는지, 어떤 의문이 생겼는지 등)</p>
+        <div class="answer-body">학교 수업 시간에 매개변수 미분이나 곡선의 길이 공식을 배울 때는 그냥 복잡한 수식 계산 문제로만 느껴져서 이걸 실제에서 어디에 활용되는지 궁금했었다. 그러다 이 책을 읽으면서 최속 강하 곡선 문제를 풀려고 뉴턴이나 베르누이 같은 엄청난 수학자들이 미적분으로 서로 치열하게 싸웠다는 내용을 알고 흥미가 생겼다.</div>
       </article>
 
       <article class="answer-card">
-        <h2>8. 웹앱으로 보여주고 싶은 핵심 장면 또는 원리:</h2>
-        <pre>(예: 접선의 기울기가 변하는 모습, 구분구적법으로 넓이를 근사하는 과정 등)
-똑같은 출발점과 도착점을 두고 직선, 포물선, 사이클로이드 이렇게 세 가지 길에서 공이 동시에 굴러떨어져서 사이클로이드 곡선에서 공이 가장 먼저 떨어지는 모습을 보여주고 싶다. 그리고 순간 속력이 계속 변하는 모습을 시각적으로 나타내고자 한다.순간 속력과 미세 거리의 관계를 활용해, 각 경로의 총 소요 시간 정적분 식이 실시간으로 계산되는 과정을 화면에 그래프로 시각화하여 보여주고자 한다. 공이 굴러감에 따라 미세시간에 관한 그래프가 그려지고 그 그래프에서 누적되는 넓이(정적분 값)이 사이클로이드 경로일 때 가장 최소가 되는 모습을 시각적으로 대비하여, 왜 사이클로이드가 수학적으로 '최속 강하 곡선'이 되는지 직관적으로 증명하고 싶다.</pre>
+        <p class="answer-number">문항 8</p>
+        <h2>웹앱으로 보여주고 싶은 핵심 장면 또는 원리</h2>
+        <p class="answer-hint">(예: 접선의 기울기가 변하는 모습, 구분구적법으로 넓이를 근사하는 과정 등)</p>
+        <div class="answer-body">똑같은 출발점과 도착점을 두고 직선, 포물선, 사이클로이드 이렇게 세 가지 길에서 공이 동시에 굴러떨어져서 사이클로이드 곡선에서 공이 가장 먼저 떨어지는 모습을 보여주고 싶다. 그리고 순간 속력이 계속 변하는 모습을 시각적으로 나타내고자 한다.순간 속력과 미세 거리의 관계를 활용해, 각 경로의 총 소요 시간 정적분 식이 실시간으로 계산되는 과정을 화면에 그래프로 시각화하여 보여주고자 한다. 공이 굴러감에 따라 미세시간에 관한 그래프가 그려지고 그 그래프에서 누적되는 넓이(정적분 값)이 사이클로이드 경로일 때 가장 최소가 되는 모습을 시각적으로 대비하여, 왜 사이클로이드가 수학적으로 '최속 강하 곡선'이 되는지 직관적으로 증명하고 싶다.</div>
       </article>
 
       <article class="answer-card">
-        <h2>9. 사용자가 직접 조작할 요소:</h2>
-        <pre>(예: 시간 슬라이더, 초기값 입력창, 재생 버튼 등)
-시작 및 정지 버튼, 시간 조절 슬라이더, 조작 슬라이더(사이클로이드 모양을 결정하는 도착점을 수직으로는 고정하고 수평으로만 움직일 수 있게 조절하는 슬라이더, 도착점의 좌표는 필요없음), 초기화 버튼</pre>
+        <p class="answer-number">문항 9</p>
+        <h2>사용자가 직접 조작할 요소</h2>
+        <p class="answer-hint">(예: 시간 슬라이더, 초기값 입력창, 재생 버튼 등)</p>
+        <div class="answer-body">시작 및 정지 버튼, 시간 조절 슬라이더, 조작 슬라이더(사이클로이드 모양을 결정하는 도착점을 수직으로는 고정하고 수평으로만 움직일 수 있게 조절하는 슬라이더, 도착점의 좌표는 필요없음), 초기화 버튼</div>
       </article>
 
       <article class="answer-card">
-        <h2>10. 조작에 따라 화면에서 달라져야 하는 것:</h2>
-        <pre>(예: 그래프, 수치, 도형, 애니메이션, 접선, 넓이, 부분합 등)
-세가지 길 위에서 실시간으로 움직이는 공, 공이 굴러가는 동안 움직인 거리의 값, 순간의 접선의 기울기의 값, 순간 속도의 값, 각 경로를 따라 끝까지 가는 데 걸린 총 시간</pre>
+        <p class="answer-number">문항 10</p>
+        <h2>조작에 따라 화면에서 달라져야 하는 것</h2>
+        <p class="answer-hint">(예: 그래프, 수치, 도형, 애니메이션, 접선, 넓이, 부분합 등)</p>
+        <div class="answer-body">세가지 길 위에서 실시간으로 움직이는 공, 공이 굴러가는 동안 움직인 거리의 값, 순간의 접선의 기울기의 값, 순간 속도의 값, 각 경로를 따라 끝까지 가는 데 걸린 총 시간</div>
       </article>
 
       <article class="answer-card">
-        <h2>11. 이 웹앱을 통해 사용자가 이해하길 바라는 내용:</h2>
-        <pre>사이클로이드 곡선이 최단 강하선이라는 것을 옛 수학자들이 미세시간을 적분하여 총시간으로 바꾸어 증명한것과 사이클로이드가 최단 강하선이라는것을 실제로 시각화해서 확인하는것</pre>
+        <p class="answer-number">문항 11</p>
+        <h2>이 웹앱을 통해 사용자가 이해하길 바라는 내용</h2>
+        <div class="answer-body">사이클로이드 곡선이 최단 강하선이라는 것을 옛 수학자들이 미세시간을 적분하여 총시간으로 바꾸어 증명한것과 사이클로이드가 최단 강하선이라는것을 실제로 시각화해서 확인하는것</div>
       </article>
 
       <article class="answer-card">
-        <h2>12. 웹앱 상단에 넣을 핵심 설명 문장:</h2>
-        <pre>(이 웹앱이 무엇을 보여주는지 한두 문장으로)
-순간 속력과 미세 거리의 관계(dt = ds/v)를 활용해 각 경로의 총소요 시간을 정적분으로 구하는 과정을 시각화하고, 직선·포물선과의 실시간 비교를 통해 사이클로이드가 최단 강하선임을 입증하고자 한다.</pre>
+        <p class="answer-number">문항 12</p>
+        <h2>웹앱 상단에 넣을 핵심 설명 문장</h2>
+        <p class="answer-hint">(이 웹앱이 무엇을 보여주는지 한두 문장으로)</p>
+        <div class="answer-body">순간 속력과 미세 거리의 관계(dt = ds/v)를 활용해 각 경로의 총소요 시간을 정적분으로 구하는 과정을 시각화하고, 직선·포물선과의 실시간 비교를 통해 사이클로이드가 최단 강하선임을 입증하고자 한다.</div>
       </article>
 
       <article class="answer-card">
-        <h2>13. 웹앱 안에 꼭 넣고 싶은 추가 기능:</h2>
-        <pre>(없으면 '없음'이라고 쓰기)
-없음</pre>
+        <p class="answer-number">문항 13</p>
+        <h2>웹앱 안에 꼭 넣고 싶은 추가 기능</h2>
+        <p class="answer-hint">(없으면 '없음'이라고 쓰기)</p>
+        <div class="answer-body">없음</div>
       </article>
   </main>
 </body>
