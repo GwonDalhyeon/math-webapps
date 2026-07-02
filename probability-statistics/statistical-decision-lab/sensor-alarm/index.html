@@ -1,0 +1,890 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="센서 경보 학습지를 보조하는 조건부확률·기저율 시각화 웹앱입니다." />
+  <title>통계적 의사결정 도우미</title>
+  <link rel="stylesheet" href="../../../assets/common.css" />
+  <style>
+    :root {
+      --blue: #2563eb;
+      --blue-weak: #dbeafe;
+      --green: #047857;
+      --green-weak: #d1fae5;
+      --amber: #b45309;
+      --amber-weak: #fef3c7;
+      --red: #dc2626;
+      --red-weak: #fee2e2;
+      --slate: #334155;
+      --line: #dbe4ef;
+      --soft: #f8fafc;
+    }
+
+    body {
+      background: #f6f7fb;
+    }
+
+    .page {
+      max-width: none;
+      min-height: 100vh;
+      padding: 16px;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 16px;
+      max-width: 1440px;
+      margin: 0 auto 10px;
+    }
+
+    .topbar .back-link {
+      margin-bottom: 0;
+      white-space: nowrap;
+    }
+
+    .title-block h1 {
+      margin: 4px 0 4px;
+      font-size: clamp(28px, 4vw, 40px);
+    }
+
+    .title-block p {
+      margin: 0;
+      font-size: 16px;
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      min-height: 34px;
+      padding: 7px 12px;
+      border-radius: 999px;
+      background: #ecfdf5;
+      color: #047857;
+      border: 1px solid #a7f3d0;
+      font-size: 14px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .workspace {
+      display: grid;
+      grid-template-columns: minmax(420px, 45%) minmax(0, 1fr);
+      gap: 14px;
+      max-width: 1440px;
+      height: calc(100vh - 152px);
+      min-height: 600px;
+      margin: 0 auto;
+    }
+
+    .pane {
+      min-height: 0;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: white;
+      box-shadow: 0 8px 22px rgba(15, 23, 42, 0.07);
+      overflow: hidden;
+    }
+
+    .pane-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      min-height: 50px;
+      padding: 10px 14px;
+      border-bottom: 1px solid #e5e7eb;
+      background: #ffffff;
+    }
+
+    .pane-title {
+      margin: 0;
+      color: #111827;
+      font-size: 16px;
+      font-weight: 850;
+    }
+
+    .download-link {
+      display: inline-flex;
+      align-items: center;
+      min-height: 32px;
+      padding: 6px 10px;
+      border: 1px solid #bfdbfe;
+      border-radius: 8px;
+      background: #eff6ff;
+      color: #1d4ed8;
+      font-size: 13px;
+      font-weight: 800;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+
+    .pdf-frame {
+      display: block;
+      width: 100%;
+      height: calc(100% - 50px);
+      border: 0;
+      background: #f8fafc;
+    }
+
+    .tool-pane {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .tool-body {
+      min-height: 0;
+      padding: 14px;
+      overflow: auto;
+    }
+
+    .preset-row {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .preset-button {
+      min-height: 46px;
+      padding: 9px 12px;
+      border-radius: 8px;
+      border: 1px solid #cbd5e1;
+      background: #ffffff;
+      color: var(--slate);
+      font: inherit;
+      font-weight: 850;
+      text-align: left;
+    }
+
+    .preset-button.active {
+      border-color: var(--blue);
+      background: #eff6ff;
+      color: #1d4ed8;
+    }
+
+    .preset-button[disabled] {
+      color: #94a3b8;
+      background: #f8fafc;
+      cursor: not-allowed;
+    }
+
+    .guide-strip {
+      display: grid;
+      grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .guide-note {
+      margin: 0;
+      padding: 10px 12px;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+      background: var(--soft);
+      color: #374151;
+      font-size: 14px;
+      line-height: 1.45;
+    }
+
+    .section {
+      border-top: 1px solid #e5e7eb;
+      padding-top: 12px;
+      margin-top: 12px;
+    }
+
+    .section:first-of-type {
+      border-top: 0;
+      padding-top: 0;
+      margin-top: 0;
+    }
+
+    .section-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+
+    .section-title {
+      margin: 0;
+      color: #111827;
+      font-size: 18px;
+      line-height: 1.25;
+    }
+
+    .tiny-label {
+      display: inline-flex;
+      align-items: center;
+      min-height: 26px;
+      padding: 4px 8px;
+      border-radius: 999px;
+      background: #f1f5f9;
+      color: #475569;
+      font-size: 12px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .flow {
+      display: grid;
+      gap: 8px;
+    }
+
+    .bar-card {
+      display: grid;
+      grid-template-columns: 168px minmax(0, 1fr);
+      gap: 10px;
+      align-items: center;
+    }
+
+    .bar-label {
+      color: #334155;
+      font-size: 13px;
+      font-weight: 800;
+      line-height: 1.3;
+    }
+
+    .stack-bar {
+      display: flex;
+      width: 100%;
+      height: 34px;
+      overflow: hidden;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      background: #f8fafc;
+    }
+
+    .segment {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 28px;
+      padding: 0 4px;
+      font-size: 12px;
+      font-weight: 850;
+      line-height: 1;
+      white-space: nowrap;
+    }
+
+    .segment.danger {
+      background: var(--red-weak);
+      color: #991b1b;
+      flex-basis: 1%;
+      min-width: 8px;
+    }
+
+    .segment.normal {
+      background: #e2e8f0;
+      color: #334155;
+      flex: 1;
+    }
+
+    .segment.true-alarm {
+      background: var(--green-weak);
+      color: #065f46;
+      flex-basis: 16.1%;
+    }
+
+    .segment.false-alarm {
+      background: var(--amber-weak);
+      color: #92400e;
+      flex: 1;
+    }
+
+    .focus-text {
+      margin: 8px 0 0;
+      min-height: 22px;
+      color: #334155;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .focus-controls {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .focus-btn {
+      min-height: 42px;
+      padding: 8px 10px;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      background: #ffffff;
+      color: var(--slate);
+      font: inherit;
+      font-size: 14px;
+      font-weight: 850;
+      cursor: pointer;
+    }
+
+    .focus-btn.active {
+      border-color: var(--blue);
+      background: #eff6ff;
+      color: #1d4ed8;
+    }
+
+    .matrix-wrap {
+      overflow-x: auto;
+    }
+
+    .matrix {
+      width: 100%;
+      min-width: 520px;
+      border-collapse: collapse;
+      font-size: 14px;
+      table-layout: fixed;
+    }
+
+    .matrix th,
+    .matrix td {
+      border: 1px solid #cbd5e1;
+      padding: 8px;
+      text-align: center;
+      vertical-align: middle;
+      background: white;
+    }
+
+    .matrix th {
+      background: #f8fafc;
+      color: #334155;
+      font-weight: 850;
+    }
+
+    .matrix .row-head {
+      background: #f8fafc;
+      color: #334155;
+      font-weight: 850;
+    }
+
+    .matrix .count {
+      display: block;
+      margin-top: 2px;
+      color: #111827;
+      font-size: 17px;
+      font-weight: 900;
+    }
+
+    .matrix .hidden-value {
+      color: #94a3b8;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .matrix .numerator {
+      background: #ecfdf5;
+      box-shadow: inset 0 0 0 2px #10b981;
+    }
+
+    .matrix .denominator {
+      background: #eff6ff;
+      box-shadow: inset 0 0 0 2px var(--blue);
+    }
+
+    .matrix .numerator.denominator {
+      background: linear-gradient(135deg, #ecfdf5 0%, #ecfdf5 50%, #eff6ff 50%, #eff6ff 100%);
+      box-shadow: inset 0 0 0 2px #059669, inset 0 0 0 4px var(--blue);
+    }
+
+    .legend-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 12px;
+      margin-top: 8px;
+      color: #475569;
+      font-size: 13px;
+    }
+
+    .legend-dot {
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      margin-right: 4px;
+      border-radius: 3px;
+      vertical-align: -1px;
+    }
+
+    .legend-dot.num {
+      background: #ecfdf5;
+      border: 2px solid #10b981;
+    }
+
+    .legend-dot.den {
+      background: #eff6ff;
+      border: 2px solid var(--blue);
+    }
+
+    .reveal-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+      margin: 10px 0 8px;
+    }
+
+    .primary-btn,
+    .subtle-btn {
+      min-height: 42px;
+      padding: 9px 13px;
+      border-radius: 8px;
+      font: inherit;
+      font-size: 14px;
+      font-weight: 850;
+      cursor: pointer;
+    }
+
+    .primary-btn {
+      border: 1px solid var(--blue);
+      background: var(--blue);
+      color: white;
+    }
+
+    .subtle-btn {
+      border: 1px solid #cbd5e1;
+      background: white;
+      color: #475569;
+    }
+
+    .calculator {
+      display: grid;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .input-pair {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .calc-field {
+      display: grid;
+      gap: 5px;
+      color: #334155;
+      font-size: 13px;
+      font-weight: 850;
+    }
+
+    .calc-field input {
+      width: 100%;
+      min-height: 44px;
+      padding: 8px 10px;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      color: #111827;
+      font: inherit;
+      font-size: 17px;
+      font-weight: 800;
+    }
+
+    .calc-field input:focus {
+      outline: 3px solid #bfdbfe;
+      border-color: var(--blue);
+    }
+
+    .calc-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .calc-output {
+      min-height: 45px;
+      margin: 0;
+      padding: 10px 12px;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      background: #ffffff;
+      color: #111827;
+      font-size: 17px;
+      font-weight: 900;
+      line-height: 1.4;
+    }
+
+    .calc-output.muted {
+      color: #64748b;
+      font-size: 14px;
+      font-weight: 750;
+    }
+
+    .calc-note {
+      margin: 0;
+      padding: 9px 11px;
+      border-radius: 8px;
+      background: #f8fafc;
+      color: #475569;
+      font-size: 14px;
+      line-height: 1.45;
+    }
+
+    .switcher {
+      display: none;
+      max-width: 1440px;
+      margin: 0 auto 10px;
+      gap: 8px;
+    }
+
+    .switcher button {
+      flex: 1;
+      min-height: 42px;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      background: white;
+      color: #334155;
+      font: inherit;
+      font-weight: 850;
+    }
+
+    .switcher button.active {
+      border-color: var(--blue);
+      background: #eff6ff;
+      color: #1d4ed8;
+    }
+
+    @media (max-width: 1180px) {
+      .guide-strip {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 900px) {
+      .page {
+        padding: 14px;
+      }
+
+      .topbar {
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .switcher {
+        display: flex;
+      }
+
+      .workspace {
+        display: block;
+        height: calc(100vh - 210px);
+        min-height: 640px;
+      }
+
+      .pane {
+        height: 100%;
+      }
+
+      .pane.is-hidden {
+        display: none;
+      }
+
+      .preset-row,
+      .focus-controls,
+      .input-pair {
+        grid-template-columns: 1fr;
+      }
+
+      .bar-card {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <div class="topbar">
+      <div>
+        <a class="back-link" href="../">← 통계적 의사결정 도우미</a>
+        <header class="title-block">
+          <p class="eyebrow">Probability & Statistics · Decision Support</p>
+          <h1>센서 경보 도구</h1>
+          <p>센서 경보 학습지를 보면서 조건부확률의 분모가 바뀌는 장면을 확인합니다.</p>
+        </header>
+      </div>
+      <span class="status-pill">04 센서 경보</span>
+    </div>
+
+    <div class="switcher" aria-label="좁은 화면 보기 전환">
+      <button class="active" type="button" data-view="worksheet">학습지 보기</button>
+      <button type="button" data-view="tool">도구 보기</button>
+    </div>
+
+    <section class="workspace">
+      <article class="pane worksheet-pane" data-pane="worksheet">
+        <div class="pane-head">
+          <p class="pane-title">04 센서 경보 · 학생용 PDF</p>
+          <a class="download-link" href="./sensor-alarm-student.pdf" download>PDF 다운로드</a>
+        </div>
+        <object class="pdf-frame" data="./sensor-alarm-student.pdf" type="application/pdf" aria-label="센서 경보 학생용 학습지 PDF">
+          <p class="guide-note">PDF가 보이지 않으면 위의 PDF 다운로드를 눌러 학습지를 여세요.</p>
+        </object>
+      </article>
+
+      <article class="pane tool-pane" data-pane="tool">
+        <div class="pane-head">
+          <p class="pane-title">조건부확률·기저율 도구</p>
+        </div>
+        <div class="tool-body">
+          <div class="preset-row">
+            <button class="preset-button active" type="button">04 센서 경보</button>
+            <button class="preset-button" type="button" disabled>01 상품추천 준비 중</button>
+          </div>
+
+          <div class="guide-strip">
+            <p class="guide-note">학습지 [시작 전] 예상을 먼저 적고 확인하세요.</p>
+            <p class="guide-note">학습지 Q1 빈도표를 채운 뒤 필요한 분자와 분모를 입력하세요.</p>
+          </div>
+
+          <section class="section" aria-labelledby="visual-title">
+            <div class="section-head">
+              <h2 class="section-title" id="visual-title">자연빈도 그림</h2>
+              <span class="tiny-label">10,000건 기준</span>
+            </div>
+
+            <div class="flow" aria-label="센서 경보 자연빈도 막대">
+              <div class="bar-card">
+                <div class="bar-label">전체: 위험 100 / 정상 9,900</div>
+                <div class="stack-bar" aria-hidden="true">
+                  <div class="segment danger"></div>
+                  <div class="segment normal">정상 9,900</div>
+                </div>
+              </div>
+              <div class="bar-card">
+                <div class="bar-label">경보 전체: 위험·경보 95 / 정상·경보 495</div>
+                <div class="stack-bar" aria-hidden="true">
+                  <div class="segment true-alarm">95</div>
+                  <div class="segment false-alarm">495</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="focus-controls" aria-label="분모 확인 선택">
+              <button class="focus-btn active" type="button" data-focus="sensitivity">P(경보 | 위험) 분모</button>
+              <button class="focus-btn" type="button" data-focus="posterior">P(위험 | 경보) 분모</button>
+            </div>
+            <p class="focus-text" id="focusText" aria-live="polite"></p>
+          </section>
+
+          <section class="section" aria-labelledby="table-title">
+            <div class="section-head">
+              <h2 class="section-title" id="table-title">2×2 빈도표</h2>
+              <span class="tiny-label" id="tableLabel">Q1 직접 작성용</span>
+            </div>
+
+            <div class="matrix-wrap">
+              <table class="matrix" aria-label="센서 경보 2×2 빈도표">
+                <thead>
+                  <tr>
+                    <th scope="col">실제 상태</th>
+                    <th scope="col" class="alarm-col">경보</th>
+                    <th scope="col" class="no-alarm-col">경보 없음</th>
+                    <th scope="col" class="row-total-col">합계</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr class="danger-row">
+                    <th scope="row" class="row-head">위험</th>
+                    <td class="cell-true-positive numerator"><span class="value-slot" data-value="truePositive"></span></td>
+                    <td class="cell-false-negative"><span class="value-slot" data-value="falseNegative"></span></td>
+                    <td class="cell-danger-total denominator"><span class="value-slot" data-value="eventCount"></span></td>
+                  </tr>
+                  <tr class="normal-row">
+                    <th scope="row" class="row-head">정상</th>
+                    <td class="cell-false-positive"><span class="value-slot" data-value="falsePositive"></span></td>
+                    <td class="cell-true-negative"><span class="value-slot" data-value="trueNegative"></span></td>
+                    <td><span class="value-slot" data-value="nonEventCount"></span></td>
+                  </tr>
+                  <tr class="total-row">
+                    <th scope="row" class="row-head">합계</th>
+                    <td class="cell-signal-total"><span class="value-slot" data-value="signalTotal"></span></td>
+                    <td><span class="value-slot" data-value="noSignalTotal"></span></td>
+                    <td><span class="value-slot" data-value="total"></span></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="legend-row">
+              <span><span class="legend-dot num"></span>분자</span>
+              <span><span class="legend-dot den"></span>현재 질문의 분모</span>
+            </div>
+          </section>
+
+          <section class="section" aria-labelledby="calc-title">
+            <div class="section-head">
+              <h2 class="section-title" id="calc-title">내 계산 확인</h2>
+              <span class="tiny-label">Q1·Q2 참고</span>
+            </div>
+            <div class="calculator">
+              <div class="input-pair">
+                <label class="calc-field" for="numeratorInput">
+                  분자
+                  <input id="numeratorInput" type="number" inputmode="decimal" min="0" step="any" placeholder="학습지의 분자" />
+                </label>
+                <label class="calc-field" for="denominatorInput">
+                  분모
+                  <input id="denominatorInput" type="number" inputmode="decimal" min="0" step="any" placeholder="학습지의 분모" />
+                </label>
+              </div>
+              <div class="calc-actions">
+                <button class="primary-btn" type="button" id="calculateButton">내 계산 확인</button>
+                <button class="subtle-btn" type="button" id="clearCalcButton">지우기</button>
+              </div>
+              <p class="calc-output muted" id="calcOutput" aria-live="polite">학습지에서 정한 분자와 분모를 입력하면 비율만 계산합니다.</p>
+              <p class="calc-note">학습지 Q2에서 두 확률의 분모가 각각 무엇인지 비교하세요. 이 화면은 판단을 대신하지 않습니다.</p>
+            </div>
+          </section>
+        </div>
+      </article>
+    </section>
+  </main>
+
+  <script>
+    const switchButtons = document.querySelectorAll('.switcher button');
+    const panes = document.querySelectorAll('[data-pane]');
+    const focusButtons = document.querySelectorAll('.focus-btn');
+    const valueSlots = document.querySelectorAll('.value-slot');
+    const numeratorInput = document.getElementById('numeratorInput');
+    const denominatorInput = document.getElementById('denominatorInput');
+    const calcOutput = document.getElementById('calcOutput');
+
+    const state = {
+      focus: 'sensitivity',
+    };
+
+    function formatCount(value) {
+      return value.toLocaleString('ko-KR', { maximumFractionDigits: 2 });
+    }
+
+    function formatPercent(value) {
+      return (value * 100).toFixed(1) + '%';
+    }
+
+    function setNarrowView(viewName) {
+      switchButtons.forEach((item) => item.classList.toggle('active', item.dataset.view === viewName));
+      panes.forEach((pane) => pane.classList.toggle('is-hidden', pane.dataset.pane !== viewName));
+    }
+
+    function syncResponsiveView() {
+      const isNarrow = window.matchMedia('(max-width: 900px)').matches;
+      if (!isNarrow) {
+        panes.forEach((pane) => pane.classList.remove('is-hidden'));
+        return;
+      }
+      const activeView = document.querySelector('.switcher button.active')?.dataset.view || 'worksheet';
+      setNarrowView(activeView);
+    }
+
+    function clearFocusClasses() {
+      document.querySelectorAll('.matrix th, .matrix td').forEach((cell) => {
+        cell.classList.remove('numerator', 'denominator');
+      });
+    }
+
+    function applyFocus() {
+      clearFocusClasses();
+      const text = document.getElementById('focusText');
+
+      if (state.focus === 'sensitivity') {
+        document.querySelector('.cell-true-positive').classList.add('numerator', 'denominator');
+        document.querySelector('.cell-false-negative').classList.add('denominator');
+        document.querySelector('.cell-danger-total').classList.add('denominator');
+        text.textContent = '분모는 위험인 사례 전체입니다. 학습지 Q2에서 이 질문이 센서 성능을 묻는지 확인하세요.';
+      } else {
+        document.querySelector('.cell-true-positive').classList.add('numerator', 'denominator');
+        document.querySelector('.cell-false-positive').classList.add('denominator');
+        document.querySelector('.cell-signal-total').classList.add('denominator');
+        text.textContent = '분모는 경보가 울린 사례 전체입니다. 학습지 Q2에서 의사결정 질문의 분모를 확인하세요.';
+      }
+
+      focusButtons.forEach((button) => {
+        button.classList.toggle('active', button.dataset.focus === state.focus);
+      });
+    }
+
+    function renderTablePlaceholders() {
+      valueSlots.forEach((slot) => {
+        slot.innerHTML = '<span class="hidden-value">학습지에 직접 작성</span>';
+      });
+    }
+
+    function setCalcMessage(message, muted = false) {
+      calcOutput.textContent = message;
+      calcOutput.classList.toggle('muted', muted);
+    }
+
+    function readNumber(input) {
+      if (input.value.trim() === '') {
+        return null;
+      }
+      return Number(input.value);
+    }
+
+    function calculateStudentFraction() {
+      const numerator = readNumber(numeratorInput);
+      const denominator = readNumber(denominatorInput);
+
+      if (numerator === null || denominator === null) {
+        setCalcMessage('분자와 분모를 모두 입력하세요.', true);
+        return;
+      }
+
+      if (!Number.isFinite(numerator) || !Number.isFinite(denominator) || numerator < 0 || denominator < 0) {
+        setCalcMessage('0 이상의 수를 입력하세요.', true);
+        return;
+      }
+
+      if (denominator === 0) {
+        setCalcMessage('분모는 0이 될 수 없습니다.', true);
+        return;
+      }
+
+      const ratio = numerator / denominator;
+      const caution = numerator > denominator ? ' · 분자가 분모보다 큽니다. 선택한 분모를 다시 확인하세요.' : '';
+      setCalcMessage(formatCount(numerator) + ' / ' + formatCount(denominator) + ' ≈ ' + formatPercent(ratio) + caution);
+    }
+
+    function clearStudentCalculation() {
+      numeratorInput.value = '';
+      denominatorInput.value = '';
+      setCalcMessage('학습지에서 정한 분자와 분모를 입력하면 비율만 계산합니다.', true);
+    }
+
+    switchButtons.forEach((button) => {
+      button.addEventListener('click', () => {
+        setNarrowView(button.dataset.view);
+      });
+    });
+
+    focusButtons.forEach((button) => {
+      button.addEventListener('click', () => {
+        state.focus = button.dataset.focus;
+        applyFocus();
+      });
+    });
+
+    document.getElementById('calculateButton').addEventListener('click', () => {
+      calculateStudentFraction();
+    });
+
+    document.getElementById('clearCalcButton').addEventListener('click', () => {
+      clearStudentCalculation();
+    });
+
+    [numeratorInput, denominatorInput].forEach((input) => {
+      input.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter') {
+          calculateStudentFraction();
+        }
+      });
+    });
+
+    window.addEventListener('resize', syncResponsiveView);
+    syncResponsiveView();
+    applyFocus();
+    renderTablePlaceholders();
+  </script>
+</body>
+</html>
