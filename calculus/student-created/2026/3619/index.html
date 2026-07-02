@@ -209,6 +209,24 @@
     background: #eff6ff;
   }
 </style>
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [["$", "$"], ["\\(", "\\)"]],
+                displayMath: [["$$", "$$"], ["\\[", "\\]"]]
+            },
+            svg: { fontCache: "global" }
+        };
+
+        function typesetMath(root) {
+            if (window.MathJax && MathJax.typesetPromise) {
+                const targets = root ? [root] : undefined;
+                if (MathJax.typesetClear) MathJax.typesetClear(targets);
+                MathJax.typesetPromise(targets).catch(() => {});
+            }
+        }
+    </script>
+    <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
 </head>
 <body>
 
@@ -406,6 +424,7 @@
                 interpText.innerHTML = `현재 위치에서 접선의 기울기(미분계수)가 <strong>음수(${slope.toFixed(2)})</strong>이므로 오차를 줄이기 위해 <strong>양의 방향(오른쪽)</strong>으로 이동합니다.`;
             }
         }
+        typesetMath(interpText);
     }
 
     // '한 단계 학습' 실행 로직 (경사하강법 핵심 수식 반영)

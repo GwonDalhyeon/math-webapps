@@ -51,6 +51,24 @@
     background: #eff6ff;
   }
 </style>
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [["$", "$"], ["\\(", "\\)"]],
+                displayMath: [["$$", "$$"], ["\\[", "\\]"]]
+            },
+            svg: { fontCache: "global" }
+        };
+
+        function typesetMath(root) {
+            if (window.MathJax && MathJax.typesetPromise) {
+                const targets = root ? [root] : undefined;
+                if (MathJax.typesetClear) MathJax.typesetClear(targets);
+                MathJax.typesetPromise(targets).catch(() => {});
+            }
+        }
+    </script>
+    <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
 </head>
 <body class="bg-slate-50 text-slate-800 min-h-screen pb-12">
 
@@ -492,6 +510,7 @@
             }
 
             document.getElementById('funcExplain').innerHTML = functions[type].explain;
+            typesetMath(document.getElementById('funcExplain'));
             updateInitialState();
         }
 
@@ -558,6 +577,7 @@
                 interpText = "📉 탐색 중: 기울기가 <strong>" + (slope > 0 ? "양수(+)" : "음수(-)") + "</strong>이므로, 수렴 공식에 의해 점이 <strong>" + (slope > 0 ? "왼쪽(음의 방향)" : "오른쪽(양의 방향)") + "</strong>으로 이동하며 오차를 축소합니다.";
             }
             document.getElementById('interpretationText').innerHTML = interpText;
+            typesetMath(document.getElementById('interpretationText'));
         }
 
         // 상태 배지 클래스 제어
