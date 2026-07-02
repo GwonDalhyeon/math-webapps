@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="센서 경보 학습지를 보조하는 조건부확률·기저율 시각화 웹앱입니다." />
+  <meta name="description" content="센서 경보 학습지를 보조하는 조건부확률, 기저율, 오류, 두 센서 가정 시각화 웹앱입니다." />
   <title>통계적 의사결정 도우미</title>
   <link rel="stylesheet" href="../../../assets/common.css" />
   <style>
@@ -189,10 +189,47 @@
       line-height: 1.45;
     }
 
+    .stage-nav {
+      position: sticky;
+      top: 0;
+      z-index: 3;
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 6px;
+      margin-bottom: 12px;
+      padding: 0 0 4px;
+      background: #ffffff;
+    }
+
+    .stage-btn {
+      min-height: 40px;
+      padding: 7px 8px;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      background: #ffffff;
+      color: #334155;
+      font: inherit;
+      font-size: 13px;
+      font-weight: 850;
+      cursor: pointer;
+    }
+
+    .stage-btn:focus {
+      outline: 3px solid #bfdbfe;
+      border-color: var(--blue);
+    }
+
+    .stage-btn.active {
+      border-color: var(--blue);
+      background: #eff6ff;
+      color: #1d4ed8;
+    }
+
     .section {
       border-top: 1px solid #e5e7eb;
       padding-top: 12px;
       margin-top: 12px;
+      scroll-margin-top: 54px;
     }
 
     .section:first-of-type {
@@ -330,6 +367,81 @@
       color: #1d4ed8;
     }
 
+    .tool-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .tool-card {
+      padding: 10px 12px;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      background: #ffffff;
+    }
+
+    .tool-card strong {
+      display: block;
+      margin-bottom: 4px;
+      color: #111827;
+      font-size: 14px;
+      line-height: 1.35;
+    }
+
+    .tool-card span,
+    .tool-card p {
+      margin: 0;
+      color: #475569;
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .check-list {
+      display: grid;
+      gap: 7px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .check-list li {
+      padding: 9px 11px;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      background: #ffffff;
+      color: #334155;
+      font-size: 14px;
+      line-height: 1.45;
+    }
+
+    .assumption-strip {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+      gap: 8px;
+      align-items: center;
+      margin-top: 8px;
+    }
+
+    .assumption-box {
+      min-height: 52px;
+      padding: 9px 10px;
+      border: 1px solid #dbe4ef;
+      border-radius: 8px;
+      background: #f8fafc;
+      color: #334155;
+      font-size: 13px;
+      font-weight: 800;
+      line-height: 1.35;
+      text-align: center;
+    }
+
+    .assumption-arrow {
+      color: #64748b;
+      font-size: 22px;
+      font-weight: 900;
+      text-align: center;
+    }
+
     .matrix-wrap {
       overflow-x: auto;
     }
@@ -420,14 +532,6 @@
       border: 2px solid var(--blue);
     }
 
-    .reveal-row {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: 8px;
-      margin: 10px 0 8px;
-    }
-
     .primary-btn,
     .subtle-btn {
       min-height: 42px;
@@ -513,6 +617,28 @@
       font-weight: 750;
     }
 
+    .fraction {
+      display: inline-grid;
+      grid-template-rows: auto auto;
+      min-width: 58px;
+      margin: 0 4px;
+      color: #111827;
+      font-weight: 900;
+      text-align: center;
+      vertical-align: middle;
+    }
+
+    .fraction .top {
+      padding: 0 5px 2px;
+      border-bottom: 2px solid #111827;
+      line-height: 1.15;
+    }
+
+    .fraction .bottom {
+      padding: 2px 5px 0;
+      line-height: 1.15;
+    }
+
     .calc-note {
       margin: 0;
       padding: 9px 11px;
@@ -583,12 +709,24 @@
 
       .preset-row,
       .focus-controls,
+      .tool-grid,
+      .assumption-strip,
       .input-pair {
         grid-template-columns: 1fr;
       }
 
+      .assumption-arrow {
+        transform: rotate(90deg);
+      }
+
       .bar-card {
         grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 560px) {
+      .stage-nav {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
       }
     }
   </style>
@@ -601,7 +739,7 @@
         <header class="title-block">
           <p class="eyebrow">Probability & Statistics · Decision Support</p>
           <h1>센서 경보 도구</h1>
-          <p>센서 경보 학습지를 보면서 조건부확률의 분모가 바뀌는 장면을 확인합니다.</p>
+          <p>센서 경보 학습지를 보면서 분모, 오류 위치, 두 센서 가정을 확인합니다.</p>
         </header>
       </div>
       <span class="status-pill">04 센서 경보</span>
@@ -638,7 +776,15 @@
             <p class="guide-note">학습지 Q1 빈도표를 채운 뒤 필요한 분자와 분모를 입력하세요.</p>
           </div>
 
-          <section class="section" aria-labelledby="visual-title">
+          <nav class="stage-nav" aria-label="04 센서 경보 학습 흐름">
+            <button class="stage-btn active" type="button" data-jump="stage-q1q2" data-stage-focus="sensitivity" data-stage-text="focusText">Q1·Q2</button>
+            <button class="stage-btn" type="button" data-jump="stage-q3" data-stage-focus="none" data-stage-text="errorText">Q3</button>
+            <button class="stage-btn" type="button" data-jump="stage-q4">Q4</button>
+            <button class="stage-btn" type="button" data-jump="stage-q5">Q5</button>
+            <button class="stage-btn" type="button" data-jump="stage-q6q8">Q6~Q8</button>
+          </nav>
+
+          <section class="section" id="stage-q1q2" aria-labelledby="visual-title">
             <div class="section-head">
               <h2 class="section-title" id="visual-title">자연빈도 그림</h2>
               <span class="tiny-label">10,000건 기준</span>
@@ -662,8 +808,8 @@
             </div>
 
             <div class="focus-controls" aria-label="분모 확인 선택">
-              <button class="focus-btn active" type="button" data-focus="sensitivity">P(경보 | 위험) 분모</button>
-              <button class="focus-btn" type="button" data-focus="posterior">P(위험 | 경보) 분모</button>
+              <button class="focus-btn active" type="button" data-focus="sensitivity" data-text-target="focusText">P(경보 | 위험) 분모</button>
+              <button class="focus-btn" type="button" data-focus="posterior" data-text-target="focusText">P(위험 | 경보) 분모</button>
             </div>
             <p class="focus-text" id="focusText" aria-live="polite"></p>
           </section>
@@ -736,6 +882,99 @@
               <p class="calc-note">학습지 Q2에서 두 확률의 분모가 각각 무엇인지 비교하세요. 이 화면은 판단을 대신하지 않습니다.</p>
             </div>
           </section>
+
+          <section class="section" id="stage-q3" aria-labelledby="error-title">
+            <div class="section-head">
+              <h2 class="section-title" id="error-title">오류 위치 확인</h2>
+              <span class="tiny-label">Q3 참고</span>
+            </div>
+            <div class="tool-grid">
+              <button class="focus-btn" type="button" data-focus="falsePositive" data-text-target="errorText">헛경보 위치</button>
+              <button class="focus-btn" type="button" data-focus="falseNegative" data-text-target="errorText">놓침 위치</button>
+            </div>
+            <p class="focus-text" id="errorText" aria-live="polite">Q3의 두 오류가 빈도표의 어느 칸에 해당하는지 먼저 찾으세요.</p>
+          </section>
+
+          <section class="section" id="stage-q4" aria-labelledby="memo-title">
+            <div class="section-head">
+              <h2 class="section-title" id="memo-title">판단 메모 점검</h2>
+              <span class="tiny-label">Q4 참고</span>
+            </div>
+            <ul class="check-list">
+              <li>선택한 조치가 어떤 확률을 근거로 삼는지 학습지에 표시했는지 확인하세요.</li>
+              <li>헛경보와 놓침 중 어느 오류를 더 크게 보아야 하는 상황인지 따로 적어 보세요.</li>
+              <li>계산으로만 정할 수 없는 조건을 한 가지 이상 구분해 보세요.</li>
+            </ul>
+          </section>
+
+          <section class="section" id="stage-q5" aria-labelledby="two-sensor-title">
+            <div class="section-head">
+              <h2 class="section-title" id="two-sensor-title">두 센서 모두 경보</h2>
+              <span class="tiny-label">Q5 참고</span>
+            </div>
+            <div class="assumption-strip" aria-label="두 센서 모두 경보 계산 구조">
+              <div class="assumption-box">위험 쪽<br />100 × 0.95<sup>2</sup></div>
+              <div class="assumption-arrow" aria-hidden="true">+</div>
+              <div class="assumption-box">정상 쪽<br />9,900 × 0.05<sup>2</sup></div>
+            </div>
+            <div class="calculator">
+              <div class="input-pair">
+                <label class="calc-field" for="twoSensorDangerInput">
+                  위험이고 두 센서 모두 경보
+                  <input id="twoSensorDangerInput" type="number" inputmode="decimal" min="0" step="any" placeholder="Q5 (1)의 값" />
+                </label>
+                <label class="calc-field" for="twoSensorNormalInput">
+                  정상인데 두 센서 모두 경보
+                  <input id="twoSensorNormalInput" type="number" inputmode="decimal" min="0" step="any" placeholder="Q5 (2)의 값" />
+                </label>
+              </div>
+              <div class="calc-actions">
+                <button class="primary-btn" type="button" id="calculateTwoSensorButton">두 센서 비율 계산</button>
+                <button class="subtle-btn" type="button" id="clearTwoSensorButton">지우기</button>
+              </div>
+              <p class="calc-output muted" id="twoSensorOutput" aria-live="polite">두 값을 입력하면, 두 센서가 모두 경보인 경우의 비율만 계산합니다.</p>
+              <p class="calc-note">이 계산은 두 센서 경보가 서로 독립이라는 가정을 사용합니다. Q7에서 이 가정을 다시 점검하세요.</p>
+            </div>
+          </section>
+
+          <section class="section" id="stage-q6q8" aria-labelledby="extension-title">
+            <div class="section-head">
+              <h2 class="section-title" id="extension-title">심화 점검</h2>
+              <span class="tiny-label">Q6~Q8 참고</span>
+            </div>
+            <div class="tool-grid">
+              <div class="tool-card">
+                <strong>Q6 기저율 바꾸기</strong>
+                <span>위험 쪽 경보와 정상 쪽 경보를 다시 계산한 뒤, 두 값을 아래에 넣어 보세요.</span>
+              </div>
+              <div class="tool-card">
+                <strong>Q7 독립 가정</strong>
+                <span>두 센서가 같은 원인에 함께 흔들릴 수 있는지 먼저 생각하세요.</span>
+              </div>
+            </div>
+            <div class="calculator">
+              <div class="input-pair">
+                <label class="calc-field" for="baseDangerInput">
+                  위험이고 경보
+                  <input id="baseDangerInput" type="number" inputmode="decimal" min="0" step="any" placeholder="Q6 위험 쪽 경보" />
+                </label>
+                <label class="calc-field" for="baseNormalInput">
+                  정상인데 경보
+                  <input id="baseNormalInput" type="number" inputmode="decimal" min="0" step="any" placeholder="Q6 정상 쪽 경보" />
+                </label>
+              </div>
+              <div class="calc-actions">
+                <button class="primary-btn" type="button" id="calculateBaseButton">기저율 비율 계산</button>
+                <button class="subtle-btn" type="button" id="clearBaseButton">지우기</button>
+              </div>
+              <p class="calc-output muted" id="baseOutput" aria-live="polite">Q6에서 다시 계산한 두 경보 건수를 입력하세요.</p>
+            </div>
+            <ul class="check-list">
+              <li>Q7: 독립 가정이 깨지면 어느 항이 먼저 영향을 받는지 표시하세요.</li>
+              <li>Q8: AI 요약의 각 문장이 조건부확률의 방향, 판단 결론, 두 센서 가정을 구분하는지 점검하세요.</li>
+              <li>마지막 결론은 웹앱이 아니라 학습지 [E]에 자신의 근거로 작성하세요.</li>
+            </ul>
+          </section>
         </div>
       </article>
     </section>
@@ -743,15 +982,24 @@
 
   <script>
     const switchButtons = document.querySelectorAll('.switcher button');
+    const stageButtons = document.querySelectorAll('.stage-btn');
     const panes = document.querySelectorAll('[data-pane]');
     const focusButtons = document.querySelectorAll('.focus-btn');
     const valueSlots = document.querySelectorAll('.value-slot');
     const numeratorInput = document.getElementById('numeratorInput');
     const denominatorInput = document.getElementById('denominatorInput');
     const calcOutput = document.getElementById('calcOutput');
+    const twoSensorDangerInput = document.getElementById('twoSensorDangerInput');
+    const twoSensorNormalInput = document.getElementById('twoSensorNormalInput');
+    const twoSensorOutput = document.getElementById('twoSensorOutput');
+    const baseDangerInput = document.getElementById('baseDangerInput');
+    const baseNormalInput = document.getElementById('baseNormalInput');
+    const baseOutput = document.getElementById('baseOutput');
 
     const state = {
       focus: 'sensitivity',
+      focusTextTarget: 'focusText',
+      stage: 'stage-q1q2',
     };
 
     function formatCount(value) {
@@ -785,18 +1033,35 @@
 
     function applyFocus() {
       clearFocusClasses();
-      const text = document.getElementById('focusText');
+      document.querySelectorAll('.focus-text').forEach((item) => {
+        item.textContent = '';
+      });
+      const defaultErrorText = document.getElementById('errorText');
+      if (defaultErrorText && state.focusTextTarget !== 'errorText') {
+        defaultErrorText.textContent = 'Q3의 두 오류가 빈도표의 어느 칸에 해당하는지 먼저 찾으세요.';
+      }
+      const text = document.getElementById(state.focusTextTarget) || document.getElementById('focusText');
 
       if (state.focus === 'sensitivity') {
         document.querySelector('.cell-true-positive').classList.add('numerator', 'denominator');
         document.querySelector('.cell-false-negative').classList.add('denominator');
         document.querySelector('.cell-danger-total').classList.add('denominator');
         text.textContent = '분모는 위험인 사례 전체입니다. 학습지 Q2에서 이 질문이 센서 성능을 묻는지 확인하세요.';
-      } else {
+      } else if (state.focus === 'posterior') {
         document.querySelector('.cell-true-positive').classList.add('numerator', 'denominator');
         document.querySelector('.cell-false-positive').classList.add('denominator');
         document.querySelector('.cell-signal-total').classList.add('denominator');
         text.textContent = '분모는 경보가 울린 사례 전체입니다. 학습지 Q2에서 의사결정 질문의 분모를 확인하세요.';
+      } else if (state.focus === 'falsePositive') {
+        document.querySelector('.cell-false-positive').classList.add('numerator');
+        document.querySelector('.cell-signal-total').classList.add('denominator');
+        text.textContent = '헛경보는 정상인데 경보가 울린 칸입니다. Q3에서 이 칸의 건수를 학습지에 직접 적으세요.';
+      } else if (state.focus === 'falseNegative') {
+        document.querySelector('.cell-false-negative').classList.add('numerator');
+        document.querySelector('.cell-danger-total').classList.add('denominator');
+        text.textContent = '놓침은 위험인데 경보가 울리지 않은 칸입니다. Q3에서 이 칸의 건수를 학습지에 직접 적으세요.';
+      } else if (state.focus === 'none') {
+        text.textContent = 'Q3의 두 오류가 빈도표의 어느 칸에 해당하는지 먼저 찾으세요.';
       }
 
       focusButtons.forEach((button) => {
@@ -806,13 +1071,17 @@
 
     function renderTablePlaceholders() {
       valueSlots.forEach((slot) => {
-        slot.innerHTML = '<span class="hidden-value">학습지에 직접 작성</span>';
+        slot.innerHTML = '<span class="hidden-value">직접 작성</span>';
       });
     }
 
-    function setCalcMessage(message, muted = false) {
-      calcOutput.textContent = message;
-      calcOutput.classList.toggle('muted', muted);
+    function setCalcMessage(outputElement, message, muted = false, asHtml = false) {
+      if (asHtml) {
+        outputElement.innerHTML = message;
+      } else {
+        outputElement.textContent = message;
+      }
+      outputElement.classList.toggle('muted', muted);
     }
 
     function readNumber(input) {
@@ -822,34 +1091,67 @@
       return Number(input.value);
     }
 
+    function renderFraction(numerator, denominator, ratio) {
+      return '<span class="fraction"><span class="top">' + formatCount(numerator) + '</span><span class="bottom">' + formatCount(denominator) + '</span></span> ≈ ' + formatPercent(ratio);
+    }
+
     function calculateStudentFraction() {
       const numerator = readNumber(numeratorInput);
       const denominator = readNumber(denominatorInput);
 
       if (numerator === null || denominator === null) {
-        setCalcMessage('분자와 분모를 모두 입력하세요.', true);
+        setCalcMessage(calcOutput, '분자와 분모를 모두 입력하세요.', true);
         return;
       }
 
       if (!Number.isFinite(numerator) || !Number.isFinite(denominator) || numerator < 0 || denominator < 0) {
-        setCalcMessage('0 이상의 수를 입력하세요.', true);
+        setCalcMessage(calcOutput, '0 이상의 수를 입력하세요.', true);
         return;
       }
 
       if (denominator === 0) {
-        setCalcMessage('분모는 0이 될 수 없습니다.', true);
+        setCalcMessage(calcOutput, '분모는 0이 될 수 없습니다.', true);
         return;
       }
 
       const ratio = numerator / denominator;
       const caution = numerator > denominator ? ' · 분자가 분모보다 큽니다. 선택한 분모를 다시 확인하세요.' : '';
-      setCalcMessage(formatCount(numerator) + ' / ' + formatCount(denominator) + ' ≈ ' + formatPercent(ratio) + caution);
+      setCalcMessage(calcOutput, renderFraction(numerator, denominator, ratio) + caution, false, true);
     }
 
     function clearStudentCalculation() {
       numeratorInput.value = '';
       denominatorInput.value = '';
-      setCalcMessage('학습지에서 정한 분자와 분모를 입력하면 비율만 계산합니다.', true);
+      setCalcMessage(calcOutput, '학습지에서 정한 분자와 분모를 입력하면 비율만 계산합니다.', true);
+    }
+
+    function calculateSumFraction(numeratorInputElement, otherInputElement, outputElement, label) {
+      const numerator = readNumber(numeratorInputElement);
+      const other = readNumber(otherInputElement);
+
+      if (numerator === null || other === null) {
+        setCalcMessage(outputElement, label + ' 두 값을 모두 입력하세요.', true);
+        return;
+      }
+
+      if (!Number.isFinite(numerator) || !Number.isFinite(other) || numerator < 0 || other < 0) {
+        setCalcMessage(outputElement, '0 이상의 수를 입력하세요.', true);
+        return;
+      }
+
+      const denominator = numerator + other;
+      if (denominator === 0) {
+        setCalcMessage(outputElement, '두 값의 합은 0이 될 수 없습니다.', true);
+        return;
+      }
+
+      setCalcMessage(outputElement, renderFraction(numerator, denominator, numerator / denominator), false, true);
+    }
+
+    function clearPairCalculation(firstInput, secondInput, outputElement, message) {
+      firstInput.value = '';
+      secondInput.value = '';
+      setCalcMessage(outputElement, message, true);
     }
 
     switchButtons.forEach((button) => {
@@ -861,7 +1163,26 @@
     focusButtons.forEach((button) => {
       button.addEventListener('click', () => {
         state.focus = button.dataset.focus;
+        state.focusTextTarget = button.dataset.textTarget || 'focusText';
         applyFocus();
+      });
+    });
+
+    stageButtons.forEach((button) => {
+      button.addEventListener('click', () => {
+        state.stage = button.dataset.jump;
+        stageButtons.forEach((item) => {
+          item.classList.toggle('active', item === button);
+        });
+        if (button.dataset.stageFocus) {
+          state.focus = button.dataset.stageFocus;
+          state.focusTextTarget = button.dataset.stageText || 'focusText';
+          applyFocus();
+        }
+        const target = document.getElementById(button.dataset.jump);
+        if (target) {
+          target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
       });
     });
 
@@ -873,10 +1194,42 @@
       clearStudentCalculation();
     });
 
+    document.getElementById('calculateTwoSensorButton').addEventListener('click', () => {
+      calculateSumFraction(twoSensorDangerInput, twoSensorNormalInput, twoSensorOutput, 'Q5');
+    });
+
+    document.getElementById('clearTwoSensorButton').addEventListener('click', () => {
+      clearPairCalculation(twoSensorDangerInput, twoSensorNormalInput, twoSensorOutput, '두 값을 입력하면, 두 센서가 모두 경보인 경우의 비율만 계산합니다.');
+    });
+
+    document.getElementById('calculateBaseButton').addEventListener('click', () => {
+      calculateSumFraction(baseDangerInput, baseNormalInput, baseOutput, 'Q6');
+    });
+
+    document.getElementById('clearBaseButton').addEventListener('click', () => {
+      clearPairCalculation(baseDangerInput, baseNormalInput, baseOutput, 'Q6에서 다시 계산한 두 경보 건수를 입력하세요.');
+    });
+
     [numeratorInput, denominatorInput].forEach((input) => {
       input.addEventListener('keydown', (event) => {
         if (event.key === 'Enter') {
           calculateStudentFraction();
+        }
+      });
+    });
+
+    [twoSensorDangerInput, twoSensorNormalInput].forEach((input) => {
+      input.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter') {
+          calculateSumFraction(twoSensorDangerInput, twoSensorNormalInput, twoSensorOutput, 'Q5');
+        }
+      });
+    });
+
+    [baseDangerInput, baseNormalInput].forEach((input) => {
+      input.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter') {
+          calculateSumFraction(baseDangerInput, baseNormalInput, baseOutput, 'Q6');
         }
       });
     });
