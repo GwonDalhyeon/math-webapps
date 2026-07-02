@@ -70,13 +70,78 @@
     }
 
     .workspace {
+      --worksheet-ratio: 45%;
+      --splitter-width: 12px;
       display: grid;
-      grid-template-columns: minmax(420px, 45%) minmax(0, 1fr);
-      gap: 14px;
+      grid-template-columns: minmax(360px, var(--worksheet-ratio)) var(--splitter-width) minmax(420px, 1fr);
+      gap: 0;
       max-width: 1440px;
       height: calc(100vh - 152px);
       min-height: 600px;
       margin: 0 auto;
+    }
+
+    .splitter {
+      position: relative;
+      min-width: var(--splitter-width);
+      height: 100%;
+      border: 0;
+      background: transparent;
+      cursor: col-resize;
+      touch-action: none;
+    }
+
+    .splitter::before {
+      content: "";
+      position: absolute;
+      top: 10px;
+      bottom: 10px;
+      left: 50%;
+      width: 4px;
+      transform: translateX(-50%);
+      border-radius: 999px;
+      background: #cbd5e1;
+    }
+
+    .splitter::after {
+      content: "";
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 30px;
+      height: 52px;
+      transform: translate(-50%, -50%);
+      border: 1px solid #bfdbfe;
+      border-radius: 999px;
+      background: #eff6ff;
+      box-shadow: 0 8px 18px rgba(15, 23, 42, 0.12);
+      opacity: 0;
+      transition: opacity 0.16s ease;
+    }
+
+    .splitter:hover::before,
+    .splitter:focus-visible::before {
+      background: var(--blue);
+    }
+
+    .splitter:hover::after,
+    .splitter:focus-visible::after,
+    .splitter.is-dragging::after {
+      opacity: 1;
+    }
+
+    .splitter:focus-visible {
+      outline: 3px solid #bfdbfe;
+      outline-offset: 2px;
+    }
+
+    body.is-resizing-layout {
+      cursor: col-resize;
+      user-select: none;
+    }
+
+    body.is-resizing-layout .pdf-frame {
+      pointer-events: none;
     }
 
     .pane {
@@ -699,6 +764,10 @@
         min-height: 640px;
       }
 
+      .splitter {
+        display: none;
+      }
+
       .pane {
         height: 100%;
       }
@@ -760,6 +829,8 @@
           <p class="guide-note">PDF가 보이지 않으면 위의 PDF 다운로드를 눌러 학습지를 여세요.</p>
         </object>
       </article>
+
+      <div class="splitter" role="separator" tabindex="0" aria-label="학습지와 도구 영역 크기 조절" aria-orientation="vertical" aria-valuemin="32" aria-valuemax="62" aria-valuenow="45" title="드래그해서 학습지와 도구의 폭을 조절합니다."></div>
 
       <article class="pane tool-pane" data-pane="tool">
         <div class="pane-head">
@@ -983,6 +1054,8 @@
   <script>
     const switchButtons = document.querySelectorAll('.switcher button');
     const stageButtons = document.querySelectorAll('.stage-btn');
+    const workspace = document.querySelector('.workspace');
+    const splitter = document.querySelector('.splitter');
     const panes = document.querySelectorAll('[data-pane]');
     const focusButtons = document.querySelectorAll('.focus-btn');
     const valueSlots = document.querySelectorAll('.value-slot');
@@ -1002,6 +1075,12 @@
       stage: 'stage-q1q2',
     };
 
+    const splitState = {
+      value: 45,
+      dragging: false,
+      storageKey: 'sensor-alarm-worksheet-ratio',
+    };
+
     function formatCount(value) {
       return value.toLocaleString('ko-KR', { maximumFractionDigits: 2 });
     }
@@ -1015,10 +1094,62 @@
       panes.forEach((pane) => pane.classList.toggle('is-hidden', pane.dataset.pane !== viewName));
     }
 
+    function getSplitBounds() {
+      const width = workspace?.getBoundingClientRect().width || 1180;
+      const splitterWidth = splitter?.getBoundingClientRect().width || 12;
+      const minLeft = 360;
+      const minRight = 420;
+      const min = Math.max(32, (minLeft / width) * 100);
+      const max = Math.min(64, ((width - splitterWidth - minRight) / width) * 100);
+      return {
+        min: Math.min(min, 45),
+        max: Math.max(max, 45),
+      };
+    }
+
+    function setWorkspaceSplit(value, persist = true) {
+      const bounds = getSplitBounds();
+      const clamped = Math.min(bounds.max, Math.max(bounds.min, value));
+      splitState.value = clamped;
+      workspace.style.setProperty('--worksheet-ratio', clamped.toFixed(2) + '%');
+      splitter.setAttribute('aria-valuemin', String(Math.round(bounds.min)));
+      splitter.setAttribute('aria-valuemax', String(Math.round(bounds.max)));
+      splitter.setAttribute('aria-valuenow', String(Math.round(clamped)));
+
+      if (persist) {
+        try {
+          window.localStorage.setItem(splitState.storageKey, clamped.toFixed(2));
+        } catch (error) {
+          // 로컬 파일 환경에서 저장이 막히더라도 조절 동작은 유지한다.
+        }
+      }
+    }
+
+    function setWorkspaceSplitFromClientX(clientX, persist = false) {
+      const rect = workspace.getBoundingClientRect();
+      const ratio = ((clientX - rect.left) / rect.width) * 100;
+      setWorkspaceSplit(ratio, persist);
+    }
+
+    function loadWorkspaceSplit() {
+      let saved = null;
+      try {
+        saved = Number(window.localStorage.getItem(splitState.storageKey));
+      } catch (error) {
+        saved = null;
+      }
+      setWorkspaceSplit(Number.isFinite(saved) && saved > 0 ? saved : splitState.value, false);
+    }
+
+    function isNarrowLayout() {
+      return window.matchMedia('(max-width: 900px)').matches;
+    }
+
     function syncResponsiveView() {
-      const isNarrow = window.matchMedia('(max-width: 900px)').matches;
+      const isNarrow = isNarrowLayout();
       if (!isNarrow) {
         panes.forEach((pane) => pane.classList.remove('is-hidden'));
+        setWorkspaceSplit(splitState.value, false);
         return;
       }
       const activeView = document.querySelector('.switcher button.active')?.dataset.view || 'worksheet';
@@ -1160,6 +1291,63 @@
       });
     });
 
+    splitter.addEventListener('pointerdown', (event) => {
+      if (isNarrowLayout()) {
+        return;
+      }
+      splitState.dragging = true;
+      splitter.classList.add('is-dragging');
+      document.body.classList.add('is-resizing-layout');
+      splitter.setPointerCapture(event.pointerId);
+      setWorkspaceSplitFromClientX(event.clientX, false);
+      event.preventDefault();
+    });
+
+    splitter.addEventListener('pointermove', (event) => {
+      if (!splitState.dragging) {
+        return;
+      }
+      setWorkspaceSplitFromClientX(event.clientX, false);
+    });
+
+    function stopSplitterDrag(event) {
+      if (!splitState.dragging) {
+        return;
+      }
+      splitState.dragging = false;
+      splitter.classList.remove('is-dragging');
+      document.body.classList.remove('is-resizing-layout');
+      if (event && splitter.hasPointerCapture(event.pointerId)) {
+        splitter.releasePointerCapture(event.pointerId);
+      }
+      setWorkspaceSplit(splitState.value, true);
+    }
+
+    splitter.addEventListener('pointerup', stopSplitterDrag);
+    splitter.addEventListener('pointercancel', stopSplitterDrag);
+    splitter.addEventListener('dblclick', () => {
+      setWorkspaceSplit(45, true);
+    });
+
+    splitter.addEventListener('keydown', (event) => {
+      if (isNarrowLayout()) {
+        return;
+      }
+      const bounds = getSplitBounds();
+      if (event.key === 'ArrowLeft') {
+        setWorkspaceSplit(splitState.value - 3, true);
+      } else if (event.key === 'ArrowRight') {
+        setWorkspaceSplit(splitState.value + 3, true);
+      } else if (event.key === 'Home') {
+        setWorkspaceSplit(bounds.min, true);
+      } else if (event.key === 'End') {
+        setWorkspaceSplit(bounds.max, true);
+      } else {
+        return;
+      }
+      event.preventDefault();
+    });
+
     focusButtons.forEach((button) => {
       button.addEventListener('click', () => {
         state.focus = button.dataset.focus;
@@ -1235,6 +1423,7 @@
     });
 
     window.addEventListener('resize', syncResponsiveView);
+    loadWorkspaceSplit();
     syncResponsiveView();
     applyFocus();
     renderTablePlaceholders();
