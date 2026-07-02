@@ -1,0 +1,1204 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="상품추천 규칙 학습지를 보조하는 조건부확률, 기저율, 정밀도, 재현율 시각화 웹앱입니다." />
+  <title>01 상품추천 도구</title>
+  <link rel="stylesheet" href="../../../assets/common.css" />
+  <style>
+    :root {
+      --blue: #2563eb;
+      --blue-weak: #dbeafe;
+      --green: #047857;
+      --green-weak: #d1fae5;
+      --amber: #b45309;
+      --amber-weak: #fef3c7;
+      --rose: #be123c;
+      --rose-weak: #ffe4e6;
+      --slate: #334155;
+      --line: #dbe4ef;
+      --soft: #f8fafc;
+    }
+
+    body {
+      background: #f6f7fb;
+    }
+
+    .page {
+      max-width: none;
+      min-height: 100vh;
+      padding: 16px;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 16px;
+      max-width: 1440px;
+      margin: 0 auto 10px;
+    }
+
+    .topbar .back-link {
+      margin-bottom: 0;
+      white-space: nowrap;
+    }
+
+    .title-block h1 {
+      margin: 4px 0;
+      font-size: clamp(28px, 4vw, 40px);
+    }
+
+    .title-block p {
+      margin: 0;
+      color: #334155;
+      font-size: 16px;
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      min-height: 34px;
+      padding: 7px 12px;
+      border: 1px solid #a7f3d0;
+      border-radius: 999px;
+      background: #ecfdf5;
+      color: var(--green);
+      font-size: 14px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .switcher {
+      display: none;
+      max-width: 1440px;
+      margin: 0 auto 10px;
+      gap: 8px;
+    }
+
+    .switcher button {
+      flex: 1;
+      min-height: 42px;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      background: white;
+      color: #334155;
+      font: inherit;
+      font-weight: 850;
+    }
+
+    .switcher button.active {
+      border-color: var(--blue);
+      background: #eff6ff;
+      color: #1d4ed8;
+    }
+
+    .workspace {
+      display: grid;
+      grid-template-columns: minmax(420px, 45%) minmax(0, 1fr);
+      gap: 14px;
+      max-width: 1440px;
+      height: calc(100vh - 152px);
+      min-height: 600px;
+      margin: 0 auto;
+    }
+
+    .pane {
+      min-height: 0;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: white;
+      box-shadow: 0 8px 22px rgba(15, 23, 42, 0.07);
+    }
+
+    .pane-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      min-height: 50px;
+      padding: 10px 14px;
+      border-bottom: 1px solid #e5e7eb;
+      background: #ffffff;
+    }
+
+    .pane-title {
+      margin: 0;
+      color: #111827;
+      font-size: 16px;
+      font-weight: 850;
+    }
+
+    .download-link {
+      display: inline-flex;
+      align-items: center;
+      min-height: 32px;
+      padding: 6px 10px;
+      border: 1px solid #bfdbfe;
+      border-radius: 8px;
+      background: #eff6ff;
+      color: #1d4ed8;
+      font-size: 13px;
+      font-weight: 800;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+
+    .pdf-frame {
+      display: block;
+      width: 100%;
+      height: calc(100% - 50px);
+      border: 0;
+      background: #f8fafc;
+    }
+
+    .tool-pane {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .tool-body {
+      min-height: 0;
+      padding: 14px;
+      overflow: auto;
+    }
+
+    .preset-row,
+    .rule-row {
+      display: grid;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .preset-row {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .rule-row {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .preset-button,
+    .rule-button,
+    .focus-btn {
+      min-height: 44px;
+      padding: 8px 10px;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      background: #ffffff;
+      color: var(--slate);
+      font: inherit;
+      font-size: 14px;
+      font-weight: 850;
+      cursor: pointer;
+    }
+
+    .preset-button {
+      min-height: 46px;
+      text-align: left;
+    }
+
+    .preset-button.active,
+    .rule-button.active,
+    .focus-btn.active {
+      border-color: var(--blue);
+      background: #eff6ff;
+      color: #1d4ed8;
+    }
+
+    .preset-button.secondary {
+      text-decoration: none;
+    }
+
+    .guide-strip {
+      display: grid;
+      grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .guide-note {
+      margin: 0;
+      padding: 10px 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--soft);
+      color: #374151;
+      font-size: 14px;
+      line-height: 1.45;
+    }
+
+    .stage-nav {
+      position: sticky;
+      top: 0;
+      z-index: 3;
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 6px;
+      margin-bottom: 12px;
+      padding-bottom: 4px;
+      background: #ffffff;
+    }
+
+    .stage-btn {
+      min-height: 40px;
+      padding: 7px 8px;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      background: #ffffff;
+      color: #334155;
+      font: inherit;
+      font-size: 13px;
+      font-weight: 850;
+      cursor: pointer;
+    }
+
+    .stage-btn.active {
+      border-color: var(--blue);
+      background: #eff6ff;
+      color: #1d4ed8;
+    }
+
+    .section {
+      border-top: 1px solid #e5e7eb;
+      padding-top: 12px;
+      margin-top: 12px;
+      scroll-margin-top: 54px;
+    }
+
+    .section:first-of-type {
+      border-top: 0;
+      padding-top: 0;
+      margin-top: 0;
+    }
+
+    .section-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+
+    .section-title {
+      margin: 0;
+      color: #111827;
+      font-size: 18px;
+      line-height: 1.25;
+    }
+
+    .tiny-label {
+      display: inline-flex;
+      align-items: center;
+      min-height: 26px;
+      padding: 4px 8px;
+      border-radius: 999px;
+      background: #f1f5f9;
+      color: #475569;
+      font-size: 12px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .data-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .data-chip {
+      min-height: 58px;
+      padding: 9px 10px;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      background: white;
+    }
+
+    .data-chip span {
+      display: block;
+      color: #64748b;
+      font-size: 12px;
+      font-weight: 800;
+      line-height: 1.25;
+    }
+
+    .data-chip strong {
+      display: block;
+      margin-top: 3px;
+      color: #111827;
+      font-size: 19px;
+      font-weight: 900;
+      line-height: 1.2;
+    }
+
+    .bar-stack {
+      display: grid;
+      gap: 8px;
+    }
+
+    .bar-card {
+      display: grid;
+      grid-template-columns: 150px minmax(0, 1fr);
+      gap: 10px;
+      align-items: center;
+    }
+
+    .bar-label {
+      color: #334155;
+      font-size: 13px;
+      font-weight: 850;
+      line-height: 1.35;
+    }
+
+    .track {
+      position: relative;
+      height: 34px;
+      overflow: hidden;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      background: #e2e8f0;
+    }
+
+    .fill {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      min-width: 24px;
+      padding: 0 6px;
+      color: #111827;
+      font-size: 12px;
+      font-weight: 900;
+      white-space: nowrap;
+    }
+
+    .fill.a {
+      background: var(--blue-weak);
+      color: #1d4ed8;
+    }
+
+    .fill.b {
+      background: var(--green-weak);
+      color: #047857;
+    }
+
+    .fill.both {
+      background: var(--amber-weak);
+      color: #92400e;
+    }
+
+    .focus-controls {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .focus-text {
+      min-height: 22px;
+      margin: 8px 0 0;
+      color: #334155;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .matrix-wrap {
+      overflow-x: auto;
+    }
+
+    .matrix {
+      width: 100%;
+      min-width: 540px;
+      border-collapse: collapse;
+      font-size: 14px;
+      table-layout: fixed;
+    }
+
+    .matrix th,
+    .matrix td {
+      border: 1px solid #cbd5e1;
+      padding: 8px;
+      text-align: center;
+      vertical-align: middle;
+      background: white;
+    }
+
+    .matrix th {
+      background: #f8fafc;
+      color: #334155;
+      font-weight: 850;
+    }
+
+    .matrix .count {
+      display: block;
+      margin-top: 2px;
+      color: #111827;
+      font-size: 17px;
+      font-weight: 900;
+    }
+
+    .matrix .slot {
+      color: #94a3b8;
+      font-size: 13px;
+      font-weight: 750;
+    }
+
+    .matrix .numerator {
+      background: #ecfdf5;
+      box-shadow: inset 0 0 0 2px #10b981;
+    }
+
+    .matrix .denominator {
+      background: #eff6ff;
+      box-shadow: inset 0 0 0 2px var(--blue);
+    }
+
+    .matrix .numerator.denominator {
+      background: linear-gradient(135deg, #ecfdf5 0%, #ecfdf5 50%, #eff6ff 50%, #eff6ff 100%);
+      box-shadow: inset 0 0 0 2px #059669, inset 0 0 0 4px var(--blue);
+    }
+
+    .legend-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 12px;
+      margin-top: 8px;
+      color: #475569;
+      font-size: 13px;
+    }
+
+    .legend-dot {
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      margin-right: 4px;
+      border-radius: 3px;
+      vertical-align: -1px;
+    }
+
+    .legend-dot.num {
+      background: #ecfdf5;
+      border: 2px solid #10b981;
+    }
+
+    .legend-dot.den {
+      background: #eff6ff;
+      border: 2px solid var(--blue);
+    }
+
+    .calculator {
+      display: grid;
+      gap: 8px;
+    }
+
+    .input-pair {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .calc-field {
+      display: grid;
+      gap: 5px;
+      color: #334155;
+      font-size: 13px;
+      font-weight: 850;
+    }
+
+    .calc-field input {
+      width: 100%;
+      min-height: 44px;
+      padding: 8px 10px;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      color: #111827;
+      font: inherit;
+      font-size: 17px;
+      font-weight: 800;
+    }
+
+    .primary-btn,
+    .subtle-btn {
+      min-height: 42px;
+      padding: 9px 13px;
+      border-radius: 8px;
+      font: inherit;
+      font-size: 14px;
+      font-weight: 850;
+      cursor: pointer;
+    }
+
+    .primary-btn {
+      border: 1px solid var(--blue);
+      background: var(--blue);
+      color: white;
+    }
+
+    .subtle-btn {
+      border: 1px solid #cbd5e1;
+      background: white;
+      color: #475569;
+    }
+
+    .calc-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .calc-output {
+      min-height: 45px;
+      margin: 0;
+      padding: 10px 12px;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      background: #ffffff;
+      color: #111827;
+      font-size: 17px;
+      font-weight: 900;
+      line-height: 1.4;
+    }
+
+    .calc-output.muted {
+      color: #64748b;
+      font-size: 14px;
+      font-weight: 750;
+    }
+
+    .fraction {
+      display: inline-grid;
+      grid-template-rows: auto auto;
+      min-width: 58px;
+      margin: 0 4px;
+      color: #111827;
+      font-weight: 900;
+      text-align: center;
+      vertical-align: middle;
+    }
+
+    .fraction .top {
+      padding: 0 5px 2px;
+      border-bottom: 2px solid #111827;
+      line-height: 1.15;
+    }
+
+    .fraction .bottom {
+      padding: 2px 5px 0;
+      line-height: 1.15;
+    }
+
+    .calc-note,
+    .check-list li {
+      border-radius: 8px;
+      color: #475569;
+      font-size: 14px;
+      line-height: 1.45;
+    }
+
+    .calc-note {
+      margin: 0;
+      padding: 9px 11px;
+      background: #f8fafc;
+    }
+
+    .check-list {
+      display: grid;
+      gap: 7px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .check-list li {
+      padding: 9px 11px;
+      border: 1px solid #e5e7eb;
+      background: #ffffff;
+    }
+
+    @media (max-width: 1180px) {
+      .guide-strip,
+      .data-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 900px) {
+      .page {
+        padding: 14px;
+      }
+
+      .topbar {
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .switcher {
+        display: flex;
+      }
+
+      .workspace {
+        display: block;
+        height: calc(100vh - 210px);
+        min-height: 640px;
+      }
+
+      .pane {
+        height: 100%;
+      }
+
+      .pane.is-hidden {
+        display: none;
+      }
+
+      .preset-row,
+      .rule-row,
+      .focus-controls,
+      .input-pair {
+        grid-template-columns: 1fr;
+      }
+
+      .bar-card {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 560px) {
+      .stage-nav {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <div class="topbar">
+      <div>
+        <a class="back-link" href="../">← 통계적 의사결정 도우미</a>
+        <header class="title-block">
+          <p class="eyebrow">Probability & Statistics · Decision Support</p>
+          <h1>상품추천 도구</h1>
+          <p>상품추천 규칙 학습지를 보면서 기저율, 정밀도, 재현율의 분모가 어떻게 달라지는지 확인합니다.</p>
+        </header>
+      </div>
+      <span class="status-pill">01 상품추천</span>
+    </div>
+
+    <div class="switcher" aria-label="좁은 화면 보기 전환">
+      <button class="active" type="button" data-view="worksheet">학습지 보기</button>
+      <button type="button" data-view="tool">도구 보기</button>
+    </div>
+
+    <section class="workspace">
+      <article class="pane worksheet-pane" data-pane="worksheet">
+        <div class="pane-head">
+          <p class="pane-title">01 상품추천 · 학생용 PDF</p>
+          <a class="download-link" href="./product-recommendation-student.pdf" download>PDF 다운로드</a>
+        </div>
+        <object class="pdf-frame" data="./product-recommendation-student.pdf" type="application/pdf" aria-label="상품추천 학생용 학습지 PDF">
+          <p class="guide-note">PDF가 보이지 않으면 위의 PDF 다운로드를 눌러 학습지를 여세요.</p>
+        </object>
+      </article>
+
+      <article class="pane tool-pane" data-pane="tool">
+        <div class="pane-head">
+          <p class="pane-title">조건부확률·기저율 도구</p>
+        </div>
+
+        <div class="tool-body">
+          <div class="preset-row">
+            <button class="preset-button active" type="button">01 상품추천</button>
+            <a class="preset-button secondary" href="../sensor-alarm/">04 센서 경보 열기</a>
+          </div>
+
+          <div class="guide-strip">
+            <p class="guide-note">학습지 [시작 전] 예상을 먼저 적고, Q1의 주어진 자료를 확인하세요.</p>
+            <p class="guide-note">학습지 Q2·Q3에서 계산한 분자와 분모를 아래 입력칸에 직접 넣어 확인하세요.</p>
+          </div>
+
+          <nav class="stage-nav" aria-label="01 상품추천 학습 흐름">
+            <button class="stage-btn active" type="button" data-jump="stage-q1q2" data-focus="precision">Q1·Q2</button>
+            <button class="stage-btn" type="button" data-jump="stage-q3" data-focus="base">Q3</button>
+            <button class="stage-btn" type="button" data-jump="stage-q4q5">Q4·Q5</button>
+            <button class="stage-btn" type="button" data-jump="stage-q6q8">Q6~Q8</button>
+          </nav>
+
+          <section class="section" id="stage-q1q2" aria-labelledby="rule-title">
+            <div class="section-head">
+              <h2 class="section-title" id="rule-title">규칙 선택</h2>
+              <span class="tiny-label">10,000건 기준</span>
+            </div>
+
+            <div class="rule-row" aria-label="상품추천 규칙 선택">
+              <button class="rule-button active" type="button" data-rule="ga">가. 노트북 → 마우스</button>
+              <button class="rule-button" type="button" data-rule="na">나. 텐트 → 랜턴</button>
+              <button class="rule-button" type="button" data-rule="da">다. 라면 → 달걀</button>
+            </div>
+
+            <div class="data-grid" aria-label="선택한 규칙의 주어진 자료">
+              <div class="data-chip">
+                <span id="aLabel">조건 상품 A 구매자</span>
+                <strong id="aCount">4,000</strong>
+              </div>
+              <div class="data-chip">
+                <span id="bLabel">추천 상품 B 구매자</span>
+                <strong id="bCount">5,000</strong>
+              </div>
+              <div class="data-chip">
+                <span>A와 B 모두 구매</span>
+                <strong id="bothCount">2,800</strong>
+              </div>
+            </div>
+
+            <div class="bar-stack" aria-label="상품추천 자연빈도 그림">
+              <div class="bar-card">
+                <div class="bar-label" id="aBarLabel">노트북 구매자</div>
+                <div class="track" aria-hidden="true">
+                  <div class="fill a" id="aFill">4,000</div>
+                </div>
+              </div>
+              <div class="bar-card">
+                <div class="bar-label" id="bBarLabel">마우스 구매자</div>
+                <div class="track" aria-hidden="true">
+                  <div class="fill b" id="bFill">5,000</div>
+                </div>
+              </div>
+              <div class="bar-card">
+                <div class="bar-label">둘 다 구매</div>
+                <div class="track" aria-hidden="true">
+                  <div class="fill both" id="bothFill">2,800</div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section class="section" aria-labelledby="table-title">
+            <div class="section-head">
+              <h2 class="section-title" id="table-title">2×2 빈도표</h2>
+              <span class="tiny-label">빈칸은 학습지에 직접 작성</span>
+            </div>
+
+            <div class="focus-controls" aria-label="분모 강조 선택">
+              <button class="focus-btn" type="button" data-focus="base">P(B) 분모</button>
+              <button class="focus-btn active" type="button" data-focus="precision">P(B | A) 분모</button>
+              <button class="focus-btn" type="button" data-focus="recall">P(A | B) 분모</button>
+            </div>
+            <p class="focus-text" id="focusText" aria-live="polite"></p>
+
+            <div class="matrix-wrap">
+              <table class="matrix" aria-label="상품추천 2×2 빈도표">
+                <thead>
+                  <tr>
+                    <th scope="col">조건 상품</th>
+                    <th scope="col" id="bColumnHead">B 구매</th>
+                    <th scope="col" id="notBColumnHead">B 미구매</th>
+                    <th scope="col">합계</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <th scope="row" id="aRowHead">A 구매</th>
+                    <td class="cell-both"><span class="count" id="tableBoth">2,800</span></td>
+                    <td class="cell-a-only"><span class="slot">직접 작성</span></td>
+                    <td class="cell-a-total"><span class="count" id="tableATotal">4,000</span></td>
+                  </tr>
+                  <tr>
+                    <th scope="row" id="notARowHead">A 미구매</th>
+                    <td class="cell-b-only"><span class="slot">직접 작성</span></td>
+                    <td class="cell-neither"><span class="slot">직접 작성</span></td>
+                    <td class="cell-not-a-total"><span class="slot">직접 작성</span></td>
+                  </tr>
+                  <tr>
+                    <th scope="row">합계</th>
+                    <td class="cell-b-total"><span class="count" id="tableBTotal">5,000</span></td>
+                    <td class="cell-not-b-total"><span class="slot">직접 작성</span></td>
+                    <td class="cell-total"><span class="count">10,000</span></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="legend-row">
+              <span><span class="legend-dot num"></span>분자</span>
+              <span><span class="legend-dot den"></span>현재 질문의 분모</span>
+            </div>
+          </section>
+
+          <section class="section" id="stage-q3" aria-labelledby="calc-title">
+            <div class="section-head">
+              <h2 class="section-title" id="calc-title">내 계산 확인</h2>
+              <span class="tiny-label">Q2·Q3 참고</span>
+            </div>
+
+            <div class="calculator">
+              <div class="input-pair">
+                <label class="calc-field" for="numeratorInput">
+                  분자
+                  <input id="numeratorInput" type="number" inputmode="decimal" min="0" step="any" placeholder="학습지의 분자" />
+                </label>
+                <label class="calc-field" for="denominatorInput">
+                  분모
+                  <input id="denominatorInput" type="number" inputmode="decimal" min="0" step="any" placeholder="학습지의 분모" />
+                </label>
+              </div>
+              <div class="calc-actions">
+                <button class="primary-btn" type="button" id="calculateRatioButton">내 계산 확인</button>
+                <button class="subtle-btn" type="button" id="clearRatioButton">지우기</button>
+              </div>
+              <p class="calc-output muted" id="ratioOutput" aria-live="polite">학습지에서 정한 분자와 분모를 입력하면 비율만 계산합니다.</p>
+              <p class="calc-note">정밀도, 재현율, 기저율 중 무엇을 계산하는지 먼저 정하고 분모를 고르세요.</p>
+            </div>
+
+            <div class="calculator">
+              <div class="input-pair">
+                <label class="calc-field" for="precisionInput">
+                  정밀도 P(B | A)
+                  <input id="precisionInput" type="number" inputmode="decimal" step="any" placeholder="예: 0.70 또는 70" />
+                </label>
+                <label class="calc-field" for="baseInput">
+                  기저율 P(B)
+                  <input id="baseInput" type="number" inputmode="decimal" step="any" placeholder="예: 0.50 또는 50" />
+                </label>
+              </div>
+              <div class="calc-actions">
+                <button class="primary-btn" type="button" id="calculateLiftButton">차이 계산</button>
+                <button class="subtle-btn" type="button" id="clearLiftButton">지우기</button>
+              </div>
+              <p class="calc-output muted" id="liftOutput" aria-live="polite">Q3에서 계산한 두 비율을 입력하면 차이만 계산합니다.</p>
+              <p class="calc-note">여기서 나온 차이는 판단의 재료입니다. 어떤 규칙을 고를지는 학습지 Q4에 직접 쓰세요.</p>
+            </div>
+          </section>
+
+          <section class="section" id="stage-q4q5" aria-labelledby="memo-title">
+            <div class="section-head">
+              <h2 class="section-title" id="memo-title">판단 전 점검</h2>
+              <span class="tiny-label">Q4·Q5 참고</span>
+            </div>
+            <ul class="check-list">
+              <li>Q4: 정밀도, 추천 효과, 적용 규모 중 어떤 기준을 우선했는지 학습지에 표시하세요.</li>
+              <li>Q5: 정밀도가 같아도 기저율이 다르면 추천 효과가 달라지는지 표에서 다시 확인하세요.</li>
+              <li>최종 선택과 이유는 웹앱이 아니라 학습지의 분석 메모에 직접 작성하세요.</li>
+            </ul>
+          </section>
+
+          <section class="section" id="stage-q6q8" aria-labelledby="extension-title">
+            <div class="section-head">
+              <h2 class="section-title" id="extension-title">심화 점검</h2>
+              <span class="tiny-label">Q6~Q8 참고</span>
+            </div>
+            <ul class="check-list">
+              <li>Q6: 추천 대상을 넓히면 새로 들어오는 집단의 성향이 어떻게 달라질지 먼저 가정해 보세요.</li>
+              <li>Q7: 함께 산다는 사실과 원인이라는 주장을 구분해서 표시하세요.</li>
+              <li>Q8: AI 요약이 기저율, 인과, 적용 규모를 각각 어떻게 다루는지 문장별로 점검하세요.</li>
+            </ul>
+          </section>
+        </div>
+      </article>
+    </section>
+  </main>
+
+  <script>
+    const TOTAL = 10000;
+    const RULES = {
+      ga: {
+        name: '가',
+        aName: '노트북',
+        bName: '마우스',
+        a: 4000,
+        b: 5000,
+        both: 2800,
+      },
+      na: {
+        name: '나',
+        aName: '텐트',
+        bName: '랜턴',
+        a: 800,
+        b: 2500,
+        both: 700,
+      },
+      da: {
+        name: '다',
+        aName: '라면',
+        bName: '달걀',
+        a: 5000,
+        b: 4000,
+        both: 3500,
+      },
+    };
+
+    const state = {
+      rule: 'ga',
+      focus: 'precision',
+    };
+
+    const switchButtons = document.querySelectorAll('.switcher button');
+    const panes = document.querySelectorAll('[data-pane]');
+    const ruleButtons = document.querySelectorAll('.rule-button');
+    const focusButtons = document.querySelectorAll('.focus-btn');
+    const stageButtons = document.querySelectorAll('.stage-btn');
+
+    const aLabel = document.getElementById('aLabel');
+    const bLabel = document.getElementById('bLabel');
+    const aCount = document.getElementById('aCount');
+    const bCount = document.getElementById('bCount');
+    const bothCount = document.getElementById('bothCount');
+    const aBarLabel = document.getElementById('aBarLabel');
+    const bBarLabel = document.getElementById('bBarLabel');
+    const aFill = document.getElementById('aFill');
+    const bFill = document.getElementById('bFill');
+    const bothFill = document.getElementById('bothFill');
+    const tableBoth = document.getElementById('tableBoth');
+    const tableATotal = document.getElementById('tableATotal');
+    const tableBTotal = document.getElementById('tableBTotal');
+    const aRowHead = document.getElementById('aRowHead');
+    const notARowHead = document.getElementById('notARowHead');
+    const bColumnHead = document.getElementById('bColumnHead');
+    const notBColumnHead = document.getElementById('notBColumnHead');
+    const focusText = document.getElementById('focusText');
+
+    const numeratorInput = document.getElementById('numeratorInput');
+    const denominatorInput = document.getElementById('denominatorInput');
+    const precisionInput = document.getElementById('precisionInput');
+    const baseInput = document.getElementById('baseInput');
+    const ratioOutput = document.getElementById('ratioOutput');
+    const liftOutput = document.getElementById('liftOutput');
+
+    function formatCount(value) {
+      return value.toLocaleString('ko-KR');
+    }
+
+    function formatPercent(value) {
+      return (value * 100).toFixed(1) + '%';
+    }
+
+    function setNarrowView(viewName) {
+      switchButtons.forEach((item) => item.classList.toggle('active', item.dataset.view === viewName));
+      panes.forEach((pane) => pane.classList.toggle('is-hidden', pane.dataset.pane !== viewName));
+    }
+
+    function syncResponsiveView() {
+      const isNarrow = window.matchMedia('(max-width: 900px)').matches;
+      if (!isNarrow) {
+        panes.forEach((pane) => pane.classList.remove('is-hidden'));
+        return;
+      }
+      const activeView = document.querySelector('.switcher button.active')?.dataset.view || 'worksheet';
+      setNarrowView(activeView);
+    }
+
+    function setBarWidth(element, value, denominator) {
+      const width = Math.max(4, Math.min(100, (value / denominator) * 100));
+      element.style.width = width + '%';
+    }
+
+    function renderRule() {
+      const rule = RULES[state.rule];
+      aLabel.textContent = rule.aName + ' 구매자';
+      bLabel.textContent = rule.bName + ' 구매자';
+      aCount.textContent = formatCount(rule.a);
+      bCount.textContent = formatCount(rule.b);
+      bothCount.textContent = formatCount(rule.both);
+
+      aBarLabel.textContent = rule.aName + ' 구매자';
+      bBarLabel.textContent = rule.bName + ' 구매자';
+      aFill.textContent = formatCount(rule.a);
+      bFill.textContent = formatCount(rule.b);
+      bothFill.textContent = formatCount(rule.both);
+      setBarWidth(aFill, rule.a, TOTAL);
+      setBarWidth(bFill, rule.b, TOTAL);
+      setBarWidth(bothFill, rule.both, TOTAL);
+
+      aRowHead.textContent = rule.aName + ' 구매';
+      notARowHead.textContent = rule.aName + ' 미구매';
+      bColumnHead.textContent = rule.bName + ' 구매';
+      notBColumnHead.textContent = rule.bName + ' 미구매';
+      tableBoth.textContent = formatCount(rule.both);
+      tableATotal.textContent = formatCount(rule.a);
+      tableBTotal.textContent = formatCount(rule.b);
+
+      ruleButtons.forEach((button) => {
+        button.classList.toggle('active', button.dataset.rule === state.rule);
+      });
+      applyFocus();
+    }
+
+    function clearFocusClasses() {
+      document.querySelectorAll('.matrix th, .matrix td').forEach((cell) => {
+        cell.classList.remove('numerator', 'denominator');
+      });
+    }
+
+    function applyFocus() {
+      const rule = RULES[state.rule];
+      clearFocusClasses();
+
+      if (state.focus === 'base') {
+        document.querySelector('.cell-b-total').classList.add('numerator');
+        document.querySelector('.cell-total').classList.add('denominator');
+        focusText.textContent = '기저율 P(B)의 분모는 전체 10,000건입니다. 추천 조건 A가 아직 붙지 않은 질문인지 확인하세요.';
+      } else if (state.focus === 'precision') {
+        document.querySelector('.cell-both').classList.add('numerator');
+        document.querySelector('.cell-a-total').classList.add('denominator');
+        focusText.textContent = '정밀도 P(B | A)의 분모는 ' + rule.aName + ' 구매자 전체입니다. 추천을 받은 집단 안에서 보는 비율입니다.';
+      } else if (state.focus === 'recall') {
+        document.querySelector('.cell-both').classList.add('numerator');
+        document.querySelector('.cell-b-total').classList.add('denominator');
+        focusText.textContent = '재현율 P(A | B)의 분모는 ' + rule.bName + ' 구매자 전체입니다. 실제 B 구매자 중 A 구매자였던 비율입니다.';
+      }
+
+      focusButtons.forEach((button) => {
+        button.classList.toggle('active', button.dataset.focus === state.focus);
+      });
+    }
+
+    function readNumber(input) {
+      if (input.value.trim() === '') {
+        return null;
+      }
+      return Number(input.value);
+    }
+
+    function normalizeRatioInput(value) {
+      if (value === null) {
+        return null;
+      }
+      if (value > 1 && value <= 100) {
+        return value / 100;
+      }
+      return value;
+    }
+
+    function setCalcMessage(outputElement, message, muted = false, asHtml = false) {
+      if (asHtml) {
+        outputElement.innerHTML = message;
+      } else {
+        outputElement.textContent = message;
+      }
+      outputElement.classList.toggle('muted', muted);
+    }
+
+    function renderFraction(numerator, denominator, ratio) {
+      return '<span class="fraction"><span class="top">' + formatCount(numerator) + '</span><span class="bottom">' + formatCount(denominator) + '</span></span> ≈ ' + formatPercent(ratio);
+    }
+
+    function calculateRatio() {
+      const numerator = readNumber(numeratorInput);
+      const denominator = readNumber(denominatorInput);
+
+      if (numerator === null || denominator === null) {
+        setCalcMessage(ratioOutput, '분자와 분모를 모두 입력하세요.', true);
+        return;
+      }
+
+      if (!Number.isFinite(numerator) || !Number.isFinite(denominator) || numerator < 0 || denominator < 0) {
+        setCalcMessage(ratioOutput, '0 이상의 수를 입력하세요.', true);
+        return;
+      }
+
+      if (denominator === 0) {
+        setCalcMessage(ratioOutput, '분모는 0이 될 수 없습니다.', true);
+        return;
+      }
+
+      const caution = numerator > denominator ? ' · 분자가 분모보다 큽니다. 선택한 분모를 다시 확인하세요.' : '';
+      setCalcMessage(ratioOutput, renderFraction(numerator, denominator, numerator / denominator) + caution, false, true);
+    }
+
+    function clearRatio() {
+      numeratorInput.value = '';
+      denominatorInput.value = '';
+      setCalcMessage(ratioOutput, '학습지에서 정한 분자와 분모를 입력하면 비율만 계산합니다.', true);
+    }
+
+    function calculateLift() {
+      const precision = normalizeRatioInput(readNumber(precisionInput));
+      const base = normalizeRatioInput(readNumber(baseInput));
+
+      if (precision === null || base === null) {
+        setCalcMessage(liftOutput, '두 비율을 모두 입력하세요.', true);
+        return;
+      }
+
+      if (!Number.isFinite(precision) || !Number.isFinite(base) || precision < 0 || base < 0) {
+        setCalcMessage(liftOutput, '0 이상의 비율을 입력하세요.', true);
+        return;
+      }
+
+      if (precision > 1 || base > 1) {
+        setCalcMessage(liftOutput, '비율은 0~1 또는 0~100 사이로 입력하세요.', true);
+        return;
+      }
+
+      const difference = precision - base;
+      const pointText = (difference * 100).toFixed(1) + '%p';
+      setCalcMessage(liftOutput, '차이: ' + difference.toFixed(3) + ' = ' + pointText, false);
+    }
+
+    function clearLift() {
+      precisionInput.value = '';
+      baseInput.value = '';
+      setCalcMessage(liftOutput, 'Q3에서 계산한 두 비율을 입력하면 차이만 계산합니다.', true);
+    }
+
+    switchButtons.forEach((button) => {
+      button.addEventListener('click', () => {
+        setNarrowView(button.dataset.view);
+      });
+    });
+
+    ruleButtons.forEach((button) => {
+      button.addEventListener('click', () => {
+        state.rule = button.dataset.rule;
+        renderRule();
+      });
+    });
+
+    focusButtons.forEach((button) => {
+      button.addEventListener('click', () => {
+        state.focus = button.dataset.focus;
+        applyFocus();
+      });
+    });
+
+    stageButtons.forEach((button) => {
+      button.addEventListener('click', () => {
+        stageButtons.forEach((item) => item.classList.toggle('active', item === button));
+        if (button.dataset.focus) {
+          state.focus = button.dataset.focus;
+          applyFocus();
+        }
+        const target = document.getElementById(button.dataset.jump);
+        if (target) {
+          target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      });
+    });
+
+    document.getElementById('calculateRatioButton').addEventListener('click', calculateRatio);
+    document.getElementById('clearRatioButton').addEventListener('click', clearRatio);
+    document.getElementById('calculateLiftButton').addEventListener('click', calculateLift);
+    document.getElementById('clearLiftButton').addEventListener('click', clearLift);
+
+    [numeratorInput, denominatorInput].forEach((input) => {
+      input.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter') {
+          calculateRatio();
+        }
+      });
+    });
+
+    [precisionInput, baseInput].forEach((input) => {
+      input.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter') {
+          calculateLift();
+        }
+      });
+    });
+
+    window.addEventListener('resize', syncResponsiveView);
+    syncResponsiveView();
+    renderRule();
+  </script>
+</body>
+</html>
