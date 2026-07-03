@@ -703,6 +703,8 @@
             <button class="preset-button active" type="button">07 직렬·병렬</button>
             <a class="preset-button" href="../school-facility/">08 학교시설</a>
             <a class="preset-button" href="../festival-booth/">09 축제부스</a>
+            <a class="preset-button" href="../rain-event/">10 우천행사</a>
+            <a class="preset-button" href="../survey-sample/">11 설문표본</a>
           </div>
 
           <div class="guide-strip">
@@ -1036,7 +1038,7 @@
       } catch (error) {
         saved = null;
       }
-      if (Number.isFinite(saved)) splitState.value = saved;
+      if (Number.isFinite(saved) && saved > 0) splitState.value = saved;
       setWorkspaceSplit(splitState.value, false);
     }
 
