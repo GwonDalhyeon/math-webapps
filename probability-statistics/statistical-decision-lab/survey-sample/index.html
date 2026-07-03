@@ -1,0 +1,1125 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="설문 표본 설계 학습지를 보조하는 오차폭, 표본 크기 효과 시각화 웹앱입니다." />
+  <title>11 설문표본 도구</title>
+  <link rel="stylesheet" href="../../../assets/common.css" />
+  <style>
+    :root {
+      --blue: #2563eb;
+      --blue-weak: #dbeafe;
+      --green: #047857;
+      --green-weak: #d1fae5;
+      --amber: #b45309;
+      --amber-weak: #fef3c7;
+      --rose: #be123c;
+      --rose-weak: #ffe4e6;
+      --slate: #334155;
+      --line: #dbe4ef;
+      --soft: #f8fafc;
+    }
+
+    body {
+      background: #f6f7fb;
+    }
+
+    .page {
+      max-width: none;
+      min-height: 100vh;
+      padding: 16px;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 16px;
+      max-width: 1440px;
+      margin: 0 auto 10px;
+    }
+
+    .topbar .back-link {
+      margin-bottom: 0;
+      white-space: nowrap;
+    }
+
+    .title-block h1 {
+      margin: 4px 0;
+      font-size: clamp(28px, 4vw, 40px);
+    }
+
+    .title-block p {
+      margin: 0;
+      color: #334155;
+      font-size: 16px;
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      min-height: 34px;
+      padding: 7px 12px;
+      border: 1px solid #bfdbfe;
+      border-radius: 999px;
+      background: #eff6ff;
+      color: #1d4ed8;
+      font-size: 14px;
+      font-weight: 850;
+      white-space: nowrap;
+    }
+
+    .switcher {
+      display: none;
+      max-width: 1440px;
+      margin: 0 auto 10px;
+      gap: 8px;
+    }
+
+    .switcher button {
+      flex: 1;
+      min-height: 42px;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      background: #fff;
+      color: #334155;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .switcher button.active {
+      border-color: #2563eb;
+      background: #dbeafe;
+      color: #1d4ed8;
+    }
+
+    .workspace {
+      --worksheet-ratio: 45%;
+      display: grid;
+      grid-template-columns: var(--worksheet-ratio) 12px minmax(420px, 1fr);
+      gap: 0;
+      max-width: 1440px;
+      height: calc(100vh - 152px);
+      min-height: 620px;
+      margin: 0 auto;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      overflow: hidden;
+      background: #fff;
+      box-shadow: 0 16px 42px rgba(15, 23, 42, 0.08);
+    }
+
+    .pane {
+      min-width: 0;
+      min-height: 0;
+      background: #fff;
+    }
+
+    .worksheet-pane {
+      display: flex;
+      flex-direction: column;
+      border-right: 1px solid var(--line);
+    }
+
+    .tool-pane {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+
+    .pane-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--line);
+      background: #f8fafc;
+    }
+
+    .pane-title {
+      margin: 0;
+      color: #0f172a;
+      font-size: 14px;
+      font-weight: 850;
+    }
+
+    .download-link {
+      display: inline-flex;
+      align-items: center;
+      min-height: 32px;
+      padding: 6px 10px;
+      border-radius: 8px;
+      background: #2563eb;
+      color: #fff;
+      font-size: 13px;
+      font-weight: 850;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+
+    .pdf-frame {
+      width: 100%;
+      flex: 1;
+      border: 0;
+      background: #eef2f7;
+    }
+
+    .splitter {
+      position: relative;
+      background: #e2e8f0;
+      cursor: col-resize;
+      touch-action: none;
+      outline: none;
+    }
+
+    .splitter::before {
+      content: "";
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 4px;
+      height: 54px;
+      border-radius: 999px;
+      background: #94a3b8;
+      transform: translate(-50%, -50%);
+    }
+
+    .splitter:hover,
+    .splitter:focus-visible,
+    .splitter.is-dragging {
+      background: #bfdbfe;
+    }
+
+    .splitter:hover::before,
+    .splitter:focus-visible::before,
+    .splitter.is-dragging::before {
+      background: #2563eb;
+    }
+
+    .is-resizing-layout .pdf-frame {
+      pointer-events: none;
+    }
+
+    .tool-body {
+      flex: 1;
+      min-height: 0;
+      overflow: auto;
+      padding: 14px;
+      background: #f8fafc;
+    }
+
+    .preset-row,
+    .stage-nav {
+      display: grid;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .preset-row {
+      grid-template-columns: repeat(auto-fit, minmax(112px, 1fr));
+    }
+
+    .stage-nav {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      position: sticky;
+      top: -14px;
+      z-index: 4;
+      padding: 8px 0 10px;
+      background: #f8fafc;
+    }
+
+    .preset-button,
+    .stage-btn,
+    .focus-btn,
+    .primary-btn,
+    .subtle-btn {
+      min-height: 40px;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      background: #fff;
+      color: #334155;
+      font-weight: 850;
+      cursor: pointer;
+      text-align: center;
+      text-decoration: none;
+    }
+
+    .preset-button {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 8px 10px;
+      font-size: 14px;
+    }
+
+    .preset-button.active,
+    .stage-btn.active,
+    .focus-btn.active {
+      border-color: #2563eb;
+      background: #dbeafe;
+      color: #1d4ed8;
+    }
+
+    .guide-strip,
+    .section {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+    }
+
+    .guide-strip {
+      display: grid;
+      gap: 6px;
+      margin-bottom: 10px;
+      padding: 10px 12px;
+    }
+
+    .guide-note,
+    .calc-note {
+      margin: 0;
+      color: #475569;
+      font-size: 14px;
+      line-height: 1.55;
+    }
+
+    .section {
+      margin-bottom: 12px;
+      padding: 12px;
+    }
+
+    .section-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .section-title {
+      margin: 0;
+      color: #0f172a;
+      font-size: 18px;
+    }
+
+    .tiny-label {
+      display: inline-flex;
+      align-items: center;
+      min-height: 28px;
+      padding: 4px 8px;
+      border-radius: 999px;
+      background: #f1f5f9;
+      color: #475569;
+      font-size: 12px;
+      font-weight: 850;
+      white-space: nowrap;
+    }
+
+    .data-grid,
+    .input-pair,
+    .readout-grid {
+      display: grid;
+      gap: 8px;
+    }
+
+    .data-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      margin-bottom: 10px;
+    }
+
+    .data-chip,
+    .readout-card {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #f8fafc;
+      padding: 10px;
+    }
+
+    .data-chip span,
+    .readout-card span {
+      display: block;
+      color: #64748b;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .data-chip strong,
+    .readout-card strong {
+      display: block;
+      margin-top: 4px;
+      color: #0f172a;
+      font-size: 18px;
+      line-height: 1.2;
+    }
+
+    .readout-card.margin { background: var(--blue-weak); border-color: #bfdbfe; }
+    .readout-card.time { background: var(--amber-weak); border-color: #fde68a; }
+
+    .strategy-row {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .focus-btn {
+      padding: 8px 10px;
+    }
+
+    .control-row {
+      display: grid;
+      gap: 6px;
+      margin-bottom: 10px;
+    }
+
+    .control-row label {
+      color: #334155;
+      font-size: 13px;
+      font-weight: 850;
+    }
+
+    .control-line {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .control-line input[type="range"] {
+      flex: 1;
+      height: 30px;
+      accent-color: #2563eb;
+    }
+
+    .control-line .value-tag {
+      min-width: 70px;
+      text-align: right;
+      color: #1d4ed8;
+      font-size: 16px;
+      font-weight: 850;
+    }
+
+    .band-wrap {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      padding: 14px 12px 10px;
+    }
+
+    .band-track {
+      position: relative;
+      height: 46px;
+      border-radius: 8px;
+      background: #eef2f7;
+      overflow: hidden;
+    }
+
+    .band-fill {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      background: #bfdbfe;
+      border-left: 2px solid #2563eb;
+      border-right: 2px solid #2563eb;
+      transition: left 160ms ease, width 160ms ease;
+    }
+
+    .band-center {
+      position: absolute;
+      top: -3px;
+      bottom: -3px;
+      left: 50%;
+      width: 2px;
+      background: #1d4ed8;
+      transform: translateX(-50%);
+    }
+
+    .band-axis {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 6px;
+      color: #64748b;
+      font-size: 11px;
+      font-weight: 750;
+    }
+
+    .band-caption {
+      margin: 8px 0 0;
+      text-align: center;
+      color: #1d4ed8;
+      font-size: 15px;
+      font-weight: 850;
+    }
+
+    .readout-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      margin: 10px 0;
+    }
+
+    .status-panel {
+      margin: 0;
+      padding: 10px 12px;
+      border-radius: 8px;
+      background: #f8fafc;
+      color: #334155;
+      font-size: 15px;
+      line-height: 1.55;
+    }
+
+    .calculator {
+      display: grid;
+      gap: 10px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #f8fafc;
+      padding: 12px;
+    }
+
+    .input-pair {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .calc-field {
+      display: grid;
+      gap: 6px;
+      color: #334155;
+      font-size: 13px;
+      font-weight: 850;
+    }
+
+    .calc-field input {
+      width: 100%;
+      min-height: 42px;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      padding: 8px 10px;
+      color: #0f172a;
+      font: inherit;
+      background: #fff;
+      box-sizing: border-box;
+    }
+
+    .calc-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .primary-btn {
+      padding: 8px 14px;
+      border-color: #2563eb;
+      background: #2563eb;
+      color: #fff;
+    }
+
+    .subtle-btn {
+      padding: 8px 14px;
+      background: #fff;
+    }
+
+    .calc-output {
+      margin: 0;
+      min-height: 42px;
+      border-radius: 8px;
+      background: #fff;
+      padding: 10px 12px;
+      color: #0f172a;
+      font-size: 15px;
+      font-weight: 850;
+      line-height: 1.45;
+    }
+
+    .calc-output.muted {
+      color: #64748b;
+      font-weight: 700;
+    }
+
+    .check-list {
+      margin: 10px 0 0;
+      padding-left: 20px;
+      color: #334155;
+      line-height: 1.55;
+      font-size: 14px;
+    }
+
+    .check-list li + li {
+      margin-top: 6px;
+    }
+
+    @media (max-width: 960px) {
+      .page {
+        padding: 14px;
+      }
+
+      .topbar {
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .switcher {
+        display: flex;
+      }
+
+      .workspace {
+        display: block;
+        height: calc(100vh - 210px);
+        min-height: 760px;
+      }
+
+      .splitter {
+        display: none;
+      }
+
+      .worksheet-pane,
+      .tool-pane {
+        height: 100%;
+        border-right: 0;
+      }
+
+      .tool-body {
+        height: calc(100% - 53px);
+      }
+
+      .pane.is-hidden {
+        display: none;
+      }
+
+      .preset-row,
+      .stage-nav,
+      .data-grid,
+      .strategy-row,
+      .readout-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 680px) {
+      .preset-row,
+      .stage-nav,
+      .data-grid,
+      .strategy-row,
+      .input-pair,
+      .readout-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <div class="topbar">
+      <div>
+        <a class="back-link" href="../">← 통계적 의사결정 도우미</a>
+        <header class="title-block">
+          <p class="eyebrow">Probability & Statistics · Decision Support</p>
+          <h1>설문표본 도구</h1>
+          <p>설문 표본 설계 학습지를 보면서 표본 크기에 따른 오차폭 변화와 소요 시간을 함께 확인합니다.</p>
+        </header>
+      </div>
+      <span class="status-pill">11 설문표본</span>
+    </div>
+
+    <div class="switcher" aria-label="좁은 화면 보기 전환">
+      <button class="active" type="button" data-view="worksheet">학습지 보기</button>
+      <button type="button" data-view="tool">도구 보기</button>
+    </div>
+
+    <section class="workspace">
+      <article class="pane worksheet-pane" data-pane="worksheet">
+        <div class="pane-head">
+          <p class="pane-title">11 설문표본 · 학생용 PDF</p>
+          <a class="download-link" href="./survey-sample-student.pdf" download>PDF 다운로드</a>
+        </div>
+        <object class="pdf-frame" data="./survey-sample-student.pdf" type="application/pdf" aria-label="설문표본 학생용 학습지 PDF">
+          <p class="guide-note">PDF가 보이지 않으면 위의 PDF 다운로드를 눌러 학습지를 여세요.</p>
+        </object>
+      </article>
+
+      <div class="splitter" role="separator" tabindex="0" aria-label="학습지와 도구 영역 크기 조절" aria-orientation="vertical" aria-valuemin="32" aria-valuemax="62" aria-valuenow="45" title="드래그해서 학습지와 도구의 폭을 조절합니다."></div>
+
+      <article class="pane tool-pane" data-pane="tool">
+        <div class="pane-head">
+          <p class="pane-title">오차폭·표본 크기 확인 도구</p>
+        </div>
+
+        <div class="tool-body">
+          <div class="preset-row">
+            <a class="preset-button" href="../product-recommendation/">01 상품추천</a>
+            <a class="preset-button" href="../space-communication/">02 우주통신</a>
+            <a class="preset-button" href="../event-preparation/">03 행사준비</a>
+            <a class="preset-button" href="../sensor-alarm/">04 센서 경보</a>
+            <a class="preset-button" href="../ab-test/">05 A/B 실험</a>
+            <a class="preset-button" href="../defect-sampling/">06 불량품검사</a>
+            <a class="preset-button" href="../reliability-system/">07 직렬·병렬</a>
+            <a class="preset-button" href="../school-facility/">08 학교시설</a>
+            <a class="preset-button" href="../festival-booth/">09 축제부스</a>
+            <a class="preset-button" href="../rain-event/">10 우천행사</a>
+            <button class="preset-button active" type="button">11 설문표본</button>
+          </div>
+
+          <div class="guide-strip">
+            <p class="guide-note">학습지 [시작 전] 예상을 먼저 적고, Q1 오차폭은 학습지에 직접 계산해 채우세요.</p>
+            <p class="guide-note">이 도구는 오차폭 변화와 입력값 확인만 돕습니다. 표본 규모 선택과 보고서는 학습지에 직접 작성하세요.</p>
+          </div>
+
+          <nav class="stage-nav" aria-label="11 설문표본 학습 흐름">
+            <button class="stage-btn active" type="button" data-jump="stage-band">Q1~Q3</button>
+            <button class="stage-btn" type="button" data-jump="stage-margin">Q1·Q6</button>
+            <button class="stage-btn" type="button" data-jump="stage-phat">Q5</button>
+            <button class="stage-btn" type="button" data-jump="stage-checks">Q7·Q8</button>
+          </nav>
+
+          <section class="section" id="stage-band" aria-labelledby="band-title">
+            <div class="section-head">
+              <h2 class="section-title" id="band-title">표본 크기와 오차폭</h2>
+              <span class="tiny-label">Q1~Q3 참고</span>
+            </div>
+
+            <div class="strategy-row" aria-label="표본 규모 선택">
+              <button class="focus-btn active" type="button" data-size="100">가 · 100명</button>
+              <button class="focus-btn" type="button" data-size="400">나 · 400명</button>
+              <button class="focus-btn" type="button" data-size="1600">다 · 1600명</button>
+            </div>
+
+            <div class="control-row">
+              <label for="sizeSlider">표본 크기 n</label>
+              <div class="control-line">
+                <input id="sizeSlider" type="range" min="25" max="2500" step="25" value="100" aria-label="표본 크기" />
+                <span class="value-tag" id="sizeValue">100명</span>
+              </div>
+            </div>
+
+            <div class="band-wrap">
+              <div class="band-track" aria-label="찬성률 50% 기준 오차폭 구간 그림">
+                <div class="band-fill" id="bandFill"></div>
+                <div class="band-center"></div>
+              </div>
+              <div class="band-axis">
+                <span>0%</span><span>50%</span><span>100%</span>
+              </div>
+              <p class="band-caption" id="bandCaption">표본비율 50% ± 10.0%p</p>
+            </div>
+
+            <div class="readout-grid">
+              <div class="readout-card margin">
+                <span>오차폭 (1/√n)</span>
+                <strong id="marginValue">±10.0%p</strong>
+              </div>
+              <div class="readout-card time">
+                <span>조사 소요 시간 (1명당 1분)</span>
+                <strong id="timeValue">100분</strong>
+              </div>
+            </div>
+            <p class="status-panel" id="bandStatus">표본을 키우면 오차폭이 좁아집니다. 정확한 수치는 학습지 Q1 표에 직접 채우세요.</p>
+          </section>
+
+          <section class="section" id="stage-margin" aria-labelledby="margin-title">
+            <div class="section-head">
+              <h2 class="section-title" id="margin-title">오차폭·표본 크기 계산 확인</h2>
+              <span class="tiny-label">Q1·Q6 입력형</span>
+            </div>
+            <div class="calculator">
+              <div class="section-head">
+                <h3 class="section-title">표본 크기 → 오차폭</h3>
+                <span class="tiny-label">Q1</span>
+              </div>
+              <label class="calc-field" for="marginNInput">
+                표본 크기 n
+                <input id="marginNInput" type="number" inputmode="numeric" min="1" step="1" placeholder="학습지 값 입력" />
+              </label>
+              <div class="calc-actions">
+                <button class="primary-btn" type="button" id="calcMarginButton">오차폭 확인</button>
+                <button class="subtle-btn" type="button" id="clearMarginButton">지우기</button>
+              </div>
+              <p class="calc-output muted" id="marginOutput" aria-live="polite">n을 입력하면 1/√n 오차폭만 계산합니다.</p>
+            </div>
+
+            <div class="calculator">
+              <div class="section-head">
+                <h3 class="section-title">목표 오차폭 → 필요한 표본 크기</h3>
+                <span class="tiny-label">Q6</span>
+              </div>
+              <label class="calc-field" for="targetMarginInput">
+                목표 오차폭 (±%p 또는 소수)
+                <input id="targetMarginInput" type="number" inputmode="decimal" min="0" step="any" placeholder="예: 3 또는 0.03" />
+              </label>
+              <div class="calc-actions">
+                <button class="primary-btn" type="button" id="calcSizeButton">필요한 n 확인</button>
+                <button class="subtle-btn" type="button" id="clearSizeButton">지우기</button>
+              </div>
+              <p class="calc-output muted" id="sizeOutput" aria-live="polite">목표 오차폭을 입력하면 필요한 최소 표본 크기만 계산합니다.</p>
+            </div>
+          </section>
+
+          <section class="section" id="stage-phat" aria-labelledby="phat-title">
+            <div class="section-head">
+              <h2 class="section-title" id="phat-title">찬성률에 따른 오차폭</h2>
+              <span class="tiny-label">Q5 입력형</span>
+            </div>
+            <div class="calculator">
+              <p class="calc-note">정확한 오차폭은 2√(p̂(1-p̂)/n)입니다. 찬성률이 한쪽으로 쏠릴수록 오차폭이 줄어듭니다.</p>
+              <div class="input-pair">
+                <label class="calc-field" for="phatInput">
+                  찬성률 p̂
+                  <input id="phatInput" type="number" inputmode="decimal" min="0" max="1" step="any" placeholder="소수 또는 %" />
+                </label>
+                <label class="calc-field" for="phatNInput">
+                  표본 크기 n
+                  <input id="phatNInput" type="number" inputmode="numeric" min="1" step="1" placeholder="학습지 값 입력" />
+                </label>
+              </div>
+              <div class="calc-actions">
+                <button class="primary-btn" type="button" id="calcPhatButton">오차폭 확인</button>
+                <button class="subtle-btn" type="button" id="clearPhatButton">지우기</button>
+              </div>
+              <p class="calc-output muted" id="phatOutput" aria-live="polite">p̂과 n을 입력하면 2√(p̂(1-p̂)/n) 오차폭만 계산합니다.</p>
+            </div>
+          </section>
+
+          <section class="section" id="stage-checks" aria-labelledby="checks-title">
+            <div class="section-head">
+              <h2 class="section-title" id="checks-title">판단·점검</h2>
+              <span class="tiny-label">Q4·Q7·Q8 참고</span>
+            </div>
+            <ul class="check-list">
+              <li>Q4: 표본 규모(가·나·다) 선택과 근거는 웹앱이 아니라 학습지에 직접 쓰세요.</li>
+              <li>Q7: 오차폭 식 1/√n에 모집단 크기 N이 없다는 점과, 그것이 성립하려면 필요한 전제(무작위 추출·신뢰 수준)를 학습지에 쓰세요.</li>
+              <li>Q8: AI 요약의 문장을 오차폭의 √n 관계, 모집단 크기 무관, 신뢰 수준(95%)의 뜻으로 나누어 점검하고, 반박은 학습지에 직접 작성하세요.</li>
+            </ul>
+          </section>
+        </div>
+      </article>
+    </section>
+  </main>
+
+  <script>
+    const switchButtons = document.querySelectorAll('.switcher button');
+    const workspace = document.querySelector('.workspace');
+    const splitter = document.querySelector('.splitter');
+    const panes = document.querySelectorAll('[data-pane]');
+    const stageButtons = document.querySelectorAll('.stage-btn');
+    const sizeButtons = document.querySelectorAll('[data-size]');
+
+    const sizeSlider = document.getElementById('sizeSlider');
+    const sizeValue = document.getElementById('sizeValue');
+    const bandFill = document.getElementById('bandFill');
+    const bandCaption = document.getElementById('bandCaption');
+    const marginValue = document.getElementById('marginValue');
+    const timeValue = document.getElementById('timeValue');
+    const bandStatus = document.getElementById('bandStatus');
+    const marginOutput = document.getElementById('marginOutput');
+    const sizeOutput = document.getElementById('sizeOutput');
+    const phatOutput = document.getElementById('phatOutput');
+
+    const state = {
+      n: 100,
+    };
+
+    const splitState = {
+      value: 45,
+      dragging: false,
+      storageKey: 'survey-sample-worksheet-ratio',
+    };
+
+    function formatNumber(value, digits = 3) {
+      return value.toLocaleString('ko-KR', { maximumFractionDigits: digits });
+    }
+
+    function formatPercentPoint(value) {
+      return '±' + (value * 100).toFixed(1) + '%p';
+    }
+
+    function normalizeMarginInput(value) {
+      // 3 처럼 1보다 크면 %p로 보고 소수로 환산한다. 0.03 처럼 작으면 그대로 둔다.
+      if (value > 1) {
+        return value / 100;
+      }
+      return value;
+    }
+
+    function normalizeRatioInput(value) {
+      if (value > 1 && value <= 100) {
+        return value / 100;
+      }
+      return value;
+    }
+
+    function readNumber(id) {
+      const input = document.getElementById(id);
+      if (input.value.trim() === '') {
+        return null;
+      }
+      return Number(input.value);
+    }
+
+    function setMessage(element, message, muted = false) {
+      element.textContent = message;
+      element.classList.toggle('muted', muted);
+    }
+
+    function conservativeMargin(n) {
+      return 1 / Math.sqrt(n);
+    }
+
+    function renderBand() {
+      const margin = conservativeMargin(state.n); // 소수 (예: 0.1)
+      const halfPercent = Math.min(50, margin * 100); // 화면 폭 제한
+      const left = 50 - halfPercent;
+      const width = halfPercent * 2;
+      bandFill.style.left = left + '%';
+      bandFill.style.width = width + '%';
+
+      bandCaption.textContent = '표본비율 50% ± ' + (margin * 100).toFixed(1) + '%p';
+      marginValue.textContent = formatPercentPoint(margin);
+      timeValue.textContent = state.n.toLocaleString('ko-KR') + '분';
+      sizeValue.textContent = state.n.toLocaleString('ko-KR') + '명';
+      bandStatus.textContent = '표본 ' + state.n.toLocaleString('ko-KR') + '명일 때 오차폭은 약 ' + formatPercentPoint(margin) + '입니다. 표본을 키우면 오차폭이 좁아집니다. 정확한 수치는 학습지 Q1 표에 직접 채우세요.';
+
+      sizeButtons.forEach((button) => {
+        button.classList.toggle('active', Number(button.dataset.size) === state.n);
+      });
+    }
+
+    function setNarrowView(viewName) {
+      switchButtons.forEach((item) => item.classList.toggle('active', item.dataset.view === viewName));
+      panes.forEach((pane) => pane.classList.toggle('is-hidden', pane.dataset.pane !== viewName));
+    }
+
+    function getSplitBounds() {
+      const width = workspace?.getBoundingClientRect().width || 1180;
+      const splitterWidth = splitter?.getBoundingClientRect().width || 12;
+      const minLeft = 360;
+      const minRight = 420;
+      const min = Math.max(32, (minLeft / width) * 100);
+      const max = Math.min(64, ((width - splitterWidth - minRight) / width) * 100);
+      return {
+        min: Math.min(min, 45),
+        max: Math.max(max, 45),
+      };
+    }
+
+    function setWorkspaceSplit(value, persist = true) {
+      const bounds = getSplitBounds();
+      const clamped = Math.min(bounds.max, Math.max(bounds.min, value));
+      splitState.value = clamped;
+      workspace.style.setProperty('--worksheet-ratio', clamped.toFixed(2) + '%');
+      splitter.setAttribute('aria-valuemin', String(Math.round(bounds.min)));
+      splitter.setAttribute('aria-valuemax', String(Math.round(bounds.max)));
+      splitter.setAttribute('aria-valuenow', String(Math.round(clamped)));
+
+      if (persist) {
+        try {
+          window.localStorage.setItem(splitState.storageKey, clamped.toFixed(2));
+        } catch (error) {
+          // 저장이 막힌 환경에서도 폭 조절 자체는 유지한다.
+        }
+      }
+    }
+
+    function setWorkspaceSplitFromClientX(clientX, persist = false) {
+      const rect = workspace.getBoundingClientRect();
+      const ratio = ((clientX - rect.left) / rect.width) * 100;
+      setWorkspaceSplit(ratio, persist);
+    }
+
+    function loadWorkspaceSplit() {
+      let saved = null;
+      try {
+        saved = Number(window.localStorage.getItem(splitState.storageKey));
+      } catch (error) {
+        saved = null;
+      }
+      if (Number.isFinite(saved) && saved > 0) {
+        splitState.value = saved;
+      }
+      setWorkspaceSplit(splitState.value, false);
+    }
+
+    function isNarrowLayout() {
+      return window.matchMedia('(max-width: 960px)').matches;
+    }
+
+    function syncResponsiveView() {
+      if (!isNarrowLayout()) {
+        panes.forEach((pane) => pane.classList.remove('is-hidden'));
+        setWorkspaceSplit(splitState.value, false);
+        return;
+      }
+      const activeView = document.querySelector('.switcher button.active')?.dataset.view || 'worksheet';
+      setNarrowView(activeView);
+    }
+
+    function calculateMargin() {
+      const n = readNumber('marginNInput');
+      if (n === null) {
+        setMessage(marginOutput, '표본 크기 n을 입력하세요.', true);
+        return;
+      }
+      if (!Number.isFinite(n) || !Number.isInteger(n) || n <= 0) {
+        setMessage(marginOutput, 'n은 양의 정수로 입력하세요.', true);
+        return;
+      }
+      const margin = conservativeMargin(n);
+      setMessage(marginOutput, '1 / √' + n.toLocaleString('ko-KR') + ' = ' + formatNumber(margin, 4) + ' → ' + formatPercentPoint(margin), false);
+    }
+
+    function clearMargin() {
+      document.getElementById('marginNInput').value = '';
+      setMessage(marginOutput, 'n을 입력하면 1/√n 오차폭만 계산합니다.', true);
+    }
+
+    function calculateSize() {
+      const raw = readNumber('targetMarginInput');
+      if (raw === null) {
+        setMessage(sizeOutput, '목표 오차폭을 입력하세요.', true);
+        return;
+      }
+      const margin = normalizeMarginInput(raw);
+      if (!Number.isFinite(margin) || margin <= 0 || margin >= 1) {
+        setMessage(sizeOutput, '목표 오차폭은 0과 1 사이(또는 0~100%p)로 입력하세요.', true);
+        return;
+      }
+      const n = Math.ceil(1 / (margin * margin));
+      setMessage(sizeOutput, '1/√n ≤ ' + formatNumber(margin, 4) + ' → n ≥ 1 / ' + formatNumber(margin, 4) + '² = ' + n.toLocaleString('ko-KR') + '명 이상', false);
+    }
+
+    function clearSize() {
+      document.getElementById('targetMarginInput').value = '';
+      setMessage(sizeOutput, '목표 오차폭을 입력하면 필요한 최소 표본 크기만 계산합니다.', true);
+    }
+
+    function calculatePhat() {
+      const rawP = readNumber('phatInput');
+      const n = readNumber('phatNInput');
+      if (rawP === null || n === null) {
+        setMessage(phatOutput, 'p̂과 n을 모두 입력하세요.', true);
+        return;
+      }
+      const p = normalizeRatioInput(rawP);
+      if (!Number.isFinite(p) || p < 0 || p > 1 || !Number.isFinite(n) || !Number.isInteger(n) || n <= 0) {
+        setMessage(phatOutput, 'p̂은 0~1(또는 0~100%), n은 양의 정수로 입력하세요.', true);
+        return;
+      }
+      const margin = 2 * Math.sqrt(p * (1 - p) / n);
+      setMessage(phatOutput, '2√(' + formatNumber(p) + ' × ' + formatNumber(1 - p) + ' / ' + n.toLocaleString('ko-KR') + ') = ' + formatNumber(margin, 4) + ' → ' + formatPercentPoint(margin), false);
+    }
+
+    function clearPhat() {
+      ['phatInput', 'phatNInput'].forEach((id) => {
+        document.getElementById(id).value = '';
+      });
+      setMessage(phatOutput, 'p̂과 n을 입력하면 2√(p̂(1-p̂)/n) 오차폭만 계산합니다.', true);
+    }
+
+    sizeSlider.addEventListener('input', () => {
+      state.n = Number(sizeSlider.value);
+      renderBand();
+    });
+
+    sizeButtons.forEach((button) => {
+      button.addEventListener('click', () => {
+        state.n = Number(button.dataset.size);
+        sizeSlider.value = String(state.n);
+        renderBand();
+      });
+    });
+
+    switchButtons.forEach((button) => {
+      button.addEventListener('click', () => {
+        setNarrowView(button.dataset.view);
+      });
+    });
+
+    splitter.addEventListener('pointerdown', (event) => {
+      if (isNarrowLayout()) {
+        return;
+      }
+      splitState.dragging = true;
+      splitter.classList.add('is-dragging');
+      document.body.classList.add('is-resizing-layout');
+      splitter.setPointerCapture(event.pointerId);
+      setWorkspaceSplitFromClientX(event.clientX, false);
+      event.preventDefault();
+    });
+
+    splitter.addEventListener('pointermove', (event) => {
+      if (!splitState.dragging) {
+        return;
+      }
+      setWorkspaceSplitFromClientX(event.clientX, false);
+    });
+
+    function stopSplitterDrag(event) {
+      if (!splitState.dragging) {
+        return;
+      }
+      splitState.dragging = false;
+      splitter.classList.remove('is-dragging');
+      document.body.classList.remove('is-resizing-layout');
+      if (event && splitter.hasPointerCapture(event.pointerId)) {
+        splitter.releasePointerCapture(event.pointerId);
+      }
+      setWorkspaceSplit(splitState.value, true);
+    }
+
+    splitter.addEventListener('pointerup', stopSplitterDrag);
+    splitter.addEventListener('pointercancel', stopSplitterDrag);
+    splitter.addEventListener('dblclick', () => {
+      setWorkspaceSplit(45, true);
+    });
+
+    splitter.addEventListener('keydown', (event) => {
+      if (isNarrowLayout()) {
+        return;
+      }
+      const bounds = getSplitBounds();
+      if (event.key === 'ArrowLeft') {
+        setWorkspaceSplit(splitState.value - 3, true);
+      } else if (event.key === 'ArrowRight') {
+        setWorkspaceSplit(splitState.value + 3, true);
+      } else if (event.key === 'Home') {
+        setWorkspaceSplit(bounds.min, true);
+      } else if (event.key === 'End') {
+        setWorkspaceSplit(bounds.max, true);
+      } else {
+        return;
+      }
+      event.preventDefault();
+    });
+
+    stageButtons.forEach((button) => {
+      button.addEventListener('click', () => {
+        stageButtons.forEach((item) => item.classList.toggle('active', item === button));
+        const target = document.getElementById(button.dataset.jump);
+        if (target) {
+          target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      });
+    });
+
+    document.getElementById('calcMarginButton').addEventListener('click', calculateMargin);
+    document.getElementById('clearMarginButton').addEventListener('click', clearMargin);
+    document.getElementById('calcSizeButton').addEventListener('click', calculateSize);
+    document.getElementById('clearSizeButton').addEventListener('click', clearSize);
+    document.getElementById('calcPhatButton').addEventListener('click', calculatePhat);
+    document.getElementById('clearPhatButton').addEventListener('click', clearPhat);
+
+    document.getElementById('marginNInput').addEventListener('keydown', (event) => {
+      if (event.key === 'Enter') calculateMargin();
+    });
+    document.getElementById('targetMarginInput').addEventListener('keydown', (event) => {
+      if (event.key === 'Enter') calculateSize();
+    });
+    ['phatInput', 'phatNInput'].forEach((id) => {
+      document.getElementById(id).addEventListener('keydown', (event) => {
+        if (event.key === 'Enter') calculatePhat();
+      });
+    });
+
+    window.addEventListener('resize', syncResponsiveView);
+    loadWorkspaceSplit();
+    syncResponsiveView();
+    renderBand();
+  </script>
+</body>
+</html>

@@ -1,0 +1,1170 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="우천 행사 운영 학습지를 보조하는 기대손실, 임계 강수확률 비교 시각화 웹앱입니다." />
+  <title>10 우천행사 도구</title>
+  <link rel="stylesheet" href="../../../assets/common.css" />
+  <style>
+    :root {
+      --blue: #2563eb;
+      --blue-weak: #dbeafe;
+      --green: #047857;
+      --green-weak: #d1fae5;
+      --amber: #b45309;
+      --amber-weak: #fef3c7;
+      --rose: #be123c;
+      --rose-weak: #ffe4e6;
+      --slate: #334155;
+      --line: #dbe4ef;
+      --soft: #f8fafc;
+    }
+
+    body {
+      background: #f6f7fb;
+    }
+
+    .page {
+      max-width: none;
+      min-height: 100vh;
+      padding: 16px;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 16px;
+      max-width: 1440px;
+      margin: 0 auto 10px;
+    }
+
+    .topbar .back-link {
+      margin-bottom: 0;
+      white-space: nowrap;
+    }
+
+    .title-block h1 {
+      margin: 4px 0;
+      font-size: clamp(28px, 4vw, 40px);
+    }
+
+    .title-block p {
+      margin: 0;
+      color: #334155;
+      font-size: 16px;
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      min-height: 34px;
+      padding: 7px 12px;
+      border: 1px solid #bfdbfe;
+      border-radius: 999px;
+      background: #eff6ff;
+      color: #1d4ed8;
+      font-size: 14px;
+      font-weight: 850;
+      white-space: nowrap;
+    }
+
+    .switcher {
+      display: none;
+      max-width: 1440px;
+      margin: 0 auto 10px;
+      gap: 8px;
+    }
+
+    .switcher button {
+      flex: 1;
+      min-height: 42px;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      background: #fff;
+      color: #334155;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .switcher button.active {
+      border-color: #2563eb;
+      background: #dbeafe;
+      color: #1d4ed8;
+    }
+
+    .workspace {
+      --worksheet-ratio: 45%;
+      display: grid;
+      grid-template-columns: var(--worksheet-ratio) 12px minmax(420px, 1fr);
+      gap: 0;
+      max-width: 1440px;
+      height: calc(100vh - 152px);
+      min-height: 620px;
+      margin: 0 auto;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      overflow: hidden;
+      background: #fff;
+      box-shadow: 0 16px 42px rgba(15, 23, 42, 0.08);
+    }
+
+    .pane {
+      min-width: 0;
+      min-height: 0;
+      background: #fff;
+    }
+
+    .worksheet-pane {
+      display: flex;
+      flex-direction: column;
+      border-right: 1px solid var(--line);
+    }
+
+    .tool-pane {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+
+    .pane-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--line);
+      background: #f8fafc;
+    }
+
+    .pane-title {
+      margin: 0;
+      color: #0f172a;
+      font-size: 14px;
+      font-weight: 850;
+    }
+
+    .download-link {
+      display: inline-flex;
+      align-items: center;
+      min-height: 32px;
+      padding: 6px 10px;
+      border-radius: 8px;
+      background: #2563eb;
+      color: #fff;
+      font-size: 13px;
+      font-weight: 850;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+
+    .pdf-frame {
+      width: 100%;
+      flex: 1;
+      border: 0;
+      background: #eef2f7;
+    }
+
+    .splitter {
+      position: relative;
+      background: #e2e8f0;
+      cursor: col-resize;
+      touch-action: none;
+      outline: none;
+    }
+
+    .splitter::before {
+      content: "";
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 4px;
+      height: 54px;
+      border-radius: 999px;
+      background: #94a3b8;
+      transform: translate(-50%, -50%);
+    }
+
+    .splitter:hover,
+    .splitter:focus-visible,
+    .splitter.is-dragging {
+      background: #bfdbfe;
+    }
+
+    .splitter:hover::before,
+    .splitter:focus-visible::before,
+    .splitter.is-dragging::before {
+      background: #2563eb;
+    }
+
+    .is-resizing-layout .pdf-frame {
+      pointer-events: none;
+    }
+
+    .tool-body {
+      flex: 1;
+      min-height: 0;
+      overflow: auto;
+      padding: 14px;
+      background: #f8fafc;
+    }
+
+    .preset-row,
+    .stage-nav {
+      display: grid;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .preset-row {
+      grid-template-columns: repeat(auto-fit, minmax(112px, 1fr));
+    }
+
+    .stage-nav {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      position: sticky;
+      top: -14px;
+      z-index: 4;
+      padding: 8px 0 10px;
+      background: #f8fafc;
+    }
+
+    .preset-button,
+    .stage-btn,
+    .focus-btn,
+    .primary-btn,
+    .subtle-btn {
+      min-height: 40px;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      background: #fff;
+      color: #334155;
+      font-weight: 850;
+      cursor: pointer;
+      text-align: center;
+      text-decoration: none;
+    }
+
+    .preset-button {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 8px 10px;
+      font-size: 14px;
+    }
+
+    .preset-button.active,
+    .stage-btn.active,
+    .focus-btn.active {
+      border-color: #2563eb;
+      background: #dbeafe;
+      color: #1d4ed8;
+    }
+
+    .guide-strip,
+    .section {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+    }
+
+    .guide-strip {
+      display: grid;
+      gap: 6px;
+      margin-bottom: 10px;
+      padding: 10px 12px;
+    }
+
+    .guide-note,
+    .calc-note {
+      margin: 0;
+      color: #475569;
+      font-size: 14px;
+      line-height: 1.55;
+    }
+
+    .section {
+      margin-bottom: 12px;
+      padding: 12px;
+    }
+
+    .section-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .section-title {
+      margin: 0;
+      color: #0f172a;
+      font-size: 18px;
+    }
+
+    .tiny-label {
+      display: inline-flex;
+      align-items: center;
+      min-height: 28px;
+      padding: 4px 8px;
+      border-radius: 999px;
+      background: #f1f5f9;
+      color: #475569;
+      font-size: 12px;
+      font-weight: 850;
+      white-space: nowrap;
+    }
+
+    .data-grid,
+    .input-pair,
+    .readout-grid {
+      display: grid;
+      gap: 8px;
+    }
+
+    .data-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      margin-bottom: 10px;
+    }
+
+    .data-chip,
+    .readout-card {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #f8fafc;
+      padding: 10px;
+    }
+
+    .data-chip span,
+    .readout-card span {
+      display: block;
+      color: #64748b;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .data-chip strong,
+    .readout-card strong {
+      display: block;
+      margin-top: 4px;
+      color: #0f172a;
+      font-size: 18px;
+      line-height: 1.2;
+    }
+
+    .readout-card.outdoor { background: var(--blue-weak); border-color: #bfdbfe; }
+    .readout-card.indoor { background: var(--green-weak); border-color: #a7f3d0; }
+    .readout-card.delay { background: var(--amber-weak); border-color: #fde68a; }
+    .readout-card.threshold { background: var(--rose-weak); border-color: #fecdd3; }
+
+    .control-row {
+      display: grid;
+      gap: 6px;
+      margin-bottom: 10px;
+    }
+
+    .control-row label {
+      color: #334155;
+      font-size: 13px;
+      font-weight: 850;
+    }
+
+    .control-line {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .control-line input[type="range"] {
+      flex: 1;
+      height: 30px;
+      accent-color: #2563eb;
+    }
+
+    .control-line .value-tag {
+      min-width: 58px;
+      text-align: right;
+      color: #1d4ed8;
+      font-size: 16px;
+      font-weight: 850;
+    }
+
+    .number-input {
+      min-height: 40px;
+      width: 110px;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      padding: 6px 10px;
+      color: #0f172a;
+      font: inherit;
+      background: #fff;
+      box-sizing: border-box;
+    }
+
+    .chart-wrap {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      padding: 10px;
+    }
+
+    .loss-chart {
+      width: 100%;
+    }
+
+    .loss-chart svg {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+
+    .chart-legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 8px;
+    }
+
+    .legend-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: #475569;
+      font-size: 13px;
+      font-weight: 750;
+    }
+
+    .legend-swatch {
+      width: 16px;
+      height: 4px;
+      border-radius: 999px;
+      background: #2563eb;
+    }
+
+    .legend-swatch.indoor { background: #047857; }
+    .legend-swatch.delay { background: #b45309; }
+    .legend-swatch.marker { background: #be123c; height: 14px; width: 3px; }
+
+    .readout-grid {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      margin: 10px 0;
+    }
+
+    .status-panel {
+      margin: 0;
+      padding: 10px 12px;
+      border-radius: 8px;
+      background: #f8fafc;
+      color: #334155;
+      font-size: 15px;
+      line-height: 1.55;
+    }
+
+    .calculator {
+      display: grid;
+      gap: 10px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #f8fafc;
+      padding: 12px;
+    }
+
+    .input-pair {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .calc-field {
+      display: grid;
+      gap: 6px;
+      color: #334155;
+      font-size: 13px;
+      font-weight: 850;
+    }
+
+    .calc-field input {
+      width: 100%;
+      min-height: 42px;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      padding: 8px 10px;
+      color: #0f172a;
+      font: inherit;
+      background: #fff;
+      box-sizing: border-box;
+    }
+
+    .calc-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .primary-btn {
+      padding: 8px 14px;
+      border-color: #2563eb;
+      background: #2563eb;
+      color: #fff;
+    }
+
+    .subtle-btn {
+      padding: 8px 14px;
+      background: #fff;
+    }
+
+    .calc-output {
+      margin: 0;
+      min-height: 42px;
+      border-radius: 8px;
+      background: #fff;
+      padding: 10px 12px;
+      color: #0f172a;
+      font-size: 15px;
+      font-weight: 850;
+      line-height: 1.45;
+    }
+
+    .calc-output.muted {
+      color: #64748b;
+      font-weight: 700;
+    }
+
+    .check-list {
+      margin: 10px 0 0;
+      padding-left: 20px;
+      color: #334155;
+      line-height: 1.55;
+      font-size: 14px;
+    }
+
+    .check-list li + li {
+      margin-top: 6px;
+    }
+
+    @media (max-width: 960px) {
+      .page {
+        padding: 14px;
+      }
+
+      .topbar {
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .switcher {
+        display: flex;
+      }
+
+      .workspace {
+        display: block;
+        height: calc(100vh - 210px);
+        min-height: 760px;
+      }
+
+      .splitter {
+        display: none;
+      }
+
+      .worksheet-pane,
+      .tool-pane {
+        height: 100%;
+        border-right: 0;
+      }
+
+      .tool-body {
+        height: calc(100% - 53px);
+      }
+
+      .pane.is-hidden {
+        display: none;
+      }
+
+      .preset-row,
+      .stage-nav,
+      .data-grid,
+      .readout-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 680px) {
+      .preset-row,
+      .stage-nav,
+      .data-grid,
+      .input-pair,
+      .readout-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <div class="topbar">
+      <div>
+        <a class="back-link" href="../">← 통계적 의사결정 도우미</a>
+        <header class="title-block">
+          <p class="eyebrow">Probability & Statistics · Decision Support</p>
+          <h1>우천행사 도구</h1>
+          <p>우천 행사 운영 학습지를 보면서 강수 확률에 따른 기대손실과 임계 강수확률을 함께 확인합니다.</p>
+        </header>
+      </div>
+      <span class="status-pill">10 우천행사</span>
+    </div>
+
+    <div class="switcher" aria-label="좁은 화면 보기 전환">
+      <button class="active" type="button" data-view="worksheet">학습지 보기</button>
+      <button type="button" data-view="tool">도구 보기</button>
+    </div>
+
+    <section class="workspace">
+      <article class="pane worksheet-pane" data-pane="worksheet">
+        <div class="pane-head">
+          <p class="pane-title">10 우천행사 · 학생용 PDF</p>
+          <a class="download-link" href="./rain-event-student.pdf" download>PDF 다운로드</a>
+        </div>
+        <object class="pdf-frame" data="./rain-event-student.pdf" type="application/pdf" aria-label="우천행사 학생용 학습지 PDF">
+          <p class="guide-note">PDF가 보이지 않으면 위의 PDF 다운로드를 눌러 학습지를 여세요.</p>
+        </object>
+      </article>
+
+      <div class="splitter" role="separator" tabindex="0" aria-label="학습지와 도구 영역 크기 조절" aria-orientation="vertical" aria-valuemin="32" aria-valuemax="62" aria-valuenow="45" title="드래그해서 학습지와 도구의 폭을 조절합니다."></div>
+
+      <article class="pane tool-pane" data-pane="tool">
+        <div class="pane-head">
+          <p class="pane-title">기대손실·임계값 확인 도구</p>
+        </div>
+
+        <div class="tool-body">
+          <div class="preset-row">
+            <a class="preset-button" href="../product-recommendation/">01 상품추천</a>
+            <a class="preset-button" href="../space-communication/">02 우주통신</a>
+            <a class="preset-button" href="../event-preparation/">03 행사준비</a>
+            <a class="preset-button" href="../sensor-alarm/">04 센서 경보</a>
+            <a class="preset-button" href="../ab-test/">05 A/B 실험</a>
+            <a class="preset-button" href="../defect-sampling/">06 불량품검사</a>
+            <a class="preset-button" href="../reliability-system/">07 직렬·병렬</a>
+            <a class="preset-button" href="../school-facility/">08 학교시설</a>
+            <a class="preset-button" href="../festival-booth/">09 축제부스</a>
+            <button class="preset-button active" type="button">10 우천행사</button>
+            <a class="preset-button" href="../survey-sample/">11 설문표본</a>
+          </div>
+
+          <div class="guide-strip">
+            <p class="guide-note">학습지 [시작 전] 예상을 먼저 적고, Q1 기대손실은 학습지에 직접 계산해 채우세요.</p>
+            <p class="guide-note">이 도구는 구조 비교와 입력값 확인만 돕습니다. 운영 방식 선택과 권고 메모는 학습지에 직접 작성하세요.</p>
+          </div>
+
+          <nav class="stage-nav" aria-label="10 우천행사 학습 흐름">
+            <button class="stage-btn active" type="button" data-jump="stage-chart">Q1</button>
+            <button class="stage-btn" type="button" data-jump="stage-expected">Q1 계산</button>
+            <button class="stage-btn" type="button" data-jump="stage-threshold">Q5·Q6</button>
+            <button class="stage-btn" type="button" data-jump="stage-checks">Q2·Q3·Q7·Q8</button>
+          </nav>
+
+          <section class="section" id="stage-chart" aria-labelledby="chart-title">
+            <div class="section-head">
+              <h2 class="section-title" id="chart-title">강수 확률과 기대손실</h2>
+              <span class="tiny-label">Q1·Q5 참고</span>
+            </div>
+
+            <div class="control-row">
+              <label for="rainProbSlider">강수 확률 p (예보 기본값 35%)</label>
+              <div class="control-line">
+                <input id="rainProbSlider" type="range" min="0" max="100" step="1" value="35" aria-label="강수 확률" />
+                <span class="value-tag" id="rainProbValue">35%</span>
+              </div>
+            </div>
+            <div class="control-row">
+              <label for="outdoorRainInput">야외 진행이 비 올 때 손실 (기본값 10, Q6에서 바꿔 보기)</label>
+              <div class="control-line">
+                <input id="outdoorRainInput" class="number-input" type="number" min="0" step="0.5" value="10" aria-label="야외 비 올 때 손실" />
+                <span class="value-tag" id="thresholdTag">임계 0.40</span>
+              </div>
+            </div>
+
+            <div class="chart-wrap">
+              <div class="loss-chart"><svg id="lossChart" viewBox="0 0 340 210" role="img" aria-label="강수 확률에 따른 세 결정의 기대손실 꺾은선 그래프"></svg></div>
+              <div class="chart-legend">
+                <span class="legend-item"><span class="legend-swatch"></span>가 · 야외</span>
+                <span class="legend-item"><span class="legend-swatch indoor"></span>나 · 실내(4)</span>
+                <span class="legend-item"><span class="legend-swatch delay"></span>다 · 연기(4.4)</span>
+                <span class="legend-item"><span class="legend-swatch marker"></span>현재 강수확률</span>
+              </div>
+            </div>
+
+            <div class="readout-grid">
+              <div class="readout-card outdoor">
+                <span>E(야외)</span>
+                <strong id="eOutdoor">-</strong>
+              </div>
+              <div class="readout-card indoor">
+                <span>E(실내)</span>
+                <strong id="eIndoor">4.00</strong>
+              </div>
+              <div class="readout-card delay">
+                <span>E(연기)</span>
+                <strong id="eDelay">4.40</strong>
+              </div>
+              <div class="readout-card threshold">
+                <span>임계 강수확률</span>
+                <strong id="thresholdValue">0.40</strong>
+              </div>
+            </div>
+            <p class="status-panel" id="chartStatus">강수 확률을 움직이며 세 결정의 기대손실을 비교하세요. 최악 손실과 일회성 판단은 학습지 Q2·Q3·Q7에 직접 쓰세요.</p>
+          </section>
+
+          <section class="section" id="stage-expected" aria-labelledby="expected-title">
+            <div class="section-head">
+              <h2 class="section-title" id="expected-title">한 결정의 기대손실 계산 확인</h2>
+              <span class="tiny-label">Q1 입력형</span>
+            </div>
+            <div class="calculator">
+              <div class="input-pair">
+                <label class="calc-field" for="calcRainProb">
+                  강수 확률 p
+                  <input id="calcRainProb" type="number" inputmode="decimal" min="0" max="1" step="any" placeholder="소수 또는 %" />
+                </label>
+                <label class="calc-field" for="calcDryLoss">
+                  비 안 올 때 손실
+                  <input id="calcDryLoss" type="number" inputmode="decimal" min="0" step="any" placeholder="학습지 [C] 표에서 입력" />
+                </label>
+              </div>
+              <div class="input-pair">
+                <label class="calc-field" for="calcRainLoss">
+                  비 올 때 손실
+                  <input id="calcRainLoss" type="number" inputmode="decimal" min="0" step="any" placeholder="학습지 [C] 표에서 입력" />
+                </label>
+                <div></div>
+              </div>
+              <div class="calc-actions">
+                <button class="primary-btn" type="button" id="calcExpectedButton">입력값으로 기대손실 확인</button>
+                <button class="subtle-btn" type="button" id="clearExpectedButton">지우기</button>
+              </div>
+              <p class="calc-output muted" id="expectedOutput" aria-live="polite">강수 확률과 두 손실을 입력하면 그 결정의 기대손실만 계산합니다.</p>
+            </div>
+          </section>
+
+          <section class="section" id="stage-threshold" aria-labelledby="threshold-title">
+            <div class="section-head">
+              <h2 class="section-title" id="threshold-title">임계 강수확률 계산 확인</h2>
+              <span class="tiny-label">Q5·Q6 입력형</span>
+            </div>
+            <div class="calculator">
+              <p class="calc-note">야외의 기대손실(비 올 때 손실 × p)이 날씨와 무관한 대안의 고정 손실과 같아지는 강수 확률을 확인합니다.</p>
+              <div class="input-pair">
+                <label class="calc-field" for="thresholdRainLoss">
+                  야외 비 올 때 손실
+                  <input id="thresholdRainLoss" type="number" inputmode="decimal" min="0" step="any" placeholder="예: 10 또는 8" />
+                </label>
+                <label class="calc-field" for="thresholdFixedLoss">
+                  대안(실내·연기) 고정 손실
+                  <input id="thresholdFixedLoss" type="number" inputmode="decimal" min="0" step="any" placeholder="예: 4" />
+                </label>
+              </div>
+              <div class="calc-actions">
+                <button class="primary-btn" type="button" id="calcThresholdButton">임계 강수확률 확인</button>
+                <button class="subtle-btn" type="button" id="clearThresholdButton">지우기</button>
+              </div>
+              <p class="calc-output muted" id="thresholdOutput" aria-live="polite">두 손실을 입력하면 두 결정의 기대손실이 같아지는 강수 확률만 계산합니다.</p>
+            </div>
+          </section>
+
+          <section class="section" id="stage-checks" aria-labelledby="checks-title">
+            <div class="section-head">
+              <h2 class="section-title" id="checks-title">판단·점검</h2>
+              <span class="tiny-label">Q2·Q3·Q4·Q7·Q8 참고</span>
+            </div>
+            <ul class="check-list">
+              <li>Q2: 기대손실이 가장 낮은 결정과 최악 손실이 가장 큰 결정이 같을 수 있습니다. 두 사실을 함께 두고 생기는 고민을 학습지에 쓰세요.</li>
+              <li>Q3: 기대손실 최소화와 최악 손실 회피가 각각 어떤 결정으로 이어지는지 표에 직접 채우세요.</li>
+              <li>Q4: 운영 방식(가·나·다) 선택과 근거는 웹앱이 아니라 학습지에 직접 쓰세요.</li>
+              <li>Q7: 단 한 번뿐인 행사에 평균(기댓값)을 쓰는 것의 한계와, 그래도 쓸모 있는 이유를 학습지에 쓰세요.</li>
+              <li>Q8: AI 요약의 문장을 기대손실·임계값·일회성으로 나누어 점검하고, 반박 문장은 학습지에 직접 작성하세요.</li>
+            </ul>
+          </section>
+        </div>
+      </article>
+    </section>
+  </main>
+
+  <script>
+    const switchButtons = document.querySelectorAll('.switcher button');
+    const workspace = document.querySelector('.workspace');
+    const splitter = document.querySelector('.splitter');
+    const panes = document.querySelectorAll('[data-pane]');
+    const stageButtons = document.querySelectorAll('.stage-btn');
+
+    const rainProbSlider = document.getElementById('rainProbSlider');
+    const rainProbValue = document.getElementById('rainProbValue');
+    const outdoorRainInput = document.getElementById('outdoorRainInput');
+    const thresholdTag = document.getElementById('thresholdTag');
+    const eOutdoor = document.getElementById('eOutdoor');
+    const eIndoor = document.getElementById('eIndoor');
+    const eDelay = document.getElementById('eDelay');
+    const thresholdValue = document.getElementById('thresholdValue');
+    const chartStatus = document.getElementById('chartStatus');
+    const lossChart = document.getElementById('lossChart');
+    const expectedOutput = document.getElementById('expectedOutput');
+    const thresholdOutput = document.getElementById('thresholdOutput');
+
+    // 학습지 [C] 고정 손실값. 실내·연기는 날씨와 무관하게 고정.
+    const INDOOR_LOSS = 4;
+    const DELAY_LOSS = 4.4;
+
+    const model = {
+      p: 0.35,
+      outdoorRain: 10,
+      outdoorDry: 0,
+    };
+
+    const splitState = {
+      value: 45,
+      dragging: false,
+      storageKey: 'rain-event-worksheet-ratio',
+    };
+
+    const SVG_NS = 'http://www.w3.org/2000/svg';
+    const PAD = { left: 38, right: 12, top: 12, bottom: 28 };
+    const VIEW = { w: 340, h: 210 };
+    const Y_MAX = 11;
+
+    function formatNumber(value, digits = 2) {
+      return value.toLocaleString('ko-KR', { maximumFractionDigits: digits });
+    }
+
+    function normalizeRatioInput(value) {
+      if (value > 1 && value <= 100) {
+        return value / 100;
+      }
+      return value;
+    }
+
+    function readNumber(id) {
+      const input = document.getElementById(id);
+      if (input.value.trim() === '') {
+        return null;
+      }
+      return Number(input.value);
+    }
+
+    function setMessage(element, message, muted = false) {
+      element.textContent = message;
+      element.classList.toggle('muted', muted);
+    }
+
+    function expectedLoss(dry, rain, p) {
+      return (1 - p) * dry + p * rain;
+    }
+
+    function xToPx(p) {
+      return PAD.left + p * (VIEW.w - PAD.left - PAD.right);
+    }
+
+    function yToPx(value) {
+      const plotH = VIEW.h - PAD.top - PAD.bottom;
+      return PAD.top + (1 - value / Y_MAX) * plotH;
+    }
+
+    function makeEl(name, attrs) {
+      const el = document.createElementNS(SVG_NS, name);
+      Object.entries(attrs).forEach(([key, value]) => el.setAttribute(key, value));
+      return el;
+    }
+
+    function renderChart() {
+      lossChart.innerHTML = '';
+      const plotBottom = yToPx(0);
+
+      // y축 눈금과 격자
+      for (let v = 0; v <= 10; v += 2) {
+        const y = yToPx(v);
+        lossChart.appendChild(makeEl('line', { x1: PAD.left, y1: y, x2: VIEW.w - PAD.right, y2: y, stroke: '#eef2f7', 'stroke-width': 1 }));
+        const label = makeEl('text', { x: PAD.left - 6, y: y + 3, 'text-anchor': 'end', 'font-size': 9, fill: '#94a3b8' });
+        label.textContent = String(v);
+        lossChart.appendChild(label);
+      }
+      // 축
+      lossChart.appendChild(makeEl('line', { x1: PAD.left, y1: PAD.top, x2: PAD.left, y2: plotBottom, stroke: '#cbd5e1', 'stroke-width': 1.5 }));
+      lossChart.appendChild(makeEl('line', { x1: PAD.left, y1: plotBottom, x2: VIEW.w - PAD.right, y2: plotBottom, stroke: '#cbd5e1', 'stroke-width': 1.5 }));
+      // x축 눈금 (0, 0.5, 1.0)
+      [0, 0.5, 1].forEach((p) => {
+        const x = xToPx(p);
+        const label = makeEl('text', { x, y: plotBottom + 14, 'text-anchor': 'middle', 'font-size': 9, fill: '#94a3b8' });
+        label.textContent = p.toFixed(1);
+        lossChart.appendChild(label);
+      });
+      const xTitle = makeEl('text', { x: xToPx(0.5), y: VIEW.h - 2, 'text-anchor': 'middle', 'font-size': 9, fill: '#64748b' });
+      xTitle.textContent = '강수 확률 p';
+      lossChart.appendChild(xTitle);
+
+      // 실내·연기(고정) 선
+      lossChart.appendChild(makeEl('line', { x1: xToPx(0), y1: yToPx(INDOOR_LOSS), x2: xToPx(1), y2: yToPx(INDOOR_LOSS), stroke: '#047857', 'stroke-width': 2.5 }));
+      lossChart.appendChild(makeEl('line', { x1: xToPx(0), y1: yToPx(DELAY_LOSS), x2: xToPx(1), y2: yToPx(DELAY_LOSS), stroke: '#b45309', 'stroke-width': 2.5, 'stroke-dasharray': '5 4' }));
+      // 야외 선: (0, outdoorDry) -> (1, outdoorRain)
+      lossChart.appendChild(makeEl('line', { x1: xToPx(0), y1: yToPx(model.outdoorDry), x2: xToPx(1), y2: yToPx(model.outdoorRain), stroke: '#2563eb', 'stroke-width': 2.5 }));
+
+      // 임계 강수확률: 야외 == 실내 (p*outdoorRain + (1-p)*outdoorDry = INDOOR_LOSS)
+      const slope = model.outdoorRain - model.outdoorDry;
+      const threshold = slope > 0 ? (INDOOR_LOSS - model.outdoorDry) / slope : null;
+      if (threshold !== null && threshold >= 0 && threshold <= 1) {
+        const tx = xToPx(threshold);
+        lossChart.appendChild(makeEl('line', { x1: tx, y1: PAD.top, x2: tx, y2: plotBottom, stroke: '#94a3b8', 'stroke-width': 1, 'stroke-dasharray': '3 3' }));
+        lossChart.appendChild(makeEl('circle', { cx: tx, cy: yToPx(INDOOR_LOSS), r: 4, fill: '#0f172a' }));
+      }
+
+      // 현재 강수확률 세로선
+      const px = xToPx(model.p);
+      lossChart.appendChild(makeEl('line', { x1: px, y1: PAD.top, x2: px, y2: plotBottom, stroke: '#be123c', 'stroke-width': 2 }));
+      lossChart.appendChild(makeEl('circle', { cx: px, cy: yToPx(expectedLoss(model.outdoorDry, model.outdoorRain, model.p)), r: 4, fill: '#be123c' }));
+    }
+
+    function renderReadouts() {
+      const eOut = expectedLoss(model.outdoorDry, model.outdoorRain, model.p);
+      eOutdoor.textContent = formatNumber(eOut);
+      eIndoor.textContent = formatNumber(INDOOR_LOSS);
+      eDelay.textContent = formatNumber(DELAY_LOSS);
+
+      const slope = model.outdoorRain - model.outdoorDry;
+      const threshold = slope > 0 ? (INDOOR_LOSS - model.outdoorDry) / slope : null;
+      const thresholdText = threshold !== null ? formatNumber(threshold) : '없음';
+      thresholdValue.textContent = thresholdText;
+      thresholdTag.textContent = '임계 ' + thresholdText;
+
+      rainProbValue.textContent = Math.round(model.p * 100) + '%';
+    }
+
+    function renderModel() {
+      renderChart();
+      renderReadouts();
+    }
+
+    function setNarrowView(viewName) {
+      switchButtons.forEach((item) => item.classList.toggle('active', item.dataset.view === viewName));
+      panes.forEach((pane) => pane.classList.toggle('is-hidden', pane.dataset.pane !== viewName));
+    }
+
+    function getSplitBounds() {
+      const width = workspace?.getBoundingClientRect().width || 1180;
+      const splitterWidth = splitter?.getBoundingClientRect().width || 12;
+      const minLeft = 360;
+      const minRight = 420;
+      const min = Math.max(32, (minLeft / width) * 100);
+      const max = Math.min(64, ((width - splitterWidth - minRight) / width) * 100);
+      return {
+        min: Math.min(min, 45),
+        max: Math.max(max, 45),
+      };
+    }
+
+    function setWorkspaceSplit(value, persist = true) {
+      const bounds = getSplitBounds();
+      const clamped = Math.min(bounds.max, Math.max(bounds.min, value));
+      splitState.value = clamped;
+      workspace.style.setProperty('--worksheet-ratio', clamped.toFixed(2) + '%');
+      splitter.setAttribute('aria-valuemin', String(Math.round(bounds.min)));
+      splitter.setAttribute('aria-valuemax', String(Math.round(bounds.max)));
+      splitter.setAttribute('aria-valuenow', String(Math.round(clamped)));
+
+      if (persist) {
+        try {
+          window.localStorage.setItem(splitState.storageKey, clamped.toFixed(2));
+        } catch (error) {
+          // 저장이 막힌 환경에서도 폭 조절 자체는 유지한다.
+        }
+      }
+    }
+
+    function setWorkspaceSplitFromClientX(clientX, persist = false) {
+      const rect = workspace.getBoundingClientRect();
+      const ratio = ((clientX - rect.left) / rect.width) * 100;
+      setWorkspaceSplit(ratio, persist);
+    }
+
+    function loadWorkspaceSplit() {
+      let saved = null;
+      try {
+        saved = Number(window.localStorage.getItem(splitState.storageKey));
+      } catch (error) {
+        saved = null;
+      }
+      if (Number.isFinite(saved) && saved > 0) {
+        splitState.value = saved;
+      }
+      setWorkspaceSplit(splitState.value, false);
+    }
+
+    function isNarrowLayout() {
+      return window.matchMedia('(max-width: 960px)').matches;
+    }
+
+    function syncResponsiveView() {
+      if (!isNarrowLayout()) {
+        panes.forEach((pane) => pane.classList.remove('is-hidden'));
+        setWorkspaceSplit(splitState.value, false);
+        return;
+      }
+      const activeView = document.querySelector('.switcher button.active')?.dataset.view || 'worksheet';
+      setNarrowView(activeView);
+    }
+
+    function calculateExpected() {
+      const rawP = readNumber('calcRainProb');
+      const dry = readNumber('calcDryLoss');
+      const rain = readNumber('calcRainLoss');
+      if (rawP === null || dry === null || rain === null) {
+        setMessage(expectedOutput, '강수 확률과 두 손실을 모두 입력하세요.', true);
+        return;
+      }
+      const p = normalizeRatioInput(rawP);
+      if (!Number.isFinite(p) || p < 0 || p > 1 || !Number.isFinite(dry) || !Number.isFinite(rain) || dry < 0 || rain < 0) {
+        setMessage(expectedOutput, 'p는 0~1(또는 0~100%), 손실은 0 이상으로 입력하세요.', true);
+        return;
+      }
+      const value = expectedLoss(dry, rain, p);
+      setMessage(expectedOutput, '입력한 식: (1 - ' + formatNumber(p) + ') × ' + formatNumber(dry) + ' + ' + formatNumber(p) + ' × ' + formatNumber(rain) + ' = ' + formatNumber(value), false);
+    }
+
+    function clearExpected() {
+      ['calcRainProb', 'calcDryLoss', 'calcRainLoss'].forEach((id) => {
+        document.getElementById(id).value = '';
+      });
+      setMessage(expectedOutput, '강수 확률과 두 손실을 입력하면 그 결정의 기대손실만 계산합니다.', true);
+    }
+
+    function calculateThreshold() {
+      const rainLoss = readNumber('thresholdRainLoss');
+      const fixedLoss = readNumber('thresholdFixedLoss');
+      if (rainLoss === null || fixedLoss === null) {
+        setMessage(thresholdOutput, '두 손실을 모두 입력하세요.', true);
+        return;
+      }
+      if (!Number.isFinite(rainLoss) || !Number.isFinite(fixedLoss) || rainLoss <= 0 || fixedLoss < 0) {
+        setMessage(thresholdOutput, '야외 손실은 0보다 큰 값, 고정 손실은 0 이상으로 입력하세요.', true);
+        return;
+      }
+      const p = fixedLoss / rainLoss;
+      if (p > 1) {
+        setMessage(thresholdOutput, formatNumber(fixedLoss) + ' / ' + formatNumber(rainLoss) + ' = ' + formatNumber(p) + ' → 1을 넘어, 이 범위에서는 야외 기대손실이 항상 더 작습니다. 입력값을 다시 확인하세요.', false);
+        return;
+      }
+      setMessage(thresholdOutput, '임계 강수확률 p = ' + formatNumber(fixedLoss) + ' / ' + formatNumber(rainLoss) + ' = ' + formatNumber(p) + ' (약 ' + Math.round(p * 100) + '%)', false);
+    }
+
+    function clearThreshold() {
+      ['thresholdRainLoss', 'thresholdFixedLoss'].forEach((id) => {
+        document.getElementById(id).value = '';
+      });
+      setMessage(thresholdOutput, '두 손실을 입력하면 두 결정의 기대손실이 같아지는 강수 확률만 계산합니다.', true);
+    }
+
+    rainProbSlider.addEventListener('input', () => {
+      model.p = Number(rainProbSlider.value) / 100;
+      renderModel();
+    });
+
+    outdoorRainInput.addEventListener('input', () => {
+      const value = Number(outdoorRainInput.value);
+      if (Number.isFinite(value) && value >= 0) {
+        model.outdoorRain = value;
+        renderModel();
+      }
+    });
+
+    switchButtons.forEach((button) => {
+      button.addEventListener('click', () => {
+        setNarrowView(button.dataset.view);
+      });
+    });
+
+    splitter.addEventListener('pointerdown', (event) => {
+      if (isNarrowLayout()) {
+        return;
+      }
+      splitState.dragging = true;
+      splitter.classList.add('is-dragging');
+      document.body.classList.add('is-resizing-layout');
+      splitter.setPointerCapture(event.pointerId);
+      setWorkspaceSplitFromClientX(event.clientX, false);
+      event.preventDefault();
+    });
+
+    splitter.addEventListener('pointermove', (event) => {
+      if (!splitState.dragging) {
+        return;
+      }
+      setWorkspaceSplitFromClientX(event.clientX, false);
+    });
+
+    function stopSplitterDrag(event) {
+      if (!splitState.dragging) {
+        return;
+      }
+      splitState.dragging = false;
+      splitter.classList.remove('is-dragging');
+      document.body.classList.remove('is-resizing-layout');
+      if (event && splitter.hasPointerCapture(event.pointerId)) {
+        splitter.releasePointerCapture(event.pointerId);
+      }
+      setWorkspaceSplit(splitState.value, true);
+    }
+
+    splitter.addEventListener('pointerup', stopSplitterDrag);
+    splitter.addEventListener('pointercancel', stopSplitterDrag);
+    splitter.addEventListener('dblclick', () => {
+      setWorkspaceSplit(45, true);
+    });
+
+    splitter.addEventListener('keydown', (event) => {
+      if (isNarrowLayout()) {
+        return;
+      }
+      const bounds = getSplitBounds();
+      if (event.key === 'ArrowLeft') {
+        setWorkspaceSplit(splitState.value - 3, true);
+      } else if (event.key === 'ArrowRight') {
+        setWorkspaceSplit(splitState.value + 3, true);
+      } else if (event.key === 'Home') {
+        setWorkspaceSplit(bounds.min, true);
+      } else if (event.key === 'End') {
+        setWorkspaceSplit(bounds.max, true);
+      } else {
+        return;
+      }
+      event.preventDefault();
+    });
+
+    stageButtons.forEach((button) => {
+      button.addEventListener('click', () => {
+        stageButtons.forEach((item) => item.classList.toggle('active', item === button));
+        const target = document.getElementById(button.dataset.jump);
+        if (target) {
+          target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      });
+    });
+
+    document.getElementById('calcExpectedButton').addEventListener('click', calculateExpected);
+    document.getElementById('clearExpectedButton').addEventListener('click', clearExpected);
+    document.getElementById('calcThresholdButton').addEventListener('click', calculateThreshold);
+    document.getElementById('clearThresholdButton').addEventListener('click', clearThreshold);
+
+    ['calcRainProb', 'calcDryLoss', 'calcRainLoss'].forEach((id) => {
+      document.getElementById(id).addEventListener('keydown', (event) => {
+        if (event.key === 'Enter') calculateExpected();
+      });
+    });
+
+    ['thresholdRainLoss', 'thresholdFixedLoss'].forEach((id) => {
+      document.getElementById(id).addEventListener('keydown', (event) => {
+        if (event.key === 'Enter') calculateThreshold();
+      });
+    });
+
+    window.addEventListener('resize', syncResponsiveView);
+    loadWorkspaceSplit();
+    syncResponsiveView();
+    renderModel();
+  </script>
+</body>
+</html>
