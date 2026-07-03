@@ -21,7 +21,7 @@
 현재 학생 제출물 사본은 다음 위치에 있다.
 
 ```text
-C:\Users\User\Documents\GitHub\math-webapps\calculus\Student-Created\2026
+math-webapps/calculus/Student-Created/2026
 ```
 
 현재 형식은 대체로 다음과 같다.
