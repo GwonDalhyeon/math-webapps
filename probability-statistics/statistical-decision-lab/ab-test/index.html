@@ -1034,7 +1034,7 @@
       } catch (error) {
         saved = null;
       }
-      if (Number.isFinite(saved)) {
+      if (Number.isFinite(saved) && saved > 0) {
         splitState.value = saved;
       }
       setWorkspaceSplit(splitState.value, false);
