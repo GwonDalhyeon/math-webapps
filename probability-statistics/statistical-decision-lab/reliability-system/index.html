@@ -1,0 +1,1389 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="직렬·병렬 시스템 설계 학습지를 보조하는 신뢰도 구조, 여사건, 신뢰도 천장 확인 웹앱입니다." />
+  <title>07 직렬·병렬 도구</title>
+  <link rel="stylesheet" href="../../../assets/common.css" />
+  <style>
+    :root {
+      --blue: #2563eb;
+      --blue-weak: #dbeafe;
+      --green: #047857;
+      --green-weak: #d1fae5;
+      --amber: #b45309;
+      --amber-weak: #fef3c7;
+      --rose: #be123c;
+      --rose-weak: #ffe4e6;
+      --slate: #334155;
+      --line: #dbe4ef;
+      --soft: #f8fafc;
+    }
+
+    body { background: #f6f7fb; }
+
+    .page {
+      max-width: none;
+      min-height: 100vh;
+      padding: 16px;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 16px;
+      max-width: 1440px;
+      margin: 0 auto 10px;
+    }
+
+    .topbar .back-link {
+      margin-bottom: 0;
+      white-space: nowrap;
+    }
+
+    .title-block h1 {
+      margin: 4px 0;
+      font-size: clamp(28px, 4vw, 40px);
+    }
+
+    .title-block p {
+      margin: 0;
+      color: var(--slate);
+      font-size: 16px;
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      min-height: 34px;
+      padding: 7px 12px;
+      border: 1px solid #bfdbfe;
+      border-radius: 999px;
+      background: #eff6ff;
+      color: #1d4ed8;
+      font-size: 14px;
+      font-weight: 850;
+      white-space: nowrap;
+    }
+
+    .switcher {
+      display: none;
+      max-width: 1440px;
+      margin: 0 auto 10px;
+      gap: 8px;
+    }
+
+    .switcher button {
+      flex: 1;
+      min-height: 44px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      color: var(--slate);
+      font: inherit;
+      font-weight: 850;
+    }
+
+    .switcher button.active {
+      border-color: var(--blue);
+      background: var(--blue-weak);
+      color: #1d4ed8;
+    }
+
+    .workspace {
+      --worksheet-ratio: 45%;
+      display: grid;
+      grid-template-columns: minmax(340px, var(--worksheet-ratio)) 12px minmax(440px, 1fr);
+      max-width: 1440px;
+      height: calc(100vh - 154px);
+      min-height: 640px;
+      margin: 0 auto;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      background: #fff;
+      overflow: hidden;
+      box-shadow: 0 18px 45px rgba(15, 23, 42, 0.08);
+    }
+
+    .pane {
+      min-width: 0;
+      min-height: 0;
+      background: #fff;
+    }
+
+    .worksheet-pane {
+      display: flex;
+      flex-direction: column;
+      border-right: 1px solid #dbe4ef;
+    }
+
+    .tool-pane {
+      display: flex;
+      flex-direction: column;
+      background: var(--soft);
+    }
+
+    .pane-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      min-height: 46px;
+      padding: 9px 12px;
+      border-bottom: 1px solid #e2e8f0;
+      background: #fff;
+    }
+
+    .pane-title {
+      margin: 0;
+      color: #0f172a;
+      font-weight: 850;
+    }
+
+    .download-link {
+      display: inline-flex;
+      align-items: center;
+      min-height: 32px;
+      padding: 6px 10px;
+      border-radius: 8px;
+      background: #0f172a;
+      color: #fff;
+      font-size: 13px;
+      font-weight: 850;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+
+    .pdf-frame {
+      flex: 1;
+      width: 100%;
+      min-height: 0;
+      border: 0;
+      background: #f8fafc;
+    }
+
+    .splitter {
+      position: relative;
+      width: 12px;
+      min-width: 12px;
+      background: linear-gradient(90deg, #e2e8f0, #f8fafc, #e2e8f0);
+      cursor: col-resize;
+      touch-action: none;
+    }
+
+    .splitter::after {
+      content: "";
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 4px;
+      height: 72px;
+      border-radius: 999px;
+      background: #94a3b8;
+      transform: translate(-50%, -50%);
+    }
+
+    .splitter:focus-visible,
+    .splitter.is-dragging {
+      outline: 3px solid rgba(37, 99, 235, 0.35);
+      outline-offset: -3px;
+    }
+
+    .is-resizing-layout .pdf-frame { pointer-events: none; }
+
+    .tool-body {
+      flex: 1;
+      min-height: 0;
+      padding: 14px;
+      overflow: auto;
+    }
+
+    .preset-row,
+    .stage-nav {
+      display: grid;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .preset-row {
+      grid-template-columns: repeat(auto-fit, minmax(112px, 1fr));
+    }
+
+    .stage-nav {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      position: sticky;
+      top: -14px;
+      z-index: 4;
+      padding: 8px 0 10px;
+      background: var(--soft);
+    }
+
+    .preset-button,
+    .stage-btn,
+    .focus-btn,
+    .primary-btn,
+    .subtle-btn {
+      min-height: 40px;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      background: #fff;
+      color: var(--slate);
+      font: inherit;
+      font-weight: 850;
+      cursor: pointer;
+      text-align: center;
+      text-decoration: none;
+    }
+
+    .preset-button {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 8px 10px;
+      font-size: 14px;
+    }
+
+    .preset-button.active,
+    .stage-btn.active,
+    .focus-btn.active {
+      border-color: var(--blue);
+      background: var(--blue-weak);
+      color: #1d4ed8;
+    }
+
+    .guide-strip {
+      display: grid;
+      grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .guide-note {
+      margin: 0;
+      padding: 10px 12px;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      background: #fff;
+      color: #475569;
+      font-size: 14px;
+      line-height: 1.45;
+    }
+
+    .section {
+      margin-bottom: 12px;
+      padding: 12px;
+      border: 1px solid #dbe4ef;
+      border-radius: 8px;
+      background: #fff;
+    }
+
+    .section-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .section-title {
+      margin: 0;
+      color: #0f172a;
+      font-size: 20px;
+    }
+
+    .tiny-label {
+      display: inline-flex;
+      align-items: center;
+      min-height: 28px;
+      padding: 4px 9px;
+      border-radius: 999px;
+      background: #f1f5f9;
+      color: #475569;
+      font-size: 13px;
+      font-weight: 850;
+      white-space: nowrap;
+    }
+
+    .focus-row {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .system-summary,
+    .result-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .data-chip,
+    .stat-card {
+      min-width: 0;
+      padding: 10px;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      background: #f8fafc;
+    }
+
+    .data-chip span,
+    .stat-card span {
+      display: block;
+      color: #64748b;
+      font-size: 13px;
+      font-weight: 750;
+    }
+
+    .data-chip strong,
+    .stat-card strong {
+      display: block;
+      margin-top: 4px;
+      color: #0f172a;
+      font-size: 21px;
+      line-height: 1.1;
+    }
+
+    .system-visual {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      align-items: stretch;
+      margin-bottom: 10px;
+    }
+
+    .stage-card {
+      position: relative;
+      min-height: 168px;
+      padding: 12px;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      background: #f8fafc;
+    }
+
+    .stage-card::after {
+      content: "";
+      position: absolute;
+      top: 50%;
+      right: -10px;
+      width: 10px;
+      height: 3px;
+      background: #94a3b8;
+      transform: translateY(-50%);
+    }
+
+    .stage-card:last-child::after { display: none; }
+
+    .stage-card h3 {
+      margin: 0 0 8px;
+      color: #0f172a;
+      font-size: 16px;
+    }
+
+    .component-stack {
+      display: grid;
+      gap: 8px;
+      min-height: 92px;
+      align-content: center;
+    }
+
+    .component {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 38px;
+      border: 2px solid #2563eb;
+      border-radius: 8px;
+      background: #dbeafe;
+      color: #1d4ed8;
+      font-weight: 900;
+    }
+
+    .stage-caption {
+      margin: 8px 0 0;
+      color: #475569;
+      font-size: 13px;
+      font-weight: 750;
+      line-height: 1.35;
+    }
+
+    .formula-panel {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .formula-box {
+      min-height: 112px;
+      padding: 12px;
+      border: 1px solid #bfdbfe;
+      border-radius: 8px;
+      background: #eff6ff;
+    }
+
+    .formula-box math {
+      display: block;
+      color: #1e3a8a;
+      font-size: 28px;
+    }
+
+    .formula-box p {
+      margin: 9px 0 0;
+      color: #334155;
+      font-size: 14px;
+      line-height: 1.45;
+    }
+
+    .calculator {
+      margin-top: 10px;
+      padding: 12px;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      background: #f8fafc;
+    }
+
+    .calculator h3 {
+      margin: 0 0 8px;
+      color: #0f172a;
+      font-size: 17px;
+    }
+
+    .input-pair,
+    .input-triple,
+    .input-quad {
+      display: grid;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    .input-pair { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .input-triple { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .input-quad { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+
+    .calc-field {
+      display: grid;
+      gap: 5px;
+      color: #334155;
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .calc-field input {
+      width: 100%;
+      min-height: 42px;
+      padding: 8px 10px;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      background: #fff;
+      color: #0f172a;
+      font: inherit;
+      font-weight: 750;
+    }
+
+    .calc-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    .primary-btn {
+      padding: 8px 12px;
+      border-color: var(--blue);
+      background: var(--blue);
+      color: #fff;
+    }
+
+    .subtle-btn {
+      padding: 8px 12px;
+      background: #fff;
+    }
+
+    .calc-output {
+      margin: 0;
+      padding: 10px 12px;
+      border-radius: 8px;
+      background: #fff;
+      color: #0f172a;
+      font-weight: 850;
+      line-height: 1.45;
+    }
+
+    .calc-output.muted {
+      color: #64748b;
+      font-weight: 700;
+    }
+
+    .bar-compare {
+      display: grid;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .compare-row {
+      display: grid;
+      grid-template-columns: 98px minmax(0, 1fr) 72px;
+      align-items: center;
+      gap: 8px;
+      color: #334155;
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .compare-track {
+      height: 22px;
+      border-radius: 999px;
+      background: #e2e8f0;
+      overflow: hidden;
+    }
+
+    .compare-fill {
+      width: 0%;
+      height: 100%;
+      border-radius: 999px;
+      background: linear-gradient(90deg, #38bdf8, var(--blue));
+      transition: width 0.2s ease;
+    }
+
+    .sim-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+      gap: 10px;
+    }
+
+    .sample-log {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      min-height: 40px;
+      padding: 8px;
+      border-radius: 8px;
+      background: #f8fafc;
+    }
+
+    .sample-pill {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 58px;
+      min-height: 28px;
+      padding: 4px 8px;
+      border-radius: 999px;
+      background: #e0f2fe;
+      color: #075985;
+      font-size: 12px;
+      font-weight: 850;
+    }
+
+    .sample-pill.fail {
+      background: var(--rose-weak);
+      color: #9f1239;
+    }
+
+    .check-list {
+      display: grid;
+      gap: 8px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .check-list li {
+      padding: 10px 12px;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      background: #f8fafc;
+      color: #334155;
+      line-height: 1.45;
+    }
+
+    .is-hidden { display: none !important; }
+
+    @media (max-width: 1120px) {
+      .title-block h1 { font-size: 30px; }
+      .workspace {
+        grid-template-columns: minmax(330px, var(--worksheet-ratio)) 12px minmax(410px, 1fr);
+      }
+      .formula-panel,
+      .sim-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 960px) {
+      .page { padding: 14px; }
+      .topbar { display: block; }
+      .status-pill { margin-top: 8px; }
+      .switcher { display: flex; }
+      .workspace {
+        display: block;
+        height: calc(100vh - 210px);
+        min-height: 820px;
+      }
+      .pane { height: 100%; }
+      .worksheet-pane { border-right: 0; }
+      .splitter { display: none; }
+      .tool-body { padding: 12px; }
+    }
+
+    @media (max-width: 760px) {
+      .guide-strip,
+      .focus-row,
+      .system-summary,
+      .result-grid,
+      .system-visual,
+      .input-pair,
+      .input-triple,
+      .input-quad {
+        grid-template-columns: 1fr;
+      }
+      .stage-nav {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+      .stage-card::after {
+        top: auto;
+        right: 50%;
+        bottom: -10px;
+        width: 3px;
+        height: 10px;
+        transform: translateX(50%);
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <div class="topbar">
+      <div>
+        <a class="back-link" href="../">← 통계적 의사결정 도우미</a>
+        <header class="title-block">
+          <p class="eyebrow">Probability & Statistics · Decision Support</p>
+          <h1>직렬·병렬 도구</h1>
+          <p>직렬 구조의 곱, 병렬 구조의 여사건, 한 단계 보강의 한계를 구조 그림으로 확인합니다.</p>
+        </header>
+      </div>
+      <span class="status-pill">07 직렬·병렬</span>
+    </div>
+
+    <div class="switcher" aria-label="좁은 화면 보기 전환">
+      <button class="active" type="button" data-view="worksheet">학습지 보기</button>
+      <button type="button" data-view="tool">도구 보기</button>
+    </div>
+
+    <section class="workspace">
+      <article class="pane worksheet-pane" data-pane="worksheet">
+        <div class="pane-head">
+          <p class="pane-title">07 직렬·병렬 · 학생용 PDF</p>
+          <a class="download-link" href="./reliability-system-student.pdf" download>PDF 다운로드</a>
+        </div>
+        <object class="pdf-frame" data="./reliability-system-student.pdf" type="application/pdf" aria-label="직렬 병렬 학생용 학습지 PDF">
+          <p class="guide-note">PDF가 보이지 않으면 위의 PDF 다운로드를 눌러 학습지를 여세요.</p>
+        </object>
+      </article>
+
+      <div class="splitter" role="separator" tabindex="0" aria-label="학습지와 도구 영역 크기 조절" aria-orientation="vertical" aria-valuemin="32" aria-valuemax="62" aria-valuenow="45" title="드래그해서 학습지와 도구의 폭을 조절합니다."></div>
+
+      <article class="pane tool-pane" data-pane="tool">
+        <div class="pane-head">
+          <p class="pane-title">07 직렬·병렬 도구</p>
+        </div>
+
+        <div class="tool-body">
+          <div class="preset-row">
+            <a class="preset-button" href="../product-recommendation/">01 상품추천</a>
+            <a class="preset-button" href="../space-communication/">02 우주통신</a>
+            <a class="preset-button" href="../event-preparation/">03 행사준비</a>
+            <a class="preset-button" href="../sensor-alarm/">04 센서 경보</a>
+            <a class="preset-button" href="../ab-test/">05 A/B 실험</a>
+            <a class="preset-button" href="../defect-sampling/">06 불량품검사</a>
+            <button class="preset-button active" type="button">07 직렬·병렬</button>
+          </div>
+
+          <div class="guide-strip">
+            <p class="guide-note">학습지 [시작 전] 예상을 먼저 적고, Q1 계산값은 학습지에 직접 채우세요.</p>
+            <p class="guide-note">이 도구는 구조와 입력값 계산만 확인합니다. 용도별 설계 의견은 학습지에 직접 작성하세요.</p>
+          </div>
+
+          <nav class="stage-nav" aria-label="07 직렬 병렬 학습 흐름">
+            <button class="stage-btn active" type="button" data-jump="stage-structure">Q1</button>
+            <button class="stage-btn" type="button" data-jump="stage-system">Q2~Q3</button>
+            <button class="stage-btn" type="button" data-jump="stage-ceiling">Q5</button>
+            <button class="stage-btn" type="button" data-jump="stage-checks">Q6~Q8</button>
+          </nav>
+
+          <section class="section" id="stage-structure" aria-labelledby="structure-title">
+            <div class="section-head">
+              <h2 class="section-title" id="structure-title">설계 구조 보기</h2>
+              <span class="tiny-label">Q1 참고</span>
+            </div>
+
+            <div class="focus-row" aria-label="설계안 선택">
+              <button class="focus-btn active" type="button" data-design="A">설계 A</button>
+              <button class="focus-btn" type="button" data-design="B">설계 B</button>
+              <button class="focus-btn" type="button" data-design="C">설계 C</button>
+            </div>
+
+            <div class="system-summary">
+              <div class="data-chip">
+                <span>현재 구조</span>
+                <strong id="designName">설계 A</strong>
+              </div>
+              <div class="data-chip">
+                <span>단계별 부품</span>
+                <strong id="stagePattern">1 · 1 · 1</strong>
+              </div>
+              <div class="data-chip">
+                <span>총 부품 수</span>
+                <strong id="partCount">3개</strong>
+              </div>
+            </div>
+
+            <div class="system-visual" id="systemVisual" aria-label="직렬 병렬 구조 그림"></div>
+            <p class="guide-note">그림은 각 단계가 직렬로 이어져 있고, 한 단계 안의 여러 부품은 병렬로 놓인다는 구조만 보여 줍니다. 신뢰도 값은 아래 계산 확인에서 직접 입력해 확인하세요.</p>
+          </section>
+
+          <section class="section" id="stage-formula" aria-labelledby="formula-title">
+            <div class="section-head">
+              <h2 class="section-title" id="formula-title">곱과 여사건</h2>
+              <span class="tiny-label">Q1 계산 확인</span>
+            </div>
+
+            <div class="formula-panel">
+              <div class="formula-box">
+                <math aria-label="병렬 단계 통과 확률은 1 빼기 1 빼기 r의 k제곱">
+                  <mi>P</mi><mo>(</mo><mtext>단계 통과</mtext><mo>)</mo>
+                  <mo>=</mo>
+                  <mn>1</mn><mo>-</mo>
+                  <msup>
+                    <mrow><mo>(</mo><mn>1</mn><mo>-</mo><mi>r</mi><mo>)</mo></mrow>
+                    <mi>k</mi>
+                  </msup>
+                </math>
+                <p>병렬은 “적어도 하나 작동”을 직접 세기보다 “모두 고장”의 여사건으로 봅니다.</p>
+              </div>
+              <div class="formula-box">
+                <math aria-label="시스템 신뢰도는 세 단계 통과 확률의 곱">
+                  <mi>P</mi><mo>(</mo><mtext>시스템</mtext><mo>)</mo>
+                  <mo>=</mo>
+                  <msub><mi>s</mi><mn>1</mn></msub>
+                  <mo>×</mo>
+                  <msub><mi>s</mi><mn>2</mn></msub>
+                  <mo>×</mo>
+                  <msub><mi>s</mi><mn>3</mn></msub>
+                </math>
+                <p>직렬은 세 단계가 모두 통과해야 하므로 단계별 통과 확률을 곱합니다.</p>
+              </div>
+            </div>
+
+            <div class="calculator">
+              <h3>내 병렬 단계 계산 확인</h3>
+              <div class="input-pair">
+                <label class="calc-field" for="partReliabilityInput">
+                  부품 1개 정상 작동 확률 r
+                  <input id="partReliabilityInput" type="number" inputmode="decimal" min="0" max="100" step="any" placeholder="예: 0.98 또는 98" />
+                </label>
+                <label class="calc-field" for="parallelCountInput">
+                  한 단계의 병렬 부품 수 k
+                  <input id="parallelCountInput" type="number" inputmode="numeric" min="1" step="1" placeholder="예: 2" />
+                </label>
+              </div>
+              <div class="calc-actions">
+                <button class="primary-btn" type="button" id="calculateStageButton">단계 통과 확률 확인</button>
+                <button class="subtle-btn" type="button" id="clearStageButton">지우기</button>
+              </div>
+              <p class="calc-output muted" id="stageOutput" aria-live="polite">r과 k를 입력하면 병렬 단계 통과 확률만 계산합니다.</p>
+            </div>
+          </section>
+
+          <section class="section" id="stage-system" aria-labelledby="system-title">
+            <div class="section-head">
+              <h2 class="section-title" id="system-title">시스템 곱 확인</h2>
+              <span class="tiny-label">Q2~Q3 참고</span>
+            </div>
+
+            <div class="calculator">
+              <h3>내 시스템 신뢰도 확인</h3>
+              <div class="input-triple">
+                <label class="calc-field" for="stageOneInput">
+                  1단계 통과 확률
+                  <input id="stageOneInput" type="number" inputmode="decimal" min="0" max="100" step="any" placeholder="소수 또는 %" />
+                </label>
+                <label class="calc-field" for="stageTwoInput">
+                  2단계 통과 확률
+                  <input id="stageTwoInput" type="number" inputmode="decimal" min="0" max="100" step="any" placeholder="소수 또는 %" />
+                </label>
+                <label class="calc-field" for="stageThreeInput">
+                  3단계 통과 확률
+                  <input id="stageThreeInput" type="number" inputmode="decimal" min="0" max="100" step="any" placeholder="소수 또는 %" />
+                </label>
+              </div>
+              <div class="calc-actions">
+                <button class="primary-btn" type="button" id="calculateSystemButton">시스템 신뢰도 확인</button>
+                <button class="subtle-btn" type="button" id="clearSystemButton">지우기</button>
+              </div>
+              <p class="calc-output muted" id="systemOutput" aria-live="polite">세 단계 통과 확률을 입력하면 곱한 값만 계산합니다.</p>
+              <div class="bar-compare" aria-label="단계별 확률과 시스템 신뢰도 막대">
+                <div class="compare-row"><span>1단계</span><div class="compare-track"><div class="compare-fill" id="stageOneFill"></div></div><strong id="stageOneLabel">-</strong></div>
+                <div class="compare-row"><span>2단계</span><div class="compare-track"><div class="compare-fill" id="stageTwoFill"></div></div><strong id="stageTwoLabel">-</strong></div>
+                <div class="compare-row"><span>3단계</span><div class="compare-track"><div class="compare-fill" id="stageThreeFill"></div></div><strong id="stageThreeLabel">-</strong></div>
+                <div class="compare-row"><span>전체</span><div class="compare-track"><div class="compare-fill" id="systemFill"></div></div><strong id="systemLabel">-</strong></div>
+              </div>
+            </div>
+
+            <div class="calculator">
+              <h3>작동 실험</h3>
+              <div class="input-pair">
+                <label class="calc-field" for="simReliabilityInput">
+                  부품 1개 정상 작동 확률 r
+                  <input id="simReliabilityInput" type="number" inputmode="decimal" min="0" max="100" step="any" placeholder="예: 0.98 또는 98" />
+                </label>
+                <div class="calc-field" aria-hidden="true">
+                  실험 구조
+                  <input id="simDesignLabel" type="text" disabled value="현재 선택한 설계 구조" />
+                </div>
+              </div>
+              <div class="calc-actions">
+                <button class="primary-btn" type="button" data-run-sim="1">1회</button>
+                <button class="primary-btn" type="button" data-run-sim="10">10회</button>
+                <button class="primary-btn" type="button" data-run-sim="100">100회</button>
+                <button class="subtle-btn" type="button" id="resetSimulationButton">초기화</button>
+              </div>
+              <div class="result-grid">
+                <div class="stat-card"><span>반복</span><strong id="simCount">0회</strong></div>
+                <div class="stat-card"><span>작동</span><strong id="simSuccess">0회</strong></div>
+                <div class="stat-card"><span>최근</span><strong id="simLatest">-</strong></div>
+              </div>
+              <p class="calc-output muted" id="simulationOutput" aria-live="polite">r을 입력하고 반복하면, 현재 선택한 구조가 작동했는지 기록됩니다.</p>
+              <div class="sample-log" id="simulationLog" aria-label="최근 작동 실험 결과"></div>
+            </div>
+          </section>
+
+          <section class="section" id="stage-ceiling" aria-labelledby="ceiling-title">
+            <div class="section-head">
+              <h2 class="section-title" id="ceiling-title">보강하지 않은 단계의 천장</h2>
+              <span class="tiny-label">Q5 참고</span>
+            </div>
+
+            <div class="calculator">
+              <h3>천장 계산 확인</h3>
+              <div class="input-triple">
+                <label class="calc-field" for="boostedStageInput">
+                  보강한 단계 통과 확률
+                  <input id="boostedStageInput" type="number" inputmode="decimal" min="0" max="100" step="any" placeholder="예: 0.99999" />
+                </label>
+                <label class="calc-field" for="remainingStageInput">
+                  보강하지 않은 단계 확률
+                  <input id="remainingStageInput" type="number" inputmode="decimal" min="0" max="100" step="any" placeholder="예: 0.98" />
+                </label>
+                <label class="calc-field" for="remainingCountInput">
+                  보강하지 않은 단계 수
+                  <input id="remainingCountInput" type="number" inputmode="numeric" min="1" max="10" step="1" placeholder="예: 2" />
+                </label>
+              </div>
+              <div class="calc-actions">
+                <button class="primary-btn" type="button" id="calculateCeilingButton">천장 확인</button>
+                <button class="subtle-btn" type="button" id="clearCeilingButton">지우기</button>
+              </div>
+              <p class="calc-output muted" id="ceilingOutput" aria-live="polite">보강한 단계와 남은 단계 값을 입력하면 곱의 한계만 계산합니다.</p>
+            </div>
+          </section>
+
+          <section class="section" id="stage-checks" aria-labelledby="checks-title">
+            <div class="section-head">
+              <h2 class="section-title" id="checks-title">확장 점검</h2>
+              <span class="tiny-label">Q6~Q8 참고</span>
+            </div>
+
+            <div class="calculator">
+              <h3>목표 신뢰도에 필요한 병렬 수</h3>
+              <div class="input-triple">
+                <label class="calc-field" for="targetPartReliabilityInput">
+                  부품 1개 정상 작동 확률 r
+                  <input id="targetPartReliabilityInput" type="number" inputmode="decimal" min="0" max="100" step="any" placeholder="예: 0.98 또는 98" />
+                </label>
+                <label class="calc-field" for="targetReliabilityInput">
+                  목표 시스템 신뢰도
+                  <input id="targetReliabilityInput" type="number" inputmode="decimal" min="0" max="100" step="any" placeholder="예: 0.9999 또는 99.99" />
+                </label>
+                <label class="calc-field" for="targetStageCountInput">
+                  단계 수
+                  <input id="targetStageCountInput" type="number" inputmode="numeric" min="1" step="1" placeholder="예: 3" />
+                </label>
+              </div>
+              <div class="calc-actions">
+                <button class="primary-btn" type="button" id="calculateTargetButton">필요한 k 확인</button>
+                <button class="subtle-btn" type="button" id="clearTargetButton">지우기</button>
+              </div>
+              <p class="calc-output muted" id="targetOutput" aria-live="polite">r, 목표 신뢰도, 단계 수를 입력하면 같은 k개씩 병렬일 때 필요한 k만 계산합니다.</p>
+            </div>
+
+            <ul class="check-list">
+              <li>Q6: 목표 신뢰도를 정하면 필요한 부품 수와 점검 부담도 함께 정해집니다.</li>
+              <li>Q7: 병렬 계산은 독립 가정에 기대고 있습니다. 정전·침수처럼 동시에 영향을 주는 원인을 따로 점검하세요.</li>
+              <li>Q8: AI 요약이 “항상”, “훨씬”, “동시 고장 없음”처럼 수치와 가정을 건너뛴 표현을 쓰는지 문장별로 확인하세요.</li>
+            </ul>
+          </section>
+        </div>
+      </article>
+    </section>
+  </main>
+
+  <script>
+    const switchButtons = document.querySelectorAll('.switcher button');
+    const workspace = document.querySelector('.workspace');
+    const splitter = document.querySelector('.splitter');
+    const panes = document.querySelectorAll('[data-pane]');
+    const stageButtons = document.querySelectorAll('.stage-btn');
+    const designButtons = document.querySelectorAll('[data-design]');
+    const simButtons = document.querySelectorAll('[data-run-sim]');
+
+    const designs = {
+      A: { name: '설계 A', stages: [1, 1, 1] },
+      B: { name: '설계 B', stages: [2, 1, 1] },
+      C: { name: '설계 C', stages: [2, 2, 2] },
+    };
+
+    const state = {
+      design: 'A',
+      simCount: 0,
+      simSuccess: 0,
+      simLatest: null,
+      simRecent: [],
+    };
+
+    const splitState = {
+      value: 45,
+      dragging: false,
+      storageKey: 'reliability-system-worksheet-ratio',
+    };
+
+    function formatNumber(value, digits = 5) {
+      return value.toLocaleString('ko-KR', { maximumFractionDigits: digits });
+    }
+
+    function formatPercent(value) {
+      return (value * 100).toFixed(2) + '%';
+    }
+
+    function normalizeProbability(value) {
+      if (value > 1 && value <= 100) return value / 100;
+      return value;
+    }
+
+    function readNumber(id) {
+      const input = document.getElementById(id);
+      if (input.value.trim() === '') return null;
+      return Number(input.value);
+    }
+
+    function setMessage(element, message, muted = false) {
+      element.textContent = message;
+      element.classList.toggle('muted', muted);
+    }
+
+    function isProbability(value) {
+      return Number.isFinite(value) && value >= 0 && value <= 1;
+    }
+
+    function setNarrowView(viewName) {
+      switchButtons.forEach((item) => item.classList.toggle('active', item.dataset.view === viewName));
+      panes.forEach((pane) => pane.classList.toggle('is-hidden', pane.dataset.pane !== viewName));
+    }
+
+    function getSplitBounds() {
+      const width = workspace?.getBoundingClientRect().width || 1180;
+      const splitterWidth = splitter?.getBoundingClientRect().width || 12;
+      const minLeft = 360;
+      const minRight = 420;
+      const min = Math.max(32, (minLeft / width) * 100);
+      const max = Math.min(64, ((width - splitterWidth - minRight) / width) * 100);
+      return { min: Math.min(min, 45), max: Math.max(max, 45) };
+    }
+
+    function setWorkspaceSplit(value, persist = true) {
+      const bounds = getSplitBounds();
+      const clamped = Math.min(bounds.max, Math.max(bounds.min, value));
+      splitState.value = clamped;
+      workspace.style.setProperty('--worksheet-ratio', clamped.toFixed(2) + '%');
+      splitter.setAttribute('aria-valuemin', String(Math.round(bounds.min)));
+      splitter.setAttribute('aria-valuemax', String(Math.round(bounds.max)));
+      splitter.setAttribute('aria-valuenow', String(Math.round(clamped)));
+
+      if (persist) {
+        try {
+          window.localStorage.setItem(splitState.storageKey, clamped.toFixed(2));
+        } catch (error) {
+          // 저장이 막힌 환경에서도 폭 조절 자체는 유지한다.
+        }
+      }
+    }
+
+    function setWorkspaceSplitFromClientX(clientX, persist = false) {
+      const rect = workspace.getBoundingClientRect();
+      setWorkspaceSplit(((clientX - rect.left) / rect.width) * 100, persist);
+    }
+
+    function loadWorkspaceSplit() {
+      let saved = null;
+      try {
+        saved = Number(window.localStorage.getItem(splitState.storageKey));
+      } catch (error) {
+        saved = null;
+      }
+      if (Number.isFinite(saved)) splitState.value = saved;
+      setWorkspaceSplit(splitState.value, false);
+    }
+
+    function isNarrowLayout() {
+      return window.matchMedia('(max-width: 960px)').matches;
+    }
+
+    function syncResponsiveView() {
+      if (!isNarrowLayout()) {
+        panes.forEach((pane) => pane.classList.remove('is-hidden'));
+        setWorkspaceSplit(splitState.value, false);
+        return;
+      }
+      const activeView = document.querySelector('.switcher button.active')?.dataset.view || 'worksheet';
+      setNarrowView(activeView);
+    }
+
+    function renderDesign() {
+      const design = designs[state.design];
+      document.getElementById('designName').textContent = design.name;
+      document.getElementById('stagePattern').textContent = design.stages.join(' · ');
+      document.getElementById('partCount').textContent = design.stages.reduce((sum, count) => sum + count, 0) + '개';
+      document.getElementById('simDesignLabel').value = design.name + ' (' + design.stages.join('-') + ')';
+
+      const visual = document.getElementById('systemVisual');
+      visual.innerHTML = '';
+      design.stages.forEach((count, stageIndex) => {
+        const card = document.createElement('div');
+        card.className = 'stage-card';
+        const title = document.createElement('h3');
+        title.textContent = (stageIndex + 1) + '단계';
+        const stack = document.createElement('div');
+        stack.className = 'component-stack';
+        for (let index = 0; index < count; index += 1) {
+          const component = document.createElement('div');
+          component.className = 'component';
+          component.textContent = '부품 ' + (index + 1);
+          stack.appendChild(component);
+        }
+        const caption = document.createElement('p');
+        caption.className = 'stage-caption';
+        caption.textContent = count === 1 ? '이 부품이 작동해야 단계 통과' : '둘 중 적어도 하나 작동하면 단계 통과';
+        card.append(title, stack, caption);
+        visual.appendChild(card);
+      });
+    }
+
+    function resetSimulation() {
+      state.simCount = 0;
+      state.simSuccess = 0;
+      state.simLatest = null;
+      state.simRecent = [];
+      renderSimulation();
+      setMessage(document.getElementById('simulationOutput'), 'r을 입력하고 반복하면, 현재 선택한 구조가 작동했는지 기록됩니다.', true);
+    }
+
+    function calculateStage() {
+      const rawR = readNumber('partReliabilityInput');
+      const k = readNumber('parallelCountInput');
+      if (rawR === null || k === null) {
+        setMessage(document.getElementById('stageOutput'), 'r과 k를 모두 입력하세요.', true);
+        return;
+      }
+      const r = normalizeProbability(rawR);
+      if (!isProbability(r) || r === 0 || !Number.isInteger(k) || k <= 0) {
+        setMessage(document.getElementById('stageOutput'), 'r은 0과 1 사이의 소수로 입력하세요. 1보다 큰 값은 퍼센트로 해석합니다. k는 양의 정수입니다.', true);
+        return;
+      }
+      const stagePass = 1 - Math.pow(1 - r, k);
+      setMessage(document.getElementById('stageOutput'), '입력값의 단계 통과 확률: ' + formatNumber(stagePass) + ' (' + formatPercent(stagePass) + ')', false);
+    }
+
+    function clearStage() {
+      document.getElementById('partReliabilityInput').value = '';
+      document.getElementById('parallelCountInput').value = '';
+      setMessage(document.getElementById('stageOutput'), 'r과 k를 입력하면 병렬 단계 통과 확률만 계산합니다.', true);
+    }
+
+    function setBar(id, labelId, value) {
+      document.getElementById(id).style.width = (value * 100).toFixed(2) + '%';
+      document.getElementById(labelId).textContent = formatNumber(value, 4);
+    }
+
+    function resetBars() {
+      [
+        ['stageOneFill', 'stageOneLabel'],
+        ['stageTwoFill', 'stageTwoLabel'],
+        ['stageThreeFill', 'stageThreeLabel'],
+        ['systemFill', 'systemLabel'],
+      ].forEach(([fillId, labelId]) => {
+        document.getElementById(fillId).style.width = '0%';
+        document.getElementById(labelId).textContent = '-';
+      });
+    }
+
+    function calculateSystem() {
+      const values = ['stageOneInput', 'stageTwoInput', 'stageThreeInput'].map((id) => readNumber(id));
+      if (values.some((value) => value === null)) {
+        setMessage(document.getElementById('systemOutput'), '세 단계 통과 확률을 모두 입력하세요.', true);
+        return;
+      }
+      const probabilities = values.map(normalizeProbability);
+      if (!probabilities.every(isProbability)) {
+        setMessage(document.getElementById('systemOutput'), '각 단계 확률은 0~1의 소수로 입력하세요. 1보다 큰 값은 퍼센트로 해석합니다.', true);
+        return;
+      }
+      const system = probabilities.reduce((product, value) => product * value, 1);
+      setBar('stageOneFill', 'stageOneLabel', probabilities[0]);
+      setBar('stageTwoFill', 'stageTwoLabel', probabilities[1]);
+      setBar('stageThreeFill', 'stageThreeLabel', probabilities[2]);
+      setBar('systemFill', 'systemLabel', system);
+      setMessage(document.getElementById('systemOutput'), '입력값의 시스템 신뢰도: ' + formatNumber(system) + ' (' + formatPercent(system) + ')', false);
+    }
+
+    function clearSystem() {
+      ['stageOneInput', 'stageTwoInput', 'stageThreeInput'].forEach((id) => {
+        document.getElementById(id).value = '';
+      });
+      resetBars();
+      setMessage(document.getElementById('systemOutput'), '세 단계 통과 확률을 입력하면 곱한 값만 계산합니다.', true);
+    }
+
+    function calculateCeiling() {
+      const boosted = readNumber('boostedStageInput');
+      const remaining = readNumber('remainingStageInput');
+      const count = readNumber('remainingCountInput');
+      if (boosted === null || remaining === null || count === null) {
+        setMessage(document.getElementById('ceilingOutput'), '세 값을 모두 입력하세요.', true);
+        return;
+      }
+      const boostedProbability = normalizeProbability(boosted);
+      const remainingProbability = normalizeProbability(remaining);
+      if (!isProbability(boostedProbability) || !isProbability(remainingProbability) || !Number.isInteger(count) || count <= 0) {
+        setMessage(document.getElementById('ceilingOutput'), '확률은 0~1의 소수로 입력하세요. 1보다 큰 값은 퍼센트로 해석합니다. 단계 수는 양의 정수입니다.', true);
+        return;
+      }
+      const system = boostedProbability * Math.pow(remainingProbability, count);
+      const ceiling = Math.pow(remainingProbability, count);
+      setMessage(document.getElementById('ceilingOutput'), '입력값의 시스템 신뢰도: ' + formatNumber(system) + '. 보강한 단계가 거의 1에 가까워져도 남은 단계만의 곱은 ' + formatNumber(ceiling) + '입니다.', false);
+    }
+
+    function clearCeiling() {
+      ['boostedStageInput', 'remainingStageInput', 'remainingCountInput'].forEach((id) => {
+        document.getElementById(id).value = '';
+      });
+      setMessage(document.getElementById('ceilingOutput'), '보강한 단계와 남은 단계 값을 입력하면 곱의 한계만 계산합니다.', true);
+    }
+
+    function simulateComponent(r) {
+      return Math.random() < r;
+    }
+
+    function simulateSystem(r, stages) {
+      return stages.every((count) => {
+        for (let index = 0; index < count; index += 1) {
+          if (simulateComponent(r)) return true;
+        }
+        return false;
+      });
+    }
+
+    function runSimulation(times) {
+      const rawR = readNumber('simReliabilityInput');
+      if (rawR === null) {
+        setMessage(document.getElementById('simulationOutput'), 'r을 입력한 뒤 반복하세요.', true);
+        return;
+      }
+      const r = normalizeProbability(rawR);
+      if (!isProbability(r) || r === 0) {
+        setMessage(document.getElementById('simulationOutput'), 'r은 0과 1 사이의 소수로 입력하세요. 1보다 큰 값은 퍼센트로 해석합니다.', true);
+        return;
+      }
+      const stages = designs[state.design].stages;
+      for (let index = 0; index < times; index += 1) {
+        const success = simulateSystem(r, stages);
+        state.simCount += 1;
+        if (success) state.simSuccess += 1;
+        state.simLatest = success;
+        state.simRecent.unshift(success);
+        state.simRecent = state.simRecent.slice(0, 18);
+      }
+      renderSimulation();
+      setMessage(document.getElementById('simulationOutput'), '반복 결과에서 작동 비율: ' + formatPercent(state.simSuccess / state.simCount) + '. 반복 실험은 계산값을 대신하지 않고 구조의 흔들림을 보여 줍니다.', false);
+    }
+
+    function renderSimulation() {
+      document.getElementById('simCount').textContent = state.simCount + '회';
+      document.getElementById('simSuccess').textContent = state.simSuccess + '회';
+      document.getElementById('simLatest').textContent = state.simLatest === null ? '-' : state.simLatest ? '작동' : '중단';
+      const log = document.getElementById('simulationLog');
+      log.innerHTML = '';
+      state.simRecent.forEach((success) => {
+        const item = document.createElement('span');
+        item.className = 'sample-pill';
+        if (!success) item.classList.add('fail');
+        item.textContent = success ? '작동' : '중단';
+        log.appendChild(item);
+      });
+    }
+
+    function calculateTarget() {
+      const rawR = readNumber('targetPartReliabilityInput');
+      const rawTarget = readNumber('targetReliabilityInput');
+      const stageCount = readNumber('targetStageCountInput');
+      if (rawR === null || rawTarget === null || stageCount === null) {
+        setMessage(document.getElementById('targetOutput'), 'r, 목표 신뢰도, 단계 수를 모두 입력하세요.', true);
+        return;
+      }
+      const r = normalizeProbability(rawR);
+      const target = normalizeProbability(rawTarget);
+      if (!isProbability(r) || r === 0 || r === 1 || !isProbability(target) || target <= 0 || target >= 1 || !Number.isInteger(stageCount) || stageCount <= 0) {
+        setMessage(document.getElementById('targetOutput'), 'r은 0과 1 사이, 목표 신뢰도는 0과 1 사이, 단계 수는 양의 정수로 입력하세요.', true);
+        return;
+      }
+      let k = 1;
+      while (k < 100) {
+        const stagePass = 1 - Math.pow(1 - r, k);
+        const system = Math.pow(stagePass, stageCount);
+        if (system >= target) {
+          setMessage(document.getElementById('targetOutput'), '입력값에서 필요한 병렬 수: 단계마다 k ≥ ' + k + '. 이때 총 부품 수는 ' + (k * stageCount) + '개입니다.', false);
+          return;
+        }
+        k += 1;
+      }
+      setMessage(document.getElementById('targetOutput'), 'k=99까지는 목표에 도달하지 못했습니다. 입력값을 다시 확인하세요.', true);
+    }
+
+    function clearTarget() {
+      ['targetPartReliabilityInput', 'targetReliabilityInput', 'targetStageCountInput'].forEach((id) => {
+        document.getElementById(id).value = '';
+      });
+      setMessage(document.getElementById('targetOutput'), 'r, 목표 신뢰도, 단계 수를 입력하면 같은 k개씩 병렬일 때 필요한 k만 계산합니다.', true);
+    }
+
+    switchButtons.forEach((button) => {
+      button.addEventListener('click', () => setNarrowView(button.dataset.view));
+    });
+
+    splitter.addEventListener('pointerdown', (event) => {
+      if (isNarrowLayout()) return;
+      splitState.dragging = true;
+      splitter.classList.add('is-dragging');
+      document.body.classList.add('is-resizing-layout');
+      splitter.setPointerCapture(event.pointerId);
+      setWorkspaceSplitFromClientX(event.clientX, false);
+      event.preventDefault();
+    });
+
+    splitter.addEventListener('pointermove', (event) => {
+      if (!splitState.dragging) return;
+      setWorkspaceSplitFromClientX(event.clientX, false);
+    });
+
+    function stopSplitterDrag(event) {
+      if (!splitState.dragging) return;
+      splitState.dragging = false;
+      splitter.classList.remove('is-dragging');
+      document.body.classList.remove('is-resizing-layout');
+      if (event && splitter.hasPointerCapture(event.pointerId)) {
+        splitter.releasePointerCapture(event.pointerId);
+      }
+      setWorkspaceSplit(splitState.value, true);
+    }
+
+    splitter.addEventListener('pointerup', stopSplitterDrag);
+    splitter.addEventListener('pointercancel', stopSplitterDrag);
+    splitter.addEventListener('dblclick', () => setWorkspaceSplit(45, true));
+
+    splitter.addEventListener('keydown', (event) => {
+      if (isNarrowLayout()) return;
+      const bounds = getSplitBounds();
+      if (event.key === 'ArrowLeft') {
+        setWorkspaceSplit(splitState.value - 3, true);
+      } else if (event.key === 'ArrowRight') {
+        setWorkspaceSplit(splitState.value + 3, true);
+      } else if (event.key === 'Home') {
+        setWorkspaceSplit(bounds.min, true);
+      } else if (event.key === 'End') {
+        setWorkspaceSplit(bounds.max, true);
+      } else {
+        return;
+      }
+      event.preventDefault();
+    });
+
+    stageButtons.forEach((button) => {
+      button.addEventListener('click', () => {
+        stageButtons.forEach((item) => item.classList.toggle('active', item === button));
+        const target = document.getElementById(button.dataset.jump);
+        if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+    });
+
+    designButtons.forEach((button) => {
+      button.addEventListener('click', () => {
+        state.design = button.dataset.design;
+        designButtons.forEach((item) => item.classList.toggle('active', item === button));
+        resetSimulation();
+        renderDesign();
+      });
+    });
+
+    document.getElementById('calculateStageButton').addEventListener('click', calculateStage);
+    document.getElementById('clearStageButton').addEventListener('click', clearStage);
+    document.getElementById('calculateSystemButton').addEventListener('click', calculateSystem);
+    document.getElementById('clearSystemButton').addEventListener('click', clearSystem);
+    document.getElementById('calculateCeilingButton').addEventListener('click', calculateCeiling);
+    document.getElementById('clearCeilingButton').addEventListener('click', clearCeiling);
+    document.getElementById('calculateTargetButton').addEventListener('click', calculateTarget);
+    document.getElementById('clearTargetButton').addEventListener('click', clearTarget);
+    document.getElementById('resetSimulationButton').addEventListener('click', resetSimulation);
+
+    simButtons.forEach((button) => {
+      button.addEventListener('click', () => runSimulation(Number(button.dataset.runSim)));
+    });
+
+    ['partReliabilityInput', 'parallelCountInput'].forEach((id) => {
+      document.getElementById(id).addEventListener('keydown', (event) => {
+        if (event.key === 'Enter') calculateStage();
+      });
+    });
+
+    ['stageOneInput', 'stageTwoInput', 'stageThreeInput'].forEach((id) => {
+      document.getElementById(id).addEventListener('keydown', (event) => {
+        if (event.key === 'Enter') calculateSystem();
+      });
+    });
+
+    ['boostedStageInput', 'remainingStageInput', 'remainingCountInput'].forEach((id) => {
+      document.getElementById(id).addEventListener('keydown', (event) => {
+        if (event.key === 'Enter') calculateCeiling();
+      });
+    });
+
+    ['targetPartReliabilityInput', 'targetReliabilityInput', 'targetStageCountInput'].forEach((id) => {
+      document.getElementById(id).addEventListener('keydown', (event) => {
+        if (event.key === 'Enter') calculateTarget();
+      });
+    });
+
+    document.getElementById('simReliabilityInput').addEventListener('keydown', (event) => {
+      if (event.key === 'Enter') runSimulation(1);
+    });
+
+    window.addEventListener('resize', syncResponsiveView);
+    loadWorkspaceSplit();
+    syncResponsiveView();
+    renderDesign();
+    renderSimulation();
+  </script>
+</body>
+</html>
