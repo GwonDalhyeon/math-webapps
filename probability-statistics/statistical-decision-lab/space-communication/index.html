@@ -1,0 +1,1284 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="우주 통신 학습지를 보조하는 비트 오류율, 패킷 오류율, 다수결, 패리티 검사 시각화 웹앱입니다." />
+  <title>02 우주통신 도구</title>
+  <link rel="stylesheet" href="../../../assets/common.css" />
+  <style>
+    :root {
+      --blue: #2563eb;
+      --blue-weak: #dbeafe;
+      --green: #047857;
+      --green-weak: #d1fae5;
+      --amber: #b45309;
+      --amber-weak: #fef3c7;
+      --rose: #be123c;
+      --rose-weak: #ffe4e6;
+      --slate: #334155;
+      --line: #dbe4ef;
+      --soft: #f8fafc;
+    }
+
+    body {
+      background: #f6f7fb;
+    }
+
+    .page {
+      max-width: none;
+      min-height: 100vh;
+      padding: 16px;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 16px;
+      max-width: 1440px;
+      margin: 0 auto 10px;
+    }
+
+    .topbar .back-link {
+      margin-bottom: 0;
+      white-space: nowrap;
+    }
+
+    .title-block h1 {
+      margin: 4px 0;
+      font-size: clamp(28px, 4vw, 40px);
+    }
+
+    .title-block p {
+      margin: 0;
+      color: #334155;
+      font-size: 16px;
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      min-height: 34px;
+      padding: 7px 12px;
+      border: 1px solid #bfdbfe;
+      border-radius: 999px;
+      background: #eff6ff;
+      color: #1d4ed8;
+      font-size: 14px;
+      font-weight: 850;
+      white-space: nowrap;
+    }
+
+    .switcher {
+      display: none;
+      max-width: 1440px;
+      margin: 0 auto 10px;
+      gap: 8px;
+    }
+
+    .switcher button {
+      flex: 1;
+      min-height: 42px;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      background: white;
+      color: #334155;
+      font: inherit;
+      font-weight: 850;
+    }
+
+    .switcher button.active {
+      border-color: var(--blue);
+      background: #eff6ff;
+      color: #1d4ed8;
+    }
+
+    .workspace {
+      --worksheet-ratio: 45%;
+      --splitter-width: 12px;
+      display: grid;
+      grid-template-columns: minmax(360px, var(--worksheet-ratio)) var(--splitter-width) minmax(420px, 1fr);
+      gap: 0;
+      max-width: 1440px;
+      height: calc(100vh - 152px);
+      min-height: 600px;
+      margin: 0 auto;
+    }
+
+    .splitter {
+      position: relative;
+      min-width: var(--splitter-width);
+      height: 100%;
+      border: 0;
+      background: transparent;
+      cursor: col-resize;
+      touch-action: none;
+    }
+
+    .splitter::before {
+      content: "";
+      position: absolute;
+      top: 10px;
+      bottom: 10px;
+      left: 50%;
+      width: 4px;
+      transform: translateX(-50%);
+      border-radius: 999px;
+      background: #cbd5e1;
+    }
+
+    .splitter::after {
+      content: "";
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 30px;
+      height: 52px;
+      transform: translate(-50%, -50%);
+      border: 1px solid #bfdbfe;
+      border-radius: 999px;
+      background: #eff6ff;
+      box-shadow: 0 8px 18px rgba(15, 23, 42, 0.12);
+      opacity: 0;
+      transition: opacity 0.16s ease;
+    }
+
+    .splitter:hover::before,
+    .splitter:focus-visible::before {
+      background: var(--blue);
+    }
+
+    .splitter:hover::after,
+    .splitter:focus-visible::after,
+    .splitter.is-dragging::after {
+      opacity: 1;
+    }
+
+    .splitter:focus-visible {
+      outline: 3px solid #bfdbfe;
+      outline-offset: 2px;
+    }
+
+    body.is-resizing-layout {
+      cursor: col-resize;
+      user-select: none;
+    }
+
+    body.is-resizing-layout .pdf-frame {
+      pointer-events: none;
+    }
+
+    .pane {
+      min-height: 0;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: white;
+      box-shadow: 0 8px 22px rgba(15, 23, 42, 0.07);
+    }
+
+    .pane-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      min-height: 50px;
+      padding: 10px 14px;
+      border-bottom: 1px solid #e5e7eb;
+      background: #ffffff;
+    }
+
+    .pane-title {
+      margin: 0;
+      color: #111827;
+      font-size: 16px;
+      font-weight: 850;
+    }
+
+    .download-link {
+      display: inline-flex;
+      align-items: center;
+      min-height: 32px;
+      padding: 6px 10px;
+      border: 1px solid #bfdbfe;
+      border-radius: 8px;
+      background: #eff6ff;
+      color: #1d4ed8;
+      font-size: 13px;
+      font-weight: 800;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+
+    .pdf-frame {
+      display: block;
+      width: 100%;
+      height: calc(100% - 50px);
+      border: 0;
+      background: #f8fafc;
+    }
+
+    .tool-pane {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .tool-body {
+      min-height: 0;
+      padding: 14px;
+      overflow: auto;
+    }
+
+    .preset-row {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .preset-button,
+    .stage-btn,
+    .group-button,
+    .focus-btn {
+      min-height: 42px;
+      padding: 8px 10px;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      background: #ffffff;
+      color: var(--slate);
+      font: inherit;
+      font-size: 14px;
+      font-weight: 850;
+      cursor: pointer;
+    }
+
+    .preset-button {
+      display: inline-flex;
+      align-items: center;
+      min-height: 46px;
+      text-align: left;
+      text-decoration: none;
+    }
+
+    .preset-button.active,
+    .stage-btn.active,
+    .group-button.active,
+    .focus-btn.active {
+      border-color: var(--blue);
+      background: #eff6ff;
+      color: #1d4ed8;
+    }
+
+    .guide-strip {
+      display: grid;
+      grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .guide-note {
+      margin: 0;
+      padding: 10px 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--soft);
+      color: #374151;
+      font-size: 14px;
+      line-height: 1.45;
+    }
+
+    .stage-nav {
+      position: sticky;
+      top: 0;
+      z-index: 3;
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 6px;
+      margin-bottom: 12px;
+      padding-bottom: 4px;
+      background: #ffffff;
+    }
+
+    .stage-btn {
+      min-height: 40px;
+      font-size: 13px;
+    }
+
+    .section {
+      border-top: 1px solid #e5e7eb;
+      padding-top: 12px;
+      margin-top: 12px;
+      scroll-margin-top: 54px;
+    }
+
+    .section:first-of-type {
+      border-top: 0;
+      padding-top: 0;
+      margin-top: 0;
+    }
+
+    .section-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+
+    .section-title {
+      margin: 0;
+      color: #111827;
+      font-size: 18px;
+      line-height: 1.25;
+    }
+
+    .tiny-label {
+      display: inline-flex;
+      align-items: center;
+      min-height: 26px;
+      padding: 4px 8px;
+      border-radius: 999px;
+      background: #f1f5f9;
+      color: #475569;
+      font-size: 12px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .data-grid,
+    .mode-grid,
+    .calculator-grid {
+      display: grid;
+      gap: 8px;
+    }
+
+    .data-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      margin-bottom: 10px;
+    }
+
+    .data-chip,
+    .mode-card {
+      min-height: 58px;
+      padding: 9px 10px;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      background: white;
+    }
+
+    .data-chip span,
+    .mode-card span {
+      display: block;
+      color: #64748b;
+      font-size: 12px;
+      font-weight: 800;
+      line-height: 1.25;
+    }
+
+    .data-chip strong,
+    .mode-card strong {
+      display: block;
+      margin-top: 4px;
+      color: #111827;
+      font-size: 18px;
+      font-weight: 900;
+      line-height: 1.2;
+    }
+
+    .bit-line {
+      display: grid;
+      grid-template-columns: repeat(20, minmax(18px, 1fr));
+      gap: 4px;
+      margin: 10px 0;
+    }
+
+    .bit-cell {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 30px;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      background: #eff6ff;
+      color: #1d4ed8;
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .bit-cell:nth-child(5n) {
+      background: #ecfdf5;
+      color: #047857;
+    }
+
+    .group-row {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .group-button {
+      font-family: Consolas, "Courier New", monospace;
+      font-size: 15px;
+      letter-spacing: 0;
+    }
+
+    .signal-panel {
+      margin-top: 8px;
+      padding: 10px 12px;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      background: #ffffff;
+    }
+
+    .signal-panel p {
+      margin: 0;
+      color: #334155;
+      font-size: 14px;
+      line-height: 1.45;
+    }
+
+    .signal-counts {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .signal-count {
+      padding: 8px 10px;
+      border-radius: 8px;
+      background: #f8fafc;
+      color: #111827;
+      font-size: 16px;
+      font-weight: 900;
+      text-align: center;
+    }
+
+    .threshold-row {
+      display: grid;
+      gap: 7px;
+      margin-top: 8px;
+    }
+
+    .threshold-item {
+      display: grid;
+      grid-template-columns: 82px minmax(0, 1fr);
+      gap: 8px;
+      align-items: center;
+      min-height: 38px;
+      padding: 7px 9px;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      background: #ffffff;
+      color: #334155;
+      font-size: 14px;
+      font-weight: 800;
+    }
+
+    .threshold-item.fail {
+      border-color: #fecdd3;
+      background: #fff1f2;
+      color: #9f1239;
+    }
+
+    .threshold-bits {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+    }
+
+    .threshold-dot {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: #dbeafe;
+      border: 1px solid #bfdbfe;
+    }
+
+    .threshold-dot.error {
+      background: #ffe4e6;
+      border-color: #fda4af;
+    }
+
+    .calculator {
+      display: grid;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .input-pair,
+    .input-triple {
+      display: grid;
+      gap: 8px;
+    }
+
+    .input-pair {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .input-triple {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .calc-field {
+      display: grid;
+      gap: 5px;
+      color: #334155;
+      font-size: 13px;
+      font-weight: 850;
+    }
+
+    .calc-field input {
+      width: 100%;
+      min-height: 44px;
+      padding: 8px 10px;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      color: #111827;
+      font: inherit;
+      font-size: 17px;
+      font-weight: 800;
+    }
+
+    .calc-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .primary-btn,
+    .subtle-btn {
+      min-height: 42px;
+      padding: 9px 13px;
+      border-radius: 8px;
+      font: inherit;
+      font-size: 14px;
+      font-weight: 850;
+      cursor: pointer;
+    }
+
+    .primary-btn {
+      border: 1px solid var(--blue);
+      background: var(--blue);
+      color: white;
+    }
+
+    .subtle-btn {
+      border: 1px solid #cbd5e1;
+      background: white;
+      color: #475569;
+    }
+
+    .calc-output {
+      min-height: 45px;
+      margin: 0;
+      padding: 10px 12px;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      background: #ffffff;
+      color: #111827;
+      font-size: 17px;
+      font-weight: 900;
+      line-height: 1.4;
+    }
+
+    .calc-output.muted {
+      color: #64748b;
+      font-size: 14px;
+      font-weight: 750;
+    }
+
+    .fraction {
+      display: inline-grid;
+      grid-template-rows: auto auto;
+      min-width: 58px;
+      margin: 0 4px;
+      color: #111827;
+      font-weight: 900;
+      text-align: center;
+      vertical-align: middle;
+    }
+
+    .fraction .top {
+      padding: 0 5px 2px;
+      border-bottom: 2px solid #111827;
+      line-height: 1.15;
+    }
+
+    .fraction .bottom {
+      padding: 2px 5px 0;
+      line-height: 1.15;
+    }
+
+    .calc-note,
+    .check-list li {
+      border-radius: 8px;
+      color: #475569;
+      font-size: 14px;
+      line-height: 1.45;
+    }
+
+    .calc-note {
+      margin: 0;
+      padding: 9px 11px;
+      background: #f8fafc;
+    }
+
+    .check-list {
+      display: grid;
+      gap: 7px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .check-list li {
+      padding: 9px 11px;
+      border: 1px solid #e5e7eb;
+      background: #ffffff;
+    }
+
+    @media (max-width: 1180px) {
+      .guide-strip,
+      .data-grid,
+      .input-triple {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 900px) {
+      .page {
+        padding: 14px;
+      }
+
+      .topbar {
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .switcher {
+        display: flex;
+      }
+
+      .workspace {
+        display: block;
+        height: calc(100vh - 210px);
+        min-height: 640px;
+      }
+
+      .splitter {
+        display: none;
+      }
+
+      .pane {
+        height: 100%;
+      }
+
+      .pane.is-hidden {
+        display: none;
+      }
+
+      .preset-row,
+      .stage-nav,
+      .group-row,
+      .input-pair {
+        grid-template-columns: 1fr;
+      }
+
+      .bit-line {
+        grid-template-columns: repeat(10, minmax(18px, 1fr));
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <div class="topbar">
+      <div>
+        <a class="back-link" href="../">← 통계적 의사결정 도우미</a>
+        <header class="title-block">
+          <p class="eyebrow">Probability & Statistics · Decision Support</p>
+          <h1>우주통신 도구</h1>
+          <p>우주 통신 학습지를 보면서 비트 오류가 패킷 오류로 누적되는 구조와 반복·패리티의 차이를 확인합니다.</p>
+        </header>
+      </div>
+      <span class="status-pill">02 우주통신</span>
+    </div>
+
+    <div class="switcher" aria-label="좁은 화면 보기 전환">
+      <button class="active" type="button" data-view="worksheet">학습지 보기</button>
+      <button type="button" data-view="tool">도구 보기</button>
+    </div>
+
+    <section class="workspace">
+      <article class="pane worksheet-pane" data-pane="worksheet">
+        <div class="pane-head">
+          <p class="pane-title">02 우주통신 · 학생용 PDF</p>
+          <a class="download-link" href="./space-communication-student.pdf" download>PDF 다운로드</a>
+        </div>
+        <object class="pdf-frame" data="./space-communication-student.pdf" type="application/pdf" aria-label="우주통신 학생용 학습지 PDF">
+          <p class="guide-note">PDF가 보이지 않으면 위의 PDF 다운로드를 눌러 학습지를 여세요.</p>
+        </object>
+      </article>
+
+      <div class="splitter" role="separator" tabindex="0" aria-label="학습지와 도구 영역 크기 조절" aria-orientation="vertical" aria-valuemin="32" aria-valuemax="62" aria-valuenow="45" title="드래그해서 학습지와 도구의 폭을 조절합니다."></div>
+
+      <article class="pane tool-pane" data-pane="tool">
+        <div class="pane-head">
+          <p class="pane-title">이항·오류 확인 도구</p>
+        </div>
+
+        <div class="tool-body">
+          <div class="preset-row">
+            <a class="preset-button" href="../product-recommendation/">01 상품추천</a>
+            <button class="preset-button active" type="button">02 우주통신</button>
+            <a class="preset-button" href="../sensor-alarm/">04 센서 경보</a>
+          </div>
+
+          <div class="guide-strip">
+            <p class="guide-note">학습지 [시작 전] 예상을 먼저 적고, Q2 계산값은 학습지에 직접 채우세요.</p>
+            <p class="guide-note">이 도구는 구조와 입력값 확인만 돕습니다. 대응안 선택과 최종 보고서는 학습지에 직접 작성하세요.</p>
+          </div>
+
+          <nav class="stage-nav" aria-label="02 우주통신 학습 흐름">
+            <button class="stage-btn active" type="button" data-jump="stage-q1">Q1</button>
+            <button class="stage-btn" type="button" data-jump="stage-q2q3">Q2·Q3</button>
+            <button class="stage-btn" type="button" data-jump="stage-q4">Q4</button>
+            <button class="stage-btn" type="button" data-jump="stage-q5q8">Q5~Q8</button>
+          </nav>
+
+          <section class="section" id="stage-q1" aria-labelledby="majority-title">
+            <div class="section-head">
+              <h2 class="section-title" id="majority-title">다수결 묶음 보기</h2>
+              <span class="tiny-label">Q1 참고</span>
+            </div>
+            <div class="group-row" aria-label="3회 반복 수신 묶음 선택">
+              <button class="group-button active" type="button" data-group="111">111</button>
+              <button class="group-button" type="button" data-group="001">001</button>
+              <button class="group-button" type="button" data-group="101">101</button>
+              <button class="group-button" type="button" data-group="000">000</button>
+              <button class="group-button" type="button" data-group="110">110</button>
+              <button class="group-button" type="button" data-group="011">011</button>
+              <button class="group-button" type="button" data-group="111">111</button>
+              <button class="group-button" type="button" data-group="100">100</button>
+            </div>
+            <div class="signal-panel">
+              <p id="groupText">선택한 3비트 묶음에서 0과 1이 몇 번 나오는지만 확인합니다.</p>
+              <div class="signal-counts" aria-label="선택한 묶음의 0과 1 개수">
+                <div class="signal-count" id="zeroCount">0: 0개</div>
+                <div class="signal-count" id="oneCount">1: 3개</div>
+              </div>
+            </div>
+            <p class="calc-note">복원한 8비트 신호 전체는 학습지 Q1에 직접 적으세요. 이 화면은 묶음별 개수만 보여 줍니다.</p>
+          </section>
+
+          <section class="section" id="stage-q2q3" aria-labelledby="packet-title">
+            <div class="section-head">
+              <h2 class="section-title" id="packet-title">비트 오류율과 패킷 오류율</h2>
+              <span class="tiny-label">20비트 기준</span>
+            </div>
+            <div class="data-grid">
+              <div class="data-chip">
+                <span>비트 오류율</span>
+                <strong>1%</strong>
+              </div>
+              <div class="data-chip">
+                <span>명령 패킷</span>
+                <strong>20비트</strong>
+              </div>
+              <div class="data-chip">
+                <span>편도 이동 시간</span>
+                <strong>22시간</strong>
+              </div>
+            </div>
+            <div class="bit-line" aria-label="20비트 패킷 정상 조건">
+              <span class="bit-cell">0.99</span><span class="bit-cell">0.99</span><span class="bit-cell">0.99</span><span class="bit-cell">0.99</span><span class="bit-cell">0.99</span>
+              <span class="bit-cell">0.99</span><span class="bit-cell">0.99</span><span class="bit-cell">0.99</span><span class="bit-cell">0.99</span><span class="bit-cell">0.99</span>
+              <span class="bit-cell">0.99</span><span class="bit-cell">0.99</span><span class="bit-cell">0.99</span><span class="bit-cell">0.99</span><span class="bit-cell">0.99</span>
+              <span class="bit-cell">0.99</span><span class="bit-cell">0.99</span><span class="bit-cell">0.99</span><span class="bit-cell">0.99</span><span class="bit-cell">0.99</span>
+            </div>
+            <p class="calc-note">패킷이 정상이려면 20개 비트가 모두 정상이어야 합니다. 학습지 Q2에서 곱과 여사건을 먼저 계산하세요.</p>
+
+            <div class="calculator" aria-labelledby="complement-title">
+              <div class="section-head">
+                <h3 class="section-title" id="complement-title">내 계산 확인</h3>
+                <span class="tiny-label">Q2 참고</span>
+              </div>
+              <div class="input-pair">
+                <label class="calc-field" for="normalProbInput">
+                  내가 구한 P(패킷 정상)
+                  <input id="normalProbInput" type="number" inputmode="decimal" min="0" step="any" placeholder="소수 또는 %" />
+                </label>
+                <label class="calc-field" for="trialCountInput">
+                  전송 횟수
+                  <input id="trialCountInput" type="number" inputmode="numeric" min="1" step="1" placeholder="예: 100" />
+                </label>
+              </div>
+              <div class="calc-actions">
+                <button class="primary-btn" type="button" id="calculateComplementButton">여사건 확인</button>
+                <button class="subtle-btn" type="button" id="clearComplementButton">지우기</button>
+              </div>
+              <p class="calc-output muted" id="complementOutput" aria-live="polite">P(패킷 정상)을 입력하면 여사건과 예상 오류 개수만 계산합니다.</p>
+            </div>
+          </section>
+
+          <section class="section" id="stage-q4" aria-labelledby="repeat-title">
+            <div class="section-head">
+              <h2 class="section-title" id="repeat-title">반복 전송 실패 조건</h2>
+              <span class="tiny-label">Q4·Q6 참고</span>
+            </div>
+            <div class="mode-grid">
+              <div class="mode-card">
+                <span>3회 다수결</span>
+                <strong>3개 패킷 중 2개 이상 오류</strong>
+              </div>
+              <div class="mode-card">
+                <span>5회 다수결</span>
+                <strong>5개 패킷 중 3개 이상 오류</strong>
+              </div>
+            </div>
+            <div class="focus-controls" aria-label="반복 횟수 선택">
+              <button class="focus-btn active" type="button" data-repeat="3">3회 실패 조건</button>
+              <button class="focus-btn" type="button" data-repeat="5">5회 실패 조건</button>
+            </div>
+            <div class="threshold-row" id="thresholdRow" aria-live="polite"></div>
+
+            <div class="calculator">
+              <div class="section-head">
+                <h3 class="section-title">항 더하기 확인</h3>
+                <span class="tiny-label">Q4·Q6 입력형</span>
+              </div>
+              <div class="input-pair">
+                <label class="calc-field" for="termAInput">
+                  첫 번째 항
+                  <input id="termAInput" type="number" inputmode="decimal" min="0" step="any" placeholder="학습지에서 구한 항" />
+                </label>
+                <label class="calc-field" for="termBInput">
+                  두 번째 항
+                  <input id="termBInput" type="number" inputmode="decimal" min="0" step="any" placeholder="학습지에서 구한 항" />
+                </label>
+              </div>
+              <div class="input-triple">
+                <label class="calc-field" for="termCInput">
+                  세 번째 항
+                  <input id="termCInput" type="number" inputmode="decimal" min="0" step="any" placeholder="필요할 때만 입력" />
+                </label>
+              </div>
+              <div class="calc-actions">
+                <button class="primary-btn" type="button" id="calculateTermsButton">입력한 항 합하기</button>
+                <button class="subtle-btn" type="button" id="clearTermsButton">지우기</button>
+              </div>
+              <p class="calc-output muted" id="termsOutput" aria-live="polite">학생이 계산한 항을 넣으면 합만 확인합니다.</p>
+              <p class="calc-note">어떤 전송 방식을 선택할지는 이 합만으로 자동 결정하지 않습니다. 신호의 성격을 학습지 Q4에서 함께 판단하세요.</p>
+            </div>
+          </section>
+
+          <section class="section" id="stage-q5q8" aria-labelledby="parity-title">
+            <div class="section-head">
+              <h2 class="section-title" id="parity-title">패리티와 심화 점검</h2>
+              <span class="tiny-label">Q5~Q8 참고</span>
+            </div>
+            <div class="calculator">
+              <label class="calc-field" for="bitStringInput">
+                0과 1로 이루어진 신호
+                <input id="bitStringInput" type="text" inputmode="numeric" placeholder="예: 101100100" />
+              </label>
+              <div class="calc-actions">
+                <button class="primary-btn" type="button" id="checkParityButton">짝수 패리티 확인</button>
+                <button class="subtle-btn" type="button" id="clearParityButton">지우기</button>
+              </div>
+              <p class="calc-output muted" id="parityOutput" aria-live="polite">신호를 입력하면 1의 개수와 홀짝만 확인합니다.</p>
+              <p class="calc-note">패리티는 오류를 발견하는 장치입니다. 잘못된 위치를 찾아 고치는지 여부는 학습지 Q5에서 직접 구분하세요.</p>
+            </div>
+            <ul class="check-list">
+              <li>Q6: 반복을 늘릴수록 오류 확률과 전송 비트 수가 함께 어떻게 바뀌는지 따로 표시하세요.</li>
+              <li>Q7: 각 비트 오류가 독립이라는 가정이 깨지면 어떤 계산식이 먼저 흔들리는지 생각하세요.</li>
+              <li>Q8: AI 요약이 비트 오류율, 패킷 오류율, 반복 다수결을 같은 방식으로 다루고 있는지 문장별로 점검하세요.</li>
+            </ul>
+          </section>
+        </div>
+      </article>
+    </section>
+  </main>
+
+  <script>
+    const switchButtons = document.querySelectorAll('.switcher button');
+    const workspace = document.querySelector('.workspace');
+    const splitter = document.querySelector('.splitter');
+    const panes = document.querySelectorAll('[data-pane]');
+    const stageButtons = document.querySelectorAll('.stage-btn');
+    const groupButtons = document.querySelectorAll('.group-button');
+    const repeatButtons = document.querySelectorAll('[data-repeat]');
+    const groupText = document.getElementById('groupText');
+    const zeroCount = document.getElementById('zeroCount');
+    const oneCount = document.getElementById('oneCount');
+    const thresholdRow = document.getElementById('thresholdRow');
+    const normalProbInput = document.getElementById('normalProbInput');
+    const trialCountInput = document.getElementById('trialCountInput');
+    const complementOutput = document.getElementById('complementOutput');
+    const termAInput = document.getElementById('termAInput');
+    const termBInput = document.getElementById('termBInput');
+    const termCInput = document.getElementById('termCInput');
+    const termsOutput = document.getElementById('termsOutput');
+    const bitStringInput = document.getElementById('bitStringInput');
+    const parityOutput = document.getElementById('parityOutput');
+
+    const splitState = {
+      value: 45,
+      dragging: false,
+      storageKey: 'space-communication-worksheet-ratio',
+    };
+
+    const state = {
+      repeat: 3,
+    };
+
+    function formatNumber(value) {
+      return value.toLocaleString('ko-KR', { maximumFractionDigits: 4 });
+    }
+
+    function formatPercent(value) {
+      return (value * 100).toFixed(1) + '%';
+    }
+
+    function normalizeRatioInput(value) {
+      if (value === null) {
+        return null;
+      }
+      if (value > 1 && value <= 100) {
+        return value / 100;
+      }
+      return value;
+    }
+
+    function readNumber(input) {
+      if (input.value.trim() === '') {
+        return null;
+      }
+      return Number(input.value);
+    }
+
+    function setCalcMessage(outputElement, message, muted = false, asHtml = false) {
+      if (asHtml) {
+        outputElement.innerHTML = message;
+      } else {
+        outputElement.textContent = message;
+      }
+      outputElement.classList.toggle('muted', muted);
+    }
+
+    function setNarrowView(viewName) {
+      switchButtons.forEach((item) => item.classList.toggle('active', item.dataset.view === viewName));
+      panes.forEach((pane) => pane.classList.toggle('is-hidden', pane.dataset.pane !== viewName));
+    }
+
+    function getSplitBounds() {
+      const width = workspace?.getBoundingClientRect().width || 1180;
+      const splitterWidth = splitter?.getBoundingClientRect().width || 12;
+      const minLeft = 360;
+      const minRight = 420;
+      const min = Math.max(32, (minLeft / width) * 100);
+      const max = Math.min(64, ((width - splitterWidth - minRight) / width) * 100);
+      return {
+        min: Math.min(min, 45),
+        max: Math.max(max, 45),
+      };
+    }
+
+    function setWorkspaceSplit(value, persist = true) {
+      const bounds = getSplitBounds();
+      const clamped = Math.min(bounds.max, Math.max(bounds.min, value));
+      splitState.value = clamped;
+      workspace.style.setProperty('--worksheet-ratio', clamped.toFixed(2) + '%');
+      splitter.setAttribute('aria-valuemin', String(Math.round(bounds.min)));
+      splitter.setAttribute('aria-valuemax', String(Math.round(bounds.max)));
+      splitter.setAttribute('aria-valuenow', String(Math.round(clamped)));
+
+      if (persist) {
+        try {
+          window.localStorage.setItem(splitState.storageKey, clamped.toFixed(2));
+        } catch (error) {
+          // 로컬 파일 환경에서 저장이 막히더라도 조절 동작은 유지한다.
+        }
+      }
+    }
+
+    function setWorkspaceSplitFromClientX(clientX, persist = false) {
+      const rect = workspace.getBoundingClientRect();
+      const ratio = ((clientX - rect.left) / rect.width) * 100;
+      setWorkspaceSplit(ratio, persist);
+    }
+
+    function loadWorkspaceSplit() {
+      let saved = null;
+      try {
+        saved = Number(window.localStorage.getItem(splitState.storageKey));
+      } catch (error) {
+        saved = null;
+      }
+      setWorkspaceSplit(Number.isFinite(saved) && saved > 0 ? saved : splitState.value, false);
+    }
+
+    function isNarrowLayout() {
+      return window.matchMedia('(max-width: 900px)').matches;
+    }
+
+    function syncResponsiveView() {
+      const isNarrow = isNarrowLayout();
+      if (!isNarrow) {
+        panes.forEach((pane) => pane.classList.remove('is-hidden'));
+        setWorkspaceSplit(splitState.value, false);
+        return;
+      }
+      const activeView = document.querySelector('.switcher button.active')?.dataset.view || 'worksheet';
+      setNarrowView(activeView);
+    }
+
+    function renderGroup(group) {
+      const ones = [...group].filter((bit) => bit === '1').length;
+      const zeros = group.length - ones;
+      groupText.textContent = '선택한 묶음 ' + group + '의 개수만 확인합니다. 다수인 값을 복원 신호에 직접 옮겨 적으세요.';
+      zeroCount.textContent = '0: ' + zeros + '개';
+      oneCount.textContent = '1: ' + ones + '개';
+    }
+
+    function renderThreshold() {
+      const repeat = state.repeat;
+      const failFrom = Math.floor(repeat / 2) + 1;
+      thresholdRow.innerHTML = '';
+      for (let errorCount = 0; errorCount <= repeat; errorCount += 1) {
+        const item = document.createElement('div');
+        const isFailure = errorCount >= failFrom;
+        item.className = 'threshold-item' + (isFailure ? ' fail' : '');
+        const label = document.createElement('div');
+        label.textContent = '오류 ' + errorCount + '개';
+        const dots = document.createElement('div');
+        dots.className = 'threshold-bits';
+        for (let index = 0; index < repeat; index += 1) {
+          const dot = document.createElement('span');
+          dot.className = 'threshold-dot' + (index < errorCount ? ' error' : '');
+          dots.appendChild(dot);
+        }
+        item.append(label, dots);
+        thresholdRow.appendChild(item);
+      }
+      repeatButtons.forEach((button) => {
+        button.classList.toggle('active', Number(button.dataset.repeat) === repeat);
+      });
+    }
+
+    function calculateComplement() {
+      const normalProbability = normalizeRatioInput(readNumber(normalProbInput));
+      const trialCount = readNumber(trialCountInput);
+
+      if (normalProbability === null) {
+        setCalcMessage(complementOutput, 'P(패킷 정상)을 입력하세요.', true);
+        return;
+      }
+
+      if (!Number.isFinite(normalProbability) || normalProbability < 0 || normalProbability > 1) {
+        setCalcMessage(complementOutput, '확률은 0~1 또는 0~100 사이로 입력하세요.', true);
+        return;
+      }
+
+      const errorProbability = 1 - normalProbability;
+      let message = '여사건: 1 - ' + formatNumber(normalProbability) + ' = ' + formatNumber(errorProbability) + ' ≈ ' + formatPercent(errorProbability);
+
+      if (trialCount !== null) {
+        if (!Number.isFinite(trialCount) || trialCount < 0) {
+          setCalcMessage(complementOutput, '전송 횟수는 0 이상의 수로 입력하세요.', true);
+          return;
+        }
+        message += ' · ' + formatNumber(trialCount) + '번 중 예상 오류 개수 ≈ ' + formatNumber(trialCount * errorProbability);
+      }
+
+      setCalcMessage(complementOutput, message, false);
+    }
+
+    function clearComplement() {
+      normalProbInput.value = '';
+      trialCountInput.value = '';
+      setCalcMessage(complementOutput, 'P(패킷 정상)을 입력하면 여사건과 예상 오류 개수만 계산합니다.', true);
+    }
+
+    function calculateTerms() {
+      const rawValues = [readNumber(termAInput), readNumber(termBInput), readNumber(termCInput)]
+        .filter((value) => value !== null);
+
+      if (rawValues.length < 2) {
+        setCalcMessage(termsOutput, '두 항 이상을 입력하세요.', true);
+        return;
+      }
+
+      const usePercentScale = rawValues.some((value) => value > 1);
+
+      if (rawValues.some((value) => !Number.isFinite(value) || value < 0 || value > (usePercentScale ? 100 : 1))) {
+        setCalcMessage(termsOutput, '각 항은 0~1의 소수 또는 0~100의 퍼센트 값으로 입력하세요.', true);
+        return;
+      }
+
+      const values = rawValues.map((value) => usePercentScale ? value / 100 : value);
+      const sum = values.reduce((total, value) => total + value, 0);
+      if (sum > 1) {
+        setCalcMessage(termsOutput, '합이 1을 넘습니다. 입력한 항을 다시 확인하세요.', true);
+        return;
+      }
+      setCalcMessage(termsOutput, '입력한 항의 합: ' + formatNumber(sum) + ' ≈ ' + formatPercent(sum), false);
+    }
+
+    function clearTerms() {
+      termAInput.value = '';
+      termBInput.value = '';
+      termCInput.value = '';
+      setCalcMessage(termsOutput, '학생이 계산한 항을 넣으면 합만 확인합니다.', true);
+    }
+
+    function checkParity() {
+      const raw = bitStringInput.value.trim();
+      if (raw === '') {
+        setCalcMessage(parityOutput, '0과 1로 이루어진 신호를 입력하세요.', true);
+        return;
+      }
+
+      if (!/^[01]+$/.test(raw)) {
+        setCalcMessage(parityOutput, '0과 1만 입력하세요.', true);
+        return;
+      }
+
+      const ones = [...raw].filter((bit) => bit === '1').length;
+      const parity = ones % 2 === 0 ? '짝수' : '홀수';
+      const status = ones % 2 === 0 ? '짝수 패리티 기준을 통과합니다.' : '짝수 패리티 기준에서는 검토가 필요합니다.';
+      setCalcMessage(parityOutput, '1의 개수: ' + ones + '개 · ' + parity + ' · ' + status, false);
+    }
+
+    function clearParity() {
+      bitStringInput.value = '';
+      setCalcMessage(parityOutput, '신호를 입력하면 1의 개수와 홀짝만 확인합니다.', true);
+    }
+
+    switchButtons.forEach((button) => {
+      button.addEventListener('click', () => {
+        setNarrowView(button.dataset.view);
+      });
+    });
+
+    splitter.addEventListener('pointerdown', (event) => {
+      if (isNarrowLayout()) {
+        return;
+      }
+      splitState.dragging = true;
+      splitter.classList.add('is-dragging');
+      document.body.classList.add('is-resizing-layout');
+      splitter.setPointerCapture(event.pointerId);
+      setWorkspaceSplitFromClientX(event.clientX, false);
+      event.preventDefault();
+    });
+
+    splitter.addEventListener('pointermove', (event) => {
+      if (!splitState.dragging) {
+        return;
+      }
+      setWorkspaceSplitFromClientX(event.clientX, false);
+    });
+
+    function stopSplitterDrag(event) {
+      if (!splitState.dragging) {
+        return;
+      }
+      splitState.dragging = false;
+      splitter.classList.remove('is-dragging');
+      document.body.classList.remove('is-resizing-layout');
+      if (event && splitter.hasPointerCapture(event.pointerId)) {
+        splitter.releasePointerCapture(event.pointerId);
+      }
+      setWorkspaceSplit(splitState.value, true);
+    }
+
+    splitter.addEventListener('pointerup', stopSplitterDrag);
+    splitter.addEventListener('pointercancel', stopSplitterDrag);
+    splitter.addEventListener('dblclick', () => {
+      setWorkspaceSplit(45, true);
+    });
+
+    splitter.addEventListener('keydown', (event) => {
+      if (isNarrowLayout()) {
+        return;
+      }
+      const bounds = getSplitBounds();
+      if (event.key === 'ArrowLeft') {
+        setWorkspaceSplit(splitState.value - 3, true);
+      } else if (event.key === 'ArrowRight') {
+        setWorkspaceSplit(splitState.value + 3, true);
+      } else if (event.key === 'Home') {
+        setWorkspaceSplit(bounds.min, true);
+      } else if (event.key === 'End') {
+        setWorkspaceSplit(bounds.max, true);
+      } else {
+        return;
+      }
+      event.preventDefault();
+    });
+
+    stageButtons.forEach((button) => {
+      button.addEventListener('click', () => {
+        stageButtons.forEach((item) => item.classList.toggle('active', item === button));
+        const target = document.getElementById(button.dataset.jump);
+        if (target) {
+          target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      });
+    });
+
+    groupButtons.forEach((button) => {
+      button.addEventListener('click', () => {
+        groupButtons.forEach((item) => item.classList.toggle('active', item === button));
+        renderGroup(button.dataset.group);
+      });
+    });
+
+    repeatButtons.forEach((button) => {
+      button.addEventListener('click', () => {
+        state.repeat = Number(button.dataset.repeat);
+        renderThreshold();
+      });
+    });
+
+    document.getElementById('calculateComplementButton').addEventListener('click', calculateComplement);
+    document.getElementById('clearComplementButton').addEventListener('click', clearComplement);
+    document.getElementById('calculateTermsButton').addEventListener('click', calculateTerms);
+    document.getElementById('clearTermsButton').addEventListener('click', clearTerms);
+    document.getElementById('checkParityButton').addEventListener('click', checkParity);
+    document.getElementById('clearParityButton').addEventListener('click', clearParity);
+
+    [normalProbInput, trialCountInput].forEach((input) => {
+      input.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter') {
+          calculateComplement();
+        }
+      });
+    });
+
+    [termAInput, termBInput, termCInput].forEach((input) => {
+      input.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter') {
+          calculateTerms();
+        }
+      });
+    });
+
+    bitStringInput.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter') {
+        checkParity();
+      }
+    });
+
+    window.addEventListener('resize', syncResponsiveView);
+    loadWorkspaceSplit();
+    syncResponsiveView();
+    renderGroup('111');
+    renderThreshold();
+  </script>
+</body>
+</html>
