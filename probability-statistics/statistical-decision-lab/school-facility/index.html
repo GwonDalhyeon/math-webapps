@@ -1,0 +1,1485 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="학교 시설 개선 우선순위 학습지를 보조하는 가중 추정과 표본흔들림 시각화 웹앱입니다." />
+  <title>08 학교시설 도구</title>
+  <link rel="stylesheet" href="../../../assets/common.css" />
+  <style>
+    :root {
+      --blue: #2563eb;
+      --blue-weak: #dbeafe;
+      --green: #047857;
+      --green-weak: #d1fae5;
+      --amber: #b45309;
+      --amber-weak: #fef3c7;
+      --rose: #be123c;
+      --rose-weak: #ffe4e6;
+      --slate: #334155;
+      --line: #dbe4ef;
+      --soft: #f8fafc;
+    }
+
+    body {
+      background: #f6f7fb;
+    }
+
+    .page {
+      max-width: none;
+      min-height: 100vh;
+      padding: 16px;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 16px;
+      max-width: 1440px;
+      margin: 0 auto 10px;
+    }
+
+    .topbar .back-link {
+      margin-bottom: 0;
+      white-space: nowrap;
+    }
+
+    .title-block h1 {
+      margin: 4px 0;
+      font-size: clamp(28px, 4vw, 40px);
+    }
+
+    .title-block p {
+      margin: 0;
+      color: #334155;
+      font-size: 16px;
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      min-height: 34px;
+      padding: 7px 12px;
+      border: 1px solid #bfdbfe;
+      border-radius: 999px;
+      background: #eff6ff;
+      color: #1d4ed8;
+      font-size: 14px;
+      font-weight: 850;
+      white-space: nowrap;
+    }
+
+    .switcher {
+      display: none;
+      max-width: 1440px;
+      margin: 0 auto 10px;
+      gap: 8px;
+    }
+
+    .switcher button {
+      flex: 1;
+      min-height: 42px;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      background: #fff;
+      color: #334155;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .switcher button.active {
+      border-color: var(--blue);
+      background: var(--blue-weak);
+      color: #1d4ed8;
+    }
+
+    .workspace {
+      --worksheet-ratio: 45%;
+      display: grid;
+      grid-template-columns: var(--worksheet-ratio) 12px minmax(420px, 1fr);
+      gap: 0;
+      max-width: 1440px;
+      height: calc(100vh - 152px);
+      min-height: 620px;
+      margin: 0 auto;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      overflow: hidden;
+      background: #fff;
+      box-shadow: 0 16px 42px rgba(15, 23, 42, 0.08);
+    }
+
+    .pane {
+      min-width: 0;
+      min-height: 0;
+      background: #fff;
+    }
+
+    .worksheet-pane {
+      display: flex;
+      flex-direction: column;
+      border-right: 1px solid var(--line);
+    }
+
+    .tool-pane {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+
+    .pane-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--line);
+      background: #f8fafc;
+    }
+
+    .pane-title {
+      margin: 0;
+      color: #0f172a;
+      font-size: 14px;
+      font-weight: 850;
+    }
+
+    .download-link {
+      display: inline-flex;
+      align-items: center;
+      min-height: 32px;
+      padding: 6px 10px;
+      border-radius: 8px;
+      background: var(--blue);
+      color: #fff;
+      font-size: 13px;
+      font-weight: 850;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+
+    .pdf-frame {
+      width: 100%;
+      flex: 1;
+      border: 0;
+      background: #eef2f7;
+    }
+
+    .splitter {
+      position: relative;
+      background: #e2e8f0;
+      cursor: col-resize;
+      touch-action: none;
+      outline: none;
+    }
+
+    .splitter::before {
+      content: "";
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 4px;
+      height: 54px;
+      border-radius: 999px;
+      background: #94a3b8;
+      transform: translate(-50%, -50%);
+    }
+
+    .splitter:hover,
+    .splitter:focus-visible,
+    .splitter.is-dragging {
+      background: #bfdbfe;
+    }
+
+    .splitter:hover::before,
+    .splitter:focus-visible::before,
+    .splitter.is-dragging::before {
+      background: var(--blue);
+    }
+
+    .is-resizing-layout .pdf-frame {
+      pointer-events: none;
+    }
+
+    .tool-body {
+      flex: 1;
+      min-height: 0;
+      overflow: auto;
+      padding: 14px;
+      background: #f8fafc;
+    }
+
+    .preset-row,
+    .stage-nav {
+      display: grid;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .preset-row {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    .stage-nav {
+      position: sticky;
+      top: -14px;
+      z-index: 4;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      padding: 10px 0;
+      background: #f8fafc;
+    }
+
+    .preset-button,
+    .stage-btn,
+    .focus-btn,
+    .primary-btn,
+    .subtle-btn {
+      min-height: 38px;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      background: #fff;
+      color: #334155;
+      font: inherit;
+      font-size: 14px;
+      font-weight: 850;
+      text-align: center;
+      text-decoration: none;
+      cursor: pointer;
+    }
+
+    .preset-button,
+    .stage-btn,
+    .focus-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 7px 8px;
+    }
+
+    .preset-button.active,
+    .stage-btn.active,
+    .focus-btn.active {
+      border-color: var(--blue);
+      background: var(--blue-weak);
+      color: #1d4ed8;
+    }
+
+    .guide-strip {
+      display: grid;
+      gap: 8px;
+      margin-bottom: 10px;
+      padding: 10px 12px;
+      border: 1px solid #bfdbfe;
+      border-radius: 8px;
+      background: #eff6ff;
+    }
+
+    .guide-note,
+    .calc-note {
+      margin: 0;
+      color: #334155;
+      font-size: 14px;
+      line-height: 1.55;
+    }
+
+    .section {
+      margin-bottom: 14px;
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+    }
+
+    .section-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .section-title {
+      margin: 0;
+      color: #0f172a;
+      font-size: 20px;
+      line-height: 1.25;
+    }
+
+    .tiny-label {
+      display: inline-flex;
+      align-items: center;
+      min-height: 28px;
+      padding: 4px 8px;
+      border-radius: 999px;
+      background: #f1f5f9;
+      color: #475569;
+      font-size: 12px;
+      font-weight: 850;
+      white-space: nowrap;
+    }
+
+    .focus-row {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .formula-box {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+      margin: 0 0 12px;
+      padding: 10px 12px;
+      border: 1px solid #dbe4ef;
+      border-radius: 8px;
+      background: #f8fafc;
+      color: #0f172a;
+      font-size: 16px;
+      font-weight: 800;
+    }
+
+    .formula-box math {
+      font-size: 19px;
+    }
+
+    .structure-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.1fr) minmax(220px, 0.9fr);
+      gap: 12px;
+      align-items: stretch;
+    }
+
+    .grade-panel {
+      display: grid;
+      gap: 10px;
+    }
+
+    .grade-card {
+      display: grid;
+      gap: 8px;
+      padding: 10px;
+      border: 1px solid #dbe4ef;
+      border-radius: 8px;
+      background: #fff;
+    }
+
+    .grade-card h3 {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      margin: 0;
+      color: #0f172a;
+      font-size: 16px;
+    }
+
+    .bar-label {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      color: #475569;
+      font-size: 13px;
+      font-weight: 750;
+    }
+
+    .population-track,
+    .sample-track,
+    .compare-track,
+    .scale-track {
+      position: relative;
+      height: 18px;
+      overflow: hidden;
+      border-radius: 999px;
+      background: #e2e8f0;
+    }
+
+    .population-fill,
+    .sample-fill,
+    .compare-fill,
+    .scale-fill {
+      height: 100%;
+      border-radius: inherit;
+      background: var(--blue);
+      transition: width 180ms ease;
+    }
+
+    .population-fill {
+      background: #64748b;
+    }
+
+    .sample-fill.rest,
+    .compare-fill.rest {
+      background: var(--green);
+    }
+
+    .sample-fill.sport,
+    .compare-fill.sport {
+      background: var(--amber);
+    }
+
+    .weight-note {
+      display: grid;
+      gap: 8px;
+      padding: 12px;
+      border: 1px solid #bfdbfe;
+      border-radius: 8px;
+      background: #eff6ff;
+    }
+
+    .weight-note strong {
+      color: #1d4ed8;
+      font-size: 18px;
+    }
+
+    .weight-note p {
+      margin: 0;
+      color: #334155;
+      font-size: 14px;
+      line-height: 1.55;
+    }
+
+    .key-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .key-card {
+      min-height: 86px;
+      padding: 10px;
+      border: 1px solid #dbe4ef;
+      border-radius: 8px;
+      background: #f8fafc;
+    }
+
+    .key-card span {
+      display: block;
+      color: #64748b;
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .key-card strong {
+      display: block;
+      margin-top: 6px;
+      color: #0f172a;
+      font-size: 20px;
+      line-height: 1.25;
+    }
+
+    .calculator {
+      display: grid;
+      gap: 10px;
+      margin-top: 12px;
+      padding: 12px;
+      border: 1px solid #dbe4ef;
+      border-radius: 8px;
+      background: #f8fafc;
+    }
+
+    .input-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .input-pair {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .calc-field {
+      display: grid;
+      gap: 6px;
+      color: #334155;
+      font-size: 13px;
+      font-weight: 850;
+    }
+
+    .calc-field input {
+      width: 100%;
+      min-height: 40px;
+      padding: 8px 10px;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      background: #fff;
+      color: #0f172a;
+      font: inherit;
+      font-size: 15px;
+    }
+
+    .calc-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .primary-btn,
+    .subtle-btn {
+      padding: 8px 12px;
+    }
+
+    .primary-btn {
+      border-color: var(--blue);
+      background: var(--blue);
+      color: #fff;
+    }
+
+    .subtle-btn {
+      background: #fff;
+    }
+
+    .calc-output {
+      min-height: 44px;
+      margin: 0;
+      padding: 10px 12px;
+      border-radius: 8px;
+      background: #eef2ff;
+      color: #1e3a8a;
+      font-size: 15px;
+      font-weight: 800;
+      line-height: 1.5;
+    }
+
+    .calc-output.muted {
+      background: #f1f5f9;
+      color: #475569;
+      font-weight: 700;
+    }
+
+    .comparison-panel,
+    .allocation-panel {
+      display: grid;
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .compare-row,
+    .allocation-row,
+    .scale-row {
+      display: grid;
+      grid-template-columns: 88px minmax(0, 1fr) 92px;
+      gap: 8px;
+      align-items: center;
+      color: #334155;
+      font-size: 14px;
+      font-weight: 800;
+    }
+
+    .allocation-row {
+      grid-template-columns: 88px minmax(0, 1fr) 120px;
+    }
+
+    .scale-fill {
+      width: 0%;
+      background: var(--blue);
+    }
+
+    .scale-fill.wobble {
+      background: var(--amber);
+    }
+
+    .allocation-fill.equal {
+      background: var(--green);
+    }
+
+    .allocation-fill.proportional {
+      background: var(--blue);
+    }
+
+    .check-list {
+      display: grid;
+      gap: 10px;
+      margin: 0;
+      padding-left: 20px;
+      color: #334155;
+      font-size: 15px;
+      line-height: 1.55;
+    }
+
+    .check-list strong {
+      color: #0f172a;
+    }
+
+    .is-hidden {
+      display: none !important;
+    }
+
+    @media (max-width: 1180px) {
+      .preset-row {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+      }
+
+      .structure-grid,
+      .key-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 960px) {
+      .page {
+        padding: 14px;
+      }
+
+      .topbar {
+        display: block;
+      }
+
+      .status-pill {
+        margin-top: 10px;
+      }
+
+      .switcher {
+        display: flex;
+      }
+
+      .workspace {
+        display: block;
+        height: calc(100vh - 212px);
+        min-height: 760px;
+      }
+
+      .splitter {
+        display: none;
+      }
+
+      .pane {
+        height: 100%;
+      }
+
+      .worksheet-pane,
+      .tool-pane {
+        border-right: 0;
+      }
+
+      .preset-row {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .stage-nav {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 640px) {
+      .input-grid,
+      .input-pair,
+      .focus-row {
+        grid-template-columns: 1fr;
+      }
+
+      .compare-row,
+      .allocation-row,
+      .scale-row {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <div class="topbar">
+      <div>
+        <a class="back-link" href="../">← 통계적 의사결정 도우미</a>
+        <header class="title-block">
+          <p class="eyebrow">Probability & Statistics · Decision Support</p>
+          <h1>학교시설 도구</h1>
+          <p>학교 시설 개선 학습지를 보면서 학년별 가중 추정과 표본흔들림을 함께 확인합니다.</p>
+        </header>
+      </div>
+      <span class="status-pill">08 학교시설</span>
+    </div>
+
+    <div class="switcher" aria-label="좁은 화면 보기 전환">
+      <button class="active" type="button" data-view="worksheet">학습지 보기</button>
+      <button type="button" data-view="tool">도구 보기</button>
+    </div>
+
+    <section class="workspace">
+      <article class="pane worksheet-pane" data-pane="worksheet">
+        <div class="pane-head">
+          <p class="pane-title">08 학교시설 · 학생용 PDF</p>
+          <a class="download-link" href="./school-facility-student.pdf" download>PDF 다운로드</a>
+        </div>
+        <object class="pdf-frame" data="./school-facility-student.pdf" type="application/pdf" aria-label="학교시설 학생용 학습지 PDF">
+          <p class="guide-note">PDF가 보이지 않으면 위의 PDF 다운로드를 눌러 학습지를 여세요.</p>
+        </object>
+      </article>
+
+      <div class="splitter" role="separator" tabindex="0" aria-label="학습지와 도구 영역 크기 조절" aria-orientation="vertical" aria-valuemin="32" aria-valuemax="62" aria-valuenow="45" title="드래그해서 학습지와 도구의 폭을 조절합니다."></div>
+
+      <article class="pane tool-pane" data-pane="tool">
+        <div class="pane-head">
+          <p class="pane-title">08 학교시설 도구</p>
+        </div>
+
+        <div class="tool-body">
+          <div class="preset-row">
+            <a class="preset-button" href="../product-recommendation/">01 상품추천</a>
+            <a class="preset-button" href="../space-communication/">02 우주통신</a>
+            <a class="preset-button" href="../event-preparation/">03 행사준비</a>
+            <a class="preset-button" href="../sensor-alarm/">04 센서 경보</a>
+            <a class="preset-button" href="../ab-test/">05 A/B 실험</a>
+            <a class="preset-button" href="../defect-sampling/">06 불량품검사</a>
+            <a class="preset-button" href="../reliability-system/">07 직렬·병렬</a>
+            <button class="preset-button active" type="button">08 학교시설</button>
+          </div>
+
+          <div class="guide-strip">
+            <p class="guide-note">학습지 [시작 전] 예상을 먼저 적고, Q1 표본비율과 가중 항은 학습지에 직접 채우세요.</p>
+            <p class="guide-note">이 도구는 학년 크기의 영향과 입력값 계산 확인만 돕습니다. 추천 보고서는 학습지에 직접 작성하세요.</p>
+          </div>
+
+          <nav class="stage-nav" aria-label="08 학교시설 학습 흐름">
+            <button class="stage-btn active" type="button" data-jump="stage-weight">Q1</button>
+            <button class="stage-btn" type="button" data-jump="stage-fairness">Q2~Q3</button>
+            <button class="stage-btn" type="button" data-jump="stage-wobble">Q5</button>
+            <button class="stage-btn" type="button" data-jump="stage-checks">Q6~Q8</button>
+          </nav>
+
+          <section class="section" id="stage-weight" aria-labelledby="weight-title">
+            <div class="section-head">
+              <h2 class="section-title" id="weight-title">학년 크기를 반영한 보기</h2>
+              <span class="tiny-label">Q1 참고</span>
+            </div>
+
+            <div class="focus-row" aria-label="시설 선택">
+              <button class="focus-btn active" type="button" data-facility="study">학습 공간</button>
+              <button class="focus-btn" type="button" data-facility="rest">휴게 공간</button>
+              <button class="focus-btn" type="button" data-facility="sport">체육 공간</button>
+            </div>
+
+            <div class="formula-box">
+              가중 추정 인원
+              <math aria-label="각 학년 학생 수 곱하기 표본비율의 합">
+                <mrow>
+                  <mo>=</mo>
+                  <munderover><mo>&#8721;</mo><mtext>학년</mtext><mrow></mrow></munderover>
+                  <mrow><mo>(</mo><mtext>학년 학생 수</mtext><mo>)</mo></mrow>
+                  <mo>&#215;</mo>
+                  <mrow><mo>(</mo><mtext>그 학년 표본비율</mtext><mo>)</mo></mrow>
+                </mrow>
+              </math>
+            </div>
+
+            <div class="structure-grid">
+              <div class="grade-panel" id="gradePanel" aria-label="학년별 학생 수와 선택 시설 응답 구조"></div>
+
+              <aside class="weight-note">
+                <strong id="selectedFacilityLabel">학습 공간</strong>
+                <p>위 막대는 선택한 시설의 학년별 응답 수를 보여 줍니다. 막대 너비가 같아 보여도, 가중 추정에서는 각 학년의 전체 학생 수가 함께 들어갑니다.</p>
+                <p>계산값은 자동으로 채우지 않습니다. 학습지 Q1을 먼저 계산한 뒤 아래 입력칸으로 확인하세요.</p>
+              </aside>
+            </div>
+
+            <div class="key-grid" aria-label="자료 구조 요약">
+              <div class="key-card">
+                <span>학년별 표본</span>
+                <strong>각 50명</strong>
+              </div>
+              <div class="key-card">
+                <span>학교 전체</span>
+                <strong>400 · 300 · 200명</strong>
+              </div>
+              <div class="key-card">
+                <span>확인할 차이</span>
+                <strong>단순 합계 / 가중 추정</strong>
+              </div>
+            </div>
+
+            <div class="calculator">
+              <div class="section-head">
+                <h3 class="section-title">내 표본비율·가중 항 확인</h3>
+                <span class="tiny-label">Q1 입력형</span>
+              </div>
+              <div class="input-grid">
+                <label class="calc-field" for="selectedCountInput">
+                  선택 응답 수
+                  <input id="selectedCountInput" type="number" inputmode="numeric" min="0" step="1" placeholder="예: 30" />
+                </label>
+                <label class="calc-field" for="sampleSizeInput">
+                  그 학년 표본 크기
+                  <input id="sampleSizeInput" type="number" inputmode="numeric" min="1" step="1" placeholder="예: 50" />
+                </label>
+                <label class="calc-field" for="populationInput">
+                  그 학년 전체 학생 수
+                  <input id="populationInput" type="number" inputmode="numeric" min="1" step="1" placeholder="예: 400" />
+                </label>
+              </div>
+              <div class="calc-actions">
+                <button class="primary-btn" type="button" id="calculateTermButton">입력값으로 확인</button>
+                <button class="subtle-btn" type="button" id="clearTermButton">지우기</button>
+              </div>
+              <p class="calc-output muted" id="termOutput" aria-live="polite">응답 수, 표본 크기, 학년 학생 수를 입력하면 표본비율과 한 학년의 가중 항만 계산합니다.</p>
+            </div>
+
+            <div class="calculator">
+              <div class="section-head">
+                <h3 class="section-title">내 가중 합계 확인</h3>
+                <span class="tiny-label">Q1 입력형</span>
+              </div>
+              <div class="input-grid">
+                <label class="calc-field" for="termOneInput">
+                  1학년 가중 항
+                  <input id="termOneInput" type="number" inputmode="decimal" min="0" step="any" placeholder="내가 계산한 값" />
+                </label>
+                <label class="calc-field" for="termTwoInput">
+                  2학년 가중 항
+                  <input id="termTwoInput" type="number" inputmode="decimal" min="0" step="any" placeholder="내가 계산한 값" />
+                </label>
+                <label class="calc-field" for="termThreeInput">
+                  3학년 가중 항
+                  <input id="termThreeInput" type="number" inputmode="decimal" min="0" step="any" placeholder="내가 계산한 값" />
+                </label>
+              </div>
+              <div class="calc-actions">
+                <button class="primary-btn" type="button" id="calculateTotalButton">세 항 더하기</button>
+                <button class="subtle-btn" type="button" id="clearTotalButton">지우기</button>
+              </div>
+              <p class="calc-output muted" id="totalOutput" aria-live="polite">세 학년의 가중 항을 입력하면 합만 계산합니다. 어떤 시설인지와 판단은 학습지에 직접 남기세요.</p>
+            </div>
+          </section>
+
+          <section class="section" id="stage-fairness" aria-labelledby="fairness-title">
+            <div class="section-head">
+              <h2 class="section-title" id="fairness-title">단순 합계와 가중 추정의 차이</h2>
+              <span class="tiny-label">Q2~Q3 참고</span>
+            </div>
+
+            <p class="calc-note">같은 50명 표본이라도 각 학년이 대표하는 전체 크기는 다릅니다. 아래 그림은 학년 전체 학생 수와 균등 표본 크기를 나란히 놓아 보는 장치입니다.</p>
+
+            <div class="comparison-panel" id="populationComparison" aria-label="학년 전체 학생 수와 표본 크기 비교"></div>
+
+            <ul class="check-list" style="margin-top: 12px;">
+              <li><strong>Q2:</strong> 표본 크기 50과 학년 전체 학생 수 400·300·200을 구분해 보세요.</li>
+              <li><strong>Q3:</strong> 학교 전체 대표성과 학년별 동등 발언권은 서로 다른 기준입니다. 선택은 학습지에 근거와 함께 쓰세요.</li>
+              <li>이 도구는 어느 기준을 써야 하는지 대신 정하지 않습니다. 선택한 집계 기준과 이유를 직접 정리하세요.</li>
+            </ul>
+          </section>
+
+          <section class="section" id="stage-wobble" aria-labelledby="wobble-title">
+            <div class="section-head">
+              <h2 class="section-title" id="wobble-title">추정값의 표본흔들림</h2>
+              <span class="tiny-label">Q5 참고</span>
+            </div>
+
+            <p class="formula-box">
+              표본비율 흔들림
+              <math aria-label="2 곱하기 p 괄호 1 빼기 p 괄호 나누기 n의 제곱근">
+                <mrow>
+                  <mo>≈</mo>
+                  <mn>2</mn>
+                  <msqrt>
+                    <mfrac>
+                      <mrow><mi>p</mi><mo>(</mo><mn>1</mn><mo>-</mo><mi>p</mi><mo>)</mo></mrow>
+                      <mi>n</mi>
+                    </mfrac>
+                  </msqrt>
+                </mrow>
+              </math>
+            </p>
+
+            <div class="calculator">
+              <div class="section-head">
+                <h3 class="section-title">내 흔들림 계산 확인</h3>
+                <span class="tiny-label">Q5 입력형</span>
+              </div>
+              <div class="input-pair">
+                <label class="calc-field" for="rateInput">
+                  표본비율 p
+                  <input id="rateInput" type="number" inputmode="decimal" min="0" step="any" placeholder="소수 또는 %" />
+                </label>
+                <label class="calc-field" for="wobbleSampleInput">
+                  표본 크기 n
+                  <input id="wobbleSampleInput" type="number" inputmode="numeric" min="1" step="1" placeholder="예: 50" />
+                </label>
+              </div>
+              <div class="calc-actions">
+                <button class="primary-btn" type="button" id="calculateWobbleButton">흔들림 확인</button>
+                <button class="subtle-btn" type="button" id="clearWobbleButton">지우기</button>
+              </div>
+              <p class="calc-output muted" id="wobbleOutput" aria-live="polite">p와 n을 입력하면 표본비율의 흔들림 값만 계산합니다.</p>
+            </div>
+
+            <div class="calculator">
+              <div class="section-head">
+                <h3 class="section-title">내 차이와 흔들림 크기 비교</h3>
+                <span class="tiny-label">Q5 입력형</span>
+              </div>
+              <div class="input-pair">
+                <label class="calc-field" for="gapInput">
+                  내가 비교할 차이
+                  <input id="gapInput" type="number" inputmode="decimal" min="0" step="any" placeholder="명 또는 %p" />
+                </label>
+                <label class="calc-field" for="wobbleScaleInput">
+                  내가 잡은 흔들림 기준
+                  <input id="wobbleScaleInput" type="number" inputmode="decimal" min="0" step="any" placeholder="같은 단위로 입력" />
+                </label>
+              </div>
+              <div class="comparison-panel">
+                <div class="scale-row">
+                  <span>차이</span>
+                  <div class="scale-track"><div class="scale-fill" id="gapFill"></div></div>
+                  <strong id="gapLabel">-</strong>
+                </div>
+                <div class="scale-row">
+                  <span>흔들림</span>
+                  <div class="scale-track"><div class="scale-fill wobble" id="wobbleFill"></div></div>
+                  <strong id="wobbleLabel">-</strong>
+                </div>
+              </div>
+              <div class="calc-actions">
+                <button class="primary-btn" type="button" id="compareScaleButton">입력값 비교</button>
+                <button class="subtle-btn" type="button" id="clearScaleButton">지우기</button>
+              </div>
+              <p class="calc-output muted" id="scaleOutput" aria-live="polite">두 값을 같은 단위로 입력하면 막대 길이만 비교합니다. 해석 문장은 학습지 Q5에 직접 쓰세요.</p>
+            </div>
+
+            <div class="calculator">
+              <div class="section-head">
+                <h3 class="section-title">표본을 늘리면 흔들림은?</h3>
+                <span class="tiny-label">Q5 확장</span>
+              </div>
+              <div class="input-pair">
+                <label class="calc-field" for="baseSampleInput">
+                  기준 표본 크기 n
+                  <input id="baseSampleInput" type="number" inputmode="numeric" min="1" step="1" placeholder="현재 n 입력" />
+                </label>
+                <label class="calc-field" for="sampleMultiplierInput">
+                  표본을 늘린 배수
+                  <input id="sampleMultiplierInput" type="number" inputmode="decimal" min="1" step="any" placeholder="예: 4" />
+                </label>
+              </div>
+              <div class="calc-actions">
+                <button class="primary-btn" type="button" id="calculateMultiplierButton">흔들림 배수 확인</button>
+                <button class="subtle-btn" type="button" id="clearMultiplierButton">지우기</button>
+              </div>
+              <p class="calc-output muted" id="multiplierOutput" aria-live="polite">표본을 몇 배 늘렸는지 입력하면 흔들림이 몇 배가 되는지만 계산합니다.</p>
+            </div>
+          </section>
+
+          <section class="section" id="stage-checks" aria-labelledby="checks-title">
+            <div class="section-head">
+              <h2 class="section-title" id="checks-title">표본 설계와 AI 요약 점검</h2>
+              <span class="tiny-label">Q6~Q8 참고</span>
+            </div>
+
+            <div class="allocation-panel" id="allocationPanel" aria-label="균등 표본 배분과 비례 표본 배분 비교"></div>
+            <p class="calc-note">위 그림은 현재처럼 각 학년 50명씩 뽑는 방식과, 전체 150명을 학년 크기에 비례해 나누는 방식을 나란히 보여 줍니다.</p>
+
+            <div class="calculator">
+              <div class="section-head">
+                <h3 class="section-title">비례 배분 수 확인</h3>
+                <span class="tiny-label">Q6 입력형</span>
+              </div>
+              <label class="calc-field" for="totalSampleInput">
+                전체 표본 수
+                <input id="totalSampleInput" type="number" inputmode="numeric" min="1" step="1" placeholder="예: 150" />
+              </label>
+              <div class="calc-actions">
+                <button class="primary-btn" type="button" id="calculateAllocationButton">비례 배분 확인</button>
+                <button class="subtle-btn" type="button" id="clearAllocationButton">지우기</button>
+              </div>
+              <p class="calc-output muted" id="allocationOutput" aria-live="polite">전체 표본 수를 입력하면 400:300:200 비율로 나눈 값만 계산합니다.</p>
+            </div>
+
+            <ul class="check-list" style="margin-top: 12px;">
+              <li><strong>Q6:</strong> 균등 배분과 비례 배분은 정확하게 추정하려는 대상이 조금 다릅니다. 장단점을 학습지에 직접 정리하세요.</li>
+              <li><strong>Q7:</strong> 자원자 표본이면 표본 수가 커져도 편향이 남을 수 있는지 점검하세요.</li>
+              <li><strong>Q8:</strong> AI 요약이 단순 합계, 학년 크기, 표본흔들림을 각각 어떻게 다루는지 문장별로 확인하세요.</li>
+              <li>마지막 추천 보고서와 결론 문장은 웹앱이 대신 작성하지 않습니다.</li>
+            </ul>
+          </section>
+        </div>
+      </article>
+    </section>
+  </main>
+
+  <script>
+    const switchButtons = document.querySelectorAll('.switcher button');
+    const workspace = document.querySelector('.workspace');
+    const splitter = document.querySelector('.splitter');
+    const panes = document.querySelectorAll('[data-pane]');
+    const stageButtons = document.querySelectorAll('.stage-btn');
+    const facilityButtons = document.querySelectorAll('[data-facility]');
+
+    const splitState = {
+      value: 45,
+      dragging: false,
+      storageKey: 'school-facility-worksheet-ratio',
+    };
+
+    const facilities = {
+      study: { label: '학습 공간', short: '학습', className: 'study' },
+      rest: { label: '휴게 공간', short: '휴게', className: 'rest' },
+      sport: { label: '체육 공간', short: '체육', className: 'sport' },
+    };
+
+    const grades = [
+      { id: 'g1', label: '1학년', population: 400, sampleSize: 50, counts: { study: 30, rest: 10, sport: 10 } },
+      { id: 'g2', label: '2학년', population: 300, sampleSize: 50, counts: { study: 15, rest: 20, sport: 15 } },
+      { id: 'g3', label: '3학년', population: 200, sampleSize: 50, counts: { study: 5, rest: 20, sport: 25 } },
+    ];
+
+    const state = {
+      facility: 'study',
+    };
+
+    function formatNumber(value, digits = 2) {
+      return value.toLocaleString('ko-KR', { maximumFractionDigits: digits });
+    }
+
+    function formatPercent(value) {
+      return (value * 100).toFixed(1) + '%';
+    }
+
+    function normalizeRatio(value) {
+      if (value > 1 && value <= 100) {
+        return value / 100;
+      }
+      return value;
+    }
+
+    function readNumber(id) {
+      const input = document.getElementById(id);
+      if (input.value.trim() === '') {
+        return null;
+      }
+      return Number(input.value);
+    }
+
+    function setMessage(element, message, muted = false) {
+      element.textContent = message;
+      element.classList.toggle('muted', muted);
+    }
+
+    function setNarrowView(viewName) {
+      switchButtons.forEach((item) => item.classList.toggle('active', item.dataset.view === viewName));
+      panes.forEach((pane) => pane.classList.toggle('is-hidden', pane.dataset.pane !== viewName));
+    }
+
+    function getSplitBounds() {
+      const width = workspace?.getBoundingClientRect().width || 1180;
+      const splitterWidth = splitter?.getBoundingClientRect().width || 12;
+      const minLeft = 360;
+      const minRight = 420;
+      const min = Math.max(32, (minLeft / width) * 100);
+      const max = Math.min(64, ((width - splitterWidth - minRight) / width) * 100);
+      return {
+        min: Math.min(min, 45),
+        max: Math.max(max, 45),
+      };
+    }
+
+    function setWorkspaceSplit(value, persist = true) {
+      const bounds = getSplitBounds();
+      const clamped = Math.min(bounds.max, Math.max(bounds.min, value));
+      splitState.value = clamped;
+      workspace.style.setProperty('--worksheet-ratio', clamped.toFixed(2) + '%');
+      splitter.setAttribute('aria-valuemin', String(Math.round(bounds.min)));
+      splitter.setAttribute('aria-valuemax', String(Math.round(bounds.max)));
+      splitter.setAttribute('aria-valuenow', String(Math.round(clamped)));
+
+      if (persist) {
+        try {
+          window.localStorage.setItem(splitState.storageKey, clamped.toFixed(2));
+        } catch (error) {
+          // 저장이 막힌 환경에서도 폭 조절 자체는 유지한다.
+        }
+      }
+    }
+
+    function setWorkspaceSplitFromClientX(clientX, persist = false) {
+      const rect = workspace.getBoundingClientRect();
+      const ratio = ((clientX - rect.left) / rect.width) * 100;
+      setWorkspaceSplit(ratio, persist);
+    }
+
+    function loadWorkspaceSplit() {
+      let saved = null;
+      try {
+        saved = Number(window.localStorage.getItem(splitState.storageKey));
+      } catch (error) {
+        saved = null;
+      }
+      if (Number.isFinite(saved) && saved > 0) {
+        splitState.value = saved;
+      }
+    }
+
+    function isNarrowLayout() {
+      return window.matchMedia('(max-width: 960px)').matches;
+    }
+
+    function syncResponsiveView() {
+      if (!isNarrowLayout()) {
+        panes.forEach((pane) => pane.classList.remove('is-hidden'));
+        setWorkspaceSplit(splitState.value, false);
+        return;
+      }
+      const activeView = document.querySelector('.switcher button.active')?.dataset.view || 'worksheet';
+      setNarrowView(activeView);
+    }
+
+    function renderFacilityStructure() {
+      const facility = facilities[state.facility];
+      const maxPopulation = Math.max(...grades.map((grade) => grade.population));
+      const panel = document.getElementById('gradePanel');
+      panel.innerHTML = '';
+      document.getElementById('selectedFacilityLabel').textContent = facility.label;
+
+      grades.forEach((grade) => {
+        const selected = grade.counts[state.facility];
+        const card = document.createElement('div');
+        card.className = 'grade-card';
+
+        const title = document.createElement('h3');
+        title.innerHTML = '<span>' + grade.label + '</span><span>' + grade.population + '명</span>';
+
+        const populationLabel = document.createElement('div');
+        populationLabel.className = 'bar-label';
+        populationLabel.innerHTML = '<span>학년 전체</span><span>' + grade.population + '명</span>';
+
+        const populationTrack = document.createElement('div');
+        populationTrack.className = 'population-track';
+        const populationFill = document.createElement('div');
+        populationFill.className = 'population-fill';
+        populationFill.style.width = ((grade.population / maxPopulation) * 100).toFixed(1) + '%';
+        populationTrack.appendChild(populationFill);
+
+        const sampleLabel = document.createElement('div');
+        sampleLabel.className = 'bar-label';
+        sampleLabel.innerHTML = '<span>' + facility.short + ' 응답</span><span>' + selected + '명 / 표본 ' + grade.sampleSize + '명</span>';
+
+        const sampleTrack = document.createElement('div');
+        sampleTrack.className = 'sample-track';
+        const sampleFill = document.createElement('div');
+        sampleFill.className = 'sample-fill ' + facility.className;
+        sampleFill.style.width = ((selected / grade.sampleSize) * 100).toFixed(1) + '%';
+        sampleTrack.appendChild(sampleFill);
+
+        const note = document.createElement('p');
+        note.className = 'calc-note';
+        note.textContent = '가중 항 구조: ' + grade.population + ' × (' + selected + ' ÷ ' + grade.sampleSize + ')';
+
+        card.append(title, populationLabel, populationTrack, sampleLabel, sampleTrack, note);
+        panel.appendChild(card);
+      });
+    }
+
+    function renderPopulationComparison() {
+      const maxPopulation = Math.max(...grades.map((grade) => grade.population));
+      const container = document.getElementById('populationComparison');
+      container.innerHTML = '';
+
+      grades.forEach((grade) => {
+        const row = document.createElement('div');
+        row.className = 'compare-row';
+        const label = document.createElement('span');
+        label.textContent = grade.label;
+        const track = document.createElement('div');
+        track.className = 'compare-track';
+        const fill = document.createElement('div');
+        fill.className = 'compare-fill';
+        fill.style.width = ((grade.population / maxPopulation) * 100).toFixed(1) + '%';
+        track.appendChild(fill);
+        const value = document.createElement('strong');
+        value.textContent = grade.population + '명 / 표본 50명';
+        row.append(label, track, value);
+        container.appendChild(row);
+      });
+    }
+
+    function renderAllocation() {
+      const panel = document.getElementById('allocationPanel');
+      panel.innerHTML = '';
+      const totalSample = 150;
+      const totalPopulation = grades.reduce((sum, grade) => sum + grade.population, 0);
+      const maxSample = 70;
+
+      grades.forEach((grade) => {
+        const proportional = (totalSample * grade.population) / totalPopulation;
+        const row = document.createElement('div');
+        row.className = 'allocation-row';
+        const label = document.createElement('span');
+        label.textContent = grade.label;
+
+        const track = document.createElement('div');
+        track.className = 'compare-track';
+        const equalFill = document.createElement('div');
+        equalFill.className = 'compare-fill allocation-fill equal';
+        equalFill.style.width = ((50 / maxSample) * 100).toFixed(1) + '%';
+        equalFill.style.height = '50%';
+        equalFill.style.borderRadius = '999px 999px 0 0';
+        const proportionalFill = document.createElement('div');
+        proportionalFill.className = 'compare-fill allocation-fill proportional';
+        proportionalFill.style.width = ((proportional / maxSample) * 100).toFixed(1) + '%';
+        proportionalFill.style.height = '50%';
+        proportionalFill.style.borderRadius = '0 0 999px 999px';
+        track.append(equalFill, proportionalFill);
+
+        const value = document.createElement('strong');
+        value.textContent = '균등 50 / 비례 약 ' + formatNumber(proportional, 1);
+        row.append(label, track, value);
+        panel.appendChild(row);
+      });
+    }
+
+    function calculateTerm() {
+      const selected = readNumber('selectedCountInput');
+      const sampleSize = readNumber('sampleSizeInput');
+      const population = readNumber('populationInput');
+      if (selected === null || sampleSize === null || population === null) {
+        setMessage(document.getElementById('termOutput'), '세 값을 모두 입력하세요.', true);
+        return;
+      }
+      if (selected < 0 || sampleSize <= 0 || population <= 0 || selected > sampleSize) {
+        setMessage(document.getElementById('termOutput'), '응답 수는 표본 크기보다 클 수 없고, 표본 크기와 학생 수는 양수여야 합니다.', true);
+        return;
+      }
+      const ratio = selected / sampleSize;
+      const weighted = ratio * population;
+      setMessage(document.getElementById('termOutput'), '입력값의 표본비율: ' + formatNumber(ratio, 4) + ' (' + formatPercent(ratio) + '), 가중 항: ' + formatNumber(weighted, 2) + '명', false);
+    }
+
+    function clearTerm() {
+      ['selectedCountInput', 'sampleSizeInput', 'populationInput'].forEach((id) => {
+        document.getElementById(id).value = '';
+      });
+      setMessage(document.getElementById('termOutput'), '응답 수, 표본 크기, 학년 학생 수를 입력하면 표본비율과 한 학년의 가중 항만 계산합니다.', true);
+    }
+
+    function calculateTotal() {
+      const values = ['termOneInput', 'termTwoInput', 'termThreeInput'].map((id) => readNumber(id));
+      if (values.some((value) => value === null)) {
+        setMessage(document.getElementById('totalOutput'), '세 학년의 가중 항을 모두 입력하세요.', true);
+        return;
+      }
+      if (values.some((value) => !Number.isFinite(value) || value < 0)) {
+        setMessage(document.getElementById('totalOutput'), '가중 항은 0 이상의 수로 입력하세요.', true);
+        return;
+      }
+      const total = values.reduce((sum, value) => sum + value, 0);
+      setMessage(document.getElementById('totalOutput'), '입력한 세 가중 항의 합: ' + formatNumber(total, 2) + '명. 이 값을 어떤 시설의 값으로 쓸지는 학습지에 직접 표시하세요.', false);
+    }
+
+    function clearTotal() {
+      ['termOneInput', 'termTwoInput', 'termThreeInput'].forEach((id) => {
+        document.getElementById(id).value = '';
+      });
+      setMessage(document.getElementById('totalOutput'), '세 학년의 가중 항을 입력하면 합만 계산합니다. 어떤 시설인지와 판단은 학습지에 직접 남기세요.', true);
+    }
+
+    function calculateWobble() {
+      const rawRate = readNumber('rateInput');
+      const n = readNumber('wobbleSampleInput');
+      if (rawRate === null || n === null) {
+        setMessage(document.getElementById('wobbleOutput'), 'p와 n을 모두 입력하세요.', true);
+        return;
+      }
+      const p = normalizeRatio(rawRate);
+      if (p < 0 || p > 1 || n <= 0) {
+        setMessage(document.getElementById('wobbleOutput'), 'p는 0~1의 소수로 입력하세요. 1보다 큰 값은 퍼센트로 해석합니다. n은 양수입니다.', true);
+        return;
+      }
+      const wobble = 2 * Math.sqrt((p * (1 - p)) / n);
+      setMessage(document.getElementById('wobbleOutput'), '입력값의 표본비율 흔들림: ' + formatNumber(wobble, 4) + ' (' + formatPercent(wobble) + 'p)', false);
+    }
+
+    function clearWobble() {
+      ['rateInput', 'wobbleSampleInput'].forEach((id) => {
+        document.getElementById(id).value = '';
+      });
+      setMessage(document.getElementById('wobbleOutput'), 'p와 n을 입력하면 표본비율의 흔들림 값만 계산합니다.', true);
+    }
+
+    function setScaleBars(gap, wobble) {
+      const max = Math.max(gap, wobble, 1);
+      document.getElementById('gapFill').style.width = ((gap / max) * 100).toFixed(1) + '%';
+      document.getElementById('wobbleFill').style.width = ((wobble / max) * 100).toFixed(1) + '%';
+      document.getElementById('gapLabel').textContent = formatNumber(gap, 2);
+      document.getElementById('wobbleLabel').textContent = formatNumber(wobble, 2);
+    }
+
+    function resetScaleBars() {
+      document.getElementById('gapFill').style.width = '0%';
+      document.getElementById('wobbleFill').style.width = '0%';
+      document.getElementById('gapLabel').textContent = '-';
+      document.getElementById('wobbleLabel').textContent = '-';
+    }
+
+    function compareScale() {
+      const gap = readNumber('gapInput');
+      const wobble = readNumber('wobbleScaleInput');
+      if (gap === null || wobble === null) {
+        setMessage(document.getElementById('scaleOutput'), '비교할 차이와 흔들림 기준을 모두 입력하세요.', true);
+        return;
+      }
+      if (gap < 0 || wobble < 0) {
+        setMessage(document.getElementById('scaleOutput'), '두 값은 0 이상의 같은 단위로 입력하세요.', true);
+        return;
+      }
+      setScaleBars(gap, wobble);
+      setMessage(document.getElementById('scaleOutput'), '입력한 차이: ' + formatNumber(gap, 2) + ', 입력한 흔들림 기준: ' + formatNumber(wobble, 2) + '. 두 막대의 크기만 비교하세요.', false);
+    }
+
+    function clearScale() {
+      ['gapInput', 'wobbleScaleInput'].forEach((id) => {
+        document.getElementById(id).value = '';
+      });
+      resetScaleBars();
+      setMessage(document.getElementById('scaleOutput'), '두 값을 같은 단위로 입력하면 막대 길이만 비교합니다. 해석 문장은 학습지 Q5에 직접 쓰세요.', true);
+    }
+
+    function calculateMultiplier() {
+      const baseN = readNumber('baseSampleInput');
+      const multiplier = readNumber('sampleMultiplierInput');
+      if (baseN === null || multiplier === null) {
+        setMessage(document.getElementById('multiplierOutput'), '기준 n과 늘린 배수를 모두 입력하세요.', true);
+        return;
+      }
+      if (baseN <= 0 || multiplier < 1) {
+        setMessage(document.getElementById('multiplierOutput'), '기준 표본 크기는 양수, 늘린 배수는 1 이상이어야 합니다.', true);
+        return;
+      }
+      const newN = baseN * multiplier;
+      const factor = 1 / Math.sqrt(multiplier);
+      setMessage(document.getElementById('multiplierOutput'), '표본 크기 ' + formatNumber(newN, 1) + '명일 때 흔들림은 처음의 약 ' + formatNumber(factor, 3) + '배입니다.', false);
+    }
+
+    function clearMultiplier() {
+      ['baseSampleInput', 'sampleMultiplierInput'].forEach((id) => {
+        document.getElementById(id).value = '';
+      });
+      setMessage(document.getElementById('multiplierOutput'), '표본을 몇 배 늘렸는지 입력하면 흔들림이 몇 배가 되는지만 계산합니다.', true);
+    }
+
+    function calculateAllocation() {
+      const totalSample = readNumber('totalSampleInput');
+      if (totalSample === null) {
+        setMessage(document.getElementById('allocationOutput'), '전체 표본 수를 입력하세요.', true);
+        return;
+      }
+      if (!Number.isFinite(totalSample) || totalSample <= 0) {
+        setMessage(document.getElementById('allocationOutput'), '전체 표본 수는 양수로 입력하세요.', true);
+        return;
+      }
+      const totalPopulation = grades.reduce((sum, grade) => sum + grade.population, 0);
+      const values = grades.map((grade) => totalSample * grade.population / totalPopulation);
+      setMessage(document.getElementById('allocationOutput'), '입력값의 비례 배분: 1학년 약 ' + formatNumber(values[0], 1) + '명, 2학년 약 ' + formatNumber(values[1], 1) + '명, 3학년 약 ' + formatNumber(values[2], 1) + '명', false);
+    }
+
+    function clearAllocation() {
+      document.getElementById('totalSampleInput').value = '';
+      setMessage(document.getElementById('allocationOutput'), '전체 표본 수를 입력하면 400:300:200 비율로 나눈 값만 계산합니다.', true);
+    }
+
+    switchButtons.forEach((button) => {
+      button.addEventListener('click', () => setNarrowView(button.dataset.view));
+    });
+
+    splitter.addEventListener('pointerdown', (event) => {
+      if (isNarrowLayout()) return;
+      splitState.dragging = true;
+      splitter.classList.add('is-dragging');
+      workspace.classList.add('is-resizing-layout');
+      splitter.setPointerCapture(event.pointerId);
+      setWorkspaceSplitFromClientX(event.clientX, false);
+    });
+
+    splitter.addEventListener('pointermove', (event) => {
+      if (!splitState.dragging) return;
+      setWorkspaceSplitFromClientX(event.clientX, false);
+    });
+
+    function stopSplitterDrag(event) {
+      if (!splitState.dragging) return;
+      splitState.dragging = false;
+      splitter.classList.remove('is-dragging');
+      workspace.classList.remove('is-resizing-layout');
+      if (splitter.hasPointerCapture(event.pointerId)) {
+        splitter.releasePointerCapture(event.pointerId);
+      }
+      setWorkspaceSplit(splitState.value, true);
+    }
+
+    splitter.addEventListener('pointerup', stopSplitterDrag);
+    splitter.addEventListener('pointercancel', stopSplitterDrag);
+    splitter.addEventListener('dblclick', () => setWorkspaceSplit(45, true));
+
+    splitter.addEventListener('keydown', (event) => {
+      if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+      event.preventDefault();
+      const bounds = getSplitBounds();
+      if (event.key === 'Home') {
+        setWorkspaceSplit(bounds.min, true);
+      } else if (event.key === 'End') {
+        setWorkspaceSplit(bounds.max, true);
+      } else {
+        setWorkspaceSplit(splitState.value + (event.key === 'ArrowRight' ? 2 : -2), true);
+      }
+    });
+
+    stageButtons.forEach((button) => {
+      button.addEventListener('click', () => {
+        stageButtons.forEach((item) => item.classList.toggle('active', item === button));
+        const target = document.getElementById(button.dataset.jump);
+        if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+    });
+
+    facilityButtons.forEach((button) => {
+      button.addEventListener('click', () => {
+        state.facility = button.dataset.facility;
+        facilityButtons.forEach((item) => item.classList.toggle('active', item === button));
+        renderFacilityStructure();
+      });
+    });
+
+    document.getElementById('calculateTermButton').addEventListener('click', calculateTerm);
+    document.getElementById('clearTermButton').addEventListener('click', clearTerm);
+    document.getElementById('calculateTotalButton').addEventListener('click', calculateTotal);
+    document.getElementById('clearTotalButton').addEventListener('click', clearTotal);
+    document.getElementById('calculateWobbleButton').addEventListener('click', calculateWobble);
+    document.getElementById('clearWobbleButton').addEventListener('click', clearWobble);
+    document.getElementById('compareScaleButton').addEventListener('click', compareScale);
+    document.getElementById('clearScaleButton').addEventListener('click', clearScale);
+    document.getElementById('calculateMultiplierButton').addEventListener('click', calculateMultiplier);
+    document.getElementById('clearMultiplierButton').addEventListener('click', clearMultiplier);
+    document.getElementById('calculateAllocationButton').addEventListener('click', calculateAllocation);
+    document.getElementById('clearAllocationButton').addEventListener('click', clearAllocation);
+
+    [
+      ['selectedCountInput', calculateTerm],
+      ['sampleSizeInput', calculateTerm],
+      ['populationInput', calculateTerm],
+      ['termOneInput', calculateTotal],
+      ['termTwoInput', calculateTotal],
+      ['termThreeInput', calculateTotal],
+      ['rateInput', calculateWobble],
+      ['wobbleSampleInput', calculateWobble],
+      ['gapInput', compareScale],
+      ['wobbleScaleInput', compareScale],
+      ['baseSampleInput', calculateMultiplier],
+      ['sampleMultiplierInput', calculateMultiplier],
+      ['totalSampleInput', calculateAllocation],
+    ].forEach(([id, handler]) => {
+      document.getElementById(id).addEventListener('keydown', (event) => {
+        if (event.key === 'Enter') handler();
+      });
+    });
+
+    window.addEventListener('resize', syncResponsiveView);
+    loadWorkspaceSplit();
+    syncResponsiveView();
+    renderFacilityStructure();
+    renderPopulationComparison();
+    renderAllocation();
+    resetScaleBars();
+  </script>
+</body>
+</html>
