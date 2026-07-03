@@ -1,0 +1,1440 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="축제 부스 인력 배치 학습지를 보조하는 정규분포 초과 영역 시각화 웹앱입니다." />
+  <title>09 축제부스 도구</title>
+  <link rel="stylesheet" href="../../../assets/common.css" />
+  <style>
+    :root {
+      --blue: #2563eb;
+      --blue-weak: #dbeafe;
+      --green: #047857;
+      --green-weak: #d1fae5;
+      --amber: #b45309;
+      --amber-weak: #fef3c7;
+      --rose: #be123c;
+      --rose-weak: #ffe4e6;
+      --slate: #334155;
+      --line: #dbe4ef;
+    }
+
+    body {
+      background: #f6f7fb;
+    }
+
+    .page {
+      max-width: none;
+      min-height: 100vh;
+      padding: 16px;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 16px;
+      max-width: 1440px;
+      margin: 0 auto 10px;
+    }
+
+    .topbar .back-link {
+      margin-bottom: 0;
+      white-space: nowrap;
+    }
+
+    .title-block h1 {
+      margin: 4px 0;
+      font-size: clamp(28px, 4vw, 40px);
+    }
+
+    .title-block p {
+      margin: 0;
+      color: #334155;
+      font-size: 16px;
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      min-height: 34px;
+      padding: 7px 12px;
+      border: 1px solid #bfdbfe;
+      border-radius: 999px;
+      background: #eff6ff;
+      color: #1d4ed8;
+      font-size: 14px;
+      font-weight: 850;
+      white-space: nowrap;
+    }
+
+    .switcher {
+      display: none;
+      max-width: 1440px;
+      margin: 0 auto 10px;
+      gap: 8px;
+    }
+
+    .switcher button {
+      flex: 1;
+      min-height: 42px;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      background: #fff;
+      color: #334155;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .switcher button.active {
+      border-color: var(--blue);
+      background: var(--blue-weak);
+      color: #1d4ed8;
+    }
+
+    .workspace {
+      --worksheet-ratio: 45%;
+      display: grid;
+      grid-template-columns: var(--worksheet-ratio) 12px minmax(420px, 1fr);
+      gap: 0;
+      max-width: 1440px;
+      height: calc(100vh - 152px);
+      min-height: 620px;
+      margin: 0 auto;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      overflow: hidden;
+      background: #fff;
+      box-shadow: 0 16px 42px rgba(15, 23, 42, 0.08);
+    }
+
+    .pane {
+      min-width: 0;
+      min-height: 0;
+      background: #fff;
+    }
+
+    .worksheet-pane {
+      display: flex;
+      flex-direction: column;
+      border-right: 1px solid var(--line);
+    }
+
+    .tool-pane {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+
+    .pane-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--line);
+      background: #f8fafc;
+    }
+
+    .pane-title {
+      margin: 0;
+      color: #0f172a;
+      font-size: 14px;
+      font-weight: 850;
+    }
+
+    .download-link {
+      display: inline-flex;
+      align-items: center;
+      min-height: 32px;
+      padding: 6px 10px;
+      border-radius: 8px;
+      background: var(--blue);
+      color: #fff;
+      font-size: 13px;
+      font-weight: 850;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+
+    .pdf-frame {
+      width: 100%;
+      flex: 1;
+      border: 0;
+      background: #eef2f7;
+    }
+
+    .splitter {
+      position: relative;
+      background: #e2e8f0;
+      cursor: col-resize;
+      touch-action: none;
+      outline: none;
+    }
+
+    .splitter::before {
+      content: "";
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 4px;
+      height: 54px;
+      border-radius: 999px;
+      background: #94a3b8;
+      transform: translate(-50%, -50%);
+    }
+
+    .splitter:hover,
+    .splitter:focus-visible,
+    .splitter.is-dragging {
+      background: #bfdbfe;
+    }
+
+    .splitter:hover::before,
+    .splitter:focus-visible::before,
+    .splitter.is-dragging::before {
+      background: var(--blue);
+    }
+
+    .is-resizing-layout .pdf-frame {
+      pointer-events: none;
+    }
+
+    .tool-body {
+      flex: 1;
+      min-height: 0;
+      overflow: auto;
+      padding: 14px;
+      background: #f8fafc;
+    }
+
+    .preset-row,
+    .stage-nav {
+      display: grid;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .preset-row {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .stage-nav {
+      position: sticky;
+      top: -14px;
+      z-index: 4;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      padding: 10px 0;
+      background: #f8fafc;
+    }
+
+    .preset-button,
+    .stage-btn,
+    .focus-btn,
+    .primary-btn,
+    .subtle-btn {
+      min-height: 38px;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      background: #fff;
+      color: #334155;
+      font: inherit;
+      font-size: 14px;
+      font-weight: 850;
+      text-align: center;
+      text-decoration: none;
+      cursor: pointer;
+    }
+
+    .preset-button,
+    .stage-btn,
+    .focus-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 7px 8px;
+    }
+
+    .preset-button.active,
+    .stage-btn.active,
+    .focus-btn.active {
+      border-color: var(--blue);
+      background: var(--blue-weak);
+      color: #1d4ed8;
+    }
+
+    .guide-strip {
+      display: grid;
+      gap: 8px;
+      margin-bottom: 10px;
+      padding: 10px 12px;
+      border: 1px solid #bfdbfe;
+      border-radius: 8px;
+      background: #eff6ff;
+    }
+
+    .guide-note,
+    .calc-note {
+      margin: 0;
+      color: #334155;
+      font-size: 14px;
+      line-height: 1.55;
+    }
+
+    .section {
+      margin-bottom: 14px;
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+    }
+
+    .section-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .section-title {
+      margin: 0;
+      color: #0f172a;
+      font-size: 20px;
+      line-height: 1.25;
+    }
+
+    .tiny-label {
+      display: inline-flex;
+      align-items: center;
+      min-height: 28px;
+      padding: 4px 8px;
+      border-radius: 999px;
+      background: #f1f5f9;
+      color: #475569;
+      font-size: 12px;
+      font-weight: 850;
+      white-space: nowrap;
+    }
+
+    .focus-row {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .visual-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.15fr) minmax(230px, 0.85fr);
+      gap: 12px;
+      align-items: stretch;
+    }
+
+    .curve-panel {
+      min-height: 310px;
+      padding: 12px;
+      border: 1px solid #dbe4ef;
+      border-radius: 8px;
+      background: #fff;
+    }
+
+    .curve-canvas {
+      display: block;
+      width: 100%;
+      height: 230px;
+      border: 1px solid #dbe4ef;
+      border-radius: 8px;
+      background: #f8fafc;
+    }
+
+    .legend-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 10px;
+      color: #334155;
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .legend-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .legend-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 999px;
+      background: var(--blue);
+    }
+
+    .legend-dot.mean {
+      background: var(--green);
+    }
+
+    .legend-dot.tail {
+      background: var(--amber);
+    }
+
+    .control-panel {
+      display: grid;
+      gap: 10px;
+      padding: 12px;
+      border: 1px solid #dbe4ef;
+      border-radius: 8px;
+      background: #f8fafc;
+    }
+
+    .stat-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .stat-card {
+      min-height: 76px;
+      padding: 10px;
+      border: 1px solid #dbe4ef;
+      border-radius: 8px;
+      background: #fff;
+    }
+
+    .stat-card span {
+      display: block;
+      color: #64748b;
+      font-size: 12px;
+      font-weight: 850;
+    }
+
+    .stat-card strong {
+      display: block;
+      margin-top: 6px;
+      color: #0f172a;
+      font-size: 21px;
+      line-height: 1.2;
+    }
+
+    .range-field {
+      display: grid;
+      gap: 6px;
+      color: #334155;
+      font-size: 13px;
+      font-weight: 850;
+    }
+
+    .range-field input {
+      width: 100%;
+      accent-color: var(--blue);
+    }
+
+    .formula-box {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+      margin: 0 0 12px;
+      padding: 10px 12px;
+      border: 1px solid #dbe4ef;
+      border-radius: 8px;
+      background: #f8fafc;
+      color: #0f172a;
+      font-size: 16px;
+      font-weight: 800;
+    }
+
+    .formula-box math {
+      font-size: 19px;
+    }
+
+    .calculator {
+      display: grid;
+      gap: 10px;
+      margin-top: 12px;
+      padding: 12px;
+      border: 1px solid #dbe4ef;
+      border-radius: 8px;
+      background: #f8fafc;
+    }
+
+    .input-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .input-pair {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .calc-field {
+      display: grid;
+      gap: 6px;
+      color: #334155;
+      font-size: 13px;
+      font-weight: 850;
+    }
+
+    .calc-field input {
+      width: 100%;
+      min-height: 40px;
+      padding: 8px 10px;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      background: #fff;
+      color: #0f172a;
+      font: inherit;
+      font-size: 15px;
+    }
+
+    .calc-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .primary-btn,
+    .subtle-btn {
+      padding: 8px 12px;
+    }
+
+    .primary-btn {
+      border-color: var(--blue);
+      background: var(--blue);
+      color: #fff;
+    }
+
+    .subtle-btn {
+      background: #fff;
+    }
+
+    .calc-output {
+      min-height: 44px;
+      margin: 0;
+      padding: 10px 12px;
+      border-radius: 8px;
+      background: #eef2ff;
+      color: #1e3a8a;
+      font-size: 15px;
+      font-weight: 800;
+      line-height: 1.5;
+    }
+
+    .calc-output.muted {
+      background: #f1f5f9;
+      color: #475569;
+      font-weight: 700;
+    }
+
+    .allocation-table {
+      display: grid;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .allocation-row {
+      display: grid;
+      grid-template-columns: 78px repeat(3, minmax(0, 1fr));
+      gap: 8px;
+      align-items: stretch;
+    }
+
+    .allocation-row.header {
+      color: #64748b;
+      font-size: 13px;
+      font-weight: 850;
+    }
+
+    .allocation-cell {
+      min-height: 42px;
+      padding: 8px;
+      border: 1px solid #dbe4ef;
+      border-radius: 8px;
+      background: #fff;
+      color: #0f172a;
+      font-size: 14px;
+      font-weight: 800;
+      text-align: center;
+    }
+
+    .allocation-cell.name {
+      background: #f8fafc;
+      color: #334155;
+    }
+
+    .threshold-panel {
+      display: grid;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .threshold-row {
+      display: grid;
+      grid-template-columns: 96px minmax(0, 1fr) 96px;
+      gap: 8px;
+      align-items: center;
+      color: #334155;
+      font-size: 14px;
+      font-weight: 800;
+    }
+
+    .threshold-track {
+      position: relative;
+      height: 18px;
+      overflow: hidden;
+      border-radius: 999px;
+      background: #e2e8f0;
+    }
+
+    .threshold-fill {
+      width: 0%;
+      height: 100%;
+      border-radius: inherit;
+      background: var(--amber);
+      transition: width 180ms ease;
+    }
+
+    .check-list {
+      display: grid;
+      gap: 10px;
+      margin: 0;
+      padding-left: 20px;
+      color: #334155;
+      font-size: 15px;
+      line-height: 1.55;
+    }
+
+    .check-list strong {
+      color: #0f172a;
+    }
+
+    .is-hidden {
+      display: none !important;
+    }
+
+    @media (max-width: 1180px) {
+      .visual-grid,
+      .stat-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 960px) {
+      .page {
+        padding: 14px;
+      }
+
+      .topbar {
+        display: block;
+      }
+
+      .status-pill {
+        margin-top: 10px;
+      }
+
+      .switcher {
+        display: flex;
+      }
+
+      .workspace {
+        display: block;
+        height: calc(100vh - 212px);
+        min-height: 760px;
+      }
+
+      .splitter {
+        display: none;
+      }
+
+      .pane {
+        height: 100%;
+      }
+
+      .worksheet-pane,
+      .tool-pane {
+        border-right: 0;
+      }
+
+      .preset-row {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
+      .stage-nav {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 640px) {
+      .input-grid,
+      .input-pair,
+      .focus-row,
+      .allocation-row,
+      .threshold-row {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <div class="topbar">
+      <div>
+        <a class="back-link" href="../">← 통계적 의사결정 도우미</a>
+        <header class="title-block">
+          <p class="eyebrow">Probability & Statistics · Decision Support</p>
+          <h1>축제부스 도구</h1>
+          <p>축제 부스 인력 배치 학습지를 보면서 정규분포의 기준선과 초과 영역을 확인합니다.</p>
+        </header>
+      </div>
+      <span class="status-pill">09 축제부스</span>
+    </div>
+
+    <div class="switcher" aria-label="좁은 화면 보기 전환">
+      <button class="active" type="button" data-view="worksheet">학습지 보기</button>
+      <button type="button" data-view="tool">도구 보기</button>
+    </div>
+
+    <section class="workspace">
+      <article class="pane worksheet-pane" data-pane="worksheet">
+        <div class="pane-head">
+          <p class="pane-title">09 축제부스 · 학생용 PDF</p>
+          <a class="download-link" href="./festival-booth-student.pdf" download>PDF 다운로드</a>
+        </div>
+        <object class="pdf-frame" data="./festival-booth-student.pdf" type="application/pdf" aria-label="축제부스 학생용 학습지 PDF">
+          <p class="guide-note">PDF가 보이지 않으면 위의 PDF 다운로드를 눌러 학습지를 여세요.</p>
+        </object>
+      </article>
+
+      <div class="splitter" role="separator" tabindex="0" aria-label="학습지와 도구 영역 크기 조절" aria-orientation="vertical" aria-valuemin="32" aria-valuemax="62" aria-valuenow="45" title="드래그해서 학습지와 도구의 폭을 조절합니다."></div>
+
+      <article class="pane tool-pane" data-pane="tool">
+        <div class="pane-head">
+          <p class="pane-title">09 축제부스 도구</p>
+        </div>
+
+        <div class="tool-body">
+          <div class="preset-row">
+            <a class="preset-button" href="../product-recommendation/">01 상품추천</a>
+            <a class="preset-button" href="../space-communication/">02 우주통신</a>
+            <a class="preset-button" href="../event-preparation/">03 행사준비</a>
+            <a class="preset-button" href="../sensor-alarm/">04 센서 경보</a>
+            <a class="preset-button" href="../ab-test/">05 A/B 실험</a>
+            <a class="preset-button" href="../defect-sampling/">06 불량품검사</a>
+            <a class="preset-button" href="../reliability-system/">07 직렬·병렬</a>
+            <a class="preset-button" href="../school-facility/">08 학교시설</a>
+            <button class="preset-button active" type="button">09 축제부스</button>
+          </div>
+
+          <div class="guide-strip">
+            <p class="guide-note">학습지 [시작 전] 예상을 먼저 적고, Q1의 Z값과 표의 확률은 학습지에 직접 채우세요.</p>
+            <p class="guide-note">이 도구는 기준선과 초과 영역, 입력값 계산 확인만 돕습니다. 배치 의견서는 학습지에 직접 작성하세요.</p>
+          </div>
+
+          <nav class="stage-nav" aria-label="09 축제부스 학습 흐름">
+            <button class="stage-btn active" type="button" data-jump="stage-curve">Q1</button>
+            <button class="stage-btn" type="button" data-jump="stage-compare">Q2~Q3</button>
+            <button class="stage-btn" type="button" data-jump="stage-move">Q5</button>
+            <button class="stage-btn" type="button" data-jump="stage-checks">Q6~Q8</button>
+          </nav>
+
+          <section class="section" id="stage-curve" aria-labelledby="curve-title">
+            <div class="section-head">
+              <h2 class="section-title" id="curve-title">정규분포와 초과 영역</h2>
+              <span class="tiny-label">Q1 참고</span>
+            </div>
+
+            <div class="focus-row" aria-label="시간대 선택">
+              <button class="focus-btn active" type="button" data-period="morning">오전</button>
+              <button class="focus-btn" type="button" data-period="lunch">점심</button>
+              <button class="focus-btn" type="button" data-period="afternoon">오후</button>
+            </div>
+
+            <div class="formula-box">
+              표준화
+              <math aria-label="Z는 X 빼기 평균을 표준편차로 나눈 값">
+                <mrow>
+                  <mi>Z</mi>
+                  <mo>=</mo>
+                  <mfrac>
+                    <mrow><mi>X</mi><mo>-</mo><mi>&#956;</mi></mrow>
+                    <mi>&#963;</mi>
+                  </mfrac>
+                </mrow>
+              </math>
+              <span>오른쪽 면적은 수용 한계를 넘는 경우입니다.</span>
+            </div>
+
+            <div class="visual-grid">
+              <div class="curve-panel">
+                <canvas class="curve-canvas" id="normalCanvas" width="720" height="300" aria-label="정규분포와 수용 한계 오른쪽 초과 영역"></canvas>
+                <div class="legend-row">
+                  <span class="legend-item"><span class="legend-dot mean"></span>평균</span>
+                  <span class="legend-item"><span class="legend-dot"></span>수용 한계</span>
+                  <span class="legend-item"><span class="legend-dot tail"></span>초과 영역</span>
+                </div>
+                <p class="calc-note" id="curveNote">기준선의 위치와 오른쪽 면적을 먼저 보고, 정확한 값은 학습지 표와 아래 입력 확인으로 점검하세요.</p>
+              </div>
+
+              <aside class="control-panel">
+                <div class="stat-grid">
+                  <div class="stat-card">
+                    <span>평균 μ</span>
+                    <strong id="meanLabel">60명</strong>
+                  </div>
+                  <div class="stat-card">
+                    <span>표준편차 σ</span>
+                    <strong id="sdLabel">10명</strong>
+                  </div>
+                  <div class="stat-card">
+                    <span>인력</span>
+                    <strong id="staffLabel">3명</strong>
+                  </div>
+                  <div class="stat-card">
+                    <span>수용 한계</span>
+                    <strong id="capacityLabel">60명</strong>
+                  </div>
+                </div>
+                <label class="range-field" for="staffRange">
+                  인력 수를 움직여 기준선 보기
+                  <input id="staffRange" type="range" min="2" max="7" step="1" value="3" />
+                </label>
+                <p class="calc-note">인력 1명은 한 시간에 20명까지 응대한다고 둡니다. 이 조작은 면적 변화를 보기 위한 것이며, 배치안 선택을 대신하지 않습니다.</p>
+              </aside>
+            </div>
+
+            <div class="calculator">
+              <div class="section-head">
+                <h3 class="section-title">내 Z값과 초과확률 확인</h3>
+                <span class="tiny-label">Q1 입력형</span>
+              </div>
+              <div class="input-grid">
+                <label class="calc-field" for="capacityInput">
+                  수용 한계 X
+                  <input id="capacityInput" type="number" inputmode="decimal" min="0" step="any" placeholder="예: 100" />
+                </label>
+                <label class="calc-field" for="meanInput">
+                  평균 μ
+                  <input id="meanInput" type="number" inputmode="decimal" min="0" step="any" placeholder="학습지 값 입력" />
+                </label>
+                <label class="calc-field" for="sdInput">
+                  표준편차 σ
+                  <input id="sdInput" type="number" inputmode="decimal" min="0" step="any" placeholder="학습지 값 입력" />
+                </label>
+              </div>
+              <div class="calc-actions">
+                <button class="primary-btn" type="button" id="calculateTailButton">입력값으로 확인</button>
+                <button class="subtle-btn" type="button" id="clearTailButton">지우기</button>
+              </div>
+              <p class="calc-output muted" id="tailOutput" aria-live="polite">수용 한계, 평균, 표준편차를 입력하면 Z값과 오른쪽 초과확률만 계산합니다.</p>
+            </div>
+          </section>
+
+          <section class="section" id="stage-compare" aria-labelledby="compare-title">
+            <div class="section-head">
+              <h2 class="section-title" id="compare-title">시간대별 분포 폭 비교</h2>
+              <span class="tiny-label">Q2~Q3 참고</span>
+            </div>
+
+            <p class="calc-note">평균과 수용 한계의 차이가 같아도 표준편차가 다르면 기준선이 분포에서 차지하는 위치가 달라집니다. 아래에는 학습지의 인력 배치 구조만 보여 줍니다.</p>
+
+            <div class="allocation-table" aria-label="배치안별 인력 구조">
+              <div class="allocation-row header">
+                <span>배치안</span>
+                <span>오전</span>
+                <span>점심</span>
+                <span>오후</span>
+              </div>
+              <div class="allocation-row">
+                <div class="allocation-cell name">A</div>
+                <div class="allocation-cell">3명</div>
+                <div class="allocation-cell">5명</div>
+                <div class="allocation-cell">4명</div>
+              </div>
+              <div class="allocation-row">
+                <div class="allocation-cell name">B</div>
+                <div class="allocation-cell">3명</div>
+                <div class="allocation-cell">6명</div>
+                <div class="allocation-cell">3명</div>
+              </div>
+              <div class="allocation-row">
+                <div class="allocation-cell name">C</div>
+                <div class="allocation-cell">4명</div>
+                <div class="allocation-cell">5명</div>
+                <div class="allocation-cell">3명</div>
+              </div>
+            </div>
+
+            <div class="calculator">
+              <div class="section-head">
+                <h3 class="section-title">두 시간대의 여유 비교</h3>
+                <span class="tiny-label">Q2 입력형</span>
+              </div>
+              <div class="input-grid">
+                <label class="calc-field" for="gapOneInput">
+                  1번 여유
+                  <input id="gapOneInput" type="number" inputmode="decimal" min="0" step="any" placeholder="한계-평균" />
+                </label>
+                <label class="calc-field" for="sdOneInput">
+                  1번 σ
+                  <input id="sdOneInput" type="number" inputmode="decimal" min="0" step="any" placeholder="표준편차" />
+                </label>
+                <label class="calc-field" for="labelOneInput">
+                  1번 이름
+                  <input id="labelOneInput" type="text" placeholder="예: 점심" />
+                </label>
+              </div>
+              <div class="input-grid">
+                <label class="calc-field" for="gapTwoInput">
+                  2번 여유
+                  <input id="gapTwoInput" type="number" inputmode="decimal" min="0" step="any" placeholder="한계-평균" />
+                </label>
+                <label class="calc-field" for="sdTwoInput">
+                  2번 σ
+                  <input id="sdTwoInput" type="number" inputmode="decimal" min="0" step="any" placeholder="표준편차" />
+                </label>
+                <label class="calc-field" for="labelTwoInput">
+                  2번 이름
+                  <input id="labelTwoInput" type="text" placeholder="예: 오후" />
+                </label>
+              </div>
+              <div class="threshold-panel" aria-label="여유를 표준편차 단위로 비교">
+                <div class="threshold-row">
+                  <span id="gapOneLabel">1번</span>
+                  <div class="threshold-track"><div class="threshold-fill" id="gapOneFill"></div></div>
+                  <strong id="gapOneValue">-</strong>
+                </div>
+                <div class="threshold-row">
+                  <span id="gapTwoLabel">2번</span>
+                  <div class="threshold-track"><div class="threshold-fill" id="gapTwoFill"></div></div>
+                  <strong id="gapTwoValue">-</strong>
+                </div>
+              </div>
+              <div class="calc-actions">
+                <button class="primary-btn" type="button" id="compareGapButton">표준편차 단위 비교</button>
+                <button class="subtle-btn" type="button" id="clearGapButton">지우기</button>
+              </div>
+              <p class="calc-output muted" id="gapOutput" aria-live="polite">각 여유가 표준편차 몇 개만큼인지 계산해 막대로 비교합니다.</p>
+            </div>
+
+            <ul class="check-list" style="margin-top: 12px;">
+              <li><strong>Q2:</strong> 수용 한계가 평균과 같을 때 기준선이 곡선의 가운데에 놓인다는 점을 확인하세요.</li>
+              <li><strong>Q3:</strong> 한 시간대를 보강하면 다른 시간대 인력이 줄어드는 구조를 표에서 다시 확인하세요.</li>
+              <li>어느 배치안을 고를지는 웹앱이 정하지 않습니다. 비교 기준을 학습지에 직접 쓰세요.</li>
+            </ul>
+          </section>
+
+          <section class="section" id="stage-move" aria-labelledby="move-title">
+            <div class="section-head">
+              <h2 class="section-title" id="move-title">수용 한계가 평균보다 낮을 때</h2>
+              <span class="tiny-label">Q5 참고</span>
+            </div>
+
+            <div class="calculator">
+              <div class="section-head">
+                <h3 class="section-title">변형 배치 계산 확인</h3>
+                <span class="tiny-label">Q5 입력형</span>
+              </div>
+              <div class="input-grid">
+                <label class="calc-field" for="moveCapacityInput">
+                  바뀐 수용 한계
+                  <input id="moveCapacityInput" type="number" inputmode="decimal" min="0" step="any" placeholder="학습지 값 입력" />
+                </label>
+                <label class="calc-field" for="moveMeanInput">
+                  평균 μ
+                  <input id="moveMeanInput" type="number" inputmode="decimal" min="0" step="any" placeholder="학습지 값 입력" />
+                </label>
+                <label class="calc-field" for="moveSdInput">
+                  표준편차 σ
+                  <input id="moveSdInput" type="number" inputmode="decimal" min="0" step="any" placeholder="학습지 값 입력" />
+                </label>
+              </div>
+              <div class="calc-actions">
+                <button class="primary-btn" type="button" id="calculateMoveButton">입력값으로 확인</button>
+                <button class="subtle-btn" type="button" id="clearMoveButton">지우기</button>
+              </div>
+              <p class="calc-output muted" id="moveOutput" aria-live="polite">바뀐 수용 한계, 평균, 표준편차를 입력하면 Z값과 오른쪽 초과확률만 계산합니다.</p>
+            </div>
+
+            <ul class="check-list" style="margin-top: 12px;">
+              <li><strong>Q5:</strong> 수용 한계가 평균보다 낮으면 기준선이 평균 왼쪽으로 이동합니다.</li>
+              <li>오른쪽 면적이 절반보다 커지는 까닭은 정규분포의 대칭성과 연결해 설명하세요.</li>
+              <li>변형안을 어떻게 볼지는 오전과 오후의 변화를 모두 놓고 학습지에 직접 판단하세요.</li>
+            </ul>
+          </section>
+
+          <section class="section" id="stage-checks" aria-labelledby="checks-title">
+            <div class="section-head">
+              <h2 class="section-title" id="checks-title">목표 확률과 가정 점검</h2>
+              <span class="tiny-label">Q6~Q8 참고</span>
+            </div>
+
+            <div class="calculator">
+              <div class="section-head">
+                <h3 class="section-title">목표 z에서 필요한 한계 확인</h3>
+                <span class="tiny-label">Q6 입력형</span>
+              </div>
+              <div class="input-grid">
+                <label class="calc-field" for="targetMeanInput">
+                  평균 μ
+                  <input id="targetMeanInput" type="number" inputmode="decimal" min="0" step="any" placeholder="학습지 값 입력" />
+                </label>
+                <label class="calc-field" for="targetSdInput">
+                  표준편차 σ
+                  <input id="targetSdInput" type="number" inputmode="decimal" min="0" step="any" placeholder="학습지 값 입력" />
+                </label>
+                <label class="calc-field" for="targetZInput">
+                  목표 z
+                  <input id="targetZInput" type="number" inputmode="decimal" step="any" placeholder="표에서 찾은 z" />
+                </label>
+              </div>
+              <div class="calc-actions">
+                <button class="primary-btn" type="button" id="calculateTargetButton">한계와 인력 확인</button>
+                <button class="subtle-btn" type="button" id="clearTargetButton">지우기</button>
+              </div>
+              <p class="calc-output muted" id="targetOutput" aria-live="polite">평균, 표준편차, 목표 z를 입력하면 필요한 수용 한계와 20명 단위 인력 수만 계산합니다.</p>
+            </div>
+
+            <ul class="check-list" style="margin-top: 12px;">
+              <li><strong>Q6:</strong> 목표 초과확률을 정하면 필요한 수용 한계가 정해지고, 그만큼 다른 시간대 인력이 줄어들 수 있습니다.</li>
+              <li><strong>Q7:</strong> 방문자 수가 치우치거나 갑자기 몰리면 정규분포 가정이 약해질 수 있습니다.</li>
+              <li><strong>Q8:</strong> AI 요약이 평균만 보고 표준편차와 오른쪽 꼬리 면적을 빠뜨렸는지 문장별로 점검하세요.</li>
+              <li>마지막 배치 의견서와 결론 문장은 학습지 [E]에 자신의 근거로 작성하세요.</li>
+            </ul>
+          </section>
+        </div>
+      </article>
+    </section>
+  </main>
+
+  <script>
+    const switchButtons = document.querySelectorAll('.switcher button');
+    const workspace = document.querySelector('.workspace');
+    const splitter = document.querySelector('.splitter');
+    const panes = document.querySelectorAll('[data-pane]');
+    const stageButtons = document.querySelectorAll('.stage-btn');
+    const periodButtons = document.querySelectorAll('[data-period]');
+    const canvas = document.getElementById('normalCanvas');
+    const canvasContext = canvas.getContext('2d');
+
+    const splitState = {
+      value: 45,
+      dragging: false,
+      storageKey: 'festival-booth-worksheet-ratio',
+    };
+
+    const periods = {
+      morning: { label: '오전', mean: 60, sd: 10, defaultStaff: 3 },
+      lunch: { label: '점심', mean: 90, sd: 25, defaultStaff: 5 },
+      afternoon: { label: '오후', mean: 45, sd: 8, defaultStaff: 3 },
+    };
+
+    const state = {
+      period: 'morning',
+      staff: 3,
+    };
+
+    function formatNumber(value, digits = 3) {
+      return value.toLocaleString('ko-KR', { maximumFractionDigits: digits });
+    }
+
+    function formatPercent(value) {
+      return (value * 100).toFixed(1) + '%';
+    }
+
+    function readNumber(id) {
+      const input = document.getElementById(id);
+      if (input.value.trim() === '') {
+        return null;
+      }
+      return Number(input.value);
+    }
+
+    function setMessage(element, message, muted = false) {
+      element.textContent = message;
+      element.classList.toggle('muted', muted);
+    }
+
+    function normalDensity(z) {
+      return Math.exp(-0.5 * z * z) / Math.sqrt(2 * Math.PI);
+    }
+
+    function erf(x) {
+      const sign = x < 0 ? -1 : 1;
+      const abs = Math.abs(x);
+      const t = 1 / (1 + 0.3275911 * abs);
+      const y = 1 - (((((1.061405429 * t - 1.453152027) * t) + 1.421413741) * t - 0.284496736) * t + 0.254829592) * t * Math.exp(-abs * abs);
+      return sign * y;
+    }
+
+    function normalCdf(z) {
+      return 0.5 * (1 + erf(z / Math.sqrt(2)));
+    }
+
+    function upperTailFromZ(z) {
+      return 1 - normalCdf(z);
+    }
+
+    function setNarrowView(viewName) {
+      switchButtons.forEach((item) => item.classList.toggle('active', item.dataset.view === viewName));
+      panes.forEach((pane) => pane.classList.toggle('is-hidden', pane.dataset.pane !== viewName));
+    }
+
+    function getSplitBounds() {
+      const width = workspace?.getBoundingClientRect().width || 1180;
+      const splitterWidth = splitter?.getBoundingClientRect().width || 12;
+      const minLeft = 360;
+      const minRight = 420;
+      const min = Math.max(32, (minLeft / width) * 100);
+      const max = Math.min(64, ((width - splitterWidth - minRight) / width) * 100);
+      return {
+        min: Math.min(min, 45),
+        max: Math.max(max, 45),
+      };
+    }
+
+    function setWorkspaceSplit(value, persist = true) {
+      const bounds = getSplitBounds();
+      const clamped = Math.min(bounds.max, Math.max(bounds.min, value));
+      splitState.value = clamped;
+      workspace.style.setProperty('--worksheet-ratio', clamped.toFixed(2) + '%');
+      splitter.setAttribute('aria-valuemin', String(Math.round(bounds.min)));
+      splitter.setAttribute('aria-valuemax', String(Math.round(bounds.max)));
+      splitter.setAttribute('aria-valuenow', String(Math.round(clamped)));
+
+      if (persist) {
+        try {
+          window.localStorage.setItem(splitState.storageKey, clamped.toFixed(2));
+        } catch (error) {
+          // 저장이 막힌 환경에서도 폭 조절 자체는 유지한다.
+        }
+      }
+    }
+
+    function setWorkspaceSplitFromClientX(clientX, persist = false) {
+      const rect = workspace.getBoundingClientRect();
+      const ratio = ((clientX - rect.left) / rect.width) * 100;
+      setWorkspaceSplit(ratio, persist);
+    }
+
+    function loadWorkspaceSplit() {
+      let saved = null;
+      try {
+        saved = Number(window.localStorage.getItem(splitState.storageKey));
+      } catch (error) {
+        saved = null;
+      }
+      if (Number.isFinite(saved) && saved > 0) {
+        splitState.value = saved;
+      }
+    }
+
+    function isNarrowLayout() {
+      return window.matchMedia('(max-width: 960px)').matches;
+    }
+
+    function syncResponsiveView() {
+      if (!isNarrowLayout()) {
+        panes.forEach((pane) => pane.classList.remove('is-hidden'));
+        setWorkspaceSplit(splitState.value, false);
+        drawNormalCurve();
+        return;
+      }
+      const activeView = document.querySelector('.switcher button.active')?.dataset.view || 'worksheet';
+      setNarrowView(activeView);
+      drawNormalCurve();
+    }
+
+    function updatePeriodLabels() {
+      const period = periods[state.period];
+      const capacity = state.staff * 20;
+      document.getElementById('meanLabel').textContent = period.mean + '명';
+      document.getElementById('sdLabel').textContent = period.sd + '명';
+      document.getElementById('staffLabel').textContent = state.staff + '명';
+      document.getElementById('capacityLabel').textContent = capacity + '명';
+      document.getElementById('staffRange').value = String(state.staff);
+      const direction = capacity === period.mean ? '평균과 같은 위치' : capacity > period.mean ? '평균 오른쪽' : '평균 왼쪽';
+      document.getElementById('curveNote').textContent = period.label + '의 수용 한계는 현재 ' + direction + '에 있습니다. 정확한 Z값과 확률은 학습지 표와 입력 확인으로 점검하세요.';
+    }
+
+    function drawNormalCurve() {
+      const period = periods[state.period];
+      const capacity = state.staff * 20;
+      const dpr = window.devicePixelRatio || 1;
+      const displayWidth = canvas.clientWidth || 640;
+      const displayHeight = canvas.clientHeight || 230;
+      canvas.width = Math.round(displayWidth * dpr);
+      canvas.height = Math.round(displayHeight * dpr);
+      canvasContext.setTransform(dpr, 0, 0, dpr, 0, 0);
+      canvasContext.clearRect(0, 0, displayWidth, displayHeight);
+
+      const margin = { left: 36, right: 22, top: 24, bottom: 36 };
+      const plotWidth = displayWidth - margin.left - margin.right;
+      const plotHeight = displayHeight - margin.top - margin.bottom;
+      const zMin = Math.min(-4, (capacity - period.mean) / period.sd - 1);
+      const zMax = Math.max(4, (capacity - period.mean) / period.sd + 1);
+      const yMax = normalDensity(0);
+
+      const xForZ = (z) => margin.left + ((z - zMin) / (zMax - zMin)) * plotWidth;
+      const yForDensity = (density) => margin.top + plotHeight - (density / yMax) * plotHeight;
+
+      canvasContext.fillStyle = '#ffffff';
+      canvasContext.fillRect(0, 0, displayWidth, displayHeight);
+      canvasContext.strokeStyle = '#cbd5e1';
+      canvasContext.lineWidth = 1;
+      canvasContext.beginPath();
+      canvasContext.moveTo(margin.left, margin.top + plotHeight);
+      canvasContext.lineTo(margin.left + plotWidth, margin.top + plotHeight);
+      canvasContext.stroke();
+
+      const capacityZ = (capacity - period.mean) / period.sd;
+      const tailStart = Math.max(capacityZ, zMin);
+      const tailEnd = zMax;
+      canvasContext.beginPath();
+      canvasContext.moveTo(xForZ(tailStart), margin.top + plotHeight);
+      for (let i = 0; i <= 180; i += 1) {
+        const z = tailStart + ((tailEnd - tailStart) * i) / 180;
+        canvasContext.lineTo(xForZ(z), yForDensity(normalDensity(z)));
+      }
+      canvasContext.lineTo(xForZ(tailEnd), margin.top + plotHeight);
+      canvasContext.closePath();
+      canvasContext.fillStyle = 'rgba(245, 158, 11, 0.28)';
+      canvasContext.fill();
+
+      canvasContext.beginPath();
+      for (let i = 0; i <= 240; i += 1) {
+        const z = zMin + ((zMax - zMin) * i) / 240;
+        const x = xForZ(z);
+        const y = yForDensity(normalDensity(z));
+        if (i === 0) {
+          canvasContext.moveTo(x, y);
+        } else {
+          canvasContext.lineTo(x, y);
+        }
+      }
+      canvasContext.strokeStyle = '#2563eb';
+      canvasContext.lineWidth = 3;
+      canvasContext.stroke();
+
+      function drawMarker(z, color, label) {
+        const x = xForZ(z);
+        canvasContext.strokeStyle = color;
+        canvasContext.lineWidth = 2;
+        canvasContext.beginPath();
+        canvasContext.moveTo(x, margin.top);
+        canvasContext.lineTo(x, margin.top + plotHeight);
+        canvasContext.stroke();
+        canvasContext.fillStyle = color;
+        canvasContext.font = '700 13px sans-serif';
+        canvasContext.fillText(label, Math.min(displayWidth - 130, Math.max(8, x - 28)), margin.top + plotHeight + 24);
+      }
+
+      drawMarker(0, '#047857', '평균');
+      drawMarker(capacityZ, '#2563eb', '수용 한계');
+
+      canvasContext.fillStyle = '#475569';
+      canvasContext.font = '700 12px sans-serif';
+      canvasContext.fillText(period.label + ' 방문자 수 분포', margin.left, 18);
+    }
+
+    function renderVisual() {
+      updatePeriodLabels();
+      drawNormalCurve();
+    }
+
+    function calculateTail(outputId, capacityId, meanId, sdId) {
+      const capacity = readNumber(capacityId);
+      const mean = readNumber(meanId);
+      const sd = readNumber(sdId);
+      const output = document.getElementById(outputId);
+      if (capacity === null || mean === null || sd === null) {
+        setMessage(output, '수용 한계, 평균, 표준편차를 모두 입력하세요.', true);
+        return;
+      }
+      if (!Number.isFinite(capacity) || !Number.isFinite(mean) || !Number.isFinite(sd) || sd <= 0) {
+        setMessage(output, '표준편차는 양수여야 하고, 모든 값은 수로 입력하세요.', true);
+        return;
+      }
+      const z = (capacity - mean) / sd;
+      const tail = upperTailFromZ(z);
+      setMessage(output, '입력값의 Z: ' + formatNumber(z, 3) + ', 오른쪽 초과확률: ' + formatNumber(tail, 4) + ' (' + formatPercent(tail) + ')', false);
+    }
+
+    function clearInputs(ids, outputId, message) {
+      ids.forEach((id) => {
+        document.getElementById(id).value = '';
+      });
+      setMessage(document.getElementById(outputId), message, true);
+    }
+
+    function compareGaps() {
+      const gapOne = readNumber('gapOneInput');
+      const sdOne = readNumber('sdOneInput');
+      const gapTwo = readNumber('gapTwoInput');
+      const sdTwo = readNumber('sdTwoInput');
+      if (gapOne === null || sdOne === null || gapTwo === null || sdTwo === null) {
+        setMessage(document.getElementById('gapOutput'), '두 시간대의 여유와 표준편차를 모두 입력하세요.', true);
+        return;
+      }
+      if ([gapOne, sdOne, gapTwo, sdTwo].some((value) => !Number.isFinite(value) || value < 0) || sdOne === 0 || sdTwo === 0) {
+        setMessage(document.getElementById('gapOutput'), '여유는 0 이상, 표준편차는 양수로 입력하세요.', true);
+        return;
+      }
+      const zOne = gapOne / sdOne;
+      const zTwo = gapTwo / sdTwo;
+      const labelOne = document.getElementById('labelOneInput').value.trim() || '1번';
+      const labelTwo = document.getElementById('labelTwoInput').value.trim() || '2번';
+      const max = Math.max(zOne, zTwo, 0.1);
+      document.getElementById('gapOneLabel').textContent = labelOne;
+      document.getElementById('gapTwoLabel').textContent = labelTwo;
+      document.getElementById('gapOneValue').textContent = formatNumber(zOne, 3) + 'σ';
+      document.getElementById('gapTwoValue').textContent = formatNumber(zTwo, 3) + 'σ';
+      document.getElementById('gapOneFill').style.width = ((zOne / max) * 100).toFixed(1) + '%';
+      document.getElementById('gapTwoFill').style.width = ((zTwo / max) * 100).toFixed(1) + '%';
+      setMessage(document.getElementById('gapOutput'), labelOne + ': ' + formatNumber(zOne, 3) + 'σ, ' + labelTwo + ': ' + formatNumber(zTwo, 3) + 'σ. 두 값의 크기만 비교하세요.', false);
+    }
+
+    function clearGap() {
+      ['gapOneInput', 'sdOneInput', 'labelOneInput', 'gapTwoInput', 'sdTwoInput', 'labelTwoInput'].forEach((id) => {
+        document.getElementById(id).value = '';
+      });
+      document.getElementById('gapOneLabel').textContent = '1번';
+      document.getElementById('gapTwoLabel').textContent = '2번';
+      document.getElementById('gapOneValue').textContent = '-';
+      document.getElementById('gapTwoValue').textContent = '-';
+      document.getElementById('gapOneFill').style.width = '0%';
+      document.getElementById('gapTwoFill').style.width = '0%';
+      setMessage(document.getElementById('gapOutput'), '각 여유가 표준편차 몇 개만큼인지 계산해 막대로 비교합니다.', true);
+    }
+
+    function calculateTarget() {
+      const mean = readNumber('targetMeanInput');
+      const sd = readNumber('targetSdInput');
+      const z = readNumber('targetZInput');
+      if (mean === null || sd === null || z === null) {
+        setMessage(document.getElementById('targetOutput'), '평균, 표준편차, 목표 z를 모두 입력하세요.', true);
+        return;
+      }
+      if (![mean, sd, z].every(Number.isFinite) || sd <= 0) {
+        setMessage(document.getElementById('targetOutput'), '표준편차는 양수여야 하고, 모든 값은 수로 입력하세요.', true);
+        return;
+      }
+      const capacity = mean + z * sd;
+      const staff = Math.ceil(capacity / 20);
+      setMessage(document.getElementById('targetOutput'), '입력값의 필요한 수용 한계: ' + formatNumber(capacity, 2) + '명, 20명 단위 인력 수: ' + staff + '명', false);
+    }
+
+    function clearTarget() {
+      clearInputs(['targetMeanInput', 'targetSdInput', 'targetZInput'], 'targetOutput', '평균, 표준편차, 목표 z를 입력하면 필요한 수용 한계와 20명 단위 인력 수만 계산합니다.');
+    }
+
+    switchButtons.forEach((button) => {
+      button.addEventListener('click', () => setNarrowView(button.dataset.view));
+    });
+
+    splitter.addEventListener('pointerdown', (event) => {
+      if (isNarrowLayout()) return;
+      splitState.dragging = true;
+      splitter.classList.add('is-dragging');
+      workspace.classList.add('is-resizing-layout');
+      splitter.setPointerCapture(event.pointerId);
+      setWorkspaceSplitFromClientX(event.clientX, false);
+    });
+
+    splitter.addEventListener('pointermove', (event) => {
+      if (!splitState.dragging) return;
+      setWorkspaceSplitFromClientX(event.clientX, false);
+    });
+
+    function stopSplitterDrag(event) {
+      if (!splitState.dragging) return;
+      splitState.dragging = false;
+      splitter.classList.remove('is-dragging');
+      workspace.classList.remove('is-resizing-layout');
+      if (splitter.hasPointerCapture(event.pointerId)) {
+        splitter.releasePointerCapture(event.pointerId);
+      }
+      setWorkspaceSplit(splitState.value, true);
+    }
+
+    splitter.addEventListener('pointerup', stopSplitterDrag);
+    splitter.addEventListener('pointercancel', stopSplitterDrag);
+    splitter.addEventListener('dblclick', () => setWorkspaceSplit(45, true));
+
+    splitter.addEventListener('keydown', (event) => {
+      if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+      event.preventDefault();
+      const bounds = getSplitBounds();
+      if (event.key === 'Home') {
+        setWorkspaceSplit(bounds.min, true);
+      } else if (event.key === 'End') {
+        setWorkspaceSplit(bounds.max, true);
+      } else {
+        setWorkspaceSplit(splitState.value + (event.key === 'ArrowRight' ? 2 : -2), true);
+      }
+    });
+
+    stageButtons.forEach((button) => {
+      button.addEventListener('click', () => {
+        stageButtons.forEach((item) => item.classList.toggle('active', item === button));
+        const target = document.getElementById(button.dataset.jump);
+        if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+    });
+
+    periodButtons.forEach((button) => {
+      button.addEventListener('click', () => {
+        state.period = button.dataset.period;
+        state.staff = periods[state.period].defaultStaff;
+        periodButtons.forEach((item) => item.classList.toggle('active', item === button));
+        renderVisual();
+      });
+    });
+
+    document.getElementById('staffRange').addEventListener('input', (event) => {
+      state.staff = Number(event.target.value);
+      renderVisual();
+    });
+
+    document.getElementById('calculateTailButton').addEventListener('click', () => calculateTail('tailOutput', 'capacityInput', 'meanInput', 'sdInput'));
+    document.getElementById('clearTailButton').addEventListener('click', () => clearInputs(['capacityInput', 'meanInput', 'sdInput'], 'tailOutput', '수용 한계, 평균, 표준편차를 입력하면 Z값과 오른쪽 초과확률만 계산합니다.'));
+    document.getElementById('compareGapButton').addEventListener('click', compareGaps);
+    document.getElementById('clearGapButton').addEventListener('click', clearGap);
+    document.getElementById('calculateMoveButton').addEventListener('click', () => calculateTail('moveOutput', 'moveCapacityInput', 'moveMeanInput', 'moveSdInput'));
+    document.getElementById('clearMoveButton').addEventListener('click', () => clearInputs(['moveCapacityInput', 'moveMeanInput', 'moveSdInput'], 'moveOutput', '바뀐 수용 한계, 평균, 표준편차를 입력하면 Z값과 오른쪽 초과확률만 계산합니다.'));
+    document.getElementById('calculateTargetButton').addEventListener('click', calculateTarget);
+    document.getElementById('clearTargetButton').addEventListener('click', clearTarget);
+
+    [
+      ['capacityInput', () => calculateTail('tailOutput', 'capacityInput', 'meanInput', 'sdInput')],
+      ['meanInput', () => calculateTail('tailOutput', 'capacityInput', 'meanInput', 'sdInput')],
+      ['sdInput', () => calculateTail('tailOutput', 'capacityInput', 'meanInput', 'sdInput')],
+      ['gapOneInput', compareGaps],
+      ['sdOneInput', compareGaps],
+      ['labelOneInput', compareGaps],
+      ['gapTwoInput', compareGaps],
+      ['sdTwoInput', compareGaps],
+      ['labelTwoInput', compareGaps],
+      ['moveCapacityInput', () => calculateTail('moveOutput', 'moveCapacityInput', 'moveMeanInput', 'moveSdInput')],
+      ['moveMeanInput', () => calculateTail('moveOutput', 'moveCapacityInput', 'moveMeanInput', 'moveSdInput')],
+      ['moveSdInput', () => calculateTail('moveOutput', 'moveCapacityInput', 'moveMeanInput', 'moveSdInput')],
+      ['targetMeanInput', calculateTarget],
+      ['targetSdInput', calculateTarget],
+      ['targetZInput', calculateTarget],
+    ].forEach(([id, handler]) => {
+      document.getElementById(id).addEventListener('keydown', (event) => {
+        if (event.key === 'Enter') handler();
+      });
+    });
+
+    window.addEventListener('resize', syncResponsiveView);
+    loadWorkspaceSplit();
+    syncResponsiveView();
+    renderVisual();
+  </script>
+</body>
+</html>
