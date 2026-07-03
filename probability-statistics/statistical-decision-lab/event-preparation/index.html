@@ -1,0 +1,1348 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="행사 준비 학습지를 보조하는 이항분포, 준비선, 기대손실 계산 확인 웹앱입니다." />
+  <title>03 행사준비 도구</title>
+  <link rel="stylesheet" href="../../../assets/common.css" />
+  <style>
+    :root {
+      --blue: #2563eb;
+      --blue-weak: #dbeafe;
+      --green: #047857;
+      --green-weak: #d1fae5;
+      --amber: #b45309;
+      --amber-weak: #fef3c7;
+      --rose: #be123c;
+      --rose-weak: #ffe4e6;
+      --slate: #334155;
+      --line: #dbe4ef;
+      --soft: #f8fafc;
+    }
+
+    body {
+      background: #f6f7fb;
+    }
+
+    .page {
+      max-width: none;
+      min-height: 100vh;
+      padding: 16px;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 16px;
+      max-width: 1440px;
+      margin: 0 auto 10px;
+    }
+
+    .topbar .back-link {
+      margin-bottom: 0;
+      white-space: nowrap;
+    }
+
+    .title-block h1 {
+      margin: 4px 0;
+      font-size: clamp(28px, 4vw, 40px);
+    }
+
+    .title-block p {
+      margin: 0;
+      color: #334155;
+      font-size: 16px;
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      min-height: 34px;
+      padding: 7px 12px;
+      border: 1px solid #bfdbfe;
+      border-radius: 999px;
+      background: #eff6ff;
+      color: #1d4ed8;
+      font-size: 14px;
+      font-weight: 850;
+      white-space: nowrap;
+    }
+
+    .switcher {
+      display: none;
+      max-width: 1440px;
+      margin: 0 auto 10px;
+      gap: 8px;
+    }
+
+    .switcher button {
+      flex: 1;
+      min-height: 42px;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      background: #fff;
+      color: #334155;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .switcher button.active {
+      border-color: #2563eb;
+      background: #dbeafe;
+      color: #1d4ed8;
+    }
+
+    .workspace {
+      --worksheet-ratio: 45%;
+      display: grid;
+      grid-template-columns: var(--worksheet-ratio) 12px minmax(420px, 1fr);
+      gap: 0;
+      max-width: 1440px;
+      height: calc(100vh - 152px);
+      min-height: 620px;
+      margin: 0 auto;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      overflow: hidden;
+      background: #fff;
+      box-shadow: 0 16px 42px rgba(15, 23, 42, 0.08);
+    }
+
+    .pane {
+      min-width: 0;
+      min-height: 0;
+      background: #fff;
+    }
+
+    .worksheet-pane {
+      display: flex;
+      flex-direction: column;
+      border-right: 1px solid var(--line);
+    }
+
+    .tool-pane {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+
+    .pane-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--line);
+      background: #f8fafc;
+    }
+
+    .pane-title {
+      margin: 0;
+      color: #0f172a;
+      font-size: 14px;
+      font-weight: 850;
+    }
+
+    .download-link {
+      display: inline-flex;
+      align-items: center;
+      min-height: 32px;
+      padding: 6px 10px;
+      border-radius: 8px;
+      background: #2563eb;
+      color: #fff;
+      font-size: 13px;
+      font-weight: 850;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+
+    .pdf-frame {
+      width: 100%;
+      flex: 1;
+      border: 0;
+      background: #eef2f7;
+    }
+
+    .splitter {
+      position: relative;
+      background: #e2e8f0;
+      cursor: col-resize;
+      touch-action: none;
+      outline: none;
+    }
+
+    .splitter::before {
+      content: "";
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 4px;
+      height: 54px;
+      border-radius: 999px;
+      background: #94a3b8;
+      transform: translate(-50%, -50%);
+    }
+
+    .splitter:hover,
+    .splitter:focus-visible,
+    .splitter.is-dragging {
+      background: #bfdbfe;
+    }
+
+    .splitter:hover::before,
+    .splitter:focus-visible::before,
+    .splitter.is-dragging::before {
+      background: #2563eb;
+    }
+
+    .is-resizing-layout .pdf-frame {
+      pointer-events: none;
+    }
+
+    .tool-body {
+      flex: 1;
+      min-height: 0;
+      overflow: auto;
+      padding: 14px;
+      background: #f8fafc;
+    }
+
+    .preset-row,
+    .stage-nav {
+      display: grid;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .preset-row {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    .stage-nav {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      position: sticky;
+      top: -14px;
+      z-index: 4;
+      padding: 8px 0 10px;
+      background: #f8fafc;
+    }
+
+    .preset-button,
+    .stage-btn,
+    .focus-btn,
+    .primary-btn,
+    .subtle-btn {
+      min-height: 40px;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      background: #fff;
+      color: #334155;
+      font-weight: 850;
+      cursor: pointer;
+      text-align: center;
+      text-decoration: none;
+    }
+
+    .preset-button {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 8px 10px;
+      font-size: 14px;
+    }
+
+    .preset-button.active,
+    .stage-btn.active,
+    .focus-btn.active {
+      border-color: #2563eb;
+      background: #dbeafe;
+      color: #1d4ed8;
+    }
+
+    .guide-strip,
+    .section {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+    }
+
+    .guide-strip {
+      display: grid;
+      gap: 6px;
+      margin-bottom: 10px;
+      padding: 10px 12px;
+    }
+
+    .guide-note,
+    .calc-note {
+      margin: 0;
+      color: #475569;
+      font-size: 14px;
+      line-height: 1.55;
+    }
+
+    .section {
+      margin-bottom: 12px;
+      padding: 12px;
+    }
+
+    .section-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .section-title {
+      margin: 0;
+      color: #0f172a;
+      font-size: 18px;
+    }
+
+    .tiny-label {
+      display: inline-flex;
+      align-items: center;
+      min-height: 28px;
+      padding: 4px 8px;
+      border-radius: 999px;
+      background: #f1f5f9;
+      color: #475569;
+      font-size: 12px;
+      font-weight: 850;
+      white-space: nowrap;
+    }
+
+    .data-grid,
+    .strategy-row,
+    .cost-row,
+    .input-pair,
+    .sim-grid,
+    .scale-grid {
+      display: grid;
+      gap: 8px;
+    }
+
+    .data-grid {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      margin-bottom: 10px;
+    }
+
+    .data-chip,
+    .sim-card,
+    .scale-card {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #f8fafc;
+      padding: 10px;
+    }
+
+    .data-chip span,
+    .sim-card span,
+    .scale-card span {
+      display: block;
+      color: #64748b;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .data-chip strong,
+    .sim-card strong,
+    .scale-card strong {
+      display: block;
+      margin-top: 4px;
+      color: #0f172a;
+      font-size: 18px;
+      line-height: 1.2;
+    }
+
+    .strategy-row {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      margin-bottom: 10px;
+    }
+
+    .focus-btn {
+      padding: 8px 10px;
+    }
+
+    .distribution-wrap {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      padding: 12px;
+    }
+
+    .distribution-chart {
+      display: grid;
+      grid-template-columns: repeat(21, minmax(18px, 1fr));
+      align-items: end;
+      gap: 4px;
+      height: 170px;
+      padding: 10px 0 4px;
+      border-bottom: 2px solid #cbd5e1;
+    }
+
+    .bar-slot {
+      position: relative;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      min-width: 0;
+      height: 100%;
+    }
+
+    .dist-bar {
+      width: 100%;
+      min-height: 3px;
+      border-radius: 6px 6px 0 0;
+      background: #93c5fd;
+    }
+
+    .bar-slot.shortage .dist-bar {
+      background: #fb7185;
+    }
+
+    .bar-slot.capacity::after {
+      content: "";
+      position: absolute;
+      inset: 0 -2px -8px auto;
+      width: 3px;
+      border-radius: 999px;
+      background: #1d4ed8;
+    }
+
+    .bar-slot.mean::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      bottom: -8px;
+      left: -2px;
+      width: 3px;
+      border-radius: 999px;
+      background: #047857;
+    }
+
+    .axis-row {
+      display: grid;
+      grid-template-columns: repeat(21, minmax(18px, 1fr));
+      gap: 4px;
+      margin-top: 6px;
+      color: #64748b;
+      font-size: 11px;
+      text-align: center;
+    }
+
+    .legend-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .legend-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: #475569;
+      font-size: 13px;
+      font-weight: 750;
+    }
+
+    .legend-swatch {
+      width: 14px;
+      height: 14px;
+      border-radius: 4px;
+      background: #93c5fd;
+    }
+
+    .legend-swatch.shortage {
+      background: #fb7185;
+    }
+
+    .legend-swatch.capacity {
+      background: #1d4ed8;
+    }
+
+    .legend-swatch.mean {
+      background: #047857;
+    }
+
+    .status-panel {
+      margin-top: 10px;
+      padding: 10px 12px;
+      border-radius: 8px;
+      background: #f8fafc;
+      color: #334155;
+      font-size: 15px;
+      line-height: 1.55;
+    }
+
+    .sim-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      margin-bottom: 10px;
+    }
+
+    .sim-log {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      min-height: 38px;
+      margin-top: 10px;
+    }
+
+    .sample-pill {
+      display: inline-flex;
+      align-items: center;
+      min-height: 30px;
+      padding: 5px 8px;
+      border-radius: 999px;
+      background: #e0f2fe;
+      color: #075985;
+      font-size: 13px;
+      font-weight: 850;
+    }
+
+    .sample-pill.shortage {
+      background: #ffe4e6;
+      color: #be123c;
+    }
+
+    .calculator {
+      display: grid;
+      gap: 10px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #f8fafc;
+      padding: 12px;
+    }
+
+    .input-pair {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .calc-field {
+      display: grid;
+      gap: 6px;
+      color: #334155;
+      font-size: 13px;
+      font-weight: 850;
+    }
+
+    .calc-field input {
+      width: 100%;
+      min-height: 42px;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      padding: 8px 10px;
+      color: #0f172a;
+      font: inherit;
+      background: #fff;
+      box-sizing: border-box;
+    }
+
+    .calc-actions,
+    .cost-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .primary-btn {
+      padding: 8px 14px;
+      border-color: #2563eb;
+      background: #2563eb;
+      color: #fff;
+    }
+
+    .subtle-btn {
+      padding: 8px 14px;
+      background: #fff;
+    }
+
+    .calc-output {
+      margin: 0;
+      min-height: 42px;
+      border-radius: 8px;
+      background: #fff;
+      padding: 10px 12px;
+      color: #0f172a;
+      font-size: 15px;
+      font-weight: 850;
+      line-height: 1.45;
+    }
+
+    .calc-output.muted {
+      color: #64748b;
+      font-weight: 700;
+    }
+
+    .cost-bars {
+      display: grid;
+      gap: 8px;
+    }
+
+    .cost-bar {
+      display: grid;
+      grid-template-columns: 86px 1fr;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      font-weight: 850;
+      color: #334155;
+    }
+
+    .cost-track {
+      height: 18px;
+      overflow: hidden;
+      border-radius: 999px;
+      background: #e2e8f0;
+    }
+
+    .cost-fill {
+      height: 100%;
+      width: 0%;
+      border-radius: inherit;
+      background: #2563eb;
+      transition: width 160ms ease;
+    }
+
+    .cost-fill.leftover {
+      background: #f59e0b;
+    }
+
+    .scale-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .check-list {
+      margin: 10px 0 0;
+      padding-left: 20px;
+      color: #334155;
+      line-height: 1.55;
+      font-size: 14px;
+    }
+
+    .check-list li + li {
+      margin-top: 6px;
+    }
+
+    @media (max-width: 960px) {
+      .page {
+        padding: 14px;
+      }
+
+      .topbar {
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .switcher {
+        display: flex;
+      }
+
+      .workspace {
+        display: block;
+        height: calc(100vh - 210px);
+        min-height: 760px;
+      }
+
+      .splitter {
+        display: none;
+      }
+
+      .worksheet-pane,
+      .tool-pane {
+        height: 100%;
+        border-right: 0;
+      }
+
+      .tool-body {
+        height: calc(100% - 53px);
+      }
+
+      .pane.is-hidden {
+        display: none;
+      }
+
+      .preset-row,
+      .stage-nav,
+      .data-grid,
+      .strategy-row {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .distribution-chart,
+      .axis-row {
+        grid-template-columns: repeat(21, minmax(12px, 1fr));
+      }
+    }
+
+    @media (max-width: 680px) {
+      .preset-row,
+      .stage-nav,
+      .data-grid,
+      .strategy-row,
+      .input-pair,
+      .sim-grid,
+      .scale-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <div class="topbar">
+      <div>
+        <a class="back-link" href="../">← 통계적 의사결정 도우미</a>
+        <header class="title-block">
+          <p class="eyebrow">Probability & Statistics · Decision Support</p>
+          <h1>행사준비 도구</h1>
+          <p>행사 준비 학습지를 보면서 평균, 분포의 흩어짐, 부족·잔여 손실의 역할을 함께 확인합니다.</p>
+        </header>
+      </div>
+      <span class="status-pill">03 행사준비</span>
+    </div>
+
+    <div class="switcher" aria-label="좁은 화면 보기 전환">
+      <button class="active" type="button" data-view="worksheet">학습지 보기</button>
+      <button type="button" data-view="tool">도구 보기</button>
+    </div>
+
+    <section class="workspace">
+      <article class="pane worksheet-pane" data-pane="worksheet">
+        <div class="pane-head">
+          <p class="pane-title">03 행사준비 · 학생용 PDF</p>
+          <a class="download-link" href="./event-preparation-student.pdf" download>PDF 다운로드</a>
+        </div>
+        <object class="pdf-frame" data="./event-preparation-student.pdf" type="application/pdf" aria-label="행사준비 학생용 학습지 PDF">
+          <p class="guide-note">PDF가 보이지 않으면 위의 PDF 다운로드를 눌러 학습지를 여세요.</p>
+        </object>
+      </article>
+
+      <div class="splitter" role="separator" tabindex="0" aria-label="학습지와 도구 영역 크기 조절" aria-orientation="vertical" aria-valuemin="32" aria-valuemax="62" aria-valuenow="45" title="드래그해서 학습지와 도구의 폭을 조절합니다."></div>
+
+      <article class="pane tool-pane" data-pane="tool">
+        <div class="pane-head">
+          <p class="pane-title">분포·손실 확인 도구</p>
+        </div>
+
+        <div class="tool-body">
+          <div class="preset-row">
+            <a class="preset-button" href="../product-recommendation/">01 상품추천</a>
+            <a class="preset-button" href="../space-communication/">02 우주통신</a>
+            <button class="preset-button active" type="button">03 행사준비</button>
+            <a class="preset-button" href="../sensor-alarm/">04 센서 경보</a>
+          </div>
+
+          <div class="guide-strip">
+            <p class="guide-note">학습지 [시작 전] 예상을 먼저 적고, Q1 계산값은 학습지에 직접 채우세요.</p>
+            <p class="guide-note">이 도구는 분포 구조와 입력값 확인만 돕습니다. 전략 선택과 의견서는 학습지에 직접 작성하세요.</p>
+          </div>
+
+          <nav class="stage-nav" aria-label="03 행사준비 학습 흐름">
+            <button class="stage-btn active" type="button" data-jump="stage-distribution">Q1·Q2</button>
+            <button class="stage-btn" type="button" data-jump="stage-simulation">Q2</button>
+            <button class="stage-btn" type="button" data-jump="stage-loss">Q1·Q5</button>
+            <button class="stage-btn" type="button" data-jump="stage-scale">Q6~Q8</button>
+          </nav>
+
+          <section class="section" id="stage-distribution" aria-labelledby="distribution-title">
+            <div class="section-head">
+              <h2 class="section-title" id="distribution-title">참석자 수 분포와 준비선</h2>
+              <span class="tiny-label">Q1·Q2 참고</span>
+            </div>
+            <div class="data-grid">
+              <div class="data-chip">
+                <span>신청자 수</span>
+                <strong>20명</strong>
+              </div>
+              <div class="data-chip">
+                <span>1인 참석 확률</span>
+                <strong>0.70</strong>
+              </div>
+              <div class="data-chip">
+                <span>평균 참석자</span>
+                <strong>14명</strong>
+              </div>
+              <div class="data-chip">
+                <span>확률 모형</span>
+                <strong>B(20, 0.70)</strong>
+              </div>
+            </div>
+
+            <div class="strategy-row" aria-label="준비 전략 선택">
+              <button class="focus-btn active" type="button" data-capacity="14">가 · 14명분</button>
+              <button class="focus-btn" type="button" data-capacity="16">나 · 16명분</button>
+              <button class="focus-btn" type="button" data-capacity="18">다 · 18명분</button>
+            </div>
+
+            <div class="distribution-wrap">
+              <div class="distribution-chart" id="distributionChart" aria-label="참석자 수 이항분포 막대그래프"></div>
+              <div class="axis-row" id="axisRow" aria-hidden="true"></div>
+              <div class="legend-row">
+                <span class="legend-item"><span class="legend-swatch"></span>준비 인원 이하</span>
+                <span class="legend-item"><span class="legend-swatch shortage"></span>부족 구역</span>
+                <span class="legend-item"><span class="legend-swatch capacity"></span>준비선</span>
+                <span class="legend-item"><span class="legend-swatch mean"></span>평균</span>
+              </div>
+              <p class="status-panel" id="distributionStatus">준비 수량을 선택하면 부족 구역이 표시됩니다.</p>
+            </div>
+            <p class="calc-note">막대의 정확한 부족 확률과 평균 부족·잔여 인원은 학습지 [C] 표에서 확인하고, 예상 손실은 Q1에 직접 계산하세요.</p>
+          </section>
+
+          <section class="section" id="stage-simulation" aria-labelledby="simulation-title">
+            <div class="section-head">
+              <h2 class="section-title" id="simulation-title">한 번의 행사는 평균에 고정되지 않는다</h2>
+              <span class="tiny-label">Q2 참고</span>
+            </div>
+            <div class="sim-grid">
+              <div class="sim-card">
+                <span>누적 행사 수</span>
+                <strong id="trialCount">0회</strong>
+              </div>
+              <div class="sim-card">
+                <span>부족이 생긴 횟수</span>
+                <strong id="shortageCount">0회</strong>
+              </div>
+              <div class="sim-card">
+                <span>최근 참석자 수</span>
+                <strong id="latestAttendance">-</strong>
+              </div>
+            </div>
+            <div class="calc-actions">
+              <button class="primary-btn" type="button" id="runOneButton">1회 행사 보기</button>
+              <button class="subtle-btn" type="button" id="runTenButton">10회 누적</button>
+              <button class="subtle-btn" type="button" id="resetSimulationButton">초기화</button>
+            </div>
+            <div class="sim-log" id="simulationLog" aria-live="polite"></div>
+            <p class="calc-note">무작위 예시는 평균 주변의 흔들림을 보는 용도입니다. 정확한 부족 확률은 학습지의 제공값을 사용하세요.</p>
+          </section>
+
+          <section class="section" id="stage-loss" aria-labelledby="loss-title">
+            <div class="section-head">
+              <h2 class="section-title" id="loss-title">내 예상 손실 계산 확인</h2>
+              <span class="tiny-label">Q1·Q5 입력형</span>
+            </div>
+            <div class="calculator">
+              <div class="input-pair">
+                <label class="calc-field" for="avgShortageInput">
+                  평균 부족 인원
+                  <input id="avgShortageInput" type="number" inputmode="decimal" min="0" step="any" placeholder="학습지 [C] 표에서 입력" />
+                </label>
+                <label class="calc-field" for="avgLeftoverInput">
+                  평균 잔여량
+                  <input id="avgLeftoverInput" type="number" inputmode="decimal" min="0" step="any" placeholder="학습지 [C] 표에서 입력" />
+                </label>
+              </div>
+              <div class="input-pair">
+                <label class="calc-field" for="shortageCostInput">
+                  부족 1명 손실
+                  <input id="shortageCostInput" type="number" inputmode="numeric" min="0" step="1" placeholder="원 단위로 입력" />
+                </label>
+                <label class="calc-field" for="leftoverCostInput">
+                  잔여 1명 손실
+                  <input id="leftoverCostInput" type="number" inputmode="numeric" min="0" step="1" placeholder="원 단위로 입력" />
+                </label>
+              </div>
+              <div class="calc-actions">
+                <button class="primary-btn" type="button" id="calculateLossButton">입력값으로 손실 확인</button>
+                <button class="subtle-btn" type="button" id="clearLossButton">지우기</button>
+              </div>
+              <p class="calc-output muted" id="lossOutput" aria-live="polite">평균 부족·잔여 인원과 손실 비용을 입력하면 입력값의 합만 확인합니다.</p>
+            </div>
+
+            <div class="calculator" aria-labelledby="cost-balance-title">
+              <div class="section-head">
+                <h3 class="section-title" id="cost-balance-title">부족 손실과 잔여 손실 비교</h3>
+                <span class="tiny-label">Q3·Q5 참고</span>
+              </div>
+              <div class="input-pair">
+                <label class="calc-field" for="shortageCostCompareInput">
+                  부족 1명 손실
+                  <input id="shortageCostCompareInput" type="number" inputmode="numeric" min="0" step="1" placeholder="원 단위로 입력" />
+                </label>
+                <label class="calc-field" for="leftoverCostCompareInput">
+                  잔여 1명 손실
+                  <input id="leftoverCostCompareInput" type="number" inputmode="numeric" min="0" step="1" placeholder="원 단위로 입력" />
+                </label>
+              </div>
+              <div class="cost-bars" aria-label="손실 비용 비교 막대">
+                <div class="cost-bar">
+                  <span>부족</span>
+                  <div class="cost-track"><div class="cost-fill" id="shortageCostFill"></div></div>
+                </div>
+                <div class="cost-bar">
+                  <span>잔여</span>
+                  <div class="cost-track"><div class="cost-fill leftover" id="leftoverCostFill"></div></div>
+                </div>
+              </div>
+              <div class="calc-actions">
+                <button class="primary-btn" type="button" id="compareCostButton">비용 크기 확인</button>
+                <button class="subtle-btn" type="button" id="clearCostButton">지우기</button>
+              </div>
+              <p class="calc-output muted" id="costOutput" aria-live="polite">두 손실 비용을 입력하면 크기 차이만 표시합니다.</p>
+            </div>
+          </section>
+
+          <section class="section" id="stage-scale" aria-labelledby="scale-title">
+            <div class="section-head">
+              <h2 class="section-title" id="scale-title">규모와 가정 점검</h2>
+              <span class="tiny-label">Q6~Q8 참고</span>
+            </div>
+            <div class="calculator">
+              <div class="section-head">
+                <h3 class="section-title">표본비율 흔들림 확인</h3>
+                <span class="tiny-label">Q6 입력형</span>
+              </div>
+              <div class="input-pair">
+                <label class="calc-field" for="sampleSizeInput">
+                  신청자 수 n
+                  <input id="sampleSizeInput" type="number" inputmode="numeric" min="1" step="1" placeholder="학습지 값 입력" />
+                </label>
+                <label class="calc-field" for="probabilityInput">
+                  참석 확률 p
+                  <input id="probabilityInput" type="number" inputmode="decimal" min="0" max="1" step="any" placeholder="소수 또는 %" />
+                </label>
+              </div>
+              <div class="calc-actions">
+                <button class="primary-btn" type="button" id="calculateScaleButton">표준편차 확인</button>
+                <button class="subtle-btn" type="button" id="clearScaleButton">지우기</button>
+              </div>
+              <p class="calc-output muted" id="scaleOutput" aria-live="polite">n과 p를 입력하면 학습지 Q6의 표준편차 값만 확인합니다.</p>
+            </div>
+            <ul class="check-list">
+              <li>Q6: 준비 비율이 같아도 신청자 수가 달라지면 표본비율의 흔들림이 어떻게 달라지는지 표시하세요.</li>
+              <li>Q7: 참석이 서로 독립이라는 가정이 깨질 상황을 먼저 찾고, 부족 위험을 어떻게 볼지 학습지에 쓰세요.</li>
+              <li>Q8: AI 요약의 문장을 평균, 손실 비용, 행사 규모로 나누어 점검하세요. 반박 문장은 학습지에 직접 작성하세요.</li>
+            </ul>
+          </section>
+        </div>
+      </article>
+    </section>
+  </main>
+
+  <script>
+    const switchButtons = document.querySelectorAll('.switcher button');
+    const workspace = document.querySelector('.workspace');
+    const splitter = document.querySelector('.splitter');
+    const panes = document.querySelectorAll('[data-pane]');
+    const stageButtons = document.querySelectorAll('.stage-btn');
+    const capacityButtons = document.querySelectorAll('[data-capacity]');
+    const distributionChart = document.getElementById('distributionChart');
+    const axisRow = document.getElementById('axisRow');
+    const distributionStatus = document.getElementById('distributionStatus');
+    const trialCount = document.getElementById('trialCount');
+    const shortageCount = document.getElementById('shortageCount');
+    const latestAttendance = document.getElementById('latestAttendance');
+    const simulationLog = document.getElementById('simulationLog');
+    const lossOutput = document.getElementById('lossOutput');
+    const costOutput = document.getElementById('costOutput');
+    const scaleOutput = document.getElementById('scaleOutput');
+    const shortageCostFill = document.getElementById('shortageCostFill');
+    const leftoverCostFill = document.getElementById('leftoverCostFill');
+
+    const model = {
+      n: 20,
+      p: 0.7,
+      mean: 14,
+    };
+
+    const splitState = {
+      value: 45,
+      dragging: false,
+      storageKey: 'event-preparation-worksheet-ratio',
+    };
+
+    const state = {
+      capacity: 14,
+      trials: 0,
+      shortageTrials: 0,
+      recent: [],
+    };
+
+    function formatNumber(value, digits = 3) {
+      return value.toLocaleString('ko-KR', { maximumFractionDigits: digits });
+    }
+
+    function formatCurrency(value) {
+      return Math.round(value).toLocaleString('ko-KR') + '원';
+    }
+
+    function normalizeRatioInput(value) {
+      if (value > 1 && value <= 100) {
+        return value / 100;
+      }
+      return value;
+    }
+
+    function readNumber(id) {
+      const input = document.getElementById(id);
+      if (input.value.trim() === '') {
+        return null;
+      }
+      return Number(input.value);
+    }
+
+    function setMessage(element, message, muted = false) {
+      element.textContent = message;
+      element.classList.toggle('muted', muted);
+    }
+
+    function setNarrowView(viewName) {
+      switchButtons.forEach((item) => item.classList.toggle('active', item.dataset.view === viewName));
+      panes.forEach((pane) => pane.classList.toggle('is-hidden', pane.dataset.pane !== viewName));
+    }
+
+    function getSplitBounds() {
+      const width = workspace?.getBoundingClientRect().width || 1180;
+      const splitterWidth = splitter?.getBoundingClientRect().width || 12;
+      const minLeft = 360;
+      const minRight = 420;
+      const min = Math.max(32, (minLeft / width) * 100);
+      const max = Math.min(64, ((width - splitterWidth - minRight) / width) * 100);
+      return {
+        min: Math.min(min, 45),
+        max: Math.max(max, 45),
+      };
+    }
+
+    function setWorkspaceSplit(value, persist = true) {
+      const bounds = getSplitBounds();
+      const clamped = Math.min(bounds.max, Math.max(bounds.min, value));
+      splitState.value = clamped;
+      workspace.style.setProperty('--worksheet-ratio', clamped.toFixed(2) + '%');
+      splitter.setAttribute('aria-valuemin', String(Math.round(bounds.min)));
+      splitter.setAttribute('aria-valuemax', String(Math.round(bounds.max)));
+      splitter.setAttribute('aria-valuenow', String(Math.round(clamped)));
+
+      if (persist) {
+        try {
+          window.localStorage.setItem(splitState.storageKey, clamped.toFixed(2));
+        } catch (error) {
+          // 저장이 막힌 환경에서도 폭 조절 자체는 유지한다.
+        }
+      }
+    }
+
+    function setWorkspaceSplitFromClientX(clientX, persist = false) {
+      const rect = workspace.getBoundingClientRect();
+      const ratio = ((clientX - rect.left) / rect.width) * 100;
+      setWorkspaceSplit(ratio, persist);
+    }
+
+    function loadWorkspaceSplit() {
+      let saved = null;
+      try {
+        saved = Number(window.localStorage.getItem(splitState.storageKey));
+      } catch (error) {
+        saved = null;
+      }
+      if (Number.isFinite(saved)) {
+        splitState.value = saved;
+      }
+      setWorkspaceSplit(splitState.value, false);
+    }
+
+    function isNarrowLayout() {
+      return window.matchMedia('(max-width: 960px)').matches;
+    }
+
+    function syncResponsiveView() {
+      if (!isNarrowLayout()) {
+        panes.forEach((pane) => pane.classList.remove('is-hidden'));
+        setWorkspaceSplit(splitState.value, false);
+        return;
+      }
+      const activeView = document.querySelector('.switcher button.active')?.dataset.view || 'worksheet';
+      setNarrowView(activeView);
+    }
+
+    function combination(n, k) {
+      let result = 1;
+      for (let i = 1; i <= k; i += 1) {
+        result = result * (n - k + i) / i;
+      }
+      return result;
+    }
+
+    function binomialProbability(k) {
+      return combination(model.n, k) * Math.pow(model.p, k) * Math.pow(1 - model.p, model.n - k);
+    }
+
+    function renderDistribution() {
+      const probabilities = Array.from({ length: model.n + 1 }, (_, k) => binomialProbability(k));
+      const maxProbability = Math.max(...probabilities);
+      distributionChart.innerHTML = '';
+      axisRow.innerHTML = '';
+
+      probabilities.forEach((probability, attendees) => {
+        const slot = document.createElement('div');
+        const classes = ['bar-slot'];
+        if (attendees > state.capacity) classes.push('shortage');
+        if (attendees === state.capacity) classes.push('capacity');
+        if (attendees === model.mean) classes.push('mean');
+        slot.className = classes.join(' ');
+        slot.title = attendees + '명 참석';
+
+        const bar = document.createElement('div');
+        bar.className = 'dist-bar';
+        bar.style.height = Math.max(3, (probability / maxProbability) * 100).toFixed(1) + '%';
+        slot.appendChild(bar);
+        distributionChart.appendChild(slot);
+
+        const tick = document.createElement('span');
+        tick.textContent = attendees % 2 === 0 ? String(attendees) : '';
+        axisRow.appendChild(tick);
+      });
+
+      distributionStatus.textContent = '현재 준비선은 ' + state.capacity + '명분입니다. ' + (state.capacity + 1) + '명 이상 참석하는 막대가 부족 구역으로 표시됩니다.';
+    }
+
+    function simulateAttendance() {
+      let attendees = 0;
+      for (let index = 0; index < model.n; index += 1) {
+        if (Math.random() < model.p) attendees += 1;
+      }
+      return attendees;
+    }
+
+    function renderSimulation() {
+      trialCount.textContent = state.trials + '회';
+      shortageCount.textContent = state.shortageTrials + '회';
+      latestAttendance.textContent = state.recent.length ? state.recent[0].attendees + '명' : '-';
+      simulationLog.innerHTML = '';
+      state.recent.forEach((sample) => {
+        const item = document.createElement('span');
+        item.className = 'sample-pill' + (sample.shortage ? ' shortage' : '');
+        item.textContent = sample.attendees + '명';
+        simulationLog.appendChild(item);
+      });
+    }
+
+    function runSimulation(count) {
+      for (let index = 0; index < count; index += 1) {
+        const attendees = simulateAttendance();
+        const shortage = attendees > state.capacity;
+        state.trials += 1;
+        if (shortage) state.shortageTrials += 1;
+        state.recent.unshift({ attendees, shortage });
+      }
+      state.recent = state.recent.slice(0, 18);
+      renderSimulation();
+    }
+
+    function resetSimulation() {
+      state.trials = 0;
+      state.shortageTrials = 0;
+      state.recent = [];
+      renderSimulation();
+    }
+
+    function calculateLoss() {
+      const avgShortage = readNumber('avgShortageInput');
+      const avgLeftover = readNumber('avgLeftoverInput');
+      const shortageCost = readNumber('shortageCostInput');
+      const leftoverCost = readNumber('leftoverCostInput');
+      const values = [avgShortage, avgLeftover, shortageCost, leftoverCost];
+
+      if (values.some((value) => value === null)) {
+        setMessage(lossOutput, '네 값을 모두 입력하세요.', true);
+        return;
+      }
+
+      if (values.some((value) => !Number.isFinite(value) || value < 0)) {
+        setMessage(lossOutput, '0 이상의 수만 입력하세요.', true);
+        return;
+      }
+
+      const shortageLoss = shortageCost * avgShortage;
+      const leftoverLoss = leftoverCost * avgLeftover;
+      const total = shortageLoss + leftoverLoss;
+      setMessage(lossOutput, '입력한 식: ' + formatCurrency(shortageCost) + ' × ' + formatNumber(avgShortage) + ' + ' + formatCurrency(leftoverCost) + ' × ' + formatNumber(avgLeftover) + ' = ' + formatCurrency(total), false);
+    }
+
+    function clearLoss() {
+      ['avgShortageInput', 'avgLeftoverInput', 'shortageCostInput', 'leftoverCostInput'].forEach((id) => {
+        document.getElementById(id).value = '';
+      });
+      setMessage(lossOutput, '평균 부족·잔여 인원과 손실 비용을 입력하면 입력값의 합만 확인합니다.', true);
+    }
+
+    function compareCost() {
+      const shortageCost = readNumber('shortageCostCompareInput');
+      const leftoverCost = readNumber('leftoverCostCompareInput');
+      if (shortageCost === null || leftoverCost === null) {
+        setMessage(costOutput, '두 비용을 모두 입력하세요.', true);
+        return;
+      }
+      if (![shortageCost, leftoverCost].every((value) => Number.isFinite(value) && value >= 0)) {
+        setMessage(costOutput, '0 이상의 비용만 입력하세요.', true);
+        return;
+      }
+
+      const maxCost = Math.max(shortageCost, leftoverCost, 1);
+      shortageCostFill.style.width = ((shortageCost / maxCost) * 100).toFixed(1) + '%';
+      leftoverCostFill.style.width = ((leftoverCost / maxCost) * 100).toFixed(1) + '%';
+
+      if (leftoverCost === 0) {
+        setMessage(costOutput, '잔여 손실이 0이면 비용 비율 대신 어느 손실이 더 큰지만 학습지에 기록하세요.', false);
+        return;
+      }
+
+      setMessage(costOutput, '부족 1명 손실은 잔여 1명 손실의 약 ' + formatNumber(shortageCost / leftoverCost, 2) + '배입니다.', false);
+    }
+
+    function clearCost() {
+      document.getElementById('shortageCostCompareInput').value = '';
+      document.getElementById('leftoverCostCompareInput').value = '';
+      shortageCostFill.style.width = '0%';
+      leftoverCostFill.style.width = '0%';
+      setMessage(costOutput, '두 손실 비용을 입력하면 크기 차이만 표시합니다.', true);
+    }
+
+    function calculateScale() {
+      const n = readNumber('sampleSizeInput');
+      const rawP = readNumber('probabilityInput');
+      if (n === null || rawP === null) {
+        setMessage(scaleOutput, 'n과 p를 모두 입력하세요.', true);
+        return;
+      }
+
+      const p = normalizeRatioInput(rawP);
+      if (!Number.isFinite(n) || !Number.isInteger(n) || n <= 0 || !Number.isFinite(p) || p < 0 || p > 1) {
+        setMessage(scaleOutput, 'n은 양의 정수, p는 0부터 1 사이의 값 또는 0%부터 100% 사이의 값으로 입력하세요.', true);
+        return;
+      }
+
+      const sd = Math.sqrt(p * (1 - p) / n);
+      setMessage(scaleOutput, '입력한 값의 표본비율 표준편차: ' + formatNumber(sd, 4), false);
+    }
+
+    function clearScale() {
+      document.getElementById('sampleSizeInput').value = '';
+      document.getElementById('probabilityInput').value = '';
+      setMessage(scaleOutput, 'n과 p를 입력하면 학습지 Q6의 표준편차 값만 확인합니다.', true);
+    }
+
+    switchButtons.forEach((button) => {
+      button.addEventListener('click', () => {
+        setNarrowView(button.dataset.view);
+      });
+    });
+
+    splitter.addEventListener('pointerdown', (event) => {
+      if (isNarrowLayout()) {
+        return;
+      }
+      splitState.dragging = true;
+      splitter.classList.add('is-dragging');
+      document.body.classList.add('is-resizing-layout');
+      splitter.setPointerCapture(event.pointerId);
+      setWorkspaceSplitFromClientX(event.clientX, false);
+      event.preventDefault();
+    });
+
+    splitter.addEventListener('pointermove', (event) => {
+      if (!splitState.dragging) {
+        return;
+      }
+      setWorkspaceSplitFromClientX(event.clientX, false);
+    });
+
+    function stopSplitterDrag(event) {
+      if (!splitState.dragging) {
+        return;
+      }
+      splitState.dragging = false;
+      splitter.classList.remove('is-dragging');
+      document.body.classList.remove('is-resizing-layout');
+      if (event && splitter.hasPointerCapture(event.pointerId)) {
+        splitter.releasePointerCapture(event.pointerId);
+      }
+      setWorkspaceSplit(splitState.value, true);
+    }
+
+    splitter.addEventListener('pointerup', stopSplitterDrag);
+    splitter.addEventListener('pointercancel', stopSplitterDrag);
+    splitter.addEventListener('dblclick', () => {
+      setWorkspaceSplit(45, true);
+    });
+
+    splitter.addEventListener('keydown', (event) => {
+      if (isNarrowLayout()) {
+        return;
+      }
+      const bounds = getSplitBounds();
+      if (event.key === 'ArrowLeft') {
+        setWorkspaceSplit(splitState.value - 3, true);
+      } else if (event.key === 'ArrowRight') {
+        setWorkspaceSplit(splitState.value + 3, true);
+      } else if (event.key === 'Home') {
+        setWorkspaceSplit(bounds.min, true);
+      } else if (event.key === 'End') {
+        setWorkspaceSplit(bounds.max, true);
+      } else {
+        return;
+      }
+      event.preventDefault();
+    });
+
+    stageButtons.forEach((button) => {
+      button.addEventListener('click', () => {
+        stageButtons.forEach((item) => item.classList.toggle('active', item === button));
+        const target = document.getElementById(button.dataset.jump);
+        if (target) {
+          target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      });
+    });
+
+    capacityButtons.forEach((button) => {
+      button.addEventListener('click', () => {
+        state.capacity = Number(button.dataset.capacity);
+        capacityButtons.forEach((item) => item.classList.toggle('active', item === button));
+        resetSimulation();
+        renderDistribution();
+      });
+    });
+
+    document.getElementById('runOneButton').addEventListener('click', () => runSimulation(1));
+    document.getElementById('runTenButton').addEventListener('click', () => runSimulation(10));
+    document.getElementById('resetSimulationButton').addEventListener('click', resetSimulation);
+    document.getElementById('calculateLossButton').addEventListener('click', calculateLoss);
+    document.getElementById('clearLossButton').addEventListener('click', clearLoss);
+    document.getElementById('compareCostButton').addEventListener('click', compareCost);
+    document.getElementById('clearCostButton').addEventListener('click', clearCost);
+    document.getElementById('calculateScaleButton').addEventListener('click', calculateScale);
+    document.getElementById('clearScaleButton').addEventListener('click', clearScale);
+
+    ['avgShortageInput', 'avgLeftoverInput', 'shortageCostInput', 'leftoverCostInput'].forEach((id) => {
+      document.getElementById(id).addEventListener('keydown', (event) => {
+        if (event.key === 'Enter') calculateLoss();
+      });
+    });
+
+    ['shortageCostCompareInput', 'leftoverCostCompareInput'].forEach((id) => {
+      document.getElementById(id).addEventListener('keydown', (event) => {
+        if (event.key === 'Enter') compareCost();
+      });
+    });
+
+    ['sampleSizeInput', 'probabilityInput'].forEach((id) => {
+      document.getElementById(id).addEventListener('keydown', (event) => {
+        if (event.key === 'Enter') calculateScale();
+      });
+    });
+
+    window.addEventListener('resize', syncResponsiveView);
+    loadWorkspaceSplit();
+    syncResponsiveView();
+    renderDistribution();
+    renderSimulation();
+  </script>
+</body>
+</html>
