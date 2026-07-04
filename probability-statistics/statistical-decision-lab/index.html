@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="조건부확률과 통계적 의사결정 학습지를 보조하는 웹앱 모음입니다." />
-  <title>통계적 의사결정 도우미</title>
+  <meta name="description" content="확률·분포·표본이 실제 판단에 쓰이는 상황을 탐구하는 통계적 의사결정 웹앱 모음입니다." />
+  <title>통계적 의사결정 실험실</title>
   <link rel="stylesheet" href="../../assets/common.css" />
   <style>
     .page {
@@ -25,8 +25,8 @@
     .lab-card {
       display: grid;
       align-content: start;
-      gap: 12px;
-      min-height: 230px;
+      gap: 10px;
+      min-height: 260px;
       padding: 22px;
       border: 1px solid #dbe4ef;
       border-radius: 8px;
@@ -44,12 +44,23 @@
     .lab-card h2 {
       margin: 0;
       color: #111827;
-      font-size: 28px;
+      font-size: 25px;
       line-height: 1.2;
     }
 
     .lab-card p {
       margin: 0;
+    }
+
+    .lab-question {
+      color: #1f2937;
+      font-size: 20px;
+      font-weight: 800;
+      line-height: 1.35;
+    }
+
+    .lab-summary {
+      color: #4b5563;
       font-size: 17px;
       line-height: 1.55;
     }
@@ -67,20 +78,10 @@
       min-height: 30px;
       padding: 5px 9px;
       border-radius: 999px;
-      background: #eff6ff;
-      color: #1d4ed8;
+      background: #eef2ff;
+      color: #4338ca;
       font-size: 13px;
       font-weight: 850;
-    }
-
-    .meta-pill.ready {
-      background: #ecfdf5;
-      color: #047857;
-    }
-
-    .meta-pill.pending {
-      background: #f3f4f6;
-      color: #6b7280;
     }
 
     @media (max-width: 820px) {
@@ -104,117 +105,129 @@
 
     <header class="hero">
       <p class="eyebrow">Probability & Statistics · Decision Support</p>
-      <h1>통계적 의사결정 도우미</h1>
-      <p>큰 주제별 목록이 아니라 학습지 활동 번호와 상황을 기준으로 의사결정 도구를 한곳에 모아 둡니다.</p>
+      <h1>통계적 의사결정 실험실</h1>
+      <p>확률·분포·표본이 실제 판단에 쓰이는 상황을 활동 번호별로 모아 둔 실험실입니다.</p>
     </header>
 
     <section class="lab-grid" aria-label="통계적 의사결정 웹앱 목록">
       <a class="lab-card" href="./product-recommendation/">
         <h2>01 상품추천</h2>
-        <p>상품추천 규칙 상황에서 기저율, 정밀도, 재현율의 분모 차이와 추천 효과 계산을 확인합니다.</p>
-        <div class="card-meta" aria-label="상품추천 상태">
-          <span class="meta-pill ready">사용 가능</span>
-          <span class="meta-pill">학생용 PDF 포함</span>
-          <span class="meta-pill">조건부확률</span>
+        <p class="lab-question">이 추천을 믿어도 될까?</p>
+        <p class="lab-summary">추천 정확도가 높아 보여도, 실제 구매 가능성은 전혀 다르게 보일 수 있습니다.</p>
+        <div class="card-meta" aria-label="상품추천 교과 개념">
+          <span class="meta-pill">#조건부확률</span>
+          <span class="meta-pill">#확률의곱셈정리</span>
+          <span class="meta-pill">#분할표</span>
         </div>
       </a>
 
       <a class="lab-card" href="./space-communication/">
         <h2>02 우주통신</h2>
-        <p>우주통신 상황에서 반복 전송, 패킷 오류, 패리티 검사의 구조를 그림과 입력형 계산 확인으로 살펴봅니다.</p>
-        <div class="card-meta" aria-label="우주통신 상태">
-          <span class="meta-pill ready">사용 가능</span>
-          <span class="meta-pill">학생용 PDF 포함</span>
-          <span class="meta-pill">이항분포</span>
+        <p class="lab-question">몇 번 보내야 안전할까?</p>
+        <p class="lab-summary">한 번의 전송은 불안하지만, 반복하면 실패 가능성이 빠르게 달라집니다.</p>
+        <div class="card-meta" aria-label="우주통신 교과 개념">
+          <span class="meta-pill">#이항분포</span>
+          <span class="meta-pill">#독립시행</span>
+          <span class="meta-pill">#확률분포</span>
         </div>
       </a>
 
       <a class="lab-card" href="./event-preparation/">
         <h2>03 행사준비</h2>
-        <p>행사 준비 상황에서 참석자 수 분포, 준비선, 부족·잔여 손실 계산을 입력형으로 확인합니다.</p>
-        <div class="card-meta" aria-label="행사준비 상태">
-          <span class="meta-pill ready">사용 가능</span>
-          <span class="meta-pill">학생용 PDF 포함</span>
-          <span class="meta-pill">기대손실</span>
+        <p class="lab-question">몇 명분을 준비해야 할까?</p>
+        <p class="lab-summary">많이 준비하면 남고, 적게 준비하면 부족합니다. 손실이 작아지는 지점을 찾아봅니다.</p>
+        <div class="card-meta" aria-label="행사준비 교과 개념">
+          <span class="meta-pill">#확률변수</span>
+          <span class="meta-pill">#확률분포</span>
+          <span class="meta-pill">#기댓값</span>
         </div>
       </a>
 
       <a class="lab-card" href="./sensor-alarm/">
         <h2>04 센서 경보</h2>
-        <p>센서 경보 상황에서 자연빈도 그림, 2×2 빈도표, 분모 강조, 입력형 계산 확인을 사용합니다.</p>
-        <div class="card-meta" aria-label="센서 경보 상태">
-          <span class="meta-pill ready">사용 가능</span>
-          <span class="meta-pill">학생용 PDF 포함</span>
+        <p class="lab-question">경보가 울리면 믿어도 될까?</p>
+        <p class="lab-summary">정확한 센서도 드문 사건 앞에서는 예상과 다른 판단을 만들 수 있습니다.</p>
+        <div class="card-meta" aria-label="센서 경보 교과 개념">
+          <span class="meta-pill">#조건부확률</span>
+          <span class="meta-pill">#분할표</span>
+          <span class="meta-pill">#사건의독립과종속</span>
         </div>
       </a>
 
       <a class="lab-card" href="./ab-test/">
         <h2>05 A/B 실험</h2>
-        <p>두 버전의 표본비율 차이와 표본 흔들림을 비교해, 차이의 크기를 점검합니다.</p>
-        <div class="card-meta" aria-label="A/B 실험 상태">
-          <span class="meta-pill ready">사용 가능</span>
-          <span class="meta-pill">학생용 PDF 포함</span>
-          <span class="meta-pill">표본흔들림</span>
+        <p class="lab-question">B가 정말 더 나을까?</p>
+        <p class="lab-summary">작은 차이가 보일 때, 그것이 우연인지 선택의 근거인지 따져봅니다.</p>
+        <div class="card-meta" aria-label="A/B 실험 교과 개념">
+          <span class="meta-pill">#표본비율</span>
+          <span class="meta-pill">#표본추출</span>
+          <span class="meta-pill">#모비율의추정</span>
         </div>
       </a>
 
       <a class="lab-card" href="./defect-sampling/">
         <h2>06 불량품검사</h2>
-        <p>표본에서 불량이 0개였을 때의 미발견 확률과 표본 크기 효과를 확인합니다.</p>
-        <div class="card-meta" aria-label="불량품검사 상태">
-          <span class="meta-pill ready">사용 가능</span>
-          <span class="meta-pill">학생용 PDF 포함</span>
-          <span class="meta-pill">이항분포</span>
+        <p class="lab-question">검사 결과를 믿고 출하해도 될까?</p>
+        <p class="lab-summary">표본에서 불량이 0개여도 전체가 안전하다고 단정할 수는 없습니다.</p>
+        <div class="card-meta" aria-label="불량품검사 교과 개념">
+          <span class="meta-pill">#이항분포</span>
+          <span class="meta-pill">#독립시행</span>
+          <span class="meta-pill">#표본추출</span>
         </div>
       </a>
 
       <a class="lab-card" href="./reliability-system/">
         <h2>07 직렬·병렬</h2>
-        <p>직렬·병렬 구조에서 단계별 신뢰도가 전체 신뢰도를 어떻게 제한하는지 확인합니다.</p>
-        <div class="card-meta" aria-label="직렬 병렬 상태">
-          <span class="meta-pill ready">사용 가능</span>
-          <span class="meta-pill">학생용 PDF 포함</span>
-          <span class="meta-pill">신뢰도</span>
+        <p class="lab-question">어떤 구조가 더 안전할까?</p>
+        <p class="lab-summary">같은 부품이라도 연결 방식에 따라 전체가 버티는 확률은 달라집니다.</p>
+        <div class="card-meta" aria-label="직렬 병렬 교과 개념">
+          <span class="meta-pill">#확률의곱셈정리</span>
+          <span class="meta-pill">#독립사건</span>
+          <span class="meta-pill">#여사건</span>
         </div>
       </a>
 
       <a class="lab-card" href="./school-facility/">
         <h2>08 학교시설</h2>
-        <p>학년별 학생 수를 반영한 가중 추정과 표본흔들림을 함께 확인합니다.</p>
-        <div class="card-meta" aria-label="학교시설 상태">
-          <span class="meta-pill ready">사용 가능</span>
-          <span class="meta-pill">학생용 PDF 포함</span>
-          <span class="meta-pill">표본흔들림</span>
+        <p class="lab-question">어떤 시설을 먼저 개선할까?</p>
+        <p class="lab-summary">조사된 의견이 전체 학생의 판단을 잘 대표하는지 따져봅니다.</p>
+        <div class="card-meta" aria-label="학교시설 교과 개념">
+          <span class="meta-pill">#모집단과표본</span>
+          <span class="meta-pill">#표본추출</span>
+          <span class="meta-pill">#통계적추정</span>
         </div>
       </a>
 
       <a class="lab-card" href="./festival-booth/">
         <h2>09 축제부스</h2>
-        <p>정규분포에서 수용 한계 기준선과 오른쪽 초과 영역을 확인합니다.</p>
-        <div class="card-meta" aria-label="축제부스 상태">
-          <span class="meta-pill ready">사용 가능</span>
-          <span class="meta-pill">학생용 PDF 포함</span>
-          <span class="meta-pill">정규분포</span>
+        <p class="lab-question">몇 명까지 받을 수 있을까?</p>
+        <p class="lab-summary">평균만 보고 정하면 초과 인원이 생길 수 있습니다. 위험을 어디까지 허용할지 정합니다.</p>
+        <div class="card-meta" aria-label="축제부스 교과 개념">
+          <span class="meta-pill">#정규분포</span>
+          <span class="meta-pill">#표준화</span>
+          <span class="meta-pill">#표준정규분포</span>
         </div>
       </a>
 
       <a class="lab-card" href="./rain-event/">
         <h2>10 우천행사</h2>
-        <p>강수 확률에 따른 세 결정의 기대손실과 임계 강수확률을 그래프와 입력형 계산으로 비교합니다.</p>
-        <div class="card-meta" aria-label="우천행사 상태">
-          <span class="meta-pill ready">사용 가능</span>
-          <span class="meta-pill">학생용 PDF 포함</span>
-          <span class="meta-pill">기대손실·임계값</span>
+        <p class="lab-question">강행할까, 연기할까?</p>
+        <p class="lab-summary">비 올 확률 하나만으로는 부족합니다. 선택마다 생기는 손실을 함께 비교합니다.</p>
+        <div class="card-meta" aria-label="우천행사 교과 개념">
+          <span class="meta-pill">#확률변수</span>
+          <span class="meta-pill">#기댓값</span>
+          <span class="meta-pill">#확률분포</span>
         </div>
       </a>
 
       <a class="lab-card" href="./survey-sample/">
         <h2>11 설문표본</h2>
-        <p>표본 크기에 따른 오차폭 변화와 소요 시간을 확인하고, 목표 오차폭에 필요한 표본을 입력형으로 계산합니다.</p>
-        <div class="card-meta" aria-label="설문표본 상태">
-          <span class="meta-pill ready">사용 가능</span>
-          <span class="meta-pill">학생용 PDF 포함</span>
-          <span class="meta-pill">표본흔들림</span>
+        <p class="lab-question">몇 명에게 물어봐야 할까?</p>
+        <p class="lab-summary">더 많이 조사하면 정확해지지만 시간이 듭니다. 필요한 만큼의 표본을 정해봅니다.</p>
+        <div class="card-meta" aria-label="설문표본 교과 개념">
+          <span class="meta-pill">#표본비율</span>
+          <span class="meta-pill">#모비율의추정</span>
+          <span class="meta-pill">#표본크기</span>
         </div>
       </a>
     </section>
