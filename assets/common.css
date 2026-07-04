@@ -20,17 +20,11 @@ body {
 }
 
 .site-intro {
-  max-width: 900px;
-  margin: -8px 0 36px;
-  padding-left: 18px;
-  border-left: 4px solid #bfdbfe;
+  max-width: 780px;
+  margin: -8px 0 34px;
 }
 
 .site-intro p {
-  margin: 0 0 10px;
-}
-
-.site-intro p:last-child {
   margin-bottom: 0;
 }
 
@@ -80,24 +74,28 @@ p {
   box-shadow: 0 14px 34px rgba(15, 23, 42, 0.12);
 }
 
-.site-notice {
-  margin-top: 44px;
-  padding-top: 24px;
+.site-footer {
+  max-width: 1040px;
+  margin: 28px auto 0;
+  padding: 28px 20px 48px;
   border-top: 1px solid #e5e7eb;
 }
 
-.site-notice h2 {
-  font-size: 22px;
-}
-
-.site-notice p {
+.site-footer p {
   max-width: 900px;
-  margin: 0 0 10px;
-  font-size: 16px;
+  margin: 0 0 8px;
+  font-size: 14px;
+  line-height: 1.65;
+  color: #64748b;
 }
 
-.site-notice p:last-child {
+.site-footer p:last-child {
   margin-bottom: 0;
+}
+
+.site-footer strong {
+  margin-right: 8px;
+  color: #475569;
 }
 
 .status {
