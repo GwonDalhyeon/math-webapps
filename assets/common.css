@@ -19,6 +19,21 @@ body {
   margin-bottom: 32px;
 }
 
+.site-intro {
+  max-width: 900px;
+  margin: -8px 0 36px;
+  padding-left: 18px;
+  border-left: 4px solid #bfdbfe;
+}
+
+.site-intro p {
+  margin: 0 0 10px;
+}
+
+.site-intro p:last-child {
+  margin-bottom: 0;
+}
+
 .eyebrow {
   margin: 0 0 8px;
   font-size: 16px;
@@ -63,6 +78,26 @@ p {
 .card:hover {
   transform: translateY(-2px);
   box-shadow: 0 14px 34px rgba(15, 23, 42, 0.12);
+}
+
+.site-notice {
+  margin-top: 44px;
+  padding-top: 24px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.site-notice h2 {
+  font-size: 22px;
+}
+
+.site-notice p {
+  max-width: 900px;
+  margin: 0 0 10px;
+  font-size: 16px;
+}
+
+.site-notice p:last-child {
+  margin-bottom: 0;
 }
 
 .status {
