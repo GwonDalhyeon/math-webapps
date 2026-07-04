@@ -204,38 +204,6 @@
       padding: 14px;
       overflow: auto;
     }
-
-    .preset-row {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(112px, 1fr));
-      gap: 8px;
-      margin-bottom: 10px;
-    }
-
-    .preset-button {
-      min-height: 46px;
-      padding: 9px 12px;
-      border-radius: 8px;
-      border: 1px solid #cbd5e1;
-      background: #ffffff;
-      color: var(--slate);
-      font: inherit;
-      font-weight: 850;
-      text-align: left;
-    }
-
-    .preset-button.active {
-      border-color: var(--blue);
-      background: #eff6ff;
-      color: #1d4ed8;
-    }
-
-    .preset-button[disabled] {
-      color: #94a3b8;
-      background: #f8fafc;
-      cursor: not-allowed;
-    }
-
     .guide-strip {
       display: grid;
       grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
@@ -775,8 +743,6 @@
       .pane.is-hidden {
         display: none;
       }
-
-      .preset-row,
       .focus-controls,
       .tool-grid,
       .assumption-strip,
@@ -837,24 +803,10 @@
           <p class="pane-title">04 센서 경보 도구</p>
         </div>
         <div class="tool-body">
-          <div class="preset-row">
-            <a class="preset-button" href="../product-recommendation/">01 상품추천</a>
-            <a class="preset-button" href="../space-communication/">02 우주통신</a>
-            <a class="preset-button" href="../event-preparation/">03 행사준비</a>
-            <button class="preset-button active" type="button">04 센서 경보</button>
-            <a class="preset-button" href="../ab-test/">05 A/B 실험</a>
-            <a class="preset-button" href="../defect-sampling/">06 불량품검사</a>
-            <a class="preset-button" href="../reliability-system/">07 직렬·병렬</a>
-            <a class="preset-button" href="../school-facility/">08 학교시설</a>
-            <a class="preset-button" href="../festival-booth/">09 축제부스</a>
-            <a class="preset-button" href="../rain-event/">10 우천행사</a>
-            <a class="preset-button" href="../survey-sample/">11 설문표본</a>
-          </div>
-
           <div class="guide-strip">
             <p class="guide-note">학습지 [시작 전] 예상을 먼저 적고 확인하세요.</p>
             <p class="guide-note">학습지 Q1 빈도표를 채운 뒤 필요한 분자와 분모를 입력하세요.</p>
-            <p class="guide-note">비슷한 조건부확률 상황은 <a href="../product-recommendation/">01 상품추천</a>에서 비교할 수 있습니다.</p>
+            <p class="guide-note">비슷한 조건부확률 상황과 분모 차이를 떠올리며 비교하세요.</p>
           </div>
 
           <nav class="stage-nav" aria-label="04 센서 경보 학습 흐름">

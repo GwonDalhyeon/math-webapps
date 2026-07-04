@@ -229,15 +229,6 @@
       padding: 14px;
       overflow: auto;
     }
-
-    .preset-row {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(112px, 1fr));
-      gap: 8px;
-      margin-bottom: 10px;
-    }
-
-    .preset-button,
     .stage-btn,
     .group-button,
     .focus-btn {
@@ -252,16 +243,6 @@
       font-weight: 850;
       cursor: pointer;
     }
-
-    .preset-button {
-      display: inline-flex;
-      align-items: center;
-      min-height: 46px;
-      text-align: left;
-      text-decoration: none;
-    }
-
-    .preset-button.active,
     .stage-btn.active,
     .group-button.active,
     .focus-btn.active {
@@ -679,8 +660,6 @@
       .pane.is-hidden {
         display: none;
       }
-
-      .preset-row,
       .stage-nav,
       .group-row,
       .input-pair {
@@ -731,20 +710,6 @@
         </div>
 
         <div class="tool-body">
-          <div class="preset-row">
-            <a class="preset-button" href="../product-recommendation/">01 상품추천</a>
-            <button class="preset-button active" type="button">02 우주통신</button>
-            <a class="preset-button" href="../event-preparation/">03 행사준비</a>
-            <a class="preset-button" href="../sensor-alarm/">04 센서 경보</a>
-            <a class="preset-button" href="../ab-test/">05 A/B 실험</a>
-            <a class="preset-button" href="../defect-sampling/">06 불량품검사</a>
-            <a class="preset-button" href="../reliability-system/">07 직렬·병렬</a>
-            <a class="preset-button" href="../school-facility/">08 학교시설</a>
-            <a class="preset-button" href="../festival-booth/">09 축제부스</a>
-            <a class="preset-button" href="../rain-event/">10 우천행사</a>
-            <a class="preset-button" href="../survey-sample/">11 설문표본</a>
-          </div>
-
           <div class="guide-strip">
             <p class="guide-note">학습지 [시작 전] 예상을 먼저 적고, Q2 계산값은 학습지에 직접 채우세요.</p>
             <p class="guide-note">이 도구는 구조와 입력값 확인만 돕습니다. 대응안 선택과 최종 보고서는 학습지에 직접 작성하세요.</p>

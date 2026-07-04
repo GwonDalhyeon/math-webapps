@@ -229,23 +229,14 @@
       padding: 14px;
       overflow: auto;
     }
-
-    .preset-row,
     .rule-row {
       display: grid;
       gap: 8px;
       margin-bottom: 10px;
     }
-
-    .preset-row {
-      grid-template-columns: repeat(auto-fit, minmax(112px, 1fr));
-    }
-
     .rule-row {
       grid-template-columns: repeat(3, minmax(0, 1fr));
     }
-
-    .preset-button,
     .rule-button,
     .focus-btn {
       min-height: 44px;
@@ -259,24 +250,12 @@
       font-weight: 850;
       cursor: pointer;
     }
-
-    .preset-button {
-      min-height: 46px;
-      text-align: left;
-    }
-
-    .preset-button.active,
     .rule-button.active,
     .focus-btn.active {
       border-color: var(--blue);
       background: #eff6ff;
       color: #1d4ed8;
     }
-
-    .preset-button.secondary {
-      text-decoration: none;
-    }
-
     .guide-strip {
       display: grid;
       grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
@@ -721,8 +700,6 @@
       .pane.is-hidden {
         display: none;
       }
-
-      .preset-row,
       .rule-row,
       .focus-controls,
       .input-pair {
@@ -779,20 +756,6 @@
         </div>
 
         <div class="tool-body">
-          <div class="preset-row">
-            <button class="preset-button active" type="button">01 상품추천</button>
-            <a class="preset-button" href="../space-communication/">02 우주통신</a>
-            <a class="preset-button" href="../event-preparation/">03 행사준비</a>
-            <a class="preset-button secondary" href="../sensor-alarm/">04 센서 경보</a>
-            <a class="preset-button secondary" href="../ab-test/">05 A/B 실험</a>
-            <a class="preset-button secondary" href="../defect-sampling/">06 불량품검사</a>
-            <a class="preset-button secondary" href="../reliability-system/">07 직렬·병렬</a>
-            <a class="preset-button secondary" href="../school-facility/">08 학교시설</a>
-            <a class="preset-button secondary" href="../festival-booth/">09 축제부스</a>
-            <a class="preset-button secondary" href="../rain-event/">10 우천행사</a>
-            <a class="preset-button secondary" href="../survey-sample/">11 설문표본</a>
-          </div>
-
           <div class="guide-strip">
             <p class="guide-note">학습지 [시작 전] 예상을 먼저 적고, Q1의 주어진 자료를 확인하세요.</p>
             <p class="guide-note">학습지 Q2·Q3에서 계산한 분자와 분모를 아래 입력칸에 직접 넣어 확인하세요.</p>
