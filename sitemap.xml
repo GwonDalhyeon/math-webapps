@@ -2,7 +2,7 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>https://gwondalhyeon.github.io/math-webapps/</loc>
-    <lastmod>2026-06-16</lastmod>
+    <lastmod>2026-07-07</lastmod>
   </url>
   <url>
     <loc>https://gwondalhyeon.github.io/math-webapps/probability-statistics/</loc>
@@ -83,6 +83,14 @@
   <url>
     <loc>https://gwondalhyeon.github.io/math-webapps/calculus/riemann-integral-scaling/</loc>
     <lastmod>2026-06-16</lastmod>
+  </url>
+  <url>
+    <loc>https://gwondalhyeon.github.io/math-webapps/artificial-intelligence-math/</loc>
+    <lastmod>2026-07-07</lastmod>
+  </url>
+  <url>
+    <loc>https://gwondalhyeon.github.io/math-webapps/artificial-intelligence-math/gradient-descent/</loc>
+    <lastmod>2026-07-07</lastmod>
   </url>
   <url>
     <loc>https://gwondalhyeon.github.io/math-webapps/gifted/</loc>
