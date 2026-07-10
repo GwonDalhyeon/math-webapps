@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>등고선 최솟값 탐색 게임</title>
+  <style>
+:root {
+  --bg: #0f1420; --panel: #1a2130; --text: #e6ecf5; --accent: #4fd1c5;
+}
+* { box-sizing: border-box; }
+html, body { overscroll-behavior: none; }
+body {
+  margin: 0; background: radial-gradient(circle at 50% 0%, #16203a, var(--bg) 70%);
+  color: var(--text);
+  font-family: system-ui, "Malgun Gothic", sans-serif;
+  display: flex; justify-content: center; padding: 20px;
+  -webkit-tap-highlight-color: transparent;
+}
+#app { width: min(520px, 100%); }
+.back-link {
+  display: inline-flex; align-items: center; margin-bottom: 12px;
+  color: var(--accent); font-weight: 800; text-decoration: none;
+}
+.back-link:hover { text-decoration: underline; }
+h1 { font-size: 1.4rem; margin: 0 0 4px; }
+.hint { color: #9fb0c8; font-size: .82rem; margin: 0 0 14px; line-height: 1.4; }
+.hud { display: flex; gap: 14px; align-items: center; margin-bottom: 10px; font-size: .9rem; flex-wrap: wrap; }
+.hud select { background: var(--panel); color: var(--text); border: 1px solid #2a3446; border-radius: 6px; padding: 4px; }
+
+.canvas-wrap { position: relative; margin-bottom: 14px; }
+canvas { background: var(--panel); border-radius: 12px; display: block; }
+#localCanvas {
+  width: 100%; height: auto; aspect-ratio: 1;
+  touch-action: none;            /* 스와이프 시 페이지 스크롤/줌 방지 */
+  cursor: grab; user-select: none;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.4), inset 0 0 0 1px rgba(255,255,255,0.05);
+}
+#localCanvas:active { cursor: grabbing; }
+.swipe-hint {
+  position: absolute; bottom: 10px; left: 0; right: 0; text-align: center;
+  color: rgba(255,255,255,0.55); font-size: .75rem; pointer-events: none;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+}
+
+.controls { display: flex; justify-content: space-between; align-items: flex-end; }
+.dpad { text-align: center; }
+.dpad button, .buttons button {
+  background: var(--panel); color: var(--text); border: 1px solid #2a3446;
+  border-radius: 10px; padding: 12px 16px; font-size: 1.05rem; cursor: pointer; margin: 2px;
+  touch-action: manipulation;
+}
+.dpad button:hover, .buttons button:hover { border-color: var(--accent); }
+.dpad button:active, .buttons button:active { background: #232c3f; }
+.buttons { display: flex; flex-direction: column; gap: 6px; }
+
+.message {
+  margin-top: 14px; min-height: 1.6em; font-weight: 600; color: var(--accent);
+  font-size: .95rem; transition: color .2s;
+}
+.message.win { color: #ffe14d; font-size: 1.05rem; }
+
+#minimapBox { margin-top: 20px; color: #9fb0c8; }
+#minimapBox summary { cursor: pointer; }
+#miniCanvas { width: 300px; max-width: 100%; height: auto; aspect-ratio: 1; margin-top: 8px; }
+
+/* 모바일: D-pad를 더 크게, 힌트 조정 */
+@media (max-width: 480px) {
+  body { padding: 12px; }
+  .dpad button, .buttons button { padding: 14px 18px; font-size: 1.15rem; }
+}
+
+</style>
+</head>
+<body>
+  <div id="app">
+    <a class="back-link" href="./">← 인공지능수학</a>
+
+    <h1>🏔️ 길 잃은 등산객</h1>
+    <p class="hint">안개 속에서 길을 잃었어요. 주변 지형(등고선)만 보고 <b>가장 낮은 안식처(계곡)</b>로 내려가세요.<br>
+      🖥️ 화살표/WASD · 📱 화면을 <b>스와이프</b>해서 이동! · 색이 짙고 등고선이 촘촘한 쪽이 급경사예요.</p>
+
+    <div class="hud">
+      <span>스텝: <b id="steps">0</b></span>
+      <span>난이도: <select id="viewSize">
+        <option value="7">😌 Easy (7×7 넓게 보임)</option>
+        <option value="5" selected>🙂 Normal (5×5)</option>
+        <option value="3">😰 Hard (3×3 좁게 보임)</option>
+      </select></span>
+      <span>점수: <b id="score">0</b></span>
+    </div>
+
+    <div class="canvas-wrap">
+      <canvas id="localCanvas" width="420" height="420"></canvas>
+      <div class="swipe-hint">↕ ↔ 스와이프해서 이동</div>
+    </div>
+
+    <div class="controls">
+      <div class="dpad">
+        <button data-dir="up">▲</button>
+        <div>
+          <button data-dir="left">◀</button>
+          <button data-dir="down">▼</button>
+          <button data-dir="right">▶</button>
+        </div>
+      </div>
+      <div class="buttons">
+        <button id="reveal">정답 공개</button>
+        <button id="reset">새 게임</button>
+      </div>
+    </div>
+
+    <div id="message" class="message"></div>
+
+    <details id="minimapBox">
+      <summary>전체 지형 미니맵 (정답 확인)</summary>
+      <canvas id="miniCanvas" width="300" height="300"></canvas>
+    </details>
+  </div>
+
+  <script>
+// ===== terrain.js =====
+// 결정론적 PRNG (mulberry32)
+function makeRng(seed) {
+  let s = seed >>> 0;
+  return function () {
+    s |= 0; s = (s + 0x6D2B79F5) | 0;
+    let t = Math.imul(s ^ (s >>> 15), 1 | s);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+// 여러 가우시안 봉우리/골짜기의 합으로 지형 생성
+function makeTerrain({ seed = 1, size = 60, peaks = 8 } = {}) {
+  const rng = makeRng(seed);
+  const gaussians = [];
+  for (let i = 0; i < peaks; i++) {
+    gaussians.push({
+      cx: rng() * size,
+      cy: rng() * size,
+      amp: (rng() * 2 - 1) * 100,        // +봉우리 / -골짜기
+      sigma: size * (0.08 + rng() * 0.18),
+    });
+  }
+  const heights = [];
+  let minValue = Infinity, min = { x: 0, y: 0 };
+  let maxValue = -Infinity;
+  for (let y = 0; y < size; y++) {
+    const row = [];
+    for (let x = 0; x < size; x++) {
+      let h = 0;
+      for (const g of gaussians) {
+        const dx = x - g.cx, dy = y - g.cy;
+        h += g.amp * Math.exp(-(dx * dx + dy * dy) / (2 * g.sigma * g.sigma));
+      }
+      row.push(h);
+      if (h < minValue) { minValue = h; min = { x, y }; }
+      if (h > maxValue) { maxValue = h; }
+    }
+    heights.push(row);
+  }
+  return { size, heights, minValue, maxValue, min, gaussians, seed };
+}
+
+// 값 → 등고선 밴드 인덱스(0 ~ levels-1)
+function contourLevel(value, minValue, maxValue, levels = 12) {
+  if (maxValue === minValue) return 0;
+  const t = (value - minValue) / (maxValue - minValue);
+  return Math.min(levels - 1, Math.max(0, Math.floor(t * levels)));
+}
+
+// ===== game-logic.js =====
+
+function createGame({ seed = Date.now() & 0xffff, size = 60, peaks = 8, viewSize = 5 } = {}) {
+  const terrain = makeTerrain({ seed, size, peaks });
+  const rng = makeRng(seed ^ 0x9e3779b9);
+  let px, py;
+  do {
+    px = Math.floor(rng() * size);
+    py = Math.floor(rng() * size);
+  } while (px === terrain.min.x && py === terrain.min.y);
+  return {
+    terrain,
+    player: { x: px, y: py },
+    viewSize,        // 3, 5, 또는 7
+    steps: 0,
+    observeCost: 0,
+    won: false,
+    facing: 'down',  // 캐릭터가 바라보는 방향
+    lastMoved: false,// 직전 이동이 실제로 칸을 옮겼는지(벽이면 false)
+  };
+}
+
+const DELTAS = {
+  up:    { x: 0, y: -1 },
+  down:  { x: 0, y: 1 },
+  left:  { x: -1, y: 0 },
+  right: { x: 1, y: 0 },
+};
+
+function move(game, dir) {
+  if (game.won) return game;
+  const d = DELTAS[dir];
+  if (!d) return game;
+  game.facing = dir;
+  const size = game.terrain.size;
+  const nx = Math.min(size - 1, Math.max(0, game.player.x + d.x));
+  const ny = Math.min(size - 1, Math.max(0, game.player.y + d.y));
+  game.lastMoved = (nx !== game.player.x || ny !== game.player.y);
+  game.player.x = nx;
+  game.player.y = ny;
+  game.steps += 1;
+  if (game.player.x === game.terrain.min.x && game.player.y === game.terrain.min.y) {
+    game.won = true;
+  }
+  return game;
+}
+
+// 최솟값까지의 체비쇼프 거리 → 따뜻함 힌트(0=아주 멀다 … 4=바로 옆).
+// 부분 정보 게임이므로 정확한 거리는 숨기고 5단계 온도만 노출한다.
+function warmth(game) {
+  const dx = Math.abs(game.player.x - game.terrain.min.x);
+  const dy = Math.abs(game.player.y - game.terrain.min.y);
+  const dist = Math.max(dx, dy);
+  const span = game.terrain.size;
+  if (dist === 0) return 4;
+  if (dist <= 2) return 3;
+  if (dist <= span * 0.15) return 2;
+  if (dist <= span * 0.35) return 1;
+  return 0;
+}
+
+// 플레이어 중심 viewSize×viewSize 높이 창. 격자 밖은 null.
+function getLocalView(game) {
+  const { player, viewSize, terrain } = game;
+  const r = Math.floor(viewSize / 2);
+  const out = [];
+  for (let dy = -r; dy <= r; dy++) {
+    const row = [];
+    for (let dx = -r; dx <= r; dx++) {
+      const x = player.x + dx, y = player.y + dy;
+      if (x < 0 || y < 0 || x >= terrain.size || y >= terrain.size) row.push(null);
+      else row.push(terrain.heights[y][x]);
+    }
+    out.push(row);
+  }
+  return out;
+}
+
+// 점수(낮을수록 좋음): 스텝 + 난이도 페널티.
+// 쉽게(넓게) 볼수록 페널티가 커서 도전 난이도와 점수가 균형을 이룬다.
+// Easy(7×7)=+12, Normal(5×5)=+5, Hard(3×3)=+0.
+function score({ steps, viewSize }) {
+  const viewPenalty = { 3: 0, 5: 5, 7: 12 }[viewSize] ?? 0;
+  return steps + viewPenalty;
+}
+
+// ===== render.js =====
+
+const LEVELS = 40; // 등고선 밴드 수 — 클수록 그라데이션이 촘촘해 미세한 높이차도 구분됨
+
+// 자연스러운 지형 팔레트: 낮음(짙은 계곡 초록/청록) → 중간(풀/흙) → 높음(바위/설산)
+function bandColor(level) {
+  const t = level / (LEVELS - 1);
+  // 구간별 지형색 보간
+  const stops = [
+    [0.0, [26, 60, 74]],    // 깊은 계곡 (짙은 청록)
+    [0.25, [34, 94, 82]],   // 낮은 숲
+    [0.5, [96, 132, 70]],   // 풀/구릉
+    [0.7, [140, 120, 82]],  // 흙/능선
+    [0.85, [120, 110, 105]],// 바위
+    [1.0, [230, 235, 240]], // 설산 정상
+  ];
+  let a = stops[0], b = stops[stops.length - 1];
+  for (let i = 0; i < stops.length - 1; i++) {
+    if (t >= stops[i][0] && t <= stops[i + 1][0]) { a = stops[i]; b = stops[i + 1]; break; }
+  }
+  const f = (t - a[0]) / (b[0] - a[0] || 1);
+  const c = a[1].map((v, i) => Math.round(v + (b[1][i] - v) * f));
+  return `rgb(${c[0]},${c[1]},${c[2]})`;
+}
+
+// 등산객(길 잃은 사람) 캐릭터. cx,cy 중심, s = 셀 크기, facing = 바라보는 방향
+function drawHiker(ctx, cx, cy, s, facing, won, bob) {
+  const scale = s / 60;                 // 60px 기준 디자인
+  ctx.save();
+  ctx.translate(cx, cy + (bob || 0));
+  ctx.scale(scale, scale);
+  if (facing === 'left') ctx.scale(-1, 1);
+
+  // 그림자
+  ctx.fillStyle = 'rgba(0,0,0,0.28)';
+  ctx.beginPath();
+  ctx.ellipse(0, 24, 16, 5, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // 다리
+  ctx.strokeStyle = '#3a4a63'; ctx.lineWidth = 5; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(-5, 10); ctx.lineTo(-7, 24); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(5, 10); ctx.lineTo(8, 24); ctx.stroke();
+
+  // 배낭 (등 뒤)
+  ctx.fillStyle = '#c0574a';
+  ctx.beginPath();
+  ctx.roundRect ? ctx.roundRect(-16, -12, 12, 26, 4) : ctx.rect(-16, -12, 12, 26);
+  ctx.fill();
+  ctx.fillStyle = '#9c4238';
+  ctx.fillRect(-15, -4, 10, 4);
+
+  // 몸통 (빨간 등산 재킷)
+  ctx.fillStyle = '#e0584a';
+  ctx.beginPath();
+  ctx.moveTo(-8, -12);
+  ctx.quadraticCurveTo(-11, 6, -6, 12);
+  ctx.lineTo(6, 12);
+  ctx.quadraticCurveTo(11, 6, 8, -12);
+  ctx.quadraticCurveTo(0, -18, -8, -12);
+  ctx.fill();
+
+  // 팔 + 등산 스틱
+  ctx.strokeStyle = '#e0584a'; ctx.lineWidth = 5;
+  ctx.beginPath(); ctx.moveTo(7, -6); ctx.lineTo(15, 6); ctx.stroke();
+  ctx.strokeStyle = '#8a6a3a'; ctx.lineWidth = 2.5;
+  ctx.beginPath(); ctx.moveTo(15, 0); ctx.lineTo(19, 26); ctx.stroke();
+
+  // 머리
+  ctx.fillStyle = '#f0c9a0';
+  ctx.beginPath(); ctx.arc(0, -22, 8, 0, Math.PI * 2); ctx.fill();
+
+  // 등산 모자 (챙 모자)
+  ctx.fillStyle = '#e0a63a';
+  ctx.beginPath(); ctx.arc(0, -25, 8.5, Math.PI, 0); ctx.fill();
+  ctx.fillRect(-12, -25, 24, 3.5);       // 챙
+
+  // 얼굴 방향 표시 (앞/옆 볼 때 눈)
+  ctx.fillStyle = '#3a2a1a';
+  if (facing === 'up') {
+    // 뒤통수: 눈 없음
+  } else if (facing === 'left' || facing === 'right') {
+    ctx.beginPath(); ctx.arc(4, -22, 1.4, 0, Math.PI * 2); ctx.fill();
+  } else {
+    ctx.beginPath(); ctx.arc(-3, -22, 1.4, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(3, -22, 1.4, 0, Math.PI * 2); ctx.fill();
+  }
+
+  // 길 잃은 느낌: 머리 위 물음표 (승리 전에만)
+  if (!won) {
+    ctx.fillStyle = 'rgba(255,255,255,0.9)';
+    ctx.font = 'bold 14px system-ui';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    if (facing === 'left') ctx.scale(-1, 1); // 물음표는 항상 정방향
+    ctx.fillText('?', facing === 'left' ? 0 : 0, -38);
+  } else {
+    // 승리: 반짝이는 별
+    ctx.fillStyle = '#ffe14d';
+    ctx.font = 'bold 16px system-ui';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText('✦', 0, -38);
+  }
+  ctx.restore();
+}
+
+function renderLocalView(canvas, game) {
+  const ctx = canvas.getContext('2d');
+  const view = game._view;
+  const n = game.viewSize;
+  const W = canvas.width, cell = W / n;
+  const { minValue, maxValue } = game.terrain;
+  ctx.clearRect(0, 0, W, W);
+
+  // 현재 보이는 창의 로컬 min/max — 좁은 영역 안에서도 높낮이 대비를 극대화
+  let lo = Infinity, hi = -Infinity;
+  for (let r = 0; r < n; r++)
+    for (let c = 0; c < n; c++) {
+      const v = view[r][c];
+      if (v !== null) { if (v < lo) lo = v; if (v > hi) hi = v; }
+    }
+  if (!isFinite(lo)) { lo = minValue; hi = maxValue; }
+
+  // 색상은 전역 기준(지형 전체 대비 절대 고도감 유지)
+  const colorLevel = (v) => contourLevel(v, minValue, maxValue, LEVELS);
+  // 등고선 라인은 로컬 기준 + 아주 촘촘하게 → 미세한 경사도 선명하게 보임
+  const CONTOUR_LINES = 24;
+  const localLevel = (v) => contourLevel(v, lo, hi, CONTOUR_LINES);
+
+  for (let r = 0; r < n; r++) {
+    for (let c = 0; c < n; c++) {
+      const v = view[r][c];
+      const px = c * cell, py = r * cell;
+      if (v === null) {
+        ctx.fillStyle = '#0a0d14';
+        ctx.fillRect(px, py, cell, cell);
+        ctx.fillStyle = 'rgba(120,140,170,0.06)';
+        ctx.fillRect(px, py, cell, cell);
+        continue;
+      }
+      ctx.fillStyle = bandColor(colorLevel(v));
+      ctx.fillRect(px, py, cell, cell);
+
+      // 촘촘한 등고선: 위/왼쪽 이웃과 로컬 밴드가 다르면 경계선
+      const up = r > 0 ? view[r - 1][c] : null;
+      const left = c > 0 ? view[r][c - 1] : null;
+      const lv = localLevel(v);
+      ctx.strokeStyle = 'rgba(15,25,15,0.55)';
+      ctx.lineWidth = 1.4;
+      if (up !== null && localLevel(up) !== lv) {
+        ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(px + cell, py); ctx.stroke();
+      }
+      if (left !== null && localLevel(left) !== lv) {
+        ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(px, py + cell); ctx.stroke();
+      }
+    }
+  }
+
+  // 셀 그리드 옅은 경계
+  ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+  ctx.lineWidth = 1;
+  for (let i = 1; i < n; i++) {
+    ctx.beginPath(); ctx.moveTo(i * cell, 0); ctx.lineTo(i * cell, W); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0, i * cell); ctx.lineTo(W, i * cell); ctx.stroke();
+  }
+
+  // 중앙 등산객 (부드러운 상하 흔들림)
+  const mid = Math.floor(n / 2) * cell + cell / 2;
+  const bob = Math.sin(Date.now() / 320) * (cell * 0.03);
+  drawHiker(ctx, mid, mid, cell, game.facing, game.won, bob);
+}
+
+function renderMinimap(canvas, game) {
+  const ctx = canvas.getContext('2d');
+  const { heights, size, minValue, maxValue, min } = game.terrain;
+  const W = canvas.width, cell = W / size;
+  for (let y = 0; y < size; y++)
+    for (let x = 0; x < size; x++) {
+      ctx.fillStyle = bandColor(contourLevel(heights[y][x], minValue, maxValue, LEVELS));
+      ctx.fillRect(x * cell, y * cell, cell + 1, cell + 1);
+    }
+  // 최솟값(목표)
+  ctx.fillStyle = '#00ff9d';
+  ctx.beginPath();
+  ctx.arc(min.x * cell + cell / 2, min.y * cell + cell / 2, Math.max(3, cell), 0, Math.PI * 2);
+  ctx.fill();
+  // 플레이어
+  ctx.fillStyle = '#ffffff';
+  ctx.beginPath();
+  ctx.arc(game.player.x * cell + cell / 2, game.player.y * cell + cell / 2, Math.max(2, cell * 0.8), 0, Math.PI * 2);
+  ctx.fill();
+}
+
+// ===== main.js =====
+
+const el = (id) => document.getElementById(id);
+let game;
+let shakeUntil = 0; // 벽에 부딪혔을 때 화면 흔들림 종료 시각
+
+const WARMTH_TEXT = [
+  '🥶 한참 헤매는 중… 아무 단서가 없어요.',
+  '❄️ 아직 멀었어요. 계속 내려가 보세요.',
+  '🌤️ 뭔가 가까워지는 느낌이…',
+  '🔥 거의 다 왔어요! 가장 낮은 곳이 코앞이에요.',
+  '🎉 도착! 가장 낮은 안식처를 찾았어요.',
+];
+
+function newGame() {
+  const viewSize = parseInt(el('viewSize').value, 10);
+  game = createGame({ size: 60, peaks: 9, viewSize });
+  el('minimapBox').open = false;
+  updateHud();
+}
+
+function updateHud() {
+  el('steps').textContent = game.steps;
+  el('score').textContent = score(game);
+  if (game.won) {
+    el('message').innerHTML = `🎉 <b>구조 완료!</b> 최저점 도착 · 점수 ${score(game)} (스텝 ${game.steps}) — 낮을수록 좋아요!`;
+    el('message').classList.add('win');
+  } else {
+    el('message').textContent = WARMTH_TEXT[warmth(game)];
+    el('message').classList.remove('win');
+  }
+}
+
+function doMove(dir) {
+  if (!game || game.won) return;
+  const before = `${game.player.x},${game.player.y}`;
+  move(game, dir);
+  const after = `${game.player.x},${game.player.y}`;
+  if (before === after) shakeUntil = Date.now() + 220; // 벽 = 못 움직임
+  updateHud();
+}
+
+// ---- 렌더 루프 (캐릭터 흔들림/승리 연출을 위해 지속 렌더) ----
+function loop() {
+  if (game) {
+    game._view = getLocalView(game);
+    const canvas = el('localCanvas');
+    const shake = Date.now() < shakeUntil;
+    canvas.style.transform = shake
+      ? `translateX(${(Math.random() - 0.5) * 8}px)`
+      : 'translateX(0)';
+    renderLocalView(canvas, game);
+    renderMinimap(el('miniCanvas'), game);
+  }
+  requestAnimationFrame(loop);
+}
+
+// ---- 키보드 ----
+const KEYMAP = { ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right',
+                 w: 'up', s: 'down', a: 'left', d: 'right',
+                 W: 'up', S: 'down', A: 'left', D: 'right' };
+window.addEventListener('keydown', (e) => {
+  const dir = KEYMAP[e.key];
+  if (dir) { e.preventDefault(); doMove(dir); }
+});
+
+// ---- D-pad 버튼 ----
+document.querySelectorAll('.dpad button').forEach((b) =>
+  b.addEventListener('click', () => doMove(b.dataset.dir)));
+
+// ---- 터치 스와이프 (캔버스 위) ----
+const localCanvas = el('localCanvas');
+let touchStart = null;
+const SWIPE_MIN = 24; // px
+
+function handleStart(x, y) { touchStart = { x, y, t: Date.now() }; }
+function handleEnd(x, y) {
+  if (!touchStart) return;
+  const dx = x - touchStart.x, dy = y - touchStart.y;
+  const adx = Math.abs(dx), ady = Math.abs(dy);
+  touchStart = null;
+  if (Math.max(adx, ady) < SWIPE_MIN) return; // 탭은 무시
+  if (adx > ady) doMove(dx > 0 ? 'right' : 'left');
+  else doMove(dy > 0 ? 'down' : 'up');
+}
+
+localCanvas.addEventListener('touchstart', (e) => {
+  const t = e.changedTouches[0];
+  handleStart(t.clientX, t.clientY);
+  e.preventDefault();
+}, { passive: false });
+localCanvas.addEventListener('touchmove', (e) => { e.preventDefault(); }, { passive: false });
+localCanvas.addEventListener('touchend', (e) => {
+  const t = e.changedTouches[0];
+  handleEnd(t.clientX, t.clientY);
+  e.preventDefault();
+}, { passive: false });
+
+// 데스크톱에서도 마우스 드래그로 스와이프 테스트 가능
+localCanvas.addEventListener('mousedown', (e) => handleStart(e.clientX, e.clientY));
+localCanvas.addEventListener('mouseup', (e) => handleEnd(e.clientX, e.clientY));
+
+// ---- 컨트롤 버튼 ----
+el('reset').addEventListener('click', newGame);
+el('viewSize').addEventListener('change', () => {
+  game.viewSize = parseInt(el('viewSize').value, 10); // 같은 지형 유지, 비용만 반영
+  updateHud();
+});
+el('reveal').addEventListener('click', () => {
+  el('minimapBox').open = true;
+  el('message').textContent = '🟢 초록 = 목표(가장 낮은 곳), ⚪ 흰 점 = 나의 위치';
+});
+
+newGame();
+loop();
+</script>
+</body>
+</html>

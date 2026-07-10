@@ -73,6 +73,17 @@
       font-size:12px;
       font-weight:750;
     }
+    .back-link{
+      display:inline-flex;
+      align-items:center;
+      flex:0 0 auto;
+      color:var(--accent);
+      font-size:13px;
+      font-weight:850;
+      text-decoration:none;
+      white-space:nowrap;
+    }
+    .back-link:hover{text-decoration:underline}
     .dot{width:9px;height:9px;border-radius:50%;background:var(--ok)}
     .workspace{
       flex:1;
@@ -402,6 +413,7 @@
 
 <div class="app">
   <div class="topbar">
+    <a class="back-link" href="./">← 인공지능수학</a>
     <div class="title-row">
       <h1>경사하강법 시각화: <em>y = ax</em></h1>
       <p class="subtitle"><span class="sentence">자료·추세선·손실함수·학습 설정을 한 화면에서 관찰합니다.</span><span class="sentence">재생 중 좌표축 범위는 고정됩니다.</span></p>
