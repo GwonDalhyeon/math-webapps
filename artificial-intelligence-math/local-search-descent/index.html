@@ -421,7 +421,7 @@
     //  - 모든 칸이 자기 골짜기 중심 쪽으로 확실히 내리막(평지 정체 없음),
     //  - 골짜기 경계는 능선이 되어 유역이 Voronoi처럼 크고 뚜렷하게 갈린다.
     if (terrain === 'single') {
-      bowls.push({ cx: c + rnd(-1.2, 1.2), cy: c + rnd(-1.2, 1.2), floor: rnd(2, 5), K: 0.45 });
+      bowls.push({ cx: c + rnd(-1.2, 1.2), cy: c + rnd(-1.2, 1.2), floor: rnd(2, 5), K: 1.2 });
     } else {
       const k = Math.random() < 0.5 ? 2 : 3;
       const lo = N * 0.18, hi = (N - 1) - N * 0.18;
@@ -449,7 +449,7 @@
       for (let i = floors.length - 1; i > 0; i--) {
         const j = rint(0, i);[floors[i], floors[j]] = [floors[j], floors[i]];
       }
-      centers.forEach((p, i) => bowls.push({ cx: p.cx, cy: p.cy, floor: floors[i], K: 0.7 }));
+      centers.forEach((p, i) => bowls.push({ cx: p.cx, cy: p.cy, floor: floors[i], K: 1.4 }));
     }
     return bowls;
   }
