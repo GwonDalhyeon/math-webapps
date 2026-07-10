@@ -159,6 +159,12 @@
     }
     .pad .cur .val { font-size: 30px; }
     .pad .cur .tag { font-size: 11px; opacity: 0.85; }
+    .pad .cur.arrived {
+      background: #f59e0b;
+      border-color: #b45309;
+      box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.35);
+    }
+    .pad .cur.arrived .tag { opacity: 1; font-weight: 800; }
 
     /* 상태 카드 */
     .status-card {
@@ -175,15 +181,17 @@
       grid-template-columns: repeat(2, 1fr);
       gap: 8px 14px;
     }
+    .stat-grid .stat:first-child { grid-column: 1 / -1; }  /* 좌표는 한 줄 전체 사용 */
     .stat {
       display: flex;
       justify-content: space-between;
       align-items: baseline;
+      gap: 8px;
       padding: 6px 0;
       border-bottom: 1px dashed #e5e7eb;
     }
-    .stat .k { font-size: 13px; color: #64748b; }
-    .stat .v { font-size: 18px; font-weight: 800; color: #0f172a; }
+    .stat .k { font-size: 13px; color: #64748b; white-space: nowrap; }
+    .stat .v { font-size: 18px; font-weight: 800; color: #0f172a; white-space: nowrap; }
     .verdict {
       margin-top: 10px;
       padding: 10px 12px;
@@ -736,13 +744,69 @@
       state.labels.forEach(m => drawMarker(m.x, m.y, cs, m.global ? 'global' : 'local'));
     }
 
-    // 현재 위치 강조
-    ctx.strokeStyle = '#4f46e5';
-    ctx.lineWidth = Math.max(3, cs * 0.14);
-    ctx.strokeRect(state.pos.x * cs + 2, state.pos.y * cs + 2, cs - 4, cs - 4);
+    // 현재 위치 강조 (지역 최솟값에 도착하면 지도에서 바로 드러나게 표시)
+    const atMin = !state.revealed && isLocalMin();
+    const pcx = state.pos.x * cs + cs / 2, pcy = state.pos.y * cs + cs / 2;
+    if (atMin) {
+      ctx.save();
+      // 금색 글로우
+      ctx.fillStyle = 'rgba(250, 204, 21, 0.35)';
+      ctx.beginPath(); ctx.arc(pcx, pcy, cs * 0.78, 0, 7); ctx.fill();
+      // 굵은 금색 링
+      ctx.strokeStyle = '#f59e0b';
+      ctx.lineWidth = Math.max(3.5, cs * 0.17);
+      ctx.strokeRect(state.pos.x * cs + 2, state.pos.y * cs + 2, cs - 4, cs - 4);
+      drawArrivalFlag(pcx, state.pos.y * cs, cs);   // 깃발 + '도착' 배지
+      ctx.restore();
+    } else {
+      ctx.strokeStyle = '#4f46e5';
+      ctx.lineWidth = Math.max(3, cs * 0.14);
+      ctx.strokeRect(state.pos.x * cs + 2, state.pos.y * cs + 2, cs - 4, cs - 4);
+    }
 
-    renderPad();
+    renderPad(atMin);
     renderStatus();
+  }
+
+  // 지역 최솟값 도착 깃발 + 배지 (화면 위/아래 여백에 맞춰 방향 결정)
+  function drawArrivalFlag(cx, cellTop, cs) {
+    const up = cellTop - cs * 0.9 > 0;              // 위쪽에 공간이 있으면 위로 세운다
+    const baseY = up ? cellTop + 2 : cellTop + cs - 2;
+    const tipY = up ? baseY - cs * 0.85 : baseY + cs * 0.85;
+    // 깃대
+    ctx.strokeStyle = '#7c2d12';
+    ctx.lineWidth = Math.max(2, cs * 0.06);
+    ctx.beginPath(); ctx.moveTo(cx, baseY); ctx.lineTo(cx, tipY); ctx.stroke();
+    // 깃발(삼각 페넌트)
+    const flagH = cs * 0.34, flagW = cs * 0.5;
+    const fy = up ? tipY : tipY - flagH;
+    ctx.fillStyle = '#ef4444';
+    ctx.beginPath();
+    ctx.moveTo(cx, fy);
+    ctx.lineTo(cx + flagW, fy + flagH / 2);
+    ctx.lineTo(cx, fy + flagH);
+    ctx.closePath(); ctx.fill();
+    // '도착' 배지
+    const label = '도착';
+    ctx.font = `800 ${Math.max(10, cs * 0.3)}px system-ui`;
+    const padX = cs * 0.16, tw = ctx.measureText(label).width;
+    const bw = tw + padX * 2, bh = Math.max(16, cs * 0.42);
+    const bx = cx - bw / 2, by = up ? tipY - bh - cs * 0.05 : tipY + cs * 0.05;
+    ctx.fillStyle = '#b45309';
+    roundRect(bx, by, bw, bh, bh / 2); ctx.fill();
+    ctx.fillStyle = '#fff';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(label, cx, by + bh / 2 + 0.5);
+  }
+
+  function roundRect(x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
   }
 
   function drawMarker(x, y, cs, type) {
@@ -765,11 +829,13 @@
     }
   }
 
-  function renderPad() {
+  function renderPad(atMin) {
     const here = state.H[state.pos.y][state.pos.x];
-    // 현재 값
-    const curEl = document.querySelector('.pad .cur .val');
-    curEl.textContent = here;
+    // 현재 값 (지역 최솟값 도착 시 강조)
+    const curCell = document.querySelector('.pad .cur');
+    curCell.querySelector('.val').textContent = here;
+    curCell.classList.toggle('arrived', !!atMin);
+    curCell.querySelector('.tag').textContent = atMin ? '🚩 도착 · 지역 최솟값' : '현재 위치';
     // 방향 버튼
     document.querySelectorAll('.pad button.dir').forEach(btn => {
       const dir = btn.dataset.dir;
