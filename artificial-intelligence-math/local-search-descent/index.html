@@ -1,0 +1,879 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="안개 속 격자에서 상하좌우 값만 보고 가장 낮은 곳을 찾아가며 경사하강법과 지역·전역 최솟값을 체험하는 인공지능수학 웹앱." />
+  <title>안개 속 최솟값 찾기 · 경사하강법 체험</title>
+  <link rel="stylesheet" href="../../assets/common.css" />
+  <style>
+    /* ===== 이 웹앱 전용 스타일 ===== */
+    .page { max-width: 1180px; padding-top: 18px; padding-bottom: 24px; }
+    .hero { margin-bottom: 12px; }
+    .page > .hero h1 { font-size: clamp(24px, 3.2vw, 34px); margin-bottom: 6px; }
+    .hero .eyebrow { font-size: 13px; margin-bottom: 4px; }
+    .lead {
+      margin: -2px 0 10px;
+      max-width: 950px;
+      font-size: 14.5px;
+      color: #475569;
+      line-height: 1.5;
+    }
+    .lead .story {
+      display: inline;
+      margin-left: 4px;
+      padding: 2px 8px;
+      background: #eef2ff;
+      border-radius: 6px;
+      color: #3730a3;
+      font-weight: 600;
+    }
+
+    /* 상단 컨트롤 바 */
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px 18px;
+      align-items: flex-end;
+      padding: 14px 16px;
+      background: #fff;
+      border: 1px solid #e5e7eb;
+      border-radius: 14px;
+      box-shadow: 0 6px 18px rgba(15, 23, 42, 0.06);
+      margin-bottom: 16px;
+    }
+    .ctrl { display: flex; flex-direction: column; gap: 6px; }
+    .ctrl > span.label {
+      font-size: 12px;
+      font-weight: 700;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .seg { display: inline-flex; gap: 4px; }
+    .seg button {
+      padding: 8px 14px;
+      font-size: 15px;
+      font-weight: 700;
+      border: 1px solid #cbd5e1;
+      background: #f8fafc;
+      color: #334155;
+      border-radius: 9px;
+      cursor: pointer;
+    }
+    .seg button.on {
+      background: #4f46e5;
+      border-color: #4f46e5;
+      color: #fff;
+    }
+    .action {
+      padding: 9px 16px;
+      font-size: 15px;
+      font-weight: 700;
+      border-radius: 9px;
+      border: 1px solid #cbd5e1;
+      background: #fff;
+      color: #1e293b;
+      cursor: pointer;
+    }
+    .action.primary { background: #10b981; border-color: #10b981; color: #fff; }
+    .action.warn { background: #f59e0b; border-color: #f59e0b; color: #fff; }
+    .action:disabled { opacity: 0.45; cursor: default; }
+
+    /* 실험실 본체: 지도 + 조작패널 */
+    .lab {
+      display: flex;
+      gap: 20px;
+      align-items: flex-start;
+    }
+    .map-wrap {
+      background: #fff;
+      border: 1px solid #e5e7eb;
+      border-radius: 16px;
+      padding: 14px;
+      box-shadow: 0 8px 22px rgba(15, 23, 42, 0.07);
+    }
+    #map { display: block; width: 470px; max-width: 100%; height: auto; touch-action: none; background: #f1f5f9; border-radius: 10px; }
+    .legend {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 10px;
+      font-size: 13px;
+      color: #475569;
+    }
+    .legend .bar {
+      flex: 1;
+      height: 12px;
+      border-radius: 6px;
+      background: linear-gradient(90deg, #0e6245, #f2c14e, #b23a2e);
+    }
+
+    .panel { flex: 1; min-width: 300px; }
+    .panel-top { display: flex; gap: 14px; align-items: flex-start; }
+    .pad-col { flex: 0 0 auto; display: flex; flex-direction: column; gap: 12px; }
+
+    /* 십자 조작 패드 (3x3) */
+    .pad {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      grid-template-rows: repeat(3, 1fr);
+      gap: 8px;
+      width: 270px;
+      max-width: 100%;
+      background: #fff;
+      border: 1px solid #e5e7eb;
+      border-radius: 16px;
+      padding: 12px;
+      box-shadow: 0 8px 22px rgba(15, 23, 42, 0.07);
+    }
+    .pad .cell {
+      aspect-ratio: 1 / 1;
+      border-radius: 12px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      border: 2px solid transparent;
+    }
+    .pad .cell .arrow { font-size: 15px; font-weight: 700; opacity: 0.8; }
+    .pad .cell .val { font-size: 26px; line-height: 1.1; }
+    .pad .empty { background: transparent; }
+    .pad button.dir {
+      cursor: pointer;
+      background: #f8fafc;
+      border-color: #cbd5e1;
+      color: #334155;
+      font-family: inherit;
+    }
+    .pad button.dir.lower { background: #dcfce7; border-color: #22c55e; color: #14532d; }
+    .pad button.dir.higher { background: #fef2f2; border-color: #fecaca; color: #b91c1c; }
+    .pad button.dir.equal { background: #fef9c3; border-color: #fde047; color: #854d0e; }
+    .pad button.dir.wall { background: #e2e8f0; border-color: #cbd5e1; color: #94a3b8; cursor: default; }
+    .pad button.dir.wall .val { font-size: 15px; }
+    .pad .cur {
+      background: #4f46e5;
+      color: #fff;
+      border-color: #4338ca;
+    }
+    .pad .cur .val { font-size: 30px; }
+    .pad .cur .tag { font-size: 11px; opacity: 0.85; }
+
+    /* 상태 카드 */
+    .status-card {
+      flex: 1;
+      align-self: stretch;
+      background: #fff;
+      border: 1px solid #e5e7eb;
+      border-radius: 16px;
+      padding: 14px 16px;
+      box-shadow: 0 8px 22px rgba(15, 23, 42, 0.07);
+    }
+    .stat-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px 14px;
+    }
+    .stat {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      padding: 6px 0;
+      border-bottom: 1px dashed #e5e7eb;
+    }
+    .stat .k { font-size: 13px; color: #64748b; }
+    .stat .v { font-size: 18px; font-weight: 800; color: #0f172a; }
+    .verdict {
+      margin-top: 10px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      font-weight: 700;
+      font-size: 15px;
+      line-height: 1.5;
+      background: #f1f5f9;
+      color: #334155;
+    }
+    .verdict.local { background: #fef9c3; color: #854d0e; }
+    .verdict.global { background: #dcfce7; color: #14532d; }
+
+    /* 자동 실행 버튼줄 */
+    .auto-row { width: 270px; max-width: 100%; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .auto-row .action { width: 100%; }
+
+    /* 활동 후 질문 */
+    .reflect {
+      margin-top: 22px;
+      background: #fff;
+      border: 1px solid #e5e7eb;
+      border-radius: 16px;
+      padding: 4px 20px;
+      box-shadow: 0 6px 18px rgba(15, 23, 42, 0.06);
+    }
+    .reflect summary {
+      cursor: pointer;
+      font-size: 17px;
+      font-weight: 800;
+      color: #1e293b;
+      padding: 14px 0;
+    }
+    .reflect ol { margin: 0 0 16px; padding-left: 22px; }
+    .reflect li { font-size: 15px; color: #475569; line-height: 1.7; }
+
+    .concept {
+      margin-top: 16px;
+      font-size: 14px;
+      color: #64748b;
+      line-height: 1.6;
+    }
+    .concept b { color: #4f46e5; }
+
+    /* iPad 세로 / 좁은 화면: 지도 위, 조작 패널 아래로 쌓되 지도를 줄여 패드를 빨리 노출 */
+    @media (max-width: 900px) {
+      .lab { flex-direction: column; align-items: center; }
+      .panel { width: 100%; max-width: 560px; }
+      .panel-top { justify-content: center; }
+      .map-wrap { align-self: center; }
+      #map { width: 430px; }
+    }
+    @media (max-width: 560px) {
+      .panel-top { flex-direction: column; align-items: center; }
+      #map { width: 320px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header class="hero">
+      <p class="eyebrow">Artificial Intelligence Mathematics</p>
+      <h1>안개 속 최솟값 찾기</h1>
+      <p class="lead">
+        전체 지형은 안개에 가려 보이지 않습니다. 지금 서 있는 칸과 <b>상하좌우 높이</b>만 보고,
+        더 낮은 쪽으로 한 걸음씩 이동해 가장 낮은 곳을 찾아보세요.
+        <span class="story">“당신은 안개 낀 산속에 있습니다. 현재 위치와 상하좌우의 높이만 보고 더 낮은 곳을 찾아가 보세요.”</span>
+      </p>
+    </header>
+
+    <!-- 상단 컨트롤 -->
+    <div class="controls">
+      <div class="ctrl">
+        <span class="label">지형</span>
+        <div class="seg" id="segTerrain">
+          <button data-v="single" class="on">단일 골짜기</button>
+          <button data-v="multi">여러 골짜기</button>
+        </div>
+      </div>
+      <div class="ctrl">
+        <span class="label">격자 크기</span>
+        <div class="seg" id="segSize">
+          <button data-v="11">11×11</button>
+          <button data-v="15" class="on">15×15</button>
+          <button data-v="21">21×21</button>
+        </div>
+      </div>
+      <div class="ctrl">
+        <span class="label">보폭 (한 번에 이동)</span>
+        <div class="seg" id="segStep">
+          <button data-v="1" class="on">1칸</button>
+          <button data-v="2">2칸</button>
+          <button data-v="3">3칸</button>
+        </div>
+      </div>
+      <div class="ctrl">
+        <span class="label">지형 만들기</span>
+        <div class="seg">
+          <button class="action" id="btnNewTerrain">새 지형</button>
+          <button class="action" id="btnNewStart">시작 위치 변경</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 본체 -->
+    <div class="lab">
+      <div class="map-wrap">
+        <canvas id="map" width="540" height="540"></canvas>
+        <div class="legend">
+          <span>낮음(목표)</span>
+          <span class="bar"></span>
+          <span>높음</span>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-top">
+          <div class="pad-col">
+            <!-- 십자 조작 패드 -->
+            <div class="pad" id="pad" aria-label="상하좌우 이동 조작">
+              <div class="cell empty"></div>
+              <button class="cell dir" data-dir="up"><span class="arrow">▲ 위</span><span class="val">–</span></button>
+              <div class="cell empty"></div>
+              <button class="cell dir" data-dir="left"><span class="arrow">◀ 왼쪽</span><span class="val">–</span></button>
+              <div class="cell cur"><span class="tag">현재 위치</span><span class="val">–</span></div>
+              <button class="cell dir" data-dir="right"><span class="arrow">오른쪽 ▶</span><span class="val">–</span></button>
+              <div class="cell empty"></div>
+              <button class="cell dir" data-dir="down"><span class="arrow">▼ 아래</span><span class="val">–</span></button>
+              <div class="cell empty"></div>
+            </div>
+
+            <!-- 자동 하강 -->
+            <div class="auto-row">
+              <button class="action" id="btnStep">한 걸음</button>
+              <button class="action primary" id="btnAuto">자동 실행</button>
+              <button class="action" id="btnPause" disabled>일시정지</button>
+              <button class="action warn" id="btnReset">처음으로</button>
+            </div>
+          </div>
+
+          <!-- 상태 -->
+          <div class="status-card">
+            <div class="stat-grid">
+              <div class="stat"><span class="k">현재 좌표 (열, 행)</span><span class="v" id="sPos">–</span></div>
+              <div class="stat"><span class="k">현재 높이(손실)</span><span class="v" id="sHeight">–</span></div>
+              <div class="stat"><span class="k">이동 횟수</span><span class="v" id="sMoves">0</span></div>
+              <div class="stat"><span class="k">방문한 최저값</span><span class="v" id="sBest">–</span></div>
+            </div>
+            <div class="verdict" id="verdict">더 낮은 방향을 골라 이동해 보세요.</div>
+            <button class="action" id="btnReveal" style="margin-top:12px; width:100%;">전체 지형 공개하고 결과 비교</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="concept">
+      <b>수학적 의미:</b> 높이값 = 손실값 · 현재 위치 = 매개변수 상태 · 상하좌우 비교 = 손실이 줄어드는 방향 찾기(편미분의 부호) ·
+      한 걸음 = 한 번의 매개변수 업데이트 · 보폭 = 학습률 · 더 낮은 이웃이 없는 곳 = <b>지역 최솟값</b> · 전체에서 가장 낮은 곳 = <b>전역 최솟값</b>.
+      최적화는 전체 지도를 보고 정답을 찍는 것이 아니라, 로컬 정보로 더 낮은 방향을 반복해 선택하는 과정입니다.
+    </div>
+
+    <details class="reflect">
+      <summary>활동 후 생각해 볼 질문</summary>
+      <ol>
+        <li>현재 위치에서 왜 그 방향으로 이동했나요?</li>
+        <li>항상 가장 낮은 값으로만 이동하는 전략(탐욕적 하강)은 늘 좋은가요?</li>
+        <li>내가 도착한 지점은 전체 지형에서 정말 가장 낮은 곳이었나요?</li>
+        <li>시작 위치를 바꾸면 결과도 달라지나요? (‘시작 위치 변경’으로 확인)</li>
+        <li>보폭(1·2·3칸)을 키우면 결과가 어떻게 달라지나요? 골짜기 바닥을 지나쳐 버린 적은 없나요?</li>
+        <li>주변 정보만 보고 판단하는 것의 한계는 무엇인가요?</li>
+        <li>경사하강법이 항상 전역 최솟값을 보장하지 못하는 이유는 무엇인가요?</li>
+      </ol>
+    </details>
+  </main>
+
+  <script>
+  "use strict";
+  // =========================================================================
+  //  안개 속 최솟값 찾기 — 경사하강법 직관 체험
+  //  전체 지형(높이=손실)은 내부에만 존재. 사용자는 상하좌우 값만 본다.
+  // =========================================================================
+
+  // ---- 상태 ----
+  const state = {
+    N: 15,
+    terrain: 'single',      // 'single' | 'multi'
+    step: 1,                // 보폭 1..3
+    H: [],                  // 높이 배열 H[y][x]
+    bowls: [],              // 생성에 쓰인 분지 정보(참고용)
+    pos: { x: 0, y: 0 },
+    start: { x: 0, y: 0 },
+    lastDir: null,          // {dx,dy}
+    path: [],               // 방문 좌표 목록
+    visited: new Set(),     // "x,y" 방문 표시
+    moves: 0,
+    bestLow: Infinity,
+    revealed: false,
+    autoTimer: null,
+    minVal: 0,
+    maxVal: 1,
+    labels: [],             // 공개 시 표시할 최솟값들 [{x,y,val,global}]
+  };
+
+  const DIRS = {
+    up:    { dx: 0, dy: -1 },
+    down:  { dx: 0, dy: 1 },
+    left:  { dx: -1, dy: 0 },
+    right: { dx: 1, dy: 0 },
+  };
+
+  // ---- 유틸 ----
+  const rnd = (a, b) => a + Math.random() * (b - a);
+  const rint = (a, b) => Math.floor(rnd(a, b + 1));
+  const key = (x, y) => x + "," + y;
+  const inBounds = (x, y) => x >= 0 && y >= 0 && x < state.N && y < state.N;
+
+  // =========================================================================
+  //  지형 생성 : 가벼운 그릇형 바닥 + 가우시안 분지 여러 개 (매번 랜덤 지터)
+  // =========================================================================
+  function makeBowls(N, terrain) {
+    const c = (N - 1) / 2;
+    const bowls = [];
+    // 각 골짜기는 포물면 { 바닥 높이 floor, 곡률 K, 중심 (cx,cy) }로 나타낸다.
+    // 지형 높이는 여러 포물면의 '가장 낮은 값'(하부포락)을 취한다. 이렇게 하면
+    //  - 모든 칸이 자기 골짜기 중심 쪽으로 확실히 내리막(평지 정체 없음),
+    //  - 골짜기 경계는 능선이 되어 유역이 Voronoi처럼 크고 뚜렷하게 갈린다.
+    if (terrain === 'single') {
+      bowls.push({ cx: c + rnd(-1.2, 1.2), cy: c + rnd(-1.2, 1.2), floor: rnd(2, 5), K: 0.45 });
+    } else {
+      const k = Math.random() < 0.5 ? 2 : 3;
+      const lo = N * 0.18, hi = (N - 1) - N * 0.18;
+      const mid = () => rnd(lo, hi);
+      const jit = () => rnd(-N * 0.05, N * 0.05);
+      let centers;
+      if (k === 2) {
+        if (Math.random() < 0.5) {                 // 좌 / 우 분할
+          centers = [{ cx: rnd(lo, N * 0.28), cy: mid() },
+                     { cx: rnd(N * 0.72, hi), cy: mid() }];
+        } else {                                    // 상 / 하 분할
+          centers = [{ cx: mid(), cy: rnd(lo, N * 0.28) },
+                     { cx: mid(), cy: rnd(N * 0.72, hi) }];
+        }
+      } else {                                      // 삼각 배치(회전 랜덤)
+        const rot = rnd(0, Math.PI * 2), R = N * 0.34;
+        centers = [0, 1, 2].map(i => {
+          const a = rot + i * 2 * Math.PI / 3;
+          return { cx: c + R * Math.cos(a) + jit(), cy: c + R * Math.sin(a) + jit() };
+        });
+      }
+      // 바닥 높이: 하나는 낮게(전역), 나머지는 높게(함정). 전역 위치는 매번 달라진다.
+      const floors = [rnd(3, 6)];
+      for (let i = 1; i < centers.length; i++) floors.push(rnd(12, 18));
+      for (let i = floors.length - 1; i > 0; i--) {
+        const j = rint(0, i);[floors[i], floors[j]] = [floors[j], floors[i]];
+      }
+      centers.forEach((p, i) => bowls.push({ cx: p.cx, cy: p.cy, floor: floors[i], K: 0.7 }));
+    }
+    return bowls;
+  }
+
+  function generateTerrain() {
+    const N = state.N;
+    const bowls = makeBowls(N, state.terrain);
+    const H = [];
+    for (let y = 0; y < N; y++) {
+      const row = [];
+      for (let x = 0; x < N; x++) {
+        let h = Infinity;
+        for (const b of bowls) {                    // 포물면 하부포락: 가장 낮은 골짜기 값
+          const dd = (x - b.cx) ** 2 + (y - b.cy) ** 2;
+          h = Math.min(h, b.floor + b.K * dd);
+        }
+        row.push(Math.max(1, Math.round(h)));
+      }
+      H.push(row);
+    }
+    state.H = H;
+    state.bowls = bowls;
+    let mn = Infinity, mx = -Infinity;
+    for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
+      const v = H[y][x]; if (v < mn) mn = v; if (v > mx) mx = v;
+    }
+    state.minVal = mn; state.maxVal = mx;
+    state.labels = findLabeledMinima();
+  }
+
+  // 공개 시 표시할 대표 최솟값들.
+  // 바닥 평지(정수 반올림으로 값이 같은 영역)의 모든 칸이 후보가 되므로,
+  // 서로 붙어 있는 후보 칸을 하나의 분지로 묶어 대표점 1개만 남긴다.
+  function findLabeledMinima() {
+    const N = state.N, H = state.H;
+    // 1) 후보: 상하좌우에 자기보다 '엄격히 낮은' 이웃이 없는 칸(평지 포함)
+    const isCand = Array.from({ length: N }, () => new Array(N).fill(false));
+    for (let y = 0; y < N; y++) {
+      for (let x = 0; x < N; x++) {
+        let ok = true;
+        for (const d of Object.values(DIRS)) {
+          const nx = x + d.dx, ny = y + d.dy;
+          if (inBounds(nx, ny) && H[ny][nx] < H[y][x]) { ok = false; break; }
+        }
+        isCand[y][x] = ok;
+      }
+    }
+    // 2) 인접한 후보 칸끼리 연결요소(분지)로 묶고, 각 분지의 대표점(최저·중심 근처) 추출
+    const seen = Array.from({ length: N }, () => new Array(N).fill(false));
+    const reps = [];
+    for (let y = 0; y < N; y++) {
+      for (let x = 0; x < N; x++) {
+        if (!isCand[y][x] || seen[y][x]) continue;
+        const comp = [];
+        const stack = [[x, y]];
+        seen[y][x] = true;
+        while (stack.length) {
+          const [cx, cy] = stack.pop();
+          comp.push([cx, cy]);
+          for (const d of Object.values(DIRS)) {
+            const nx = cx + d.dx, ny = cy + d.dy;
+            if (inBounds(nx, ny) && isCand[ny][nx] && !seen[ny][nx]) {
+              seen[ny][nx] = true; stack.push([nx, ny]);
+            }
+          }
+        }
+        // 분지 대표: 값이 최저인 칸들 중 무게중심에 가장 가까운 칸
+        const val = Math.min(...comp.map(([px, py]) => H[py][px]));
+        const lows = comp.filter(([px, py]) => H[py][px] === val);
+        const gx = lows.reduce((s, p) => s + p[0], 0) / lows.length;
+        const gy = lows.reduce((s, p) => s + p[1], 0) / lows.length;
+        let rep = lows[0], bd = Infinity;
+        for (const [px, py] of lows) {
+          const d = Math.hypot(px - gx, py - gy);
+          if (d < bd) { bd = d; rep = [px, py]; }
+        }
+        reps.push({ x: rep[0], y: rep[1], val });
+      }
+    }
+    const gmin = reps.length ? Math.min(...reps.map(r => r.val)) : 0;
+    return reps.map(r => ({ ...r, global: r.val === gmin }));
+  }
+
+  // =========================================================================
+  //  시작 위치
+  // =========================================================================
+  function pickStart() {
+    const N = state.N;
+    let x, y, guard = 0;
+    do {
+      x = rint(0, N - 1); y = rint(0, N - 1); guard++;
+    } while (guard < 200 && state.labels.some(m => m.x === x && m.y === y)); // 최솟값 위에서 시작 안 함
+    setStart(x, y);
+  }
+  function setStart(x, y) {
+    state.start = { x, y };
+    resetToStart();
+  }
+  function resetToStart() {
+    stopAuto();
+    state.pos = { ...state.start };
+    state.lastDir = null;
+    state.path = [{ ...state.start }];
+    state.visited = new Set([key(state.start.x, state.start.y)]);
+    state.moves = 0;
+    state.bestLow = state.H[state.start.y][state.start.x];
+    state.revealed = false;
+    render();
+  }
+
+  // =========================================================================
+  //  이동 로직
+  // =========================================================================
+  // 지정 방향으로 보폭만큼 떨어진 목표칸(경계 안). 없으면 null(=벽).
+  function targetOf(dir) {
+    const d = DIRS[dir];
+    const tx = state.pos.x + d.dx * state.step;
+    const ty = state.pos.y + d.dy * state.step;
+    if (!inBounds(tx, ty)) return null;
+    return { x: tx, y: ty, val: state.H[ty][tx], dir, d };
+  }
+
+  function neighbors() {
+    return ['up', 'down', 'left', 'right'].map(targetOf).filter(Boolean);
+  }
+
+  function moveTo(t) {
+    state.pos = { x: t.x, y: t.y };
+    state.lastDir = t.d;
+    state.moves++;
+    const k = key(t.x, t.y);
+    if (!state.visited.has(k)) {
+      state.visited.add(k);
+    }
+    state.path.push({ x: t.x, y: t.y });
+    if (t.val < state.bestLow) state.bestLow = t.val;
+    render();
+  }
+
+  function manualMove(dir) {
+    if (state.revealed) return;
+    const t = targetOf(dir);
+    if (!t) return;            // 벽
+    moveTo(t);
+  }
+
+  // 자동(탐욕적) 한 걸음: 현재보다 '엄격히 낮은' 이웃 중 최저로 이동.
+  // 동점이면: 최근 이동방향 우선 → 불가하면 중앙에 더 가까워지는 방향.
+  function autoStep() {
+    if (state.revealed) return false;
+    const here = state.H[state.pos.y][state.pos.x];
+    const lower = neighbors().filter(t => t.val < here);
+    if (lower.length === 0) { stopAuto(); render(); return false; }
+    const best = Math.min(...lower.map(t => t.val));
+    let tied = lower.filter(t => t.val === best);
+    if (tied.length > 1) tied = [tieBreak(tied)];
+    moveTo(tied[0]);
+    return true;
+  }
+
+  function tieBreak(tied) {
+    // 1) 최근 이동방향과 같은 방향
+    if (state.lastDir) {
+      const same = tied.find(t => t.d.dx === state.lastDir.dx && t.d.dy === state.lastDir.dy);
+      if (same) return same;
+    }
+    // 2) 중앙에 더 가까워지는 방향
+    const c = (state.N - 1) / 2;
+    let best = tied[0], bestDist = Infinity;
+    for (const t of tied) {
+      const dist = Math.hypot(t.x - c, t.y - c);
+      if (dist < bestDist) { bestDist = dist; best = t; }
+    }
+    return best;
+  }
+
+  function startAuto() {
+    if (state.revealed || state.autoTimer) return;
+    document.getElementById('btnAuto').disabled = true;
+    document.getElementById('btnPause').disabled = false;
+    state.autoTimer = setInterval(() => {
+      const moved = autoStep();
+      if (!moved) stopAuto();
+    }, 420);
+  }
+  function stopAuto() {
+    if (state.autoTimer) { clearInterval(state.autoTimer); state.autoTimer = null; }
+    const a = document.getElementById('btnAuto'), p = document.getElementById('btnPause');
+    if (a) a.disabled = state.revealed;
+    if (p) p.disabled = true;
+  }
+
+  // 현재 보폭 기준 지역 최솟값인가?
+  function isLocalMin() {
+    const here = state.H[state.pos.y][state.pos.x];
+    return neighbors().every(t => t.val >= here);
+  }
+
+  // =========================================================================
+  //  렌더링
+  // =========================================================================
+  const canvas = document.getElementById('map');
+  const ctx = canvas.getContext('2d');
+
+  function heatColor(v) {
+    // 0(낮음)→녹색, 0.5→노랑, 1(높음)→적갈색
+    const t = (state.maxVal === state.minVal) ? 0 : (v - state.minVal) / (state.maxVal - state.minVal);
+    const stops = [
+      [14, 98, 69],   // #0e6245
+      [242, 193, 78], // #f2c14e
+      [178, 58, 46],  // #b23a2e
+    ];
+    let a, b, f;
+    if (t < 0.5) { a = stops[0]; b = stops[1]; f = t / 0.5; }
+    else { a = stops[1]; b = stops[2]; f = (t - 0.5) / 0.5; }
+    const c = a.map((v0, i) => Math.round(v0 + (b[i] - v0) * f));
+    return `rgb(${c[0]},${c[1]},${c[2]})`;
+  }
+  function textOn(v) {
+    const t = (state.maxVal === state.minVal) ? 0 : (v - state.minVal) / (state.maxVal - state.minVal);
+    return t > 0.55 ? '#fff' : (t < 0.2 ? '#eafff5' : '#1f2937');
+  }
+
+  function render() {
+    const N = state.N;
+    const S = canvas.width;
+    const cs = S / N;
+    ctx.clearRect(0, 0, S, S);
+
+    // 현재 위치가 감지하는 십자칸(보폭 거리) 집합
+    const senseKeys = new Set([key(state.pos.x, state.pos.y)]);
+    if (!state.revealed) neighbors().forEach(t => senseKeys.add(key(t.x, t.y)));
+    const here = state.H[state.pos.y][state.pos.x];
+
+    for (let y = 0; y < N; y++) {
+      for (let x = 0; x < N; x++) {
+        const k = key(x, y);
+        const shown = state.revealed || state.visited.has(k) || senseKeys.has(k);
+        const px = x * cs, py = y * cs;
+        if (shown) {
+          ctx.fillStyle = heatColor(state.H[y][x]);
+          ctx.fillRect(px, py, cs, cs);
+          if (!state.revealed && state.visited.has(k) && !senseKeys.has(k)) {
+            ctx.fillStyle = 'rgba(255,255,255,0.28)'; // 지나온 칸은 살짝 흐리게
+            ctx.fillRect(px, py, cs, cs);
+          }
+        } else {
+          ctx.fillStyle = '#94a3b8';   // 안개
+          ctx.fillRect(px, py, cs, cs);
+        }
+        ctx.strokeStyle = 'rgba(255,255,255,0.35)';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(px + 0.5, py + 0.5, cs - 1, cs - 1);
+
+        // 감지되는 칸(현재+상하좌우)에는 숫자 표기
+        if (!state.revealed && senseKeys.has(k)) {
+          ctx.fillStyle = textOn(state.H[y][x]);
+          ctx.font = `700 ${Math.max(11, cs * 0.34)}px system-ui`;
+          ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+          ctx.fillText(state.H[y][x], px + cs / 2, py + cs / 2);
+        }
+      }
+    }
+
+    // 현재보다 낮은 이웃 강조(초록 테두리)
+    if (!state.revealed) {
+      neighbors().forEach(t => {
+        if (t.val < here) {
+          ctx.strokeStyle = '#16a34a';
+          ctx.lineWidth = Math.max(2, cs * 0.09);
+          ctx.strokeRect(t.x * cs + 2, t.y * cs + 2, cs - 4, cs - 4);
+        }
+      });
+    }
+
+    // 이동 경로 선
+    if (state.path.length > 1) {
+      ctx.strokeStyle = state.revealed ? 'rgba(30,41,59,0.85)' : 'rgba(79,70,229,0.9)';
+      ctx.lineWidth = Math.max(2.5, cs * 0.10);
+      ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+      ctx.beginPath();
+      state.path.forEach((p, i) => {
+        const cx = p.x * cs + cs / 2, cy = p.y * cs + cs / 2;
+        i === 0 ? ctx.moveTo(cx, cy) : ctx.lineTo(cx, cy);
+      });
+      ctx.stroke();
+    }
+
+    // 시작점 표시
+    drawMarker(state.start.x, state.start.y, cs, 'start');
+
+    // 공개 시: 최솟값 라벨
+    if (state.revealed) {
+      state.labels.forEach(m => drawMarker(m.x, m.y, cs, m.global ? 'global' : 'local'));
+    }
+
+    // 현재 위치 강조
+    ctx.strokeStyle = '#4f46e5';
+    ctx.lineWidth = Math.max(3, cs * 0.14);
+    ctx.strokeRect(state.pos.x * cs + 2, state.pos.y * cs + 2, cs - 4, cs - 4);
+
+    renderPad();
+    renderStatus();
+  }
+
+  function drawMarker(x, y, cs, type) {
+    const cx = x * cs + cs / 2, cy = y * cs + cs / 2;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    if (type === 'start') {
+      ctx.fillStyle = '#0ea5e9';
+      ctx.beginPath(); ctx.arc(cx, cy, Math.max(4, cs * 0.16), 0, 7); ctx.fill();
+      ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke();
+    } else if (type === 'global') {
+      ctx.font = `700 ${cs * 0.72}px system-ui`;
+      ctx.fillStyle = '#facc15';
+      ctx.strokeStyle = '#78350f'; ctx.lineWidth = 3;
+      ctx.strokeText('★', cx, cy); ctx.fillText('★', cx, cy);
+    } else {
+      ctx.font = `700 ${cs * 0.6}px system-ui`;
+      ctx.fillStyle = '#e2e8f0';
+      ctx.strokeStyle = '#334155'; ctx.lineWidth = 2.5;
+      ctx.strokeText('◇', cx, cy); ctx.fillText('◇', cx, cy);
+    }
+  }
+
+  function renderPad() {
+    const here = state.H[state.pos.y][state.pos.x];
+    // 현재 값
+    const curEl = document.querySelector('.pad .cur .val');
+    curEl.textContent = here;
+    // 방향 버튼
+    document.querySelectorAll('.pad button.dir').forEach(btn => {
+      const dir = btn.dataset.dir;
+      const valEl = btn.querySelector('.val');
+      btn.classList.remove('lower', 'higher', 'equal', 'wall');
+      if (state.revealed) { btn.disabled = true; valEl.textContent = '–'; return; }
+      const t = targetOf(dir);
+      if (!t) { btn.classList.add('wall'); valEl.textContent = '벽'; btn.disabled = true; return; }
+      btn.disabled = false;
+      valEl.textContent = t.val;
+      if (t.val < here) btn.classList.add('lower');
+      else if (t.val > here) btn.classList.add('higher');
+      else btn.classList.add('equal');
+    });
+  }
+
+  function renderStatus() {
+    document.getElementById('sPos').textContent = `(${state.pos.x + 1}, ${state.pos.y + 1})`;
+    document.getElementById('sHeight').textContent = state.H[state.pos.y][state.pos.x];
+    document.getElementById('sMoves').textContent = state.moves;
+    document.getElementById('sBest').textContent = state.bestLow;
+
+    const v = document.getElementById('verdict');
+    if (state.revealed) {
+      const here = state.H[state.pos.y][state.pos.x];
+      const gmin = state.minVal;
+      if (here === gmin) {
+        v.className = 'verdict global';
+        v.textContent = '★ 전역 최솟값에 도달했습니다! 로컬 정보만으로 가장 낮은 곳을 찾았어요.';
+      } else if (isLocalMin()) {
+        v.className = 'verdict local';
+        v.textContent = `여기는 지역 최솟값(높이 ${here})입니다. 전역 최솟값(★)은 높이 ${gmin}로 다른 골짜기에 있어요. 시작 위치나 보폭을 바꿔 다시 시도해 보세요.`;
+      } else {
+        v.className = 'verdict';
+        v.textContent = `아직 최솟값에 도착하지 않았습니다(현재 높이 ${here}). 더 낮은 방향이 남아 있어요. 전역 최솟값(★)은 높이 ${gmin}입니다.`;
+      }
+      return;
+    }
+    if (isLocalMin()) {
+      v.className = 'verdict local';
+      v.textContent = '현재 보폭에서는 더 낮은 이웃이 없습니다. 지역 최솟값일 수 있어요. ‘전체 지형 공개’로 확인해 보세요.';
+    } else {
+      v.className = 'verdict';
+      v.textContent = '초록색으로 표시된, 더 낮은 방향이 있습니다. 어디로 이동할까요?';
+    }
+  }
+
+  function reveal() {
+    stopAuto();
+    state.revealed = true;
+    render();
+  }
+
+  // =========================================================================
+  //  이벤트 연결
+  // =========================================================================
+  function bindSeg(id, apply) {
+    document.getElementById(id).addEventListener('click', e => {
+      const btn = e.target.closest('button'); if (!btn) return;
+      [...e.currentTarget.children].forEach(b => b.classList.remove('on'));
+      btn.classList.add('on');
+      apply(btn.dataset.v);
+    });
+  }
+  bindSeg('segTerrain', v => { state.terrain = v; newTerrain(); });
+  bindSeg('segSize', v => { state.N = +v; newTerrain(); });
+  bindSeg('segStep', v => { state.step = +v; render(); });
+
+  document.getElementById('btnNewTerrain').addEventListener('click', newTerrain);
+  document.getElementById('btnNewStart').addEventListener('click', () => { pickStart(); });
+  document.getElementById('btnReset').addEventListener('click', resetToStart);
+  document.getElementById('btnReveal').addEventListener('click', reveal);
+  document.getElementById('btnStep').addEventListener('click', () => { stopAuto(); autoStep(); });
+  document.getElementById('btnAuto').addEventListener('click', startAuto);
+  document.getElementById('btnPause').addEventListener('click', stopAuto);
+
+  document.getElementById('pad').addEventListener('click', e => {
+    const btn = e.target.closest('button.dir'); if (!btn || btn.disabled) return;
+    manualMove(btn.dataset.dir);
+  });
+
+  // 캔버스 클릭 → 시작 위치 지정
+  canvas.addEventListener('click', e => {
+    const rect = canvas.getBoundingClientRect();
+    const cs = canvas.width / state.N;
+    const x = Math.floor((e.clientX - rect.left) * (canvas.width / rect.width) / cs);
+    const y = Math.floor((e.clientY - rect.top) * (canvas.height / rect.height) / cs);
+    if (inBounds(x, y)) setStart(x, y);
+  });
+
+  // 키보드 화살표로도 이동
+  window.addEventListener('keydown', e => {
+    const map = { ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right' };
+    if (map[e.key]) { e.preventDefault(); manualMove(map[e.key]); }
+  });
+
+  function newTerrain() {
+    stopAuto();
+    generateTerrain();
+    pickStart();
+  }
+
+  // 시작
+  newTerrain();
+  </script>
+</body>
+</html>
