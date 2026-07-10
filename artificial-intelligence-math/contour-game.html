@@ -25,6 +25,18 @@ body {
 .back-link:hover { text-decoration: underline; }
 h1 { font-size: 1.4rem; margin: 0 0 4px; }
 .hint { color: #9fb0c8; font-size: .82rem; margin: 0 0 14px; line-height: 1.4; }
+.book-note {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  margin: -4px 0 12px; padding: 9px 10px;
+  background: rgba(79, 209, 197, 0.1); border: 1px solid rgba(79, 209, 197, 0.35);
+  border-radius: 10px; color: #dffaf7; font-size: .8rem; line-height: 1.35;
+}
+.book-note strong { color: #ffffff; }
+.book-note a {
+  flex: 0 0 auto; color: #08111d; background: var(--accent); border-radius: 999px;
+  padding: 6px 10px; font-weight: 800; text-decoration: none; white-space: nowrap;
+}
+.book-note a:hover { filter: brightness(1.08); }
 .hud { display: flex; gap: 14px; align-items: center; margin-bottom: 10px; font-size: .9rem; flex-wrap: wrap; }
 .hud select { background: var(--panel); color: var(--text); border: 1px solid #2a3446; border-radius: 6px; padding: 4px; }
 
@@ -67,6 +79,7 @@ canvas { background: var(--panel); border-radius: 12px; display: block; }
 /* 모바일: D-pad를 더 크게, 힌트 조정 */
 @media (max-width: 480px) {
   body { padding: 12px; }
+  .book-note { align-items: flex-start; flex-direction: column; gap: 7px; }
   .dpad button, .buttons button { padding: 14px 18px; font-size: 1.15rem; }
 }
 
@@ -79,6 +92,10 @@ canvas { background: var(--panel); border-radius: 12px; display: block; }
     <h1>🏔️ 길 잃은 등산객</h1>
     <p class="hint">안개 속에서 길을 잃었어요. 주변 지형(등고선)만 보고 <b>가장 낮은 안식처(계곡)</b>로 내려가세요.<br>
       🖥️ 화살표/WASD · 📱 화면을 <b>스와이프</b>해서 이동! · 색이 짙고 등고선이 촘촘한 쪽이 급경사예요.</p>
+    <div class="book-note" aria-label="관련 도서 안내">
+      <span>관련 도서 <strong>교사와 학부모를 위한 바이브 코딩</strong> · 저자 <strong>신종환</strong></span>
+      <a href="https://product.kyobobook.co.kr/detail/S000220363390" target="_blank" rel="noopener noreferrer">구매 링크</a>
+    </div>
 
     <div class="hud">
       <span>스텝: <b id="steps">0</b></span>
