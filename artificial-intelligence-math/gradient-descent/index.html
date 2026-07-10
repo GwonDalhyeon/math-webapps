@@ -130,7 +130,7 @@
                         <div>
                             <div class="flex items-center justify-between gap-3 mb-2">
                                 <label for="lr-input" class="text-sm font-medium text-gray-600">학습률 (\(r\))</label>
-                                <input type="number" id="lr-input" min="0.005" max="0.6" step="0.005" value="0.1" inputmode="decimal" class="parameter-number" aria-label="학습률 직접 입력">
+                                <input type="text" id="lr-input" value="0.1" inputmode="text" autocomplete="off" class="parameter-number" aria-label="학습률 직접 입력">
                             </div>
                             <input type="range" id="lr-range" min="0.005" max="0.6" step="0.005" value="0.1" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-indigo-600" aria-label="학습률 슬라이더">
                             <div class="slider-ticks">
@@ -140,9 +140,9 @@
                         <div>
                             <div class="flex items-center justify-between gap-3 mb-2">
                                 <label for="init-a-input" class="text-sm font-medium text-gray-600">초기값 (\(a_0\))</label>
-                                <input type="number" id="init-a-input" min="-10" max="10" step="0.1" value="8.0" inputmode="decimal" class="parameter-number" aria-label="초기값 직접 입력">
+                                <input type="text" id="init-a-input" value="8.0" inputmode="text" autocomplete="off" class="parameter-number" aria-label="초기값 직접 입력">
                             </div>
-                            <input type="range" id="init-a-range" min="-10" max="10" step="0.1" value="8" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-indigo-600" aria-label="초기값 슬라이더">
+                            <input type="range" id="init-a-range" min="-10" max="10" step="0.001" value="8" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-indigo-600" aria-label="초기값 슬라이더">
                             <div class="slider-ticks" id="init-a-ticks">
                                 <span>-10</span><span>-5</span><span>0</span><span>5</span><span>10</span>
                             </div>
@@ -212,6 +212,7 @@
         let history = [];
         let currentA = -3.0;
         let chart = null;
+        let pendingResetFrame = null;
 
         const functions = [
             {
@@ -266,11 +267,12 @@
             });
 
             initRange.addEventListener('input', (e) => {
-                setInitialValue(e.target.value);
+                setInitialValue(e.target.value, false);
+                scheduleResetSimulation();
             });
             initInput.addEventListener('input', (e) => {
                 if (previewRangeValue(initRange, e.target.value)) {
-                    resetSimulation();
+                    scheduleResetSimulation();
                 }
             });
             initInput.addEventListener('change', () => {
@@ -279,9 +281,8 @@
         }
 
         function previewRangeValue(rangeInput, rawValue) {
-            if (rawValue === '' || rawValue === '-' || rawValue === '.') return false;
-            const value = Number(rawValue);
-            if (!Number.isFinite(value)) return false;
+            const value = parseParameterValue(rawValue);
+            if (value === null) return false;
 
             const min = Number(rangeInput.min);
             const max = Number(rangeInput.max);
@@ -292,44 +293,63 @@
         function setLearningRate(rawValue) {
             const rangeInput = document.getElementById('lr-range');
             const numberInput = document.getElementById('lr-input');
-            const value = normalizeSteppedValue(rawValue, rangeInput.min, rangeInput.max, rangeInput.step);
+            const value = normalizeParameterValue(rawValue, rangeInput.value, rangeInput.min, rangeInput.max);
 
             rangeInput.value = value;
-            numberInput.value = formatLearningRate(value);
+            numberInput.value = formatParameterValue(value);
             return value;
         }
 
         function setInitialValue(rawValue, shouldReset = true) {
             const rangeInput = document.getElementById('init-a-range');
             const numberInput = document.getElementById('init-a-input');
-            const value = normalizeSteppedValue(rawValue, rangeInput.min, rangeInput.max, rangeInput.step);
+            const value = normalizeParameterValue(rawValue, rangeInput.value, rangeInput.min, rangeInput.max);
 
             rangeInput.value = value;
-            numberInput.value = formatInitialValue(value);
+            numberInput.value = formatParameterValue(value);
             if (shouldReset) resetSimulation();
             return value;
         }
 
-        function normalizeSteppedValue(rawValue, rawMin, rawMax, rawStep) {
+        function normalizeParameterValue(rawValue, fallbackValue, rawMin, rawMax) {
             const min = Number(rawMin);
             const max = Number(rawMax);
-            const step = Number(rawStep);
-            const parsed = Number(rawValue);
-            const clamped = clamp(Number.isFinite(parsed) ? parsed : min, min, max);
-            const stepped = min + Math.round((clamped - min) / step) * step;
-            return clamp(Number(stepped.toFixed(6)), min, max);
+            const fallback = Number(fallbackValue);
+            const parsed = parseParameterValue(rawValue);
+            const value = parsed === null ? fallback : parsed;
+            return clamp(Number(value.toFixed(6)), min, max);
+        }
+
+        function parseParameterValue(rawValue) {
+            const text = String(rawValue).trim().replace(',', '.');
+            if (text === '' || text === '-' || text === '+' || text === '.' || text === '-.' || text === '+.') return null;
+
+            const fractionMatch = text.match(/^([+-]?(?:\d+(?:\.\d*)?|\.\d+))\s*\/\s*([+-]?(?:\d+(?:\.\d*)?|\.\d+))$/);
+            if (fractionMatch) {
+                const numerator = Number(fractionMatch[1]);
+                const denominator = Number(fractionMatch[2]);
+                if (denominator === 0) return null;
+                return numerator / denominator;
+            }
+
+            const parsed = Number(text);
+            return Number.isFinite(parsed) ? parsed : null;
         }
 
         function clamp(value, min, max) {
             return Math.min(max, Math.max(min, value));
         }
 
-        function formatLearningRate(value) {
+        function formatParameterValue(value) {
             return Number(value).toFixed(3).replace(/0+$/, '').replace(/\.$/, '');
         }
 
-        function formatInitialValue(value) {
-            return Number(value).toFixed(1);
+        function scheduleResetSimulation() {
+            if (pendingResetFrame !== null) cancelAnimationFrame(pendingResetFrame);
+            pendingResetFrame = requestAnimationFrame(() => {
+                pendingResetFrame = null;
+                resetSimulation();
+            });
         }
 
         function initChart() {
@@ -436,6 +456,10 @@
         }
 
         function resetSimulation() {
+            if (pendingResetFrame !== null) {
+                cancelAnimationFrame(pendingResetFrame);
+                pendingResetFrame = null;
+            }
             currentA = parseFloat(document.getElementById('init-a-range').value);
             const f = functions[currentFuncIdx];
             history = [{
@@ -490,7 +514,7 @@
             chart.options.scales.x.max = endX;
             chart.options.scales.y.min = Math.floor(minY - f.yPadding);
             chart.options.scales.y.max = Math.ceil(maxY + f.yPadding);
-            chart.update();
+            chart.update('none');
 
             const logBody = document.getElementById('log-body');
             logBody.innerHTML = history.slice().reverse().map(h => `
