@@ -17,6 +17,7 @@
 - 새 웹앱을 만들거나 핵심 기능을 수정할 때: `docs/agent-guides/webapp.md`
 - 공간도형, 공간벡터, 빛의 반사, 태양계 중력·스윙바이처럼 3D 시각화가 필요할 때: `docs/agent-guides/3d-webapp.md`
 - 카메라로 손·몸·얼굴 동작을 인식하는 웹앱을 만들 때: `docs/agent-guides/camera-webapp.md`
+- 아이스브레이킹 게임을 만들거나 핵심 진행·소리를 수정할 때: `docs/agent-guides/icebreaking-webapp.md`
 - 새 웹앱의 작업지시서 작성, 사전/사후 학습가치 검토를 할 때: `docs/agent-guides/learning-agent-roles.md`
 - 학습지 Markdown을 만들거나 수정할 때: `docs/agent-guides/worksheet.md`
 - 학습지를 PDF로 변환하거나 페이지 수를 맞출 때: `docs/agent-guides/pdf-export.md`

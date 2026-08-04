@@ -139,7 +139,7 @@
       <h1>짝짝짝! 박수로 파리잡기</h1>
       <span class="spacer"></span>
       <span class="who" id="who"></span>
-      <button class="mini ghost" id="soundBtn" type="button">소리 켜기</button>
+      <button class="mini ghost" id="soundBtn" type="button">소리 끄기</button>
     </header>
 
     <div class="stage" id="stage">
@@ -295,7 +295,7 @@ let rafId = 0;
 let starting = false;     // 시작을 여러 번 눌러도 스트림이 겹치지 않게 한다
 
 let nickname = "";
-let soundOn = false;
+let soundOn = true;
 let audioCtx = null;
 let music = null;         // 배경음악 출력 묶음과 예약 상태
 
@@ -1005,6 +1005,8 @@ $("beginBtn").addEventListener("click", () => {
   nickname = value;
   try { localStorage.setItem(NICK_KEY, nickname); } catch { /* 저장 불가여도 진행한다 */ }
   $("who").textContent = nickname;
+  // 기본값은 소리 켜짐이다. 브라우저 자동 재생 정책에 맞춰 시작 버튼을 누른 순간 오디오를 활성화한다.
+  if (soundOn) { try { ensureMusic(); } catch { /* 소리 없이도 진행한다 */ } }
   prepare();
 });
 
