@@ -1,0 +1,1024 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="카메라 앞에서 팔을 움직여 공을 치고 카피바라 AI 또는 친구와 겨루는 상반신 배구 아이스브레이킹 웹앱입니다." />
+  <title>상반신 카피바라 배구</title>
+  <link rel="icon" href="data:," />
+  <link rel="stylesheet" href="../../assets/common.css" />
+  <style>
+    :root {
+      --ink: #eaf5ff;
+      --muted: #9db4c8;
+      --line: #36556f;
+      --panel: #0e1c2e;
+      --deep: #07111f;
+      --blue: #38bdf8;
+      --orange: #fb923c;
+      --green: #4ade80;
+      --danger: #fca5a5;
+    }
+
+    html, body { height: 100%; }
+    body { margin: 0; background: var(--deep); color: var(--ink); overflow: hidden; }
+    button, input { font: inherit; }
+    button {
+      min-height: 44px; padding: 9px 16px; border: 1px solid #2563eb;
+      border-radius: 10px; background: #2563eb; color: #fff; font-weight: 800;
+      cursor: pointer;
+    }
+    button.ghost { border-color: var(--line); background: #0a1626; color: var(--ink); }
+    button.choice { flex: 1 1 150px; }
+    button.choice.active { border-color: var(--green); box-shadow: 0 0 0 2px rgba(74,222,128,.25); }
+    button:disabled { opacity: .45; cursor: not-allowed; }
+
+    .app { height: 100dvh; display: flex; flex-direction: column; }
+    .bar {
+      flex: none; min-height: 52px; padding: 7px 12px; display: flex; align-items: center;
+      gap: 10px; background: var(--panel); border-bottom: 1px solid #20374d;
+    }
+    .bar.bottom { min-height: 48px; border: 0; border-top: 1px solid #20374d; }
+    .bar h1 { margin: 0; font-size: clamp(17px, 2.2vw, 23px); }
+    .home { color: #93c5fd; text-decoration: none; font-weight: 800; white-space: nowrap; }
+    .spacer { flex: 1; }
+    .mini { min-height: 36px; padding: 6px 11px; font-size: 14px; }
+    .mode-label { color: var(--green); font-weight: 800; white-space: nowrap; }
+
+    .stage { position: relative; flex: 1; min-height: 0; overflow: hidden; background: #10283d; }
+    #video, #gameCanvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+    #video {
+      object-fit: fill; transform: scaleX(-1) scale(.90); transform-origin: center;
+      visibility: hidden; opacity: 1;
+    }
+    .stage.video-on #video { visibility: visible; }
+    #gameCanvas { z-index: 1; }
+
+    .scoreboard {
+      position: absolute; z-index: 3; left: 50%; top: 10px; transform: translateX(-50%);
+      display: grid; grid-template-columns: minmax(86px, 1fr) auto minmax(86px, 1fr);
+      align-items: center; min-width: min(480px, calc(100% - 20px));
+      padding: 7px 12px; border: 1px solid rgba(148,163,184,.45); border-radius: 14px;
+      background: rgba(7,17,31,.82); backdrop-filter: blur(5px); pointer-events: none;
+    }
+    .score-side { display: flex; align-items: center; gap: 8px; font-weight: 900; }
+    .score-side.right { justify-content: flex-end; }
+    .score-num { font-size: clamp(25px, 4vw, 42px); line-height: 1; }
+    .score-side.left { color: #7dd3fc; }
+    .score-side.right { color: #fdba74; }
+    .score-rule { color: var(--muted); font-size: 14px; text-align: center; }
+
+    .message {
+      position: absolute; z-index: 4; left: 50%; top: 22%; transform: translateX(-50%);
+      display: none; padding: 10px 20px; border-radius: 999px;
+      background: rgba(7,17,31,.88); font-size: clamp(22px, 4.6vw, 48px);
+      font-weight: 900; text-align: center; pointer-events: none; white-space: nowrap;
+    }
+    .message.show { display: block; }
+    .countdown {
+      position: absolute; z-index: 4; inset: 0; display: none; place-items: center;
+      background: rgba(2,6,23,.36); font-size: clamp(90px, 18vw, 190px); font-weight: 900;
+      text-shadow: 0 8px 24px rgba(0,0,0,.6); pointer-events: none;
+    }
+    .countdown.show { display: grid; }
+
+    .panel {
+      position: absolute; z-index: 5; inset: 0; display: none; align-items: center;
+      justify-content: center; padding: 14px; background: rgba(2,6,23,.88); overflow: auto;
+    }
+    .panel.show { display: flex; }
+    .sheet {
+      width: min(620px, 100%); padding: 22px 24px; border: 1px solid var(--line);
+      border-radius: 18px; background: var(--panel); box-shadow: 0 20px 50px rgba(0,0,0,.35);
+    }
+    .sheet h2 { margin: 0 0 10px; font-size: 27px; }
+    .sheet p, .sheet li { color: #cbd9e6; font-size: 16px; line-height: 1.55; }
+    .sheet p { margin: 8px 0 14px; }
+    .sheet ol { margin: 8px 0 14px; padding-left: 22px; }
+    .small { color: var(--muted) !important; font-size: 14px !important; }
+    .choices, .actions { display: flex; gap: 9px; flex-wrap: wrap; margin: 12px 0; }
+    .actions button { flex: 1 1 150px; }
+    .setting-row {
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+      margin: 10px 0; padding: 9px 12px; background: #0a1626; border-radius: 10px;
+    }
+    .setting-row input { width: 20px; height: 20px; }
+    .load-track { height: 10px; border-radius: 999px; overflow: hidden; background: #1e3347; }
+    .load-track i { display: block; width: 0; height: 100%; background: var(--blue); transition: width .25s; }
+    .ready-count { margin: 8px 0; font-size: 42px; font-weight: 900; color: var(--green); }
+    .winner { margin: 8px 0; font-size: clamp(38px, 8vw, 72px); font-weight: 900; color: var(--green); }
+
+    .status { font-size: 14px; color: var(--muted); }
+    .status.good { color: #86efac; }
+    .status.warn { color: var(--danger); }
+    .fps { font-size: 14px; color: #fde68a; white-space: nowrap; }
+    .fps.good { color: #86efac; }
+    .fps.slow { color: #fca5a5; }
+    .privacy { font-size: 13px; color: #8199ad; text-align: right; }
+
+    .setup-panel { align-items: flex-end; background: rgba(2,6,23,.16); pointer-events: none; }
+    .setup-panel .sheet {
+      width: min(760px, 100%); padding: 13px 17px; background: rgba(14,28,46,.9);
+      backdrop-filter: blur(7px); pointer-events: auto;
+    }
+    .setup-panel .sheet h2 { font-size: 21px; }
+    .setup-panel .sheet p { margin: 5px 0 8px; }
+    .setup-panel .ready-count { margin: 2px 0; font-size: 28px; }
+
+    @media (max-width: 700px) {
+      .bar { padding: 5px 8px; gap: 7px; }
+      .bar h1 { display: none; }
+      .mode-label { display: none; }
+      .scoreboard { top: 7px; min-width: calc(100% - 14px); }
+      .score-rule { font-size: 12px; }
+      .sheet { padding: 17px; }
+      .privacy { display: none; }
+    }
+    @media (orientation: portrait) {
+      .message { top: 18%; }
+      .bar.bottom { min-height: 54px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header class="bar">
+      <a class="home" href="../">← 아이스브레이킹</a>
+      <h1>상반신 카피바라 배구</h1>
+      <span class="spacer"></span>
+      <span class="mode-label" id="modeLabel">1대 AI</span>
+      <button class="mini ghost" id="soundBtn" type="button">소리 켜기</button>
+    </header>
+
+    <main class="stage" id="stage">
+      <video id="video" playsinline muted></video>
+      <canvas id="gameCanvas" aria-label="카메라 영상 위에서 팔을 움직여 공을 치는 배구 경기 화면"></canvas>
+
+      <div class="scoreboard" aria-live="polite">
+        <div class="score-side left"><span>P1</span><span class="score-num" id="score1">0</span></div>
+        <div class="score-rule">5점 먼저</div>
+        <div class="score-side right"><span class="score-num" id="score2">0</span><span id="opponentLabel">카피바라</span></div>
+      </div>
+      <div class="message" id="message"></div>
+      <div class="countdown" id="countdown"></div>
+
+      <section class="panel show" id="startPanel">
+        <div class="sheet">
+          <h2>상반신 카피바라 배구</h2>
+          <p>카메라에서 조금 떨어져 서서 팔로 공을 넘기세요. 먼저 5점을 얻으면 이깁니다.</p>
+          <div class="choices" aria-label="경기 모드">
+            <button class="choice active" id="aiModeBtn" type="button">1대 AI</button>
+            <button class="choice ghost" id="humanModeBtn" type="button">1대1 사람</button>
+          </div>
+          <ol id="modeGuide">
+            <li>한 사람이 화면 왼쪽에 섭니다.</li>
+            <li>카메라에서 약 1.5~2m 떨어져 어깨부터 손목까지 보여 주세요.</li>
+            <li>카피바라가 득점하면 신나게 세리머니를 합니다.</li>
+          </ol>
+          <label class="setting-row" for="showVideoCheck">
+            <span>경기 중 카메라 영상 보기</span>
+            <input id="showVideoCheck" type="checkbox" checked />
+          </label>
+          <p class="small">영상과 팔 관절 좌표는 이 기기 안에서만 처리되며 저장되거나 전송되지 않습니다. 인식 위치는 영상 위의 선과 점으로 바로 확인할 수 있습니다.</p>
+          <div class="actions">
+            <button id="cameraStartBtn" type="button">팔 인식·FPS 확인</button>
+            <button class="ghost" id="keyboardStartBtn" type="button">키보드로 시작</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel" id="loadingPanel">
+        <div class="sheet">
+          <h2>카메라와 팔 인식 준비 중</h2>
+          <p id="loadingText">카메라 권한을 요청합니다.</p>
+          <div class="load-track"><i id="loadingBar"></i></div>
+          <p class="small">처음 실행할 때 자세 인식 모델과 WASM 파일을 받습니다.</p>
+        </div>
+      </section>
+
+      <section class="panel setup-panel" id="readyPanel">
+        <div class="sheet">
+          <h2>팔 인식과 FPS 확인</h2>
+          <p id="readyGuide">P1은 화면 왼쪽에서 어깨·팔꿈치·손목을 보여 주세요.</p>
+          <div class="ready-count"><span id="peopleNow">0</span>/<span id="peopleNeed">1</span>명 인식</div>
+          <p id="readyStatus">사람과 양팔을 찾는 중입니다.</p>
+          <div class="actions">
+            <button id="startAnywayBtn" type="button">바로 시작</button>
+            <button class="ghost" id="videoToggleBtn" type="button">영상 보기</button>
+            <button class="ghost" id="readyBackBtn" type="button">돌아가기</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel" id="pausePanel">
+        <div class="sheet">
+          <h2>잠시 멈춤</h2>
+          <p id="pauseText">팔이 다시 보이면 경기를 이어갈 수 있습니다.</p>
+          <div class="actions">
+            <button id="resumeBtn" type="button">계속하기</button>
+            <button class="ghost" id="pauseQuitBtn" type="button">모드 선택으로</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel" id="resultPanel">
+        <div class="sheet">
+          <h2>경기 끝!</h2>
+          <div class="winner" id="winnerText">P1 승리!</div>
+          <p id="resultScore">5 : 3</p>
+          <div class="actions">
+            <button id="againBtn" type="button">다시 하기</button>
+            <button class="ghost" id="resultBackBtn" type="button">모드 선택으로</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel" id="errorPanel">
+        <div class="sheet">
+          <h2 id="errorTitle">시작할 수 없습니다</h2>
+          <p id="errorText"></p>
+          <div class="actions">
+            <button id="errorKeyboardBtn" type="button">키보드로 계속</button>
+            <button class="ghost" id="errorBackBtn" type="button">돌아가기</button>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="bar bottom">
+      <button class="mini ghost" id="pauseBtn" type="button" disabled>일시정지</button>
+      <span class="spacer"></span>
+      <span class="status" id="statusText">모드를 고르고 시작하세요.</span>
+      <span class="spacer"></span>
+      <span class="fps" id="fpsText">인식 FPS --</span>
+      <span class="privacy">영상 저장·전송 없음</span>
+    </footer>
+  </div>
+
+  <script type="module">
+    import {
+      FilesetResolver,
+      PoseLandmarker,
+    } from "../../assets/vendor/mediapipe/tasks-vision/vision_bundle.mjs";
+
+    // 교실에서 조정할 수 있도록 판정·물리 상수를 한곳에 둔다.
+    const CAMERA_W = 640;
+    const CAMERA_H = 480;
+    const CAMERA_VIEW_SCALE = 0.90;
+    const DETECT_CONFIDENCE = 0.32;
+    const POSE_READY_MS = 500;
+    const TRACK_LOST_MS = 360;
+    const HAND_RADIUS = 0.046;
+    const AI_HAND_RADIUS = 0.061;
+    const ARM_RADIUS = 0.033;
+    const HIT_COOLDOWN_MS = 115;
+    const BALL_RADIUS = 0.027;
+    const GROUND_Y = 0.91;
+    const NET_X = 0.5;
+    const NET_TOP = 0.30;
+    const NET_HALF_WIDTH = 0.017;
+    const GRAVITY = 1.13;
+    const AIR_DRAG = 0.997;
+    const MAX_BALL_SPEED = 1.9;
+    const WIN_SCORE = 5;
+    const POINT_PAUSE_MS = 1200;
+    const WASM_DIR = "../../assets/vendor/mediapipe/tasks-vision/wasm";
+    const MODEL_PATH = "../../assets/vendor/mediapipe/models/pose_landmarker_lite.task";
+    const POSE_POINTS = { leftShoulder: 11, rightShoulder: 12, leftElbow: 13, rightElbow: 14, leftWrist: 15, rightWrist: 16 };
+
+    const $ = (id) => document.getElementById(id);
+    const stage = $("stage");
+    const video = $("video");
+    const canvas = $("gameCanvas");
+    const ctx = canvas.getContext("2d");
+
+    let mode = "ai";             // ai | human
+    let inputMode = "camera";    // camera | keyboard
+    let phase = "intro";         // intro | loading | ready | countdown | playing | point | paused | result | error
+    let stream = null;
+    let poseLandmarker = null;
+    let landmarkerPoses = 0;
+    let starting = false;
+    let rafId = 0;
+    let lastFrameAt = 0;
+    let lastVideoTime = -1;
+    let accumulator = 0;
+    let readySince = 0;
+    let handsLostSince = 0;
+    let countdownEndsAt = 0;
+    let pointResumeAt = 0;
+    let pointWinner = 0;
+    let soundOn = false;
+    let audioCtx = null;
+    let tracks = [];
+    let visiblePeople = 0;
+    let inferenceSamples = [];
+    let inferenceTimestamps = [];
+    let inferenceFps = 0;
+    let inferenceMeanMs = 0;
+    let lastHitAt = new Map();
+    let scores = [0, 0];
+    let particles = [];
+    let celebrateUntil = 0;
+    let imageReady = false;
+
+    const capybaraImage = new Image();
+    capybaraImage.src = "./assets/capybara-ai-cute-sample.png";
+    capybaraImage.addEventListener("load", () => { imageReady = true; });
+
+    const ball = { x: 0.31, y: 0.25, vx: 0.58, vy: -0.25, prevX: 0.31, prevY: 0.25 };
+    const ai = {
+      x: 0.77, prevHandX: 0.70, prevHandY: 0.60, handX: 0.70, handY: 0.60,
+      error: 0, willReturn: true, wasIncoming: false, hasReceivedInRally: false,
+      jumpedThisIncoming: false, jumpStartedAt: -1000,
+    };
+    const keyboard = {
+      p1x: 0.24, p2x: 0.76, p1HitUntil: 0, p2HitUntil: 0,
+      down: new Set(), prevP1: { x: .24, y: .67 }, prevP2: { x: .76, y: .67 },
+    };
+
+    function setPanel(id = "") {
+      for (const name of ["startPanel", "loadingPanel", "readyPanel", "pausePanel", "resultPanel", "errorPanel"]) {
+        $(name).classList.toggle("show", name === id);
+      }
+    }
+
+    function setLoad(text, percent) {
+      $("loadingText").textContent = text;
+      $("loadingBar").style.width = `${percent}%`;
+    }
+
+    function setStatus(text, kind = "") {
+      $("statusText").textContent = text;
+      $("statusText").className = `status ${kind}`.trim();
+    }
+
+    function setMessage(text = "") {
+      $("message").textContent = text;
+      $("message").classList.toggle("show", Boolean(text));
+    }
+
+    function expectedPeople() { return mode === "human" ? 2 : 1; }
+    function opponentName() { return mode === "human" ? "P2" : "카피바라"; }
+
+    function selectMode(nextMode) {
+      mode = nextMode;
+      $("aiModeBtn").classList.toggle("active", mode === "ai");
+      $("aiModeBtn").classList.toggle("ghost", mode !== "ai");
+      $("humanModeBtn").classList.toggle("active", mode === "human");
+      $("humanModeBtn").classList.toggle("ghost", mode !== "human");
+      $("modeLabel").textContent = mode === "ai" ? "1대 AI" : "1대1 사람";
+      $("opponentLabel").textContent = opponentName();
+      $("modeGuide").innerHTML = mode === "ai"
+        ? `<li>한 사람이 화면 왼쪽에 섭니다.</li><li>카메라에서 약 1.5~2m 떨어져 어깨부터 손목까지 보여 주세요.</li><li>카피바라가 득점하면 신나게 세리머니를 합니다.</li>`
+        : `<li>두 사람이 화면 좌우에 한 명씩 섭니다.</li><li>카메라에서 약 2~3m 떨어져 두 사람의 상반신과 양팔을 보여 주세요.</li><li>각자의 팔은 자기 코트에서만 공을 칠 수 있습니다.</li>`;
+    }
+
+    function resizeCanvas() {
+      const dpr = Math.min(2, window.devicePixelRatio || 1);
+      const w = Math.max(1, Math.round(stage.clientWidth * dpr));
+      const h = Math.max(1, Math.round(stage.clientHeight * dpr));
+      if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h; }
+    }
+
+    function clamp(value, min, max) { return Math.max(min, Math.min(max, value)); }
+
+    function posePoint(point) {
+      // 축소된 카메라 영상과 관절선·충돌 좌표가 정확히 겹치도록 중앙 기준으로 함께 축소한다.
+      return {
+        x: .5 + ((1 - point.x) - .5) * CAMERA_VIEW_SCALE,
+        y: .5 + (point.y - .5) * CAMERA_VIEW_SCALE,
+        visibility: point.visibility ?? 1,
+      };
+    }
+
+    function pointVisible(point) { return point && point.visibility >= .35; }
+
+    /** 어깨·팔꿈치·손목을 한 사람의 두 팔로 묶어 화면 좌우 플레이어에 배정한다. */
+    function updatePoses(result, now) {
+      const oldTracks = new Map(tracks.map((track) => [track.id, track]));
+      const poses = (result.landmarks || []).map((raw) => {
+        const landmarks = raw.map(posePoint);
+        const left = landmarks[POSE_POINTS.leftShoulder];
+        const right = landmarks[POSE_POINTS.rightShoulder];
+        return { landmarks, centerX: (left.x + right.x) / 2 };
+      }).sort((a, b) => a.centerX - b.centerX);
+
+      if (mode === "ai") poses.splice(1);
+      const nextTracks = [];
+      let readyPeople = 0;
+      poses.forEach((pose, poseIndex) => {
+        const owner = mode === "ai" ? 1 : (poses.length >= 2 ? poseIndex + 1 : (pose.centerX < .5 ? 1 : 2));
+        const armSpecs = [
+          ["a", POSE_POINTS.leftShoulder, POSE_POINTS.leftElbow, POSE_POINTS.leftWrist],
+          ["b", POSE_POINTS.rightShoulder, POSE_POINTS.rightElbow, POSE_POINTS.rightWrist],
+        ];
+        let armsVisible = 0;
+        for (const [side, shoulderIndex, elbowIndex, wristIndex] of armSpecs) {
+          const shoulder = pose.landmarks[shoulderIndex];
+          const elbow = pose.landmarks[elbowIndex];
+          const wrist = pose.landmarks[wristIndex];
+          if (![shoulder, elbow, wrist].every(pointVisible)) continue;
+          armsVisible += 1;
+          const id = `pose-${owner}-${side}`;
+          const previous = oldTracks.get(id);
+          const dt = previous ? Math.max(.008, (now - previous.lastSeen) / 1000) : .016;
+          nextTracks.push({
+            id, owner, x: wrist.x, y: wrist.y,
+            prevX: previous?.x ?? wrist.x, prevY: previous?.y ?? wrist.y,
+            vx: clamp((wrist.x - (previous?.x ?? wrist.x)) / dt, -4, 4),
+            vy: clamp((wrist.y - (previous?.y ?? wrist.y)) / dt, -4, 4),
+            shoulderX: shoulder.x, shoulderY: shoulder.y,
+            elbowX: elbow.x, elbowY: elbow.y,
+            lastSeen: now,
+          });
+          oldTracks.delete(id);
+        }
+        if (armsVisible === 2) readyPeople += 1;
+      });
+      for (const track of oldTracks.values()) {
+        if (now - track.lastSeen <= TRACK_LOST_MS) nextTracks.push(track);
+      }
+      tracks = nextTracks;
+      visiblePeople = readyPeople;
+    }
+
+    function recordInference(ms, now) {
+      inferenceSamples.push(ms);
+      if (inferenceSamples.length > 120) inferenceSamples.shift();
+      inferenceTimestamps.push(now);
+      inferenceTimestamps = inferenceTimestamps.filter((time) => now - time <= 1000);
+      inferenceFps = inferenceTimestamps.length;
+      inferenceMeanMs = inferenceSamples.reduce((sum, value) => sum + value, 0) / Math.max(1, inferenceSamples.length);
+      const grade = inferenceSamples.length < 5 ? "측정 중" : (inferenceFps >= 20 ? "원활" : (inferenceFps >= 12 ? "보통" : "느림"));
+      $("fpsText").className = `fps ${grade === "원활" ? "good" : (grade === "느림" ? "slow" : "")}`;
+      $("fpsText").textContent = `인식 ${inferenceFps} FPS · ${inferenceMeanMs.toFixed(0)}ms · ${grade}`;
+    }
+
+    function visibleTracks(now = performance.now()) {
+      return tracks.filter((track) => now - track.lastSeen < 170);
+    }
+
+    function resetMatch() {
+      scores = [0, 0];
+      $("score1").textContent = "0";
+      $("score2").textContent = "0";
+      particles = [];
+      celebrateUntil = 0;
+      tracks = [];
+      lastHitAt.clear();
+      keyboard.p1x = .24; keyboard.p2x = .76;
+      resetBall(Math.random() < .5 ? 1 : 2);
+    }
+
+    function resetBall(server = 1) {
+      ball.x = server === 1 ? .30 : .70;
+      ball.y = .28;
+      ball.vx = server === 1 ? .52 : -.52;
+      ball.vy = -.31;
+      ball.prevX = ball.x; ball.prevY = ball.y;
+      ai.error = (Math.random() - .5) * .12;
+      ai.willReturn = true;
+      ai.wasIncoming = false;
+      ai.hasReceivedInRally = false;
+      ai.jumpedThisIncoming = false;
+      ai.jumpStartedAt = -1000;
+      lastHitAt.clear();
+    }
+
+    function startCountdown() {
+      setPanel();
+      stage.classList.toggle("video-on", inputMode === "camera" && $("showVideoCheck").checked);
+      phase = "countdown";
+      countdownEndsAt = performance.now() + 3000;
+      $("countdown").classList.add("show");
+      $("pauseBtn").disabled = false;
+      setStatus("경기 시작 준비", "good");
+    }
+
+    function startPlaying() {
+      phase = "playing";
+      $("countdown").classList.remove("show");
+      resetMatch();
+      setStatus(inputMode === "camera" ? "인식된 팔로 공을 치세요." : "P1 A·D·W / P2 방향키", "good");
+    }
+
+    function scorePoint(winner, now) {
+      if (phase !== "playing") return;
+      phase = "point";
+      pointWinner = winner;
+      scores[winner - 1] += 1;
+      $(winner === 1 ? "score1" : "score2").textContent = scores[winner - 1];
+      pointResumeAt = now + POINT_PAUSE_MS;
+      if (mode === "ai" && winner === 2) {
+        celebrateUntil = pointResumeAt;
+        setMessage("카피바라 득점!");
+        spawnCelebration(.76, .62);
+        playTone(520, 700);
+      } else {
+        setMessage(`${winner === 1 ? "P1" : "P2"} 득점!`);
+        spawnCelebration(winner === 1 ? .25 : .75, .62);
+        playTone(660, 820);
+      }
+    }
+
+    function finishMatch() {
+      phase = "result";
+      setMessage();
+      $("pauseBtn").disabled = true;
+      const winner = scores[0] > scores[1] ? 1 : 2;
+      $("winnerText").textContent = winner === 1 ? "P1 승리!" : `${opponentName()} 승리!`;
+      $("resultScore").textContent = `${scores[0]} : ${scores[1]}`;
+      setPanel("resultPanel");
+      setStatus("경기가 끝났습니다.");
+    }
+
+    function pointSegmentDistance(px, py, ax, ay, bx, by) {
+      const closest = closestPointOnSegment(px, py, ax, ay, bx, by);
+      return Math.hypot(px - closest.x, py - closest.y);
+    }
+
+    function closestPointOnSegment(px, py, ax, ay, bx, by) {
+      const abx = bx - ax, aby = by - ay;
+      const lengthSq = abx * abx + aby * aby;
+      const t = lengthSq ? clamp(((px - ax) * abx + (py - ay) * aby) / lengthSq, 0, 1) : 0;
+      return { x: ax + abx * t, y: ay + aby * t };
+    }
+
+    function cameraPaddles(now) {
+      return visibleTracks(now).map((track) => ({
+        id: `arm-${track.id}`, owner: track.owner,
+        x: clamp(track.x, track.owner === 1 ? .03 : .52, track.owner === 1 ? .48 : .97),
+        y: clamp(track.y, .10, .86),
+        prevX: clamp(track.prevX, track.owner === 1 ? .03 : .52, track.owner === 1 ? .48 : .97),
+        prevY: clamp(track.prevY, .10, .86), vx: track.vx, vy: track.vy,
+        shoulderX: track.shoulderX, shoulderY: track.shoulderY,
+        elbowX: track.elbowX, elbowY: track.elbowY,
+      }));
+    }
+
+    function keyboardPaddles(now, dt) {
+      const speed = .48;
+      if (keyboard.down.has("KeyA")) keyboard.p1x -= speed * dt;
+      if (keyboard.down.has("KeyD")) keyboard.p1x += speed * dt;
+      if (keyboard.down.has("ArrowLeft")) keyboard.p2x -= speed * dt;
+      if (keyboard.down.has("ArrowRight")) keyboard.p2x += speed * dt;
+      keyboard.p1x = clamp(keyboard.p1x, .07, .45);
+      keyboard.p2x = clamp(keyboard.p2x, .55, .93);
+      const p1 = { id: "key-p1", owner: 1, x: keyboard.p1x + .07, y: now < keyboard.p1HitUntil ? .47 : .69, prevX: keyboard.prevP1.x, prevY: keyboard.prevP1.y };
+      const p2 = { id: "key-p2", owner: 2, x: keyboard.p2x - .07, y: now < keyboard.p2HitUntil ? .47 : .69, prevX: keyboard.prevP2.x, prevY: keyboard.prevP2.y };
+      p1.vx = (p1.x - p1.prevX) / Math.max(.008, dt); p1.vy = (p1.y - p1.prevY) / Math.max(.008, dt);
+      p2.vx = (p2.x - p2.prevX) / Math.max(.008, dt); p2.vy = (p2.y - p2.prevY) / Math.max(.008, dt);
+      keyboard.prevP1 = { x: p1.x, y: p1.y }; keyboard.prevP2 = { x: p2.x, y: p2.y };
+      return mode === "human" ? [p1, p2] : [p1];
+    }
+
+    function updateAI(dt, now) {
+      if (mode !== "ai") return null;
+      const ballOnAiSide = ball.x > .49;
+      const incoming = ballOnAiSide && ball.vx > 0;
+      if (incoming && !ai.wasIncoming) {
+        // 매 포인트의 첫 공에는 반드시 반응하고, 이어지는 랠리에서만 가끔 실수한다.
+        ai.willReturn = !ai.hasReceivedInRally || Math.random() < .62;
+        ai.hasReceivedInRally = true;
+        ai.error = (Math.random() - .5) * .12;
+      }
+      if (!incoming) ai.jumpedThisIncoming = false;
+      ai.wasIncoming = incoming;
+      const target = incoming && ai.willReturn ? clamp(ball.x + .065 + ai.error, .60, .93) : .77;
+      ai.x += clamp(target - ai.x, -.62 * dt, .62 * dt);
+      ai.prevHandX = ai.handX; ai.prevHandY = ai.handY;
+      ai.handX = ai.x - .065;
+      const shouldSwing = incoming && ai.willReturn && ball.y > .30 && ball.y < .68;
+      if (shouldSwing && !ai.jumpedThisIncoming) {
+        ai.jumpedThisIncoming = true;
+        ai.jumpStartedAt = now;
+      }
+      ai.handY = shouldSwing ? clamp(ball.y, .34, .61) : .67;
+      return {
+        id: "capybara-ai", owner: 2, x: ai.handX, y: ai.handY,
+        prevX: ai.prevHandX, prevY: ai.prevHandY,
+        vx: (ai.handX - ai.prevHandX) / Math.max(.008, dt),
+        vy: (ai.handY - ai.prevHandY) / Math.max(.008, dt), ai: true,
+      };
+    }
+
+    function applyPaddleHits(paddles, now) {
+      for (const paddle of paddles) {
+        const allowed = paddle.owner === 1 ? ball.x < .505 : ball.x > .495;
+        if (!allowed || now - (lastHitAt.get(paddle.id) || 0) < HIT_COOLDOWN_MS) continue;
+        const paddleRadius = paddle.ai ? AI_HAND_RADIUS : HAND_RADIUS;
+        const sweptWristHit = pointSegmentDistance(ball.x, ball.y, paddle.prevX, paddle.prevY, paddle.x, paddle.y) <= BALL_RADIUS + paddleRadius;
+        const forearmHit = Number.isFinite(paddle.elbowX)
+          && pointSegmentDistance(ball.x, ball.y, paddle.elbowX, paddle.elbowY, paddle.x, paddle.y) <= BALL_RADIUS + ARM_RADIUS;
+        if (!sweptWristHit && !forearmHit) continue;
+        const collisionPoint = forearmHit
+          ? closestPointOnSegment(ball.x, ball.y, paddle.elbowX, paddle.elbowY, paddle.x, paddle.y)
+          : { x: paddle.x, y: paddle.y };
+        const collisionRadius = forearmHit ? ARM_RADIUS : paddleRadius;
+        let nx = ball.x - collisionPoint.x, ny = ball.y - collisionPoint.y;
+        const len = Math.hypot(nx, ny) || 1;
+        nx /= len; ny /= len;
+        if (paddle.ai) {
+          // AI는 공을 높고 완만하게 띄워 네트 위로 확실히 돌려보낸다.
+          ball.vx = -.68;
+          ball.vy = -1.32;
+        } else {
+          const handSpeed = Math.hypot(paddle.vx || 0, paddle.vy || 0);
+          const power = clamp(.46 + handSpeed * .24, .48, 1.3);
+          ball.vx = nx * power + (paddle.vx || 0) * .19;
+          ball.vy = ny * power + (paddle.vy || 0) * .16 - .10;
+          if (paddle.owner === 1) ball.vx = Math.max(.18, ball.vx);
+          else ball.vx = Math.min(-.18, ball.vx);
+        }
+        ball.x = collisionPoint.x + nx * (BALL_RADIUS + collisionRadius + .004);
+        ball.y = collisionPoint.y + ny * (BALL_RADIUS + collisionRadius + .004);
+        lastHitAt.set(paddle.id, now);
+        spawnHit(ball.x, ball.y, paddle.owner);
+        playTone(paddle.owner === 1 ? 480 : 400, 560);
+      }
+    }
+
+    function physicsStep(dt, now) {
+      ball.prevX = ball.x; ball.prevY = ball.y;
+      ball.vy += GRAVITY * dt;
+      ball.vx *= Math.pow(AIR_DRAG, dt * 60);
+      ball.vy *= Math.pow(AIR_DRAG, dt * 60);
+      const speed = Math.hypot(ball.vx, ball.vy);
+      if (speed > MAX_BALL_SPEED) { ball.vx *= MAX_BALL_SPEED / speed; ball.vy *= MAX_BALL_SPEED / speed; }
+      ball.x += ball.vx * dt; ball.y += ball.vy * dt;
+
+      if (ball.x < BALL_RADIUS) { ball.x = BALL_RADIUS; ball.vx = Math.abs(ball.vx) * .82; }
+      if (ball.x > 1 - BALL_RADIUS) { ball.x = 1 - BALL_RADIUS; ball.vx = -Math.abs(ball.vx) * .82; }
+      if (ball.y < BALL_RADIUS) { ball.y = BALL_RADIUS; ball.vy = Math.abs(ball.vy) * .78; }
+
+      const overlapsNetX = Math.abs(ball.x - NET_X) < NET_HALF_WIDTH + BALL_RADIUS;
+      if (overlapsNetX && ball.y + BALL_RADIUS >= NET_TOP) {
+        if (ball.prevY + BALL_RADIUS <= NET_TOP && ball.vy > 0) {
+          ball.y = NET_TOP - BALL_RADIUS; ball.vy = -Math.abs(ball.vy) * .72;
+        } else if (ball.prevX < NET_X) {
+          ball.x = NET_X - NET_HALF_WIDTH - BALL_RADIUS; ball.vx = -Math.abs(ball.vx) * .75;
+        } else {
+          ball.x = NET_X + NET_HALF_WIDTH + BALL_RADIUS; ball.vx = Math.abs(ball.vx) * .75;
+        }
+      }
+
+      if (ball.y + BALL_RADIUS >= GROUND_Y) scorePoint(ball.x < NET_X ? 2 : 1, now);
+    }
+
+    function spawnHit(x, y, owner) {
+      for (let i = 0; i < 8; i++) particles.push({ x, y, vx: (Math.random() - .5) * .45, vy: (Math.random() - .5) * .45, born: performance.now(), life: 420, owner });
+    }
+
+    function spawnCelebration(x, y) {
+      for (let i = 0; i < 22; i++) particles.push({ x, y, vx: (Math.random() - .5) * .7, vy: -.25 - Math.random() * .55, born: performance.now(), life: 900, owner: 2, star: true });
+    }
+
+    function updateParticles(now, dt) {
+      for (const p of particles) { p.x += p.vx * dt; p.y += p.vy * dt; p.vy += .65 * dt; }
+      particles = particles.filter((p) => now - p.born < p.life);
+    }
+
+    function drawCourt(w, h) {
+      if (inputMode === "camera" && stage.classList.contains("video-on")) {
+        ctx.fillStyle = "rgba(4,18,30,.16)"; ctx.fillRect(0, 0, w, h);
+        ctx.fillStyle = "rgba(15,78,49,.25)"; ctx.fillRect(0, GROUND_Y * h, w, h * (1 - GROUND_Y));
+      } else {
+        const sky = ctx.createLinearGradient(0, 0, 0, h);
+        sky.addColorStop(0, "#0f3854"); sky.addColorStop(.7, "#16506b"); sky.addColorStop(.701, "#17553b"); sky.addColorStop(1, "#0f3427");
+        ctx.fillStyle = sky; ctx.fillRect(0, 0, w, h);
+      }
+      ctx.strokeStyle = "rgba(255,255,255,.16)"; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(0, GROUND_Y * h); ctx.lineTo(w, GROUND_Y * h); ctx.stroke();
+
+      const netTop = NET_TOP * h;
+      const netWidth = Math.max(42, w * .055);
+      ctx.strokeStyle = "#bed0dd"; ctx.lineWidth = Math.max(3, w * .004);
+      ctx.beginPath(); ctx.moveTo(w * .5, netTop); ctx.lineTo(w * .5, GROUND_Y * h); ctx.stroke();
+      ctx.strokeStyle = "rgba(190,208,221,.62)"; ctx.lineWidth = 1;
+      const left = w * .5 - netWidth / 2, right = w * .5 + netWidth / 2;
+      for (let y = netTop + 15; y < Math.min(GROUND_Y * h, netTop + h * .34); y += 15) {
+        ctx.beginPath(); ctx.moveTo(left, y); ctx.lineTo(right, y); ctx.stroke();
+      }
+      for (let x = left; x <= right; x += 15) {
+        ctx.beginPath(); ctx.moveTo(x, netTop + 15); ctx.lineTo(x, Math.min(GROUND_Y * h, netTop + h * .34)); ctx.stroke();
+      }
+      ctx.strokeRect(left, netTop + 15, netWidth, Math.min(GROUND_Y * h, netTop + h * .34) - netTop - 15);
+    }
+
+    function drawHuman(owner, paddles, w, h) {
+      const baseX = (inputMode === "keyboard" ? (owner === 1 ? keyboard.p1x : keyboard.p2x) : (owner === 1 ? .24 : .76)) * w;
+      const baseY = GROUND_Y * h;
+      const color = owner === 1 ? "#38bdf8" : "#fb923c";
+      const hands = paddles.filter((p) => p.owner === owner && !p.ai).slice(0, 2);
+      ctx.strokeStyle = color; ctx.fillStyle = "rgba(7,17,31,.52)"; ctx.lineWidth = Math.max(4, w * .006);
+      ctx.beginPath(); ctx.arc(baseX, baseY - h * .25, h * .045, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      ctx.beginPath(); ctx.roundRect(baseX - h * .055, baseY - h * .19, h * .11, h * .19, h * .035); ctx.fill(); ctx.stroke();
+      const shoulderY = baseY - h * .17;
+      for (const hand of hands) {
+        ctx.beginPath(); ctx.moveTo(baseX, shoulderY); ctx.lineTo(hand.x * w, hand.y * h); ctx.stroke();
+      }
+      for (const hand of hands) drawPaddle(hand, w, h, color);
+      ctx.fillStyle = color; ctx.font = `800 ${Math.max(14, h * .032)}px system-ui`; ctx.textAlign = "center";
+      ctx.fillText(`P${owner}`, baseX, baseY - 8);
+    }
+
+    function drawPosePlayer(owner, paddles, w, h) {
+      const arms = paddles.filter((paddle) => paddle.owner === owner && !paddle.ai && Number.isFinite(paddle.elbowX));
+      const color = owner === 1 ? "#38bdf8" : "#fb923c";
+      for (const arm of arms) {
+        const sx = arm.shoulderX * w, sy = arm.shoulderY * h;
+        const ex = arm.elbowX * w, ey = arm.elbowY * h;
+        const wx = arm.x * w, wy = arm.y * h;
+        ctx.lineCap = "round"; ctx.lineJoin = "round";
+        ctx.strokeStyle = "rgba(7,17,31,.72)"; ctx.lineWidth = Math.max(15, h * ARM_RADIUS * 1.65);
+        ctx.beginPath(); ctx.moveTo(ex, ey); ctx.lineTo(wx, wy); ctx.stroke();
+        ctx.strokeStyle = color; ctx.lineWidth = Math.max(7, h * ARM_RADIUS * .72);
+        ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(ex, ey); ctx.lineTo(wx, wy); ctx.stroke();
+        ctx.fillStyle = color;
+        for (const [x, y] of [[sx, sy], [ex, ey]]) { ctx.beginPath(); ctx.arc(x, y, Math.max(5, h * .011), 0, Math.PI * 2); ctx.fill(); }
+        drawPaddle(arm, w, h, color);
+      }
+      if (arms.length) {
+        const labelX = arms.reduce((sum, arm) => sum + arm.shoulderX, 0) / arms.length * w;
+        const labelY = Math.min(...arms.map((arm) => arm.shoulderY)) * h - 12;
+        ctx.fillStyle = color; ctx.font = `800 ${Math.max(16, h * .033)}px system-ui`; ctx.textAlign = "center";
+        ctx.fillText(`P${owner} 팔 인식`, labelX, labelY);
+      }
+    }
+
+    function drawPaddle(paddle, w, h, color) {
+      const x = paddle.x * w, y = paddle.y * h;
+      ctx.fillStyle = "rgba(7,17,31,.72)"; ctx.strokeStyle = color; ctx.lineWidth = Math.max(3, w * .004);
+      ctx.beginPath(); ctx.arc(x, y, HAND_RADIUS * h, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = color; ctx.font = `800 ${Math.max(12, h * .025)}px system-ui`; ctx.textAlign = "center";
+      ctx.fillText(`P${paddle.owner}`, x, y + 4);
+    }
+
+    function drawCapybara(now, w, h, aiPaddle) {
+      const baseX = ai.x * w, baseY = GROUND_Y * h;
+      const celebrating = now < celebrateUntil;
+      const age = celebrating ? (POINT_PAUSE_MS - (celebrateUntil - now)) / 1000 : 0;
+      const jumpAge = (now - ai.jumpStartedAt) / 520;
+      const jumping = jumpAge >= 0 && jumpAge <= 1;
+      const jumpHop = jumping ? Math.sin(jumpAge * Math.PI) * h * .085 : 0;
+      const hop = celebrating
+        ? Math.abs(Math.sin(age * Math.PI * 4)) * h * .055
+        : jumpHop + Math.sin(now / 420) * h * .003;
+      const angle = celebrating
+        ? Math.sin(age * Math.PI * 6) * .13
+        : (jumping ? -Math.sin(jumpAge * Math.PI) * .055 : 0);
+      const scale = celebrating ? 1 + .06 * Math.sin(age * Math.PI * 4) : 1;
+      ctx.save(); ctx.translate(baseX, baseY - hop); ctx.rotate(angle); ctx.scale(scale, scale);
+      if (imageReady) {
+        const drawH = h * .36, drawW = drawH * (capybaraImage.width / capybaraImage.height);
+        ctx.drawImage(capybaraImage, -drawW / 2, -drawH, drawW, drawH);
+      } else {
+        ctx.fillStyle = "#d79a54"; ctx.beginPath(); ctx.ellipse(0, -h * .15, h * .085, h * .15, 0, 0, Math.PI * 2); ctx.fill();
+      }
+      ctx.restore();
+      if (aiPaddle) drawPaddle(aiPaddle, w, h, "#fb923c");
+      ctx.fillStyle = "#fdba74"; ctx.font = `800 ${Math.max(14, h * .032)}px system-ui`; ctx.textAlign = "center";
+      ctx.fillText("AI", baseX, baseY - 8);
+    }
+
+    function drawBall(w, h) {
+      const x = ball.x * w, y = ball.y * h, r = BALL_RADIUS * h;
+      const gradient = ctx.createRadialGradient(x - r * .35, y - r * .4, r * .1, x, y, r);
+      gradient.addColorStop(0, "#fff7ed"); gradient.addColorStop(.45, "#fb7185"); gradient.addColorStop(1, "#be123c");
+      ctx.fillStyle = gradient; ctx.strokeStyle = "#fff"; ctx.lineWidth = Math.max(2, r * .1);
+      ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      ctx.strokeStyle = "rgba(255,255,255,.65)"; ctx.beginPath(); ctx.arc(x, y, r * .7, -.8, 1.7); ctx.stroke();
+    }
+
+    function drawParticles(now, w, h) {
+      for (const p of particles) {
+        const alpha = 1 - (now - p.born) / p.life;
+        ctx.save(); ctx.globalAlpha = Math.max(0, alpha); ctx.translate(p.x * w, p.y * h);
+        ctx.fillStyle = p.owner === 1 ? "#7dd3fc" : "#fdba74";
+        if (p.star) {
+          ctx.rotate((now - p.born) / 100); ctx.beginPath();
+          for (let i = 0; i < 10; i++) { const r = i % 2 ? 3 : 8; const a = i * Math.PI / 5; ctx.lineTo(Math.cos(a) * r, Math.sin(a) * r); }
+          ctx.closePath(); ctx.fill();
+        } else { ctx.beginPath(); ctx.arc(0, 0, 4, 0, Math.PI * 2); ctx.fill(); }
+        ctx.restore();
+      }
+    }
+
+    function draw(now, paddles, aiPaddle) {
+      const w = canvas.width, h = canvas.height;
+      ctx.clearRect(0, 0, w, h);
+      drawCourt(w, h);
+      if (inputMode === "camera") {
+        drawPosePlayer(1, paddles, w, h);
+        if (mode === "human") drawPosePlayer(2, paddles, w, h);
+      } else {
+        drawHuman(1, paddles, w, h);
+        if (mode === "human") drawHuman(2, paddles, w, h);
+      }
+      if (mode !== "human") drawCapybara(now, w, h, aiPaddle);
+      drawBall(w, h);
+      drawParticles(now, w, h);
+    }
+
+    function updatePhase(now) {
+      if (phase === "ready" && inputMode === "camera") {
+        const count = visiblePeople;
+        $("peopleNow").textContent = count;
+        if (count >= expectedPeople()) {
+          if (!readySince) readySince = now;
+          $("readyStatus").textContent = `준비 완료 · ${inferenceFps} FPS · 팔 인식을 잠시 유지하세요.`;
+          if (now - readySince >= POSE_READY_MS) startCountdown();
+        } else {
+          readySince = 0;
+          $("readyStatus").textContent = mode === "human" ? "두 사람의 어깨·팔꿈치·손목이 모두 보이게 하세요." : "P1의 어깨·팔꿈치·손목이 모두 보이게 하세요.";
+        }
+      } else if (phase === "countdown") {
+        const left = Math.ceil((countdownEndsAt - now) / 1000);
+        $("countdown").textContent = left > 0 ? String(left) : "시작!";
+        if (now >= countdownEndsAt) startPlaying();
+      } else if (phase === "point" && now >= pointResumeAt) {
+        setMessage();
+        if (Math.max(...scores) >= WIN_SCORE) finishMatch();
+        else { resetBall(pointWinner); phase = "playing"; }
+      }
+
+      if (phase === "playing" && inputMode === "camera") {
+        if (visiblePeople < expectedPeople() && !handsLostSince) {
+          handsLostSince = now;
+          setStatus("팔 인식 대기 중 · 경기는 계속됩니다.", "warn");
+        } else if (visiblePeople >= expectedPeople() && handsLostSince) {
+          handsLostSince = 0;
+          setStatus("팔 인식됨 · 경기를 계속하세요.", "good");
+        }
+      }
+    }
+
+    function loop(now = performance.now()) {
+      rafId = requestAnimationFrame(loop);
+      resizeCanvas();
+      const dt = lastFrameAt ? Math.min(.05, (now - lastFrameAt) / 1000) : 0;
+      lastFrameAt = now;
+
+      if (inputMode === "camera" && poseLandmarker && video.readyState >= 2 && video.currentTime !== lastVideoTime) {
+        lastVideoTime = video.currentTime;
+        try {
+          const inferenceStartedAt = performance.now();
+          const result = poseLandmarker.detectForVideo(video, now);
+          recordInference(performance.now() - inferenceStartedAt, now);
+          updatePoses(result, now);
+        } catch (error) { console.warn("팔 인식 프레임을 건너뜁니다.", error); }
+      }
+
+      let paddles = inputMode === "camera" ? cameraPaddles(now) : keyboardPaddles(now, dt);
+      const aiPaddle = updateAI(dt, now);
+      if (aiPaddle) paddles = [...paddles, aiPaddle];
+
+      updatePhase(now);
+      if (phase === "playing") {
+        applyPaddleHits(paddles, now);
+        accumulator = Math.min(.05, accumulator + dt);
+        while (accumulator >= 1 / 120 && phase === "playing") { physicsStep(1 / 120, now); accumulator -= 1 / 120; }
+      }
+      updateParticles(now, dt);
+      draw(now, paddles, aiPaddle);
+    }
+
+    async function prepareCamera() {
+      if (starting) return;
+      starting = true; inputMode = "camera"; phase = "loading"; setPanel("loadingPanel");
+      try {
+        setLoad("카메라 권한을 요청합니다.", 8);
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: "user", width: { ideal: CAMERA_W }, height: { ideal: CAMERA_H } },
+          audio: false,
+        });
+        video.srcObject = stream; await video.play();
+        const needed = expectedPeople();
+        if (!poseLandmarker || landmarkerPoses !== needed) {
+          if (poseLandmarker?.close) poseLandmarker.close();
+          poseLandmarker = null;
+          setLoad("팔 인식 파일을 준비합니다.", 30);
+          const fileset = await FilesetResolver.forVisionTasks(WASM_DIR);
+          setLoad(`${needed}명의 팔을 인식하도록 모델을 설정합니다.`, 68);
+          poseLandmarker = await PoseLandmarker.createFromOptions(fileset, {
+            baseOptions: { modelAssetPath: MODEL_PATH, delegate: "GPU" },
+            runningMode: "VIDEO",
+            numPoses: needed,
+            minPoseDetectionConfidence: DETECT_CONFIDENCE,
+            minPosePresenceConfidence: DETECT_CONFIDENCE,
+            minTrackingConfidence: DETECT_CONFIDENCE,
+            outputSegmentationMasks: false,
+          });
+          landmarkerPoses = needed;
+        }
+        setLoad("준비 완료", 100);
+        tracks = []; visiblePeople = 0; readySince = 0; phase = "ready";
+        inferenceSamples = []; inferenceTimestamps = []; inferenceFps = 0; inferenceMeanMs = 0;
+        $("fpsText").className = "fps";
+        $("fpsText").textContent = "인식 FPS --";
+        $("peopleNow").textContent = "0";
+        $("peopleNeed").textContent = expectedPeople();
+        $("readyGuide").textContent = mode === "human"
+          ? "P1은 왼쪽, P2는 오른쪽에 서서 어깨부터 손목까지 보여 주세요."
+          : "P1은 화면 왼쪽에 서서 어깨부터 손목까지 보여 주세요.";
+        stage.classList.toggle("video-on", $("showVideoCheck").checked);
+        $("videoToggleBtn").textContent = stage.classList.contains("video-on") ? "영상 숨기기" : "영상 보기";
+        setPanel("readyPanel"); setStatus("카메라·팔 인식 준비 완료", "good");
+        ensureLoop();
+      } catch (error) {
+        console.error(error); phase = "error";
+        if (error?.name === "NotAllowedError") {
+          $("errorTitle").textContent = "카메라 권한이 필요합니다";
+          $("errorText").textContent = "주소창의 카메라 설정을 허용으로 바꾸거나 키보드 모드로 진행하세요.";
+        } else {
+          $("errorTitle").textContent = "카메라를 준비하지 못했습니다";
+          $("errorText").textContent = error?.message || String(error);
+        }
+        setPanel("errorPanel"); stopCamera(); ensureLoop();
+      } finally { starting = false; }
+    }
+
+    function startKeyboard() {
+      stopCamera(); inputMode = "keyboard"; phase = "countdown"; ensureLoop(); startCountdown();
+    }
+
+    function pauseGame(text = "경기를 잠시 멈췄습니다.") {
+      if (!["playing", "point"].includes(phase)) return;
+      phase = "paused"; $("pauseText").textContent = text; setPanel("pausePanel"); setStatus("일시정지", "warn");
+    }
+
+    function resumeGame() {
+      if (phase !== "paused") return;
+      setPanel(); phase = "playing"; handsLostSince = 0; lastFrameAt = performance.now();
+      setStatus("경기를 계속합니다.", "good");
+    }
+
+    function stopCamera() {
+      if (stream) { stream.getTracks().forEach((track) => track.stop()); stream = null; }
+      video.srcObject = null; stage.classList.remove("video-on"); tracks = []; visiblePeople = 0; lastVideoTime = -1;
+      inferenceSamples = []; inferenceTimestamps = []; inferenceFps = 0; inferenceMeanMs = 0;
+      $("fpsText").className = "fps";
+      $("fpsText").textContent = "인식 FPS --";
+    }
+
+    function ensureLoop() {
+      if (!rafId) { lastFrameAt = 0; rafId = requestAnimationFrame(loop); }
+    }
+
+    function backToStart() {
+      phase = "intro"; stopCamera(); setPanel("startPanel"); setMessage(); $("countdown").classList.remove("show");
+      $("pauseBtn").disabled = true; setStatus("모드를 고르고 시작하세요.");
+    }
+
+    function playTone(from, to) {
+      if (!soundOn) return;
+      try {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (audioCtx.state === "suspended") audioCtx.resume();
+        const osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
+        osc.type = "triangle"; osc.frequency.setValueAtTime(from, audioCtx.currentTime); osc.frequency.exponentialRampToValueAtTime(to, audioCtx.currentTime + .14);
+        gain.gain.setValueAtTime(.16, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(.001, audioCtx.currentTime + .18);
+        osc.connect(gain).connect(audioCtx.destination); osc.start(); osc.stop(audioCtx.currentTime + .19);
+      } catch { /* 소리는 없어도 경기할 수 있다. */ }
+    }
+
+    $("aiModeBtn").addEventListener("click", () => selectMode("ai"));
+    $("humanModeBtn").addEventListener("click", () => selectMode("human"));
+    $("cameraStartBtn").addEventListener("click", prepareCamera);
+    $("keyboardStartBtn").addEventListener("click", startKeyboard);
+    $("errorKeyboardBtn").addEventListener("click", startKeyboard);
+    $("startAnywayBtn").addEventListener("click", startCountdown);
+    $("videoToggleBtn").addEventListener("click", () => {
+      stage.classList.toggle("video-on");
+      $("videoToggleBtn").textContent = stage.classList.contains("video-on") ? "영상 숨기기" : "영상 보기";
+    });
+    $("readyBackBtn").addEventListener("click", backToStart);
+    $("errorBackBtn").addEventListener("click", backToStart);
+    $("pauseBtn").addEventListener("click", () => pauseGame());
+    $("resumeBtn").addEventListener("click", resumeGame);
+    $("pauseQuitBtn").addEventListener("click", backToStart);
+    $("resultBackBtn").addEventListener("click", backToStart);
+    $("againBtn").addEventListener("click", () => { setPanel(); startCountdown(); });
+    $("soundBtn").addEventListener("click", () => {
+      soundOn = !soundOn; $("soundBtn").textContent = soundOn ? "소리 끄기" : "소리 켜기";
+      if (soundOn) playTone(420, 520);
+    });
+
+    window.addEventListener("keydown", (event) => {
+      if (["KeyA", "KeyD", "KeyW", "ArrowLeft", "ArrowRight", "ArrowUp"].includes(event.code)) event.preventDefault();
+      keyboard.down.add(event.code);
+      const now = performance.now();
+      if (event.code === "KeyW") keyboard.p1HitUntil = now + 230;
+      if (event.code === "ArrowUp") keyboard.p2HitUntil = now + 230;
+    });
+    window.addEventListener("keyup", (event) => keyboard.down.delete(event.code));
+    window.addEventListener("resize", resizeCanvas);
+    document.addEventListener("visibilitychange", () => { if (document.hidden && phase !== "intro") backToStart(); });
+    window.addEventListener("pagehide", stopCamera);
+
+    selectMode("ai");
+    ensureLoop();
+  </script>
+</body>
+</html>

@@ -6,25 +6,29 @@
 - Version: `@mediapipe/tasks-vision@1.0.1`
 - Source: <https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.0.1/>
 - License: Apache-2.0
-- 모델 Source: <https://ai.google.dev/edge/mediapipe/solutions/vision/hand_landmarker>
+- 손 모델 Source: <https://ai.google.dev/edge/mediapipe/solutions/vision/hand_landmarker>
+- 자세 모델 Source: <https://ai.google.dev/edge/mediapipe/solutions/vision/pose_landmarker>
 
 ## 파일 목록과 크기
 
 | 파일 | 크기 | 설명 |
 | --- | --- | --- |
-| `tasks-vision/vision_bundle.mjs` | 152 KB | ES 모듈 번들. `FilesetResolver`, `HandLandmarker`, `DrawingUtils` 등을 내보낸다 |
+| `tasks-vision/vision_bundle.mjs` | 152 KB | ES 모듈 번들. `FilesetResolver`, `HandLandmarker`, `PoseLandmarker` 등을 내보낸다 |
 | `tasks-vision/wasm/vision_wasm_internal.js` | 316 KB | SIMD 지원 브라우저용 로더 |
 | `tasks-vision/wasm/vision_wasm_internal.wasm` | 11.2 MB | SIMD 지원 브라우저용 런타임 |
 | `tasks-vision/wasm/vision_wasm_nosimd_internal.js` | 316 KB | SIMD 미지원 브라우저용 로더 |
 | `tasks-vision/wasm/vision_wasm_nosimd_internal.wasm` | 10.5 MB | SIMD 미지원 브라우저용 런타임 |
 | `models/hand_landmarker.task` | 7.5 MB | 손 랜드마크 21점 모델 (float16) |
+| `models/pose_landmarker_lite.task` | 5.5 MB | 몸 랜드마크 33점 모델 (float16). 상반신 팔 추적과 자세 판정에 쓴다 |
 
 `FilesetResolver.forVisionTasks(path)`가 브라우저의 SIMD 지원 여부를 확인해
 `vision_wasm_internal` 또는 `vision_wasm_nosimd_internal` 중 **하나만** 내려받는다.
 두 벌을 모두 두어도 학생 기기가 받는 양은 한 벌뿐이다.
 
 **한 기기가 처음 받는 양은 손 인식 기준 약 19 MB이다**(WASM 11.2 MB + 모델 7.5 MB +
-번들 152 KB). 학급 전체가 동시에 처음 접속하면 이만큼이 한꺼번에 나가므로,
+번들 152 KB). 자세 인식만 쓰는 앱은 약 17 MB이다(WASM 11.2 MB + 모델 5.5 MB + 번들 152 KB).
+WASM과 번들은 두 앱이 공유하므로, 손 인식 앱을 먼저 연 기기는 자세 모델 5.5 MB만 더 받는다.
+학급 전체가 동시에 처음 접속하면 이만큼이 한꺼번에 나가므로,
 로딩 진행 표시와 "처음 한 번만 받습니다" 안내를 반드시 넣는다.
 
 ## 사용법
