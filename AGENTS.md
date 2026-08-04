@@ -16,6 +16,7 @@
 
 - 새 웹앱을 만들거나 핵심 기능을 수정할 때: `docs/agent-guides/webapp.md`
 - 공간도형, 공간벡터, 빛의 반사, 태양계 중력·스윙바이처럼 3D 시각화가 필요할 때: `docs/agent-guides/3d-webapp.md`
+- 카메라로 손·몸·얼굴 동작을 인식하는 웹앱을 만들 때: `docs/agent-guides/camera-webapp.md`
 - 새 웹앱의 작업지시서 작성, 사전/사후 학습가치 검토를 할 때: `docs/agent-guides/learning-agent-roles.md`
 - 학습지 Markdown을 만들거나 수정할 때: `docs/agent-guides/worksheet.md`
 - 학습지를 PDF로 변환하거나 페이지 수를 맞출 때: `docs/agent-guides/pdf-export.md`
@@ -98,6 +99,7 @@
 - 외부 CDN을 사용할 경우 인터넷 연결이 필요하다는 점을 고려한다.
 - JavaScript 모듈을 사용할 경우 상대경로로 동작해야 한다.
 - 3D 시각화가 필요하면 `assets/vendor/three/`에 파일로 들어 있는 three.js(r184)를 importmap으로 연결해 사용한다. `npm install`이나 빌드 과정은 추가하지 않는다. 자세한 기준은 `docs/agent-guides/3d-webapp.md`에 있다.
+- 카메라 동작 인식이 필요하면 MediaPipe Tasks for Web을 사용할 수 있다. 모델과 WASM은 `assets/vendor/` 아래에 두고 필요한 순간에 나눠 받는다. GitHub Pages는 COOP/COEP 헤더를 설정할 수 없어 멀티스레드 WASM을 전제로 하지 않는다. 자세한 기준은 `docs/agent-guides/camera-webapp.md`에 있다.
 
 사용 금지:
 

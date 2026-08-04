@@ -10,6 +10,7 @@
 - `learning-agent-roles.md`: 수학 웹앱 제작 역할 체계와 학습가치 검토 기준
 - `webapp.md`: 새 수학 웹앱 제작 기준
 - `3d-webapp.md`: 3D 시각화 웹앱(공간도형, 공간벡터, 빛의 반사, 태양계 중력·스윙바이) 기술 기준
+- `camera-webapp.md`: 카메라·동작 인식 웹앱(MediaPipe) 기술 기준
 - `worksheet.md`: 학습지 Markdown 작성 기준
 - `pdf-export.md`: 학습지 PDF 변환 기준
 - `task-spec.md`: 작업지시서 작성 기준
@@ -19,6 +20,7 @@
 
 - 새 웹앱을 만들 때는 `learning-agent-roles.md`, `webapp.md`, `repo-structure.md`, `verification.md`를 읽는다.
 - 3D 시각화가 필요한 웹앱은 `3d-webapp.md`를 함께 읽는다. three.js는 `assets/vendor/three/`에 파일로 들어 있으므로 `npm install`이나 빌드 없이 importmap으로 연결한다.
+- 카메라로 동작을 인식하는 웹앱은 `camera-webapp.md`를 함께 읽는다. 무거운 모델의 지연 로딩, 흔들림을 견디는 판정과 대체 경로, 인식 상태 표시는 설계 단계에서 넣어야 나중에 고치기 어렵지 않다.
 - 새 웹앱 아이디어를 바로 구현하지 말고, 작업지시서 작성과 사전 학습가치 검토를 먼저 거친다.
 - 새 웹앱에서 구조가 중요한 수식은 수학 표현 검토를 거치고, 분수는 교과서식 세로 분수로 렌더링되게 한다.
 - 새 웹앱은 iPad A16 가로 화면(`1180×820` CSS px)을 화면 검토의 1순위로 두고, 조작 영역과 핵심 결과 시각화가 첫 화면 또는 아주 짧은 스크롤 안에 함께 보이는지 확인한다.
