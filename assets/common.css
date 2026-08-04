@@ -74,6 +74,57 @@ p {
   box-shadow: 0 14px 34px rgba(15, 23, 42, 0.12);
 }
 
+.home-page .subject-card {
+  display: flex;
+  height: 100%;
+  padding: 0;
+  overflow: hidden;
+  flex-direction: column;
+  transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
+}
+
+.home-page .subject-card:hover {
+  border-color: #cbd5e1;
+}
+
+.home-page .subject-card:focus-visible {
+  outline: 3px solid #2563eb;
+  outline-offset: 3px;
+}
+
+.subject-card-image {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  background: #eff6ff;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.subject-card-body {
+  display: flex;
+  padding: 20px 22px 22px;
+  flex: 1;
+  flex-direction: column;
+}
+
+.subject-card-body h2 {
+  margin-bottom: 8px;
+}
+
+.subject-card-body p {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-page .subject-card {
+    transition: none;
+  }
+}
+
 .site-footer {
   max-width: 1040px;
   margin: 28px auto 0;
