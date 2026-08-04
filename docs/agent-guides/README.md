@@ -14,6 +14,8 @@
 - `worksheet.md`: 학습지 Markdown 작성 기준
 - `pdf-export.md`: 학습지 PDF 변환 기준
 - `task-spec.md`: 작업지시서 작성 기준
+- `card-images.md`: 실제 웹앱 조사에 기반한 카드 이미지 기획, 스타일, 제작, 적용 기준
+- `card-image-task-spec-template.md`: 특정 교과나 목록 페이지의 카드 이미지 조사·시안·승인 작업지시서 양식
 - `verification.md`: 완료 전 검증 체크리스트
 
 ## 사용 원칙
@@ -30,6 +32,7 @@
 - 학습지를 PDF로 변환할 때는 `pdf-export.md`를 읽는다.
 - Claude Code나 다른 도구에 구현을 맡길 작업지시서를 만들 때는 `task-spec.md`를 읽는다.
 - 링크, 폴더명, 목록 페이지를 수정할 때는 `repo-structure.md`를 읽는다.
+- 루트 교과 카드나 교과 내부 웹앱 카드의 이미지를 만들거나 교체할 때는 `card-images.md`를 읽고, 실제 웹앱 조사와 시안 승인을 마친 뒤 제작한다.
 
 ## 상위 지침에 남겨야 할 핵심 규칙
 

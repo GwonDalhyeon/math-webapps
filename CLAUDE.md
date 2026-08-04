@@ -22,6 +22,7 @@
 - 학습지를 PDF로 변환하거나 페이지 수를 맞출 때: `docs/agent-guides/pdf-export.md`
 - 작업지시서를 작성할 때: `docs/agent-guides/task-spec.md`
 - 폴더, 경로, 목록 페이지, GitHub Pages 링크를 수정할 때: `docs/agent-guides/repo-structure.md`
+- 웹앱 목록 카드 이미지를 만들거나 교체할 때: `docs/agent-guides/card-images.md`
 - 작업 완료 전 자체 점검을 할 때: `docs/agent-guides/verification.md`
 
 ---
