@@ -15,6 +15,7 @@
 상세 기준은 `docs/agent-guides/`에 나누어 둔다. 작업을 시작할 때 요청과 직접 관련된 문서만 우선 읽고 적용한다.
 
 - 새 웹앱을 만들거나 핵심 기능을 수정할 때: `docs/agent-guides/webapp.md`
+- 공간도형, 공간벡터, 빛의 반사, 태양계 중력·스윙바이처럼 3D 시각화가 필요할 때: `docs/agent-guides/3d-webapp.md`
 - 새 웹앱의 작업지시서 작성, 사전/사후 학습가치 검토를 할 때: `docs/agent-guides/learning-agent-roles.md`
 - 학습지 Markdown을 만들거나 수정할 때: `docs/agent-guides/worksheet.md`
 - 학습지를 PDF로 변환하거나 페이지 수를 맞출 때: `docs/agent-guides/pdf-export.md`
@@ -96,6 +97,7 @@
 - MathJax 같은 수식 렌더링 CDN은 필요한 페이지에만 추가한다.
 - 외부 CDN을 사용할 경우 인터넷 연결이 필요하다는 점을 고려한다.
 - JavaScript 모듈을 사용할 경우 상대경로로 동작해야 한다.
+- 3D 시각화가 필요하면 `assets/vendor/three/`에 파일로 들어 있는 three.js(r184)를 importmap으로 연결해 사용한다. `npm install`이나 빌드 과정은 추가하지 않는다. 자세한 기준은 `docs/agent-guides/3d-webapp.md`에 있다.
 
 사용 금지:
 
