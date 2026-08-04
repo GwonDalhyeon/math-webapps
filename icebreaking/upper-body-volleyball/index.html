@@ -57,6 +57,7 @@
       object-fit: fill; transform: scaleX(-1) scale(.90); transform-origin: center;
       visibility: hidden; opacity: 1;
     }
+    .stage.ai-camera #video { right: auto; width: 50%; }
     .stage.video-on #video { visibility: visible; }
     #gameCanvas { z-index: 1; }
 
@@ -163,8 +164,8 @@
       <span class="mode-label" id="modeLabel">1대 카피바라</span>
       <label class="header-difficulty" id="capybaraDifficultyRow" for="capybaraDifficulty">
         <span class="difficulty-title">카피바라 능력</span>
-        <input id="capybaraDifficulty" type="range" min="1" max="4" step="1" value="3" />
-        <output class="difficulty-value" id="capybaraDifficultyValue" for="capybaraDifficulty">민첩함</output>
+        <input id="capybaraDifficulty" type="range" min="1" max="4" step="1" value="2" />
+        <output class="difficulty-value" id="capybaraDifficultyValue" for="capybaraDifficulty">보통</output>
       </label>
       <button class="mini ghost" id="soundBtn" type="button">소리 끄기</button>
     </header>
@@ -190,7 +191,7 @@
             <button class="choice ghost" id="humanModeBtn" type="button">1대1 사람</button>
           </div>
           <ol id="modeGuide">
-            <li>한 사람이 화면 왼쪽에 섭니다.</li>
+            <li>한 사람이 카메라 정면 중앙에 섭니다. 화면에서는 왼쪽 코트에 표시됩니다.</li>
             <li>카메라에서 약 1.5~2m 떨어져 머리와 어깨가 보이게 서세요.</li>
             <li>카피바라가 득점하면 신나게 세리머니를 합니다.</li>
           </ol>
@@ -310,10 +311,10 @@
     const POSE_POINTS = { nose: 0, leftEar: 7, rightEar: 8, leftShoulder: 11, rightShoulder: 12 };
     const CAPYBARA_ABILITIES = [
       null,
-      { label: "느긋함", returnChance: .40, errorRange: .19, moveSpeed: .42, hitRadius: .047, hitVx: .52, hitVy: 1.05 },
-      { label: "보통", returnChance: .58, errorRange: .13, moveSpeed: .53, hitRadius: .052, hitVx: .60, hitVy: 1.15 },
-      { label: "민첩함", returnChance: .76, errorRange: .08, moveSpeed: .64, hitRadius: .057, hitVx: .68, hitVy: 1.25 },
-      { label: "강력함", returnChance: .93, errorRange: .04, moveSpeed: .76, hitRadius: .062, hitVx: .76, hitVy: 1.36 },
+      { label: "쉬움", returnChance: .76, errorRange: .08, moveSpeed: .64, hitRadius: .057, hitVx: .68, hitVy: 1.25 },
+      { label: "보통", returnChance: .93, errorRange: .04, moveSpeed: .76, hitRadius: .062, hitVx: .76, hitVy: 1.36 },
+      { label: "어려움", returnChance: .98, errorRange: .025, moveSpeed: .88, hitRadius: .066, hitVx: .84, hitVy: 1.46 },
+      { label: "매우 어려움", returnChance: 1, errorRange: .012, moveSpeed: 1, hitRadius: .070, hitVx: .92, hitVy: 1.56 },
     ];
 
     const $ = (id) => document.getElementById(id);
@@ -328,7 +329,7 @@
     let stream = null;
     let poseLandmarker = null;
     let landmarkerPoses = 0;
-    let capybaraDifficulty = 3;
+    let capybaraDifficulty = 2;
     let starting = false;
     let rafId = 0;
     let lastFrameAt = 0;
@@ -358,11 +359,11 @@
     capybaraImage.src = "./assets/capybara-ai-cute-sample.png";
     capybaraImage.addEventListener("load", () => { imageReady = true; });
 
-    const ball = { x: 0.31, y: 0.25, vx: 0.58, vy: -0.25, prevX: 0.31, prevY: 0.25 };
+    const ball = { x: 0.31, y: 0.25, vx: 0.58, vy: -0.25, prevX: 0.31, prevY: 0.25, lastHitOwner: 1 };
     const ai = {
       x: 0.77, prevHandX: 0.705, prevHandY: CAPYBARA_HEAD_Y, handX: 0.705, handY: CAPYBARA_HEAD_Y,
       error: 0, willReturn: true, wasIncoming: false, hasReceivedInRally: false,
-      jumpedThisIncoming: false, jumpStartedAt: -1000,
+      jumpedThisIncoming: false, jumpStartedAt: -1000, facing: -1,
     };
     const keyboard = {
       p1x: 0.24, p2x: 0.76, p1HitUntil: 0, p2HitUntil: 0,
@@ -411,8 +412,9 @@
       $("modeLabel").textContent = mode === "ai" ? "1대 카피바라" : "1대1 사람";
       $("opponentLabel").textContent = opponentName();
       $("capybaraDifficultyRow").hidden = mode !== "ai";
+      stage.classList.toggle("ai-camera", mode === "ai");
       $("modeGuide").innerHTML = mode === "ai"
-        ? `<li>한 사람이 화면 왼쪽에 섭니다.</li><li>카메라에서 약 1.5~2m 떨어져 머리와 어깨가 보이게 서세요.</li><li>몸을 좌우로 움직여 머리의 판정 원으로 공을 받으세요.</li>`
+        ? `<li>카메라 정면 중앙에 섭니다. 화면에서는 왼쪽 코트에 표시됩니다.</li><li>카메라에서 약 1.5~2m 떨어져 머리와 어깨가 보이게 서세요.</li><li>몸을 좌우로 움직여 머리의 판정 원으로 공을 받으세요.</li>`
         : `<li>두 사람이 화면 좌우에 한 명씩 섭니다.</li><li>카메라에서 약 2~3m 떨어져 두 사람의 머리와 어깨가 보이게 서세요.</li><li>P1은 왼쪽, P2는 오른쪽 영역에 고정됩니다.</li>`;
     }
 
@@ -426,9 +428,11 @@
     function clamp(value, min, max) { return Math.max(min, Math.min(max, value)); }
 
     function posePoint(point) {
-      // 축소된 카메라 영상과 관절선·충돌 좌표가 정확히 겹치도록 중앙 기준으로 함께 축소한다.
+      // 1대 카피바라에서는 카메라 중앙을 왼쪽 코트 중앙으로 옮겨 영상과 판정 좌표를 겹친다.
+      const horizontalCenter = mode === "ai" ? .25 : .5;
+      const horizontalScale = CAMERA_VIEW_SCALE * (mode === "ai" ? .5 : 1);
       return {
-        x: .5 + ((1 - point.x) - .5) * CAMERA_VIEW_SCALE,
+        x: horizontalCenter + ((1 - point.x) - .5) * horizontalScale,
         y: .5 + (point.y - .5) * CAMERA_VIEW_SCALE,
         visibility: point.visibility ?? 1,
       };
@@ -553,13 +557,15 @@
       ball.vx = server === 1 ? .52 : -.52;
       ball.vy = -.31;
       ball.prevX = ball.x; ball.prevY = ball.y;
+      ball.lastHitOwner = server;
       ai.error = (Math.random() - .5) * ability.errorRange;
       ai.willReturn = true;
       ai.wasIncoming = false;
       ai.hasReceivedInRally = false;
       ai.jumpedThisIncoming = false;
       ai.jumpStartedAt = -1000;
-      ai.handX = ai.x - CAPYBARA_HEAD_X_OFFSET;
+      ai.facing = -1;
+      ai.handX = ai.x + ai.facing * CAPYBARA_HEAD_X_OFFSET;
       ai.prevHandX = ai.handX;
       ai.handY = CAPYBARA_HEAD_Y;
       ai.prevHandY = ai.handY;
@@ -657,7 +663,8 @@
       if (mode !== "ai") return null;
       const ability = capybaraAbility();
       const ballOnAiSide = ball.x > .49;
-      const incoming = ballOnAiSide && ball.vx > 0;
+      // P1이 마지막으로 친 공은 벽에 반사되어 방향이 바뀌어도 카피바라가 끝까지 추적한다.
+      const incoming = ballOnAiSide && ball.lastHitOwner === 1;
       if (incoming && !ai.wasIncoming) {
         // 매 포인트의 첫 공에는 반드시 반응하고, 이어지는 랠리에서만 가끔 실수한다.
         ai.willReturn = !ai.hasReceivedInRally || Math.random() < ability.returnChance;
@@ -666,18 +673,33 @@
       }
       if (!incoming) ai.jumpedThisIncoming = false;
       ai.wasIncoming = incoming;
-      const target = incoming && ai.willReturn ? clamp(ball.x + CAPYBARA_HEAD_X_OFFSET + ai.error, .60, .93) : .77;
+      const previousFacing = ai.facing;
+      if (incoming) {
+        if (ball.x > ai.x + .025) ai.facing = 1;
+        else if (ball.x < ai.x - .025) ai.facing = -1;
+      } else {
+        ai.facing = -1;
+      }
+      const target = incoming && ai.willReturn
+        ? clamp(ball.x - ai.facing * CAPYBARA_HEAD_X_OFFSET + ai.error, .60, .93)
+        : .77;
       ai.x += clamp(target - ai.x, -ability.moveSpeed * dt, ability.moveSpeed * dt);
-      ai.prevHandX = ai.handX; ai.prevHandY = ai.handY;
       const shouldSwing = incoming && ai.willReturn && ball.y > .40 && ball.y < .72;
-      if (shouldSwing && !ai.jumpedThisIncoming) {
+      const previousJumpAge = (now - ai.jumpStartedAt) / CAPYBARA_JUMP_MS;
+      const canRecoverBehind = ai.facing === 1 && ball.vx < 0 && ball.vy > 0 && previousJumpAge > 1;
+      if (shouldSwing && (!ai.jumpedThisIncoming || canRecoverBehind)) {
         ai.jumpedThisIncoming = true;
         ai.jumpStartedAt = now;
       }
       const jumpAge = (now - ai.jumpStartedAt) / CAPYBARA_JUMP_MS;
       const jumpLift = jumpAge >= 0 && jumpAge <= 1 ? Math.sin(jumpAge * Math.PI) * CAPYBARA_JUMP_HEIGHT : 0;
-      ai.handX = ai.x - CAPYBARA_HEAD_X_OFFSET;
-      ai.handY = CAPYBARA_HEAD_Y - jumpLift;
+      const nextHandX = ai.x + ai.facing * CAPYBARA_HEAD_X_OFFSET;
+      const nextHandY = CAPYBARA_HEAD_Y - jumpLift;
+      const turnedAround = ai.facing !== previousFacing;
+      ai.prevHandX = turnedAround ? nextHandX : ai.handX;
+      ai.prevHandY = turnedAround ? nextHandY : ai.handY;
+      ai.handX = nextHandX;
+      ai.handY = nextHandY;
       if (!incoming || !ai.willReturn) return null;
       return {
         id: "capybara-ai", owner: 2, ai: true, head: true, radius: ability.hitRadius, x: ai.handX, y: ai.handY,
@@ -710,6 +732,7 @@
         }
         ball.x = collisionPoint.x + nx * (BALL_RADIUS + collisionRadius + .004);
         ball.y = collisionPoint.y + ny * (BALL_RADIUS + collisionRadius + .004);
+        ball.lastHitOwner = paddle.owner;
         lastHitAt.set(paddle.id, now);
         spawnHit(ball.x, ball.y, paddle.owner);
         playTone(paddle.owner === 1 ? 480 : 400, 560);
@@ -840,7 +863,7 @@
         ? Math.sin(age * Math.PI * 6) * .13
         : (jumping ? -Math.sin(jumpAge * Math.PI) * .055 : 0);
       const scale = celebrating ? 1 + .06 * Math.sin(age * Math.PI * 4) : 1;
-      ctx.save(); ctx.translate(baseX, baseY - hop); ctx.rotate(angle); ctx.scale(scale, scale);
+      ctx.save(); ctx.translate(baseX, baseY - hop); ctx.rotate(angle); ctx.scale(scale * (ai.facing === 1 ? -1 : 1), scale);
       if (imageReady) {
         const drawH = h * .36, drawW = drawH * (capybaraImage.width / capybaraImage.height);
         ctx.drawImage(capybaraImage, -drawW / 2, -drawH, drawW, drawH);
@@ -990,7 +1013,7 @@
         $("peopleNeed").textContent = expectedPeople();
         $("readyGuide").textContent = mode === "human"
           ? "P1은 왼쪽, P2는 오른쪽에 서서 머리와 어깨를 보여 주세요."
-          : "P1은 화면 왼쪽에 서서 머리와 어깨를 보여 주세요.";
+          : "카메라 정면 중앙에 서서 머리와 어깨를 보여 주세요. 화면에서는 왼쪽 코트에 표시됩니다.";
         stage.classList.toggle("video-on", $("showVideoCheck").checked);
         $("videoToggleBtn").textContent = stage.classList.contains("video-on") ? "영상 숨기기" : "영상 보기";
         setPanel("readyPanel"); setStatus("카메라·상반신 인식 준비 완료", "good");
@@ -1095,7 +1118,7 @@
     document.addEventListener("visibilitychange", () => { if (document.hidden && phase !== "intro") backToStart(); });
     window.addEventListener("pagehide", stopCamera);
 
-    setCapybaraDifficulty(3);
+    setCapybaraDifficulty(2);
     selectMode("ai");
     ensureLoop();
   </script>
