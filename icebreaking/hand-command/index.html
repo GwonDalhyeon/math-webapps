@@ -1,0 +1,1653 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="음성으로 나오는 손 모양 명령을 듣고 그대로 따라 하는 아이스브레이킹 웹앱입니다. 카메라가 두 손의 모양과 움찔까지 판정합니다." />
+  <title>오른손 펴! 왼손은 그대로!</title>
+  <link rel="stylesheet" href="../../assets/common.css" />
+  <style>
+    /* 카메라 앞 한 명이 하는 게임 화면이라 공통 카드 레이아웃 대신 화면을 가득 쓴다. */
+    html, body { height: 100%; }
+    body { background: #0f172a; color: #e2e8f0; overflow: hidden; }
+
+    .app { height: 100dvh; display: flex; flex-direction: column; }
+
+    .bar {
+      display: flex; align-items: center; gap: 10px;
+      padding: 8px 14px; background: #111c33;
+      border-bottom: 1px solid #1e293b; flex: none;
+    }
+    .bar.bottom { border-bottom: none; border-top: 1px solid #1e293b; flex-wrap: wrap; }
+    .bar h1 { margin: 0; font-size: 20px; color: #f8fafc; }
+    .bar .spacer { flex: 1; }
+    .home { color: #93c5fd; text-decoration: none; font-weight: 700; font-size: 15px; }
+    .diag { font-size: 13px; color: #64748b; font-variant-numeric: tabular-nums; }
+
+    button {
+      font: inherit; font-weight: 700;
+      padding: 10px 18px; border-radius: 10px;
+      border: 1px solid #1d4ed8; background: #1d4ed8; color: #fff;
+      cursor: pointer; min-height: 44px;
+    }
+    button.ghost { background: #0b1220; border-color: #334155; color: #cbd5e1; }
+    button.mini { padding: 7px 12px; min-height: 36px; font-size: 14px; }
+    button.ok { background: #15803d; border-color: #15803d; }
+    button.no { background: #b91c1c; border-color: #b91c1c; }
+    button:disabled { opacity: .4; cursor: not-allowed; }
+    button.on { background: #0e7490; border-color: #0e7490; color: #fff; }
+
+    .stage { position: relative; flex: 1; min-height: 0; background: #000; overflow: hidden; }
+    .stage video, .stage canvas {
+      position: absolute; inset: 0; width: 100%; height: 100%;
+      object-fit: contain;
+      transform: scaleX(-1); /* 거울 표시: 영상과 그림에 같은 반전을 적용한다 */
+    }
+    .stage.hide-video video { visibility: hidden; }
+
+    /* 화면 위 안내 문구는 DOM으로 얹는다. 캔버스에 그리면 좌우가 뒤집힌다. */
+    .cmdwrap {
+      position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
+      width: min(96%, 1000px); text-align: center; pointer-events: none;
+    }
+    .cmd {
+      font-size: clamp(30px, 5.6vw, 68px); font-weight: 900; line-height: 1.15;
+      color: #f8fafc; text-shadow: 0 4px 22px rgba(0,0,0,.9);
+      min-height: 1.2em;
+    }
+    .cmd .neg { color: #fca5a5; text-decoration: underline; text-decoration-thickness: 4px; }
+    .cmd.quiet { font-size: clamp(20px, 2.6vw, 30px); color: #64748b; font-weight: 800; }
+    .gauge {
+      height: 14px; border-radius: 999px; background: rgba(30,41,59,.85);
+      overflow: hidden; margin: 10px auto 0; width: min(80%, 720px);
+      opacity: 0; transition: opacity .15s;
+    }
+    .gauge.show { opacity: 1; }
+    .gauge i { display: block; height: 100%; width: 100%; background: #38bdf8; }
+    .gauge.hurry i { background: #f97316; }
+
+    .hands {
+      position: absolute; left: 0; right: 0; bottom: 10px;
+      display: flex; justify-content: space-between; gap: 10px;
+      padding: 0 12px; pointer-events: none;
+    }
+    .hcard {
+      background: rgba(15,23,42,.82); border: 2px solid #1e293b;
+      border-radius: 14px; padding: 8px 16px; min-width: 170px;
+    }
+    .hcard.right { text-align: right; }
+    .hname { font-size: 15px; font-weight: 800; color: #93c5fd; }
+    .hshape { font-size: clamp(20px, 2.8vw, 30px); font-weight: 800; margin: 2px 0; }
+    .hshape .off { color: #64748b; font-size: 20px; }
+    .hinfo { font-size: 14px; color: #94a3b8; font-variant-numeric: tabular-nums; }
+
+    .score {
+      position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%);
+      background: rgba(15,23,42,.82); border: 2px solid #1e293b; border-radius: 14px;
+      padding: 6px 18px; text-align: center; pointer-events: none;
+    }
+    .score b { font-size: clamp(22px, 3vw, 32px); color: #4ade80; }
+    .score span { display: block; font-size: 14px; color: #94a3b8; }
+    .mark { font-size: clamp(24px, 3.4vw, 40px); font-weight: 900; min-height: 1.1em; }
+    .mark.o { color: #4ade80; }
+    .mark.x { color: #fca5a5; }
+
+    .verdict {
+      position: absolute; inset: 0; display: none;
+      align-items: center; justify-content: center; gap: clamp(14px, 4vw, 48px);
+      background: rgba(2,6,23,.72); pointer-events: none; padding: 12px;
+    }
+    .verdict.show { display: flex; }
+    .verdict .vtext { max-width: 46%; }
+    .vcmd { font-size: clamp(22px, 3.4vw, 42px); font-weight: 900; color: #f8fafc; line-height: 1.2; }
+    .vcmd .neg { color: #fca5a5; text-decoration: underline; text-decoration-thickness: 3px; }
+    .vwhy { font-size: clamp(15px, 2vw, 22px); color: #fde047; font-weight: 800; margin-top: 10px; line-height: 1.4; }
+    .vlabel { font-size: 15px; color: #94a3b8; font-weight: 800; margin-bottom: 6px; }
+    .verdict svg { width: clamp(200px, 30vw, 330px); height: auto; }
+
+    .notice {
+      /* 아래쪽 손 카드와 점수 상자를 가리지 않는 높이 */
+      position: absolute; left: 50%; bottom: 165px; transform: translateX(-50%);
+      background: rgba(127,29,29,.92); padding: 9px 20px; border-radius: 999px;
+      font-size: clamp(15px, 2.1vw, 22px); font-weight: 800;
+      display: none; pointer-events: none; text-align: center;
+    }
+    .notice.show { display: block; }
+    .notice.calm { background: rgba(30,58,95,.94); }
+
+    .countdown {
+      position: absolute; inset: 0; display: none;
+      align-items: center; justify-content: center;
+      font-size: clamp(90px, 22vw, 220px); font-weight: 900; color: #fff;
+      text-shadow: 0 6px 30px rgba(0,0,0,.9); pointer-events: none;
+    }
+    .countdown.show { display: flex; }
+
+    .panel {
+      position: absolute; inset: 0; display: none;
+      align-items: center; justify-content: center;
+      background: rgba(2,6,23,.9); padding: 14px; overflow: auto;
+    }
+    .panel.show { display: flex; }
+    .sheet {
+      width: min(680px, 100%); background: #0f1a30;
+      border: 1px solid #1e3a5f; border-radius: 18px; padding: 20px 22px;
+    }
+    .sheet h2 { margin: 0 0 8px; font-size: 26px; color: #f8fafc; }
+    .sheet p { font-size: 15px; line-height: 1.6; color: #cbd5e1; margin: 0 0 10px; }
+    .sheet ol { font-size: 15px; line-height: 1.65; color: #cbd5e1; margin: 0 0 12px; padding-left: 20px; }
+    .sheet .small { font-size: 13px; color: #94a3b8; }
+    .opt { margin-bottom: 12px; }
+    .opt > span { display: block; font-size: 14px; color: #94a3b8; font-weight: 700; margin-bottom: 5px; }
+    .seg { display: flex; gap: 6px; flex-wrap: wrap; }
+    .seg button { flex: 1 1 auto; min-height: 40px; padding: 8px 12px; font-size: 15px; }
+    .actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 14px; }
+    .actions button { flex: 1 1 auto; }
+    .progress { height: 10px; border-radius: 999px; background: #1e293b; overflow: hidden; margin: 12px 0 8px; }
+    .progress i { display: block; height: 100%; width: 0; background: #38bdf8; transition: width .25s; }
+    .big { font-size: 60px; font-weight: 900; color: #4ade80; line-height: 1.1; margin: 6px 0; }
+
+    /* 인식 시험 패널 */
+    .diagbox {
+      position: absolute; left: 12px; top: 12px; width: min(330px, 42vw);
+      max-height: calc(100% - 24px); overflow: auto;
+      background: rgba(15,23,42,.92); border: 1px solid #1e3a5f;
+      border-radius: 14px; padding: 12px 14px; display: none;
+    }
+    .diagbox.show { display: block; }
+    .diagbox h3 { margin: 0 0 8px; font-size: 17px; color: #f8fafc; }
+    .dlive { font-size: 14px; line-height: 1.55; color: #cbd5e1; font-variant-numeric: tabular-nums; }
+    .dlive b { color: #f8fafc; }
+    .dlive .warn { color: #fca5a5; font-weight: 800; }
+    .dsec { margin-top: 10px; padding-top: 10px; border-top: 1px solid #1e293b; }
+    .slider { margin-bottom: 8px; }
+    .slider label { display: flex; justify-content: space-between; gap: 8px; font-size: 13px; color: #94a3b8; }
+    .slider label b { color: #7dd3fc; font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .slider input { width: 100%; }
+    .dtest { font-size: 14px; color: #cbd5e1; }
+    .dtable { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 8px; }
+    .dtable td { padding: 3px 4px; border-bottom: 1px solid #1e293b; }
+    .dtable td:last-child { text-align: right; font-variant-numeric: tabular-nums; font-weight: 800; }
+    .dtable .good { color: #4ade80; }
+    .dtable .soso { color: #fbbf24; }
+    .dtable .bad  { color: #fca5a5; }
+
+    @media (orientation: portrait) {
+      .bar h1 { font-size: 17px; }
+      .verdict { flex-direction: column; gap: 12px; }
+      .verdict .vtext { max-width: 92%; text-align: center; }
+      .notice { bottom: auto; top: 128px; }
+      .hands { bottom: 96px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header class="bar">
+      <a class="home" href="../">← 아이스브레이킹</a>
+      <h1>오른손 펴! 왼손은 그대로!</h1>
+      <span class="spacer"></span>
+      <span class="diag" id="diag"></span>
+      <button class="mini ghost" id="textBtn" type="button">명령 글씨 켜기</button>
+      <button class="mini ghost on" id="videoBtn" type="button">영상 끄기</button>
+    </header>
+
+    <div class="stage" id="stage">
+      <video id="video" playsinline muted></video>
+      <canvas id="scene"></canvas>
+
+      <!-- 인식 시험 패널: 임계값을 바꿔가며 손 모양이 제대로 잡히는지 잰다 -->
+      <div class="diagbox" id="diagBox">
+        <h3>인식 시험</h3>
+        <div class="dlive" id="dLive">카메라를 준비하는 중입니다.</div>
+
+        <div class="dsec">
+          <div class="slider">
+            <label for="thExt">손가락 폄 민감도 (낮출수록 잘 펴짐) <b id="vExt"></b></label>
+            <input type="range" id="thExt" min="0.90" max="1.35" step="0.01" />
+          </div>
+          <div class="slider">
+            <label for="thOpen">펴로 볼 최소 손가락 <b id="vOpen"></b></label>
+            <input type="range" id="thOpen" min="2" max="4" step="1" />
+          </div>
+          <div class="slider">
+            <label for="thFist">접어로 볼 최대 손가락 <b id="vFist"></b></label>
+            <input type="range" id="thFist" min="0" max="2" step="1" />
+          </div>
+          <div class="slider">
+            <label for="thHold">모양 확정 시간 <b id="vHold"></b></label>
+            <input type="range" id="thHold" min="60" max="500" step="20" />
+          </div>
+          <div class="slider">
+            <label for="thFlinch">움찔로 볼 손가락 변화 <b id="vFlinch"></b></label>
+            <input type="range" id="thFlinch" min="1" max="4" step="1" />
+          </div>
+          <div class="slider">
+            <label for="thReact">반응 시간 시작값 <b id="vReact"></b></label>
+            <input type="range" id="thReact" min="600" max="2000" step="50" />
+          </div>
+        </div>
+
+        <div class="dsec dtest">
+          <div id="testState">손 모양을 순서대로 안내하며 적중률을 잽니다.</div>
+          <table class="dtable" id="testTable"></table>
+          <div class="actions" style="margin-top:10px">
+            <button class="mini" id="testBtn" type="button">자동 시험 시작</button>
+            <button class="mini ghost" id="diagPlayBtn" type="button">게임으로</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="cmdwrap">
+        <div class="cmd quiet" id="cmdText"></div>
+        <div class="gauge" id="gauge"><i id="gaugeBar"></i></div>
+      </div>
+
+      <div class="hands" id="hands">
+        <div class="hcard left">
+          <div class="hname">왼손</div>
+          <div class="hshape" id="shapeL"><span class="off">보이지 않음</span></div>
+          <div class="hinfo" id="infoL"></div>
+        </div>
+        <div class="hcard right">
+          <div class="hname">오른손</div>
+          <div class="hshape" id="shapeR"><span class="off">보이지 않음</span></div>
+          <div class="hinfo" id="infoR"></div>
+        </div>
+      </div>
+
+      <div class="score" id="scoreBox">
+        <b id="scoreNow">0</b>
+        <span id="scoreSub">연속 성공</span>
+        <div class="mark" id="mark"></div>
+      </div>
+
+      <div class="verdict" id="verdict">
+        <div class="vtext">
+          <div class="vlabel">방금 명령</div>
+          <div class="vcmd" id="vCmd"></div>
+          <div class="vwhy" id="vWhy"></div>
+        </div>
+        <div>
+          <div class="vlabel">정답 손 모양</div>
+          <div id="vPose"></div>
+        </div>
+      </div>
+
+      <div class="notice" id="notice"></div>
+      <div class="countdown" id="countdown"></div>
+
+      <!-- 시작 화면 -->
+      <div class="panel show" id="panelStart">
+        <div class="sheet">
+          <h2>오른손 펴! 왼손은 그대로!</h2>
+          <ol>
+            <li>스피커에서 <strong>명령이 음성으로</strong> 나옵니다. 글씨는 기본적으로 보이지 않습니다.</li>
+            <li>손 모양은 <strong>펴(보) / 접어(주먹)</strong> 두 가지입니다.</li>
+            <li><strong>"~하지 마"</strong>가 붙으면 그 손은 그대로 두어야 합니다.</li>
+            <li>두 손이 화면에 보이면 <strong>자동으로 시작</strong>합니다. 라운드마다 조금씩 빨라집니다.</li>
+            <li>세 번 틀리면 끝납니다. 연속 성공 기록에 도전하세요.</li>
+          </ol>
+
+          <div class="opt">
+            <span>난이도 (부정문과 두 절 명령의 비율)</span>
+            <div class="seg" id="segDiff">
+              <button type="button" data-v="easy">쉬움</button>
+              <button type="button" data-v="normal" class="on">보통</button>
+              <button type="button" data-v="hard">어려움</button>
+            </div>
+          </div>
+
+          <div class="opt">
+            <span>손 모양 (기본은 펴·접어 두 가지)</span>
+            <div class="seg">
+              <button type="button" id="optScissors">가위 넣기</button>
+            </div>
+          </div>
+
+          <p class="small">
+            카메라 영상은 이 기기 안에서만 처리되고 어디에도 저장되거나 전송되지 않습니다.
+            위쪽 <strong>영상 끄기</strong>를 누르면 손 뼈대만 남습니다.
+            <strong>두 손이 모두</strong> 화면에 들어오게 카메라 앞 <strong>1m 안팎</strong>에 서고,
+            두 손을 교차하지 마세요. 다른 사람 손이 화면에 들어오면 잘못 인식됩니다.
+            처음 쓰신다면 <strong>인식 시험 먼저</strong>로 확인하세요.
+          </p>
+          <div class="actions">
+            <button id="beginBtn" type="button">카메라 켜고 시작</button>
+            <button class="ghost" id="diagBtn" type="button">인식 시험 먼저</button>
+            <button class="ghost" id="manualBtn" type="button">카메라 없이 (교사가 판정)</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 로딩 화면 -->
+      <div class="panel" id="panelLoad">
+        <div class="sheet">
+          <h2>준비 중</h2>
+          <p id="loadText">카메라 권한을 요청하는 중입니다.</p>
+          <div class="progress"><i id="loadBar"></i></div>
+          <p class="small">
+            손 인식에 필요한 파일 약 19MB를 <strong>처음 한 번만</strong> 받습니다.
+            다음부터는 바로 시작됩니다.
+          </p>
+        </div>
+      </div>
+
+      <!-- 좌우 보정 화면 -->
+      <div class="panel" id="panelCalib">
+        <div class="sheet">
+          <h2>오른손만 펴 주세요</h2>
+          <p>
+            카메라가 어느 쪽이 오른손인지 확인합니다.
+            두 손을 모두 보이게 든 다음, <strong>오른손은 펴고 왼손은 주먹</strong>을 쥐세요.
+          </p>
+          <p id="calibState" class="small">손을 찾는 중입니다.</p>
+          <div class="actions">
+            <button class="ghost" id="calibSkip" type="button">건너뛰기 (기본값 사용)</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 종료 화면 -->
+      <div class="panel" id="panelOver">
+        <div class="sheet">
+          <h2 id="overTitle">게임 끝</h2>
+          <div class="big" id="overBig"></div>
+          <p id="overText"></p>
+          <div class="actions">
+            <button id="againBtn" type="button">다시 하기</button>
+            <button class="ghost" id="backBtn" type="button">설정 바꾸기</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 오류 화면 -->
+      <div class="panel" id="panelError">
+        <div class="sheet">
+          <h2 id="errTitle">카메라를 쓸 수 없습니다</h2>
+          <p id="errText"></p>
+          <div class="actions">
+            <button id="retryBtn" type="button">다시 시도</button>
+            <button class="ghost" id="errManualBtn" type="button">카메라 없이 진행</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <footer class="bar bottom">
+      <button class="mini" id="playBtn" type="button" disabled>시작</button>
+      <button class="mini ghost" id="skipBtn" type="button" disabled>건너뛰기</button>
+      <button class="mini ghost" id="undoBtn" type="button" disabled>방금 판정 취소</button>
+      <span class="spacer"></span>
+      <span id="manualBox" style="display:none">
+        <button class="mini ok" data-j="o" type="button">○ 맞음</button>
+        <button class="mini no" data-j="x" type="button">✕ 틀림</button>
+      </span>
+      <span class="diag" id="hint">두 손이 보이면 자동으로 시작합니다.</span>
+    </footer>
+  </div>
+
+<script type="module">
+import {
+  FilesetResolver,
+  HandLandmarker,
+} from "../../assets/vendor/mediapipe/tasks-vision/vision_bundle.mjs";
+
+// ===========================================================================
+// 판정 상수
+// 수업 직전에 손볼 값이라 한곳에 모아 둔다. 아래 여섯 개는 인식 시험 화면에서
+// 슬라이더로 바로 바꿀 수 있고, 여기 적힌 값이 시작값이다.
+// ===========================================================================
+const CAM_W = 640, CAM_H = 480;
+
+// 손가락을 접으면 손끝이 손목 쪽으로 돌아온다. 손목에서 손끝까지가 손목에서 둘째마디까지보다
+// 이 비율만큼 멀면 편 것으로 본다. 손 크기와 손의 방향에 영향을 받지 않는다.
+let EXT_RATIO = 1.08;
+let OPEN_MIN  = 3;    // 검지·중지·약지·소지 중 이만큼 펴져 있으면 "펴"
+let FIST_MAX  = 1;    // 이하로 펴져 있으면 "접어". 사이 값은 직전 모양을 그대로 유지한다
+let HOLD_MS   = 180;  // 이만큼 유지되어야 모양을 확정한다 (떨림 제거)
+
+// 움찔 판정: 편 손가락 수가 이만큼 바뀐 상태가 FLINCH_FRAMES 프레임 이어지고,
+// 판정 순간에 원래 모양으로 돌아와 있으면 움찔이다. 한 프레임 튀는 값은 걸러진다.
+let FLINCH_CHANGE = 2;
+const FLINCH_FRAMES = 4;
+
+let REACT_START = 1100;    // 첫 라운드 반응 시간(ms). 손은 팔보다 빨리 바뀌므로 짧다
+const REACT_STEP = 50;     // 라운드마다 이만큼 줄인다
+const REACT_MIN  = 550;
+
+const CLAUSE_GAP = 240;           // 절 사이 간격
+const FALLBACK_CLAUSE_MS = 1000;  // 음성을 못 쓸 때 절 표시 간격
+const RESULT_MS  = 2200;   // 정답 공개 시간
+const SYNC_MS    = 3000;   // 정답 모양으로 맞출 시간 상한
+const CALIB_HOLD = 500;    // 보정에서 모양을 유지해야 하는 시간
+
+const BOTH_READY_MS = 600;   // 두 손이 이만큼 보이면 자동으로 카운트다운을 시작한다
+const COUNTDOWN_MS  = 3000;
+const LOST_PAUSE_MS = 400;   // 손이 이만큼 안 보이면 경기를 멈추고 경고한다
+const LOST_END_MS   = 8000;  // 이만큼 안 돌아오면 끝내고 다음 사람을 기다린다
+const HAND_LOST_MS  = 250;   // 이 안에 다시 잡히면 계속 보이는 것으로 친다
+
+const MISS_LIMIT = 3;
+const HAND_SMALL = 0.10;     // 손 크기가 이보다 작으면 너무 멀리 있는 것이다
+
+const WASM_DIR   = "../../assets/vendor/mediapipe/tasks-vision/wasm";
+const MODEL_PATH = "../../assets/vendor/mediapipe/models/hand_landmarker.task";
+const BEST_KEY   = "hand-command-best-v1";
+
+// 손 랜드마크 번호. 엄지는 방향이 달라 판정에서 빼고 네 손가락만 센다.
+// 주먹을 쥘 때 엄지를 어디에 두든 판정이 흔들리지 않는다.
+const FINGERS = [
+  { tip: 8,  pip: 6  },   // 검지
+  { tip: 12, pip: 10 },   // 중지
+  { tip: 16, pip: 14 },   // 약지
+  { tip: 20, pip: 18 },   // 소지
+];
+const WRIST = 0;
+const HAND_LINKS = [
+  [0,1],[1,2],[2,3],[3,4],
+  [0,5],[5,6],[6,7],[7,8],
+  [5,9],[9,10],[10,11],[11,12],
+  [9,13],[13,14],[14,15],[15,16],
+  [13,17],[17,18],[18,19],[19,20],[0,17],
+];
+
+const DIFFS = {
+  easy:   { two: 0.12, neg: 0.20, same: 0.12, repeat: 0.10, rate: 1.0 },
+  normal: { two: 0.32, neg: 0.34, same: 0.18, repeat: 0.14, rate: 1.0 },
+  hard:   { two: 0.55, neg: 0.46, same: 0.22, repeat: 0.18, rate: 1.15 },
+};
+const NO_CHANGE_MAX = 2;   // "그대로 두기"가 정답인 라운드가 이보다 길게 이어지지 않게 한다
+
+const HAND_TEXT  = { L: "왼손", R: "오른손", B: "양손" };
+const SHAPE_TEXT = { open: "폄", fist: "주먹", scissors: "가위" };
+const SHAPE_MARK = { open: "✋", fist: "✊", scissors: "✌" };
+// 색만으로 구분하지 않도록 화면에는 항상 글자와 손 그림을 함께 쓴다
+const SHAPE_COLOR = { open: "#4ade80", fist: "#fbbf24", scissors: "#a78bfa" };
+const VERB = {
+  open:     { final: "펴",          conn: "펴고",         negFinal: "펴지 마",          negConn: "펴지 말고" },
+  fist:     { final: "접어",        conn: "접고",         negFinal: "접지 마",          negConn: "접지 말고" },
+  scissors: { final: "가위 만들어", conn: "가위 만들고",  negFinal: "가위 만들지 마",   negConn: "가위 만들지 말고" },
+};
+
+// 인식 시험에서 순서대로 안내할 손 모양
+const TEST_BASE = [
+  { hand: "R", shape: "open" }, { hand: "R", shape: "fist" },
+  { hand: "L", shape: "open" }, { hand: "L", shape: "fist" },
+];
+const TEST_SCISSORS = [{ hand: "R", shape: "scissors" }, { hand: "L", shape: "scissors" }];
+const TEST_READY_MS = 2200;
+const TEST_HOLD_MS  = 2000;
+
+const DEFAULT_SHOW_VIDEO = true;  // 수업 배포 때는 false로 두어 영상을 감춘다
+
+// ===========================================================================
+// DOM
+// ===========================================================================
+const $ = (id) => document.getElementById(id);
+const video = $("video");
+const scene = $("scene");
+const ctx = scene.getContext("2d");
+
+// ===========================================================================
+// 상태
+// ===========================================================================
+let phase = "intro";
+// intro | loading | calib | diag | wait | countdown | speak | react | judge | result | sync | lost | over | error
+let landmarker = null;
+let stream = null;
+let rafId = 0;
+let starting = false;   // 시작을 여러 번 눌러도 스트림이 겹치지 않게 한다
+let lastVideoTime = -1;
+
+const opt = {
+  diff: "normal",
+  useScissors: false,
+  showText: false,
+  showVideo: DEFAULT_SHOW_VIDEO,
+  manual: false,      // 카메라 없이 교사가 판정
+};
+
+let voice = null;       // 한국어 음성. 없으면 글씨 모드로 자동 전환한다
+let speakTimer = 0;
+let watchdog = 0;
+
+let officialState = { L: "fist", R: "fist" };   // 명령이 쌓이는 공식 손 모양
+let command = null;
+let prevCommand = null;
+let round = 0;
+let noChangeStreak = 0;
+let reactMs = REACT_START;
+let phaseUntil = 0;
+let lastVerdict = null;
+let manualPending = false;
+
+let bothSince = 0;      // 두 손이 계속 보이기 시작한 시각
+let lostSince = 0;      // 손이 사라진 시각
+let fps = 0, lastInferAt = 0;
+let baseHint = "두 손이 보이면 자동으로 시작합니다.";
+
+let rightIsScreenRight = true;  // 보정으로 확정한다. 거울 화면에서는 보통 이쪽이 맞다
+
+const me = makePlayer();
+
+function makePlayer() {
+  const hand = () => ({
+    lm: null, lastSeen: 0, count: 0, size: 0,
+    raw: null, rawPrev: null, since: 0, state: "fist",
+    base: null, moved: 0, flinched: false,
+  });
+  return {
+    L: hand(), R: hand(),
+    calibrated: false,
+    miss: 0, streak: 0, best: 0, mark: "", why: "",
+  };
+}
+
+// ===========================================================================
+// 손 모양 판정
+// ===========================================================================
+const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
+
+// 네 손가락이 각각 펴졌는지 센다. 손목에서 손끝까지가 둘째마디까지보다 멀면 편 것이다.
+function extendedFlags(lm) {
+  const wrist = lm[WRIST];
+  return FINGERS.map((f) => dist(wrist, lm[f.tip]) > dist(wrist, lm[f.pip]) * EXT_RATIO);
+}
+
+// 애매한 개수면 null을 돌려주고, 그때는 직전 모양을 그대로 유지한다.
+function classifyHand(flags) {
+  if (opt.useScissors && flags[0] && flags[1] && !flags[2] && !flags[3]) return "scissors";
+  const n = flags.filter(Boolean).length;
+  if (n >= OPEN_MIN) return "open";
+  if (n <= FIST_MAX) return "fist";
+  return null;
+}
+
+// 손목에서 중지 밑마디까지를 손 크기로 본다
+const handSize = (lm) => dist(lm[WRIST], lm[9]) * 2.4;
+
+// 한 프레임의 인식 결과를 왼손/오른손으로 나눈다.
+function updateHands(hands, now) {
+  // 화면은 거울이므로 x를 뒤집어 화면에 보이는 위치로 정렬한다.
+  const seen = hands
+    .map((lm) => ({ lm, mx: 1 - lm[WRIST].x }))
+    .sort((a, b) => a.mx - b.mx)
+    .slice(0, 2);
+
+  let leftHand = null, rightHand = null;
+  if (seen.length === 2) {
+    // 화면 오른쪽에 있는 손이 그 사람의 오른손이다 (보정으로 뒤집을 수 있다)
+    [leftHand, rightHand] = rightIsScreenRight
+      ? [seen[0].lm, seen[1].lm]
+      : [seen[1].lm, seen[0].lm];
+  } else if (seen.length === 1) {
+    // 한 손만 보이면 화면 절반으로만 짐작한다
+    const onRight = seen[0].mx >= 0.5;
+    const isRight = rightIsScreenRight ? onRight : !onRight;
+    if (isRight) rightHand = seen[0].lm; else leftHand = seen[0].lm;
+  }
+
+  applyHand(me.L, leftHand, now);
+  applyHand(me.R, rightHand, now);
+}
+
+function applyHand(slot, lm, now) {
+  if (!lm) return;
+  slot.lm = lm;
+  slot.lastSeen = now;
+  const flags = extendedFlags(lm);
+  slot.count = flags.filter(Boolean).length;
+  slot.size = handSize(lm);
+
+  const raw = classifyHand(flags);
+  if (raw) {
+    if (raw !== slot.rawPrev) { slot.rawPrev = raw; slot.since = now; }
+    slot.raw = raw;
+    if (raw !== slot.state && now - slot.since >= HOLD_MS) slot.state = raw;
+  }
+
+  // 움찔 감시: 명령이 시작된 순간의 손가락 수에서 얼마나 벗어났는지 본다
+  if (phase === "speak" || phase === "react") {
+    if (slot.base === null) { slot.base = slot.count; return; }
+    if (Math.abs(slot.count - slot.base) >= FLINCH_CHANGE) {
+      slot.moved += 1;
+      if (slot.moved >= FLINCH_FRAMES) slot.flinched = true;
+    } else {
+      slot.moved = 0;
+    }
+  }
+}
+
+const handSeen = (slot, now) => slot.lm && now - slot.lastSeen < HAND_LOST_MS;
+const bothSeen = (now) => opt.manual || (handSeen(me.L, now) && handSeen(me.R, now));
+
+function sizeHint(now) {
+  const sizes = ["L", "R"].filter((k) => handSeen(me[k], now)).map((k) => me[k].size);
+  if (!sizes.length) return "";
+  if (Math.min(...sizes) < HAND_SMALL) return "손이 너무 작습니다. 카메라에 다가오세요.";
+  return "";
+}
+
+// ===========================================================================
+// 명령 만들기
+// ===========================================================================
+const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
+const sameState = (a, b) => a.L === b.L && a.R === b.R;
+const shapeList = () => (opt.useScissors ? ["fist", "open", "scissors"] : ["fist", "open"]);
+
+function makeClause(hand, state, d, shapes) {
+  const cur = hand === "B" ? null : state[hand];
+  const others = shapes.filter((s) => s !== cur);
+  const neg = Math.random() < d.neg;
+  let shape;
+  if (neg) {
+    // 부정문은 지금과 다른 모양을 말해야 미끼가 된다
+    shape = pick(others.length ? others : shapes);
+  } else if (cur && Math.random() < d.same) {
+    shape = cur;            // 이미 그 모양인데 또 시키는 함정. 정답은 "그대로 두기"
+  } else {
+    shape = pick(others.length ? others : shapes);
+  }
+  return { hand, shape, neg };
+}
+
+function makeCommand(state, d) {
+  let cmd = randomCommand(state, d);
+  // 부정문, 반복 명령, "이미 그 모양" 함정은 모두 정답이 무동작이다.
+  // 그대로 두면 가만히 있는 라운드가 너무 많아 게임이 멈춘 것처럼 보인다.
+  if (sameState(cmd.target, state) && noChangeStreak >= NO_CHANGE_MAX) {
+    const hand = Math.random() < 0.5 ? "L" : "R";
+    cmd = buildCommand(state, [makeClause(hand, state, { ...d, neg: 0, same: 0 }, shapeList())]);
+  }
+  noChangeStreak = sameState(cmd.target, state) ? noChangeStreak + 1 : 0;
+  return cmd;
+}
+
+function randomCommand(state, d) {
+  // 같은 명령을 연달아 내는 함정
+  if (prevCommand && Math.random() < d.repeat) {
+    return buildCommand(state, prevCommand.clauses.map((c) => ({ ...c })));
+  }
+  const shapes = shapeList();
+  let clauses;
+  if (Math.random() < d.two) {
+    const order = Math.random() < 0.5 ? ["L", "R"] : ["R", "L"];
+    clauses = order.map((h) => makeClause(h, state, d, shapes));
+  } else {
+    const hand = Math.random() < 0.16 ? "B" : (Math.random() < 0.5 ? "L" : "R");
+    clauses = [makeClause(hand, state, d, shapes)];
+  }
+  return buildCommand(state, clauses);
+}
+
+function buildCommand(state, clauses) {
+  const target = { ...state };
+  for (const c of clauses) {
+    if (c.neg) continue;                        // 부정 절은 그 손을 그대로 둔다
+    if (c.hand === "B") { target.L = c.shape; target.R = c.shape; }
+    else target[c.hand] = c.shape;
+  }
+  const parts = clauses.map((c, i) => {
+    const v = VERB[c.shape];
+    const last = i === clauses.length - 1;
+    const word = c.neg ? (last ? v.negFinal : v.negConn) : (last ? v.final : v.conn);
+    return { text: `${HAND_TEXT[c.hand]} ${word}`, neg: c.neg };
+  });
+  return { clauses, target, parts };
+}
+
+const cmdHtml = (parts, upto) =>
+  parts
+    .slice(0, upto === undefined ? parts.length : upto)
+    .map((p) => `<span class="${p.neg ? "neg" : ""}">${p.text}</span>`)
+    .join(" ");
+
+// ===========================================================================
+// 음성
+// ===========================================================================
+function findVoice() {
+  const list = window.speechSynthesis ? speechSynthesis.getVoices() : [];
+  return list.find((v) => /^ko/i.test(v.lang)) ?? null;
+}
+
+function speakParts(parts, onShow, onDone) {
+  let i = 0;
+  const step = () => {
+    if (i >= parts.length) { onDone(); return; }
+    const idx = i++;
+    onShow(idx + 1);
+    if (!voice) {
+      // 음성을 못 쓰면 글씨를 순서대로 띄우고 같은 간격으로 넘어간다
+      speakTimer = setTimeout(step, FALLBACK_CLAUSE_MS);
+      return;
+    }
+    const u = new SpeechSynthesisUtterance(parts[idx].text);
+    u.voice = voice; u.lang = voice.lang; u.rate = DIFFS[opt.diff].rate;
+    let moved = false;
+    const next = () => {
+      if (moved) return;
+      moved = true;
+      clearTimeout(watchdog);
+      speakTimer = setTimeout(step, CLAUSE_GAP);
+    };
+    u.onend = next;
+    u.onerror = next;
+    // onend가 오지 않는 브라우저가 있다. 길이에 여유를 두고 강제로 넘긴다.
+    clearTimeout(watchdog);
+    watchdog = setTimeout(next, 1200 + parts[idx].text.length * 260);
+    speechSynthesis.speak(u);
+  };
+  step();
+}
+
+function say(text) {
+  if (!voice) return;
+  const u = new SpeechSynthesisUtterance(text);
+  u.voice = voice; u.lang = voice.lang;
+  speechSynthesis.speak(u);
+}
+
+function stopSpeech() {
+  clearTimeout(speakTimer); clearTimeout(watchdog);
+  if (window.speechSynthesis) speechSynthesis.cancel();
+}
+
+// ===========================================================================
+// 그리기: 손 뼈대와 지금 인식한 모양
+// ===========================================================================
+let aspect = CAM_W / CAM_H;
+
+function fitRect(cw, ch) {
+  let w = cw, h = cw / aspect;
+  if (h > ch) { h = ch; w = ch * aspect; }
+  return { x: (cw - w) / 2, y: (ch - h) / 2, w, h };
+}
+
+function resize() {
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  scene.width = Math.round(scene.clientWidth * dpr);
+  scene.height = Math.round(scene.clientHeight * dpr);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+window.addEventListener("resize", resize);
+
+function draw() {
+  const cw = scene.clientWidth, ch = scene.clientHeight;
+  ctx.clearRect(0, 0, cw, ch);
+  const r = fitRect(cw, ch);
+  const now = performance.now();
+
+  for (const key of ["L", "R"]) {
+    const slot = me[key];
+    if (!handSeen(slot, now)) continue;
+    const lm = slot.lm;
+    const P = (i) => ({ x: r.x + lm[i].x * r.w, y: r.y + lm[i].y * r.h });
+    const tone = SHAPE_COLOR[slot.state] ?? "#94a3b8";
+
+    ctx.strokeStyle = tone; ctx.fillStyle = tone;
+    ctx.lineWidth = 5; ctx.lineCap = "round"; ctx.lineJoin = "round";
+    ctx.beginPath();
+    for (const [a, b] of HAND_LINKS) {
+      const p1 = P(a), p2 = P(b);
+      ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y);
+    }
+    ctx.stroke();
+    for (let i = 0; i < 21; i++) {
+      const p = P(i);
+      ctx.beginPath(); ctx.arc(p.x, p.y, i === WRIST ? 8 : 5, 0, Math.PI * 2); ctx.fill();
+    }
+
+    const w0 = P(WRIST);
+    drawLabel(w0.x, w0.y + 34,
+      `${HAND_TEXT[key]} ${SHAPE_MARK[slot.state]} ${SHAPE_TEXT[slot.state]} (${slot.count})`, tone);
+  }
+}
+
+// 캔버스 전체가 거울 반전되어 있으므로 글자만 다시 뒤집어 똑바로 보이게 한다
+function drawLabel(x, y, text, color) {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.scale(-1, 1);
+  ctx.font = "800 21px system-ui, -apple-system, sans-serif";
+  ctx.textAlign = "center"; ctx.textBaseline = "middle";
+  ctx.lineWidth = 6; ctx.strokeStyle = "rgba(2,6,23,.9)";
+  ctx.strokeText(text, 0, 0);
+  ctx.fillStyle = color;
+  ctx.fillText(text, 0, 0);
+  ctx.restore();
+}
+
+// 정답 손 그림. 화면이 거울이므로 오른손을 보는 사람 기준 오른쪽에 그린다.
+function handSvg(shape) {
+  const up = [true, true, true, true];
+  if (shape === "fist") up.fill(false);
+  if (shape === "scissors") { up[2] = false; up[3] = false; }
+  const tone = SHAPE_COLOR[shape];
+  const dim = "rgba(148,163,184,.45)";
+  const fingers = up
+    .map((isUp, i) => {
+      const x = 24 + i * 21;
+      const top = isUp ? 8 : 54;
+      return `<rect x="${x}" y="${top}" width="16" height="${96 - top}" rx="8" fill="${isUp ? tone : dim}" />`;
+    })
+    .join("");
+  const thumb = `<rect x="2" y="66" width="16" height="36" rx="8" transform="rotate(-22 10 84)"
+    fill="${shape === "open" ? tone : dim}" />`;
+  const palm = `<rect x="18" y="88" width="94" height="50" rx="16" fill="${tone}" opacity=".85" />`;
+  return fingers + thumb + palm;
+}
+
+function answerSvg(state) {
+  return `<svg viewBox="0 0 300 175" role="img" aria-label="정답 손 모양">
+    <g transform="translate(126,6) scale(-1,1)">${handSvg(state.L)}</g>
+    <g transform="translate(170,6)">${handSvg(state.R)}</g>
+    <text x="66" y="168" fill="#94a3b8" font-size="16" font-weight="700" text-anchor="middle">왼손 ${SHAPE_TEXT[state.L]}</text>
+    <text x="234" y="168" fill="#94a3b8" font-size="16" font-weight="700" text-anchor="middle">오른손 ${SHAPE_TEXT[state.R]}</text>
+  </svg>`;
+}
+
+// ===========================================================================
+// 화면 갱신
+// ===========================================================================
+function showPanel(id) {
+  for (const el of document.querySelectorAll(".panel")) el.classList.toggle("show", el.id === id);
+}
+
+function setNotice(text, calm) {
+  const el = $("notice");
+  if (el.textContent === (text ?? "")) return;   // 매 프레임 같은 문구를 다시 쓰지 않는다
+  el.textContent = text ?? "";
+  el.classList.toggle("show", Boolean(text));
+  el.classList.toggle("calm", Boolean(calm));
+}
+
+function renderCards() {
+  const now = performance.now();
+  for (const key of ["L", "R"]) {
+    const slot = me[key];
+    const seen = handSeen(slot, now) || opt.manual;
+    $(`shape${key}`).innerHTML = seen
+      ? `${SHAPE_MARK[slot.state]} ${SHAPE_TEXT[slot.state]}`
+      : `<span class="off">보이지 않음</span>`;
+    $(`info${key}`).textContent = seen && !opt.manual ? `편 손가락 ${slot.count}개` : "";
+  }
+  $("scoreNow").textContent = String(me.streak);
+  $("scoreSub").textContent = `연속 성공 · 남은 기회 ${Math.max(0, MISS_LIMIT - me.miss)}`;
+  const mark = $("mark");
+  mark.textContent = me.mark;
+  mark.className = `mark ${me.mark === "○" ? "o" : me.mark === "✕" ? "x" : ""}`;
+}
+
+function renderCommandLine() {
+  const el = $("cmdText");
+  const quiet = (text) => { el.className = "cmd quiet"; el.textContent = text; };
+  if (phase === "wait") { quiet("두 손을 화면에 보이세요"); return; }
+  if (!command || ["over", "diag", "calib", "intro", "loading"].includes(phase)) { quiet(""); return; }
+  if (opt.showText) {
+    el.className = "cmd";
+    el.innerHTML = cmdHtml(command.parts, command.shown);
+    return;
+  }
+  quiet(phase === "speak" ? "잘 들으세요" : "");
+}
+
+// ===========================================================================
+// 라운드 진행
+// ===========================================================================
+function startRound() {
+  round += 1;
+  command = makeCommand(officialState, DIFFS[opt.diff]);
+  command.shown = 0;
+  prevCommand = command;
+
+  me.mark = ""; me.why = "";
+  for (const key of ["L", "R"]) Object.assign(me[key], { base: null, moved: 0, flinched: false });
+  lastVerdict = null;
+  $("undoBtn").disabled = true;
+  $("verdict").classList.remove("show");
+  setNotice("");
+
+  phase = "speak";
+  renderCommandLine();
+  speakParts(
+    command.parts,
+    (n) => { command.shown = n; renderCommandLine(); },
+    () => {
+      if (phase !== "speak") return;
+      phase = "react";
+      phaseUntil = performance.now() + reactMs;
+      $("gauge").classList.add("show");
+      renderCommandLine();
+    }
+  );
+}
+
+function judgeRound() {
+  phase = "judge";
+  $("gauge").classList.remove("show");
+  const now = performance.now();
+  const target = command.target;
+
+  if (opt.manual) {
+    manualPending = true;
+    setNotice("교사가 판정하세요. ○ 또는 ✕를 누릅니다.", true);
+    showVerdict();
+    return;
+  }
+
+  if (!bothSeen(now)) {
+    me.mark = "—"; me.why = "두 손이 보이지 않아 이번 라운드는 무효입니다.";
+    applyScore();
+    return;
+  }
+
+  // 판정 순간에 막 만든 모양도 인정한다. 확정 모양은 HOLD_MS만큼 늦게 따라온다.
+  const handOk = (key) => me[key].state === target[key] || me[key].raw === target[key];
+  const okShape = handOk("L") && handOk("R");
+
+  let flinch = "";
+  if (okShape) {
+    for (const key of ["L", "R"]) {
+      // 그대로 두는 게 정답인 손만 움찔 대상이다
+      if (target[key] === officialState[key] && me[key].flinched) {
+        flinch = `${HAND_TEXT[key]}이 움직였다 돌아왔습니다`;
+        break;
+      }
+    }
+  }
+
+  if (!okShape) {
+    me.mark = "✕";
+    me.why = `${HAND_TEXT.L} ${SHAPE_TEXT[target.L]}, ${HAND_TEXT.R} ${SHAPE_TEXT[target.R]}가 정답입니다.`;
+  } else if (flinch) {
+    me.mark = "✕"; me.why = `움찔! ${flinch}.`;
+  } else {
+    me.mark = "○"; me.why = "";
+  }
+  applyScore();
+}
+
+function applyScore() {
+  if (me.mark === "○") { me.streak += 1; if (me.streak > me.best) me.best = me.streak; }
+  else if (me.mark === "✕") { me.streak = 0; me.miss += 1; }
+
+  lastVerdict = me.mark;
+  $("undoBtn").disabled = false;
+
+  showVerdict();
+  officialState = { ...command.target };
+  reactMs = Math.max(REACT_MIN, reactMs - REACT_STEP);
+
+  phase = "result";
+  phaseUntil = performance.now() + RESULT_MS;
+  renderCards();
+  if (me.miss >= MISS_LIMIT) endGame("세 번 틀렸습니다");
+}
+
+function showVerdict() {
+  $("vCmd").innerHTML = cmdHtml(command.parts);
+  $("vPose").innerHTML = answerSvg(command.target);
+  $("vWhy").textContent = me.why;
+  $("verdict").classList.add("show");
+  renderCards();
+}
+
+function undoVerdict() {
+  if (!lastVerdict) return;
+  if (lastVerdict === "○") me.streak = Math.max(0, me.streak - 1);
+  else if (lastVerdict === "✕") me.miss = Math.max(0, me.miss - 1);
+  me.mark = ""; me.why = "";
+  lastVerdict = null;
+  $("undoBtn").disabled = true;
+  setNotice("방금 판정을 취소했습니다.", true);
+  renderCards();
+}
+
+function endGame(reason) {
+  phase = "over";
+  stopSpeech();
+  $("gauge").classList.remove("show");
+  $("verdict").classList.remove("show");
+  $("countdown").classList.remove("show");
+  setNotice("");
+
+  let best = me.best;
+  try {
+    best = Math.max(Number(localStorage.getItem(BEST_KEY)) || 0, me.best);
+    localStorage.setItem(BEST_KEY, String(best));
+  } catch { /* 저장 못해도 진행한다 */ }
+
+  $("overTitle").textContent = "게임 끝";
+  $("overBig").textContent = `연속 ${me.best}회`;
+  $("overText").textContent =
+    `${reason}. 총 ${round}라운드를 했습니다. 이 브라우저 최고 기록은 연속 ${best}회입니다.`;
+  showPanel("panelOver");
+  $("playBtn").disabled = true;
+  $("skipBtn").disabled = true;
+}
+
+// 결과를 보여준 뒤 정답 모양을 만들면 다음 라운드로 넘어간다.
+function syncDone(now) {
+  if (opt.manual) return true;
+  if (!bothSeen(now)) return false;
+  return me.L.state === officialState.L && me.R.state === officialState.R;
+}
+
+// 시간이 지나도 모양이 안 맞으면 앱의 기준을 사람의 실제 손 모양으로 다시 맞춘다.
+// 어긋난 채로 다음 라운드에 들어가면 "그대로 두어야 하는 손"이 계속 틀린 것으로 잡힌다.
+function realState(now) {
+  if (opt.manual) return officialState;
+  if (!bothSeen(now)) return null;
+  return { L: me.L.state, R: me.R.state };
+}
+
+function syncHint() {
+  const wrong = ["L", "R"].filter((k) => me[k].state !== officialState[k]);
+  if (!wrong.length) return "정답 모양을 만드세요";
+  return "정답 모양을 만드세요 — " +
+    wrong.map((k) => `${HAND_TEXT[k]} ${SHAPE_TEXT[officialState[k]]}`).join(", ");
+}
+
+// ===========================================================================
+// 손이 사라졌을 때: 잠깐 경고하고, 안 돌아오면 끝내고 다음 사람을 기다린다
+// ===========================================================================
+const IN_PLAY = ["speak", "react", "judge", "result", "sync"];
+
+function checkHands(now) {
+  if (opt.manual) return true;
+
+  if (bothSeen(now)) {
+    if (phase === "lost") {
+      lostSince = 0;
+      setNotice("");
+      startRound();          // 돌아왔다. 새 명령으로 이어간다.
+      return false;
+    }
+    lostSince = 0;
+    return true;
+  }
+
+  if (!lostSince) lostSince = now;
+  const gone = now - lostSince;
+  if (gone < LOST_PAUSE_MS) return true;
+
+  if (IN_PLAY.includes(phase)) {
+    stopSpeech();
+    $("gauge").classList.remove("show");
+    $("verdict").classList.remove("show");
+    phase = "lost";
+  }
+  const left = Math.ceil((LOST_END_MS - gone) / 1000);
+  setNotice(`두 손을 화면 안에 두세요 — ${left}초 뒤 종료`);
+  if (gone >= LOST_END_MS) endGame("손이 보이지 않아 종료했습니다");
+  return false;
+}
+
+function updateGame(now) {
+  if (phase === "calib") { updateCalib(now); return; }
+  if (phase === "diag") { updateDiag(now); return; }
+
+  if (phase === "lost" || IN_PLAY.includes(phase)) {
+    if (!checkHands(now)) return;
+  }
+
+  if (phase === "wait") {
+    if (bothSeen(now)) {
+      if (!bothSince) bothSince = now;
+      if (now - bothSince >= BOTH_READY_MS) startCountdown(now);
+      else setNotice("두 손을 찾았습니다", true);
+    } else {
+      bothSince = 0;
+      setNotice("두 손을 화면 안에 보이세요", true);
+    }
+  } else if (phase === "countdown") {
+    const left = Math.ceil((phaseUntil - now) / 1000);
+    $("countdown").textContent = left > 0 ? String(left) : "시작!";
+    if (now >= phaseUntil) {
+      $("countdown").classList.remove("show");
+      resetGame();
+      $("playBtn").textContent = "일시정지";
+      $("skipBtn").disabled = false;
+      startRound();
+    }
+  } else if (phase === "react") {
+    const left = Math.max(0, phaseUntil - now);
+    const ratio = left / reactMs;
+    $("gaugeBar").style.width = `${ratio * 100}%`;
+    $("gauge").classList.toggle("hurry", ratio < 0.35);
+    if (left <= 0) judgeRound();
+  } else if (phase === "result" && now >= phaseUntil) {
+    $("verdict").classList.remove("show");
+    phase = "sync";
+    phaseUntil = now + SYNC_MS;
+    setNotice(syncHint(), true);
+  } else if (phase === "sync") {
+    if (syncDone(now)) { setNotice(""); startRound(); }
+    else if (now >= phaseUntil) {
+      const real = realState(now);
+      if (real) { officialState = real; setNotice(""); startRound(); }
+      else phaseUntil = now + 1000;
+    } else {
+      setNotice(syncHint(), true);
+    }
+  }
+}
+
+function startCountdown(now) {
+  phase = "countdown";
+  phaseUntil = now + COUNTDOWN_MS;
+  bothSince = 0;
+  setNotice("");
+  $("countdown").classList.add("show");
+  renderCommandLine();
+}
+
+// ===========================================================================
+// 좌우 보정: 오른손만 편 상태로 어느 쪽이 오른손인지 확정한다
+// ===========================================================================
+let calibSince = 0;
+
+function updateCalib(now) {
+  let msg = "두 손을 모두 보이게 드세요.";
+  if (bothSeen(now)) {
+    // 지금 배정된 왼손/오른손 중 어느 쪽이 펴져 있는지 본다
+    const openL = me.L.raw === "open";
+    const openR = me.R.raw === "open";
+    if (openL === openR) {
+      calibSince = 0;
+      msg = openL ? "한 손만 펴 주세요. 다른 손은 주먹입니다." : "오른손만 펴 주세요.";
+    } else {
+      if (!calibSince) calibSince = now;
+      msg = "그대로 유지하세요.";
+      if (now - calibSince >= CALIB_HOLD) {
+        // 지금 오른손으로 배정된 손이 접혀 있다면 좌우가 뒤집힌 것이다
+        if (!openR) rightIsScreenRight = !rightIsScreenRight;
+        me.calibrated = true;
+        afterCalib();
+        return;
+      }
+    }
+  } else {
+    calibSince = 0;
+  }
+  const far = sizeHint(now);
+  $("calibState").textContent = (far ? far + " " : "") + msg;
+}
+
+let wantDiag = false;   // 보정이 끝나면 게임 대신 인식 시험으로 간다
+
+function afterCalib() {
+  showPanel("");
+  $("playBtn").disabled = false;
+  if (wantDiag) {
+    phase = "diag";
+    $("diagBox").classList.add("show");
+    $("hands").style.display = "none";   // 같은 내용을 시험 패널이 보여준다
+    $("scoreBox").style.display = "none";
+    baseHint = "임계값을 바꿔가며 손 모양이 제대로 잡히는지 확인하세요.";
+  } else {
+    phase = "wait";
+    setNotice("좌우를 확인했습니다.", true);
+  }
+  renderCommandLine();
+}
+
+function leaveDiag() {
+  wantDiag = false;
+  testStage = "idle";
+  stopSpeech();
+  $("diagBox").classList.remove("show");
+  $("hands").style.display = "";
+  $("scoreBox").style.display = "";
+  phase = "wait";
+  bothSince = 0;
+  baseHint = "두 손이 보이면 자동으로 시작합니다.";
+  renderCommandLine();
+}
+
+// ===========================================================================
+// 인식 시험: 임계값을 바꿔가며 손 모양별로 몇 %나 제대로 잡히는지 잰다
+// ===========================================================================
+let testStage = "idle";   // idle | ready | measure | done
+let testItems = [];
+let testIndex = 0;
+let testUntil = 0;
+let testHit = 0, testTotal = 0;
+const testScores = [];
+
+function startTest() {
+  testItems = opt.useScissors ? [...TEST_BASE, ...TEST_SCISSORS] : [...TEST_BASE];
+  testIndex = 0;
+  testScores.length = 0;
+  $("testTable").innerHTML = "";
+  nextTestItem(performance.now());
+}
+
+function nextTestItem(now) {
+  if (testIndex >= testItems.length) {
+    testStage = "done";
+    say("시험이 끝났습니다");
+    const worst = testScores.reduce((a, b) => (b.rate < a.rate ? b : a), testScores[0]);
+    $("testState").textContent = worst
+      ? `가장 낮은 항목은 ${HAND_TEXT[worst.hand]} ${SHAPE_TEXT[worst.shape]} ${Math.round(worst.rate * 100)}%입니다.`
+      : "측정된 값이 없습니다.";
+    $("testBtn").textContent = "다시 시험";
+    return;
+  }
+  const item = testItems[testIndex];
+  testStage = "ready";
+  testUntil = now + TEST_READY_MS;
+  testHit = 0; testTotal = 0;
+  const verb = VERB[item.shape].final;
+  say(`${HAND_TEXT[item.hand]} ${verb}`);
+  $("testState").textContent =
+    `${testIndex + 1}/${testItems.length} · ${HAND_TEXT[item.hand]} ${verb} — 모양을 만드세요`;
+}
+
+function updateDiag(now) {
+  if (testStage === "ready" && now >= testUntil) {
+    testStage = "measure";
+    testUntil = now + TEST_HOLD_MS;
+    const item = testItems[testIndex];
+    $("testState").textContent =
+      `${testIndex + 1}/${testItems.length} · ${HAND_TEXT[item.hand]} ${VERB[item.shape].final} — 재는 중입니다. 그대로 유지하세요`;
+  } else if (testStage === "measure") {
+    const item = testItems[testIndex];
+    const slot = me[item.hand];
+    if (handSeen(slot, now)) {
+      testTotal += 1;
+      // 게임에서 쓰는 판정과 같은 기준으로 센다 (확정 모양 또는 실시간 모양)
+      if (slot.state === item.shape || slot.raw === item.shape) testHit += 1;
+    }
+    if (now >= testUntil) {
+      testScores.push({ ...item, rate: testTotal ? testHit / testTotal : 0, frames: testTotal });
+      renderTestTable();
+      testIndex += 1;
+      nextTestItem(now);
+    }
+  }
+  renderDiagLive(now);
+}
+
+function renderTestTable() {
+  $("testTable").innerHTML = testScores
+    .map((s) => {
+      const pct = Math.round(s.rate * 100);
+      const cls = pct >= 90 ? "good" : pct >= 60 ? "soso" : "bad";
+      const word = pct >= 90 ? "좋음" : pct >= 60 ? "보통" : "나쁨";
+      return `<tr><td>${HAND_TEXT[s.hand]} ${SHAPE_TEXT[s.shape]}</td><td class="${cls}">${pct}% ${word}</td></tr>`;
+    })
+    .join("");
+}
+
+function renderDiagLive(now) {
+  const rows = [`인식 <b>${fps.toFixed(0)}fps</b>`];
+  for (const key of ["L", "R"]) {
+    const slot = me[key];
+    if (!handSeen(slot, now)) {
+      rows.push(`${HAND_TEXT[key]} <span class="warn">보이지 않음</span>`);
+      continue;
+    }
+    rows.push(
+      `${HAND_TEXT[key]} <b>${SHAPE_TEXT[slot.state]}</b>` +
+      ` (실시간 ${slot.raw ? SHAPE_TEXT[slot.raw] : "애매"})` +
+      ` · 편 손가락 ${slot.count} · 크기 ${slot.size.toFixed(2)}`
+    );
+  }
+  const far = sizeHint(now);
+  if (far) rows.push(`<span class="warn">${far}</span>`);
+  rows.push(me.calibrated ? "좌우 보정 완료" : `<span class="warn">좌우 보정 전 (기본값 사용)</span>`);
+  $("dLive").innerHTML = rows.join("<br />");
+}
+
+// ===========================================================================
+// 카메라와 모델
+// ===========================================================================
+function setLoad(text, percent) {
+  $("loadText").textContent = text;
+  $("loadBar").style.width = `${percent}%`;
+}
+
+async function prepare() {
+  if (starting) return;
+  starting = true;
+  phase = "loading";
+  showPanel("panelLoad");
+
+  try {
+    setLoad("카메라 권한을 요청하는 중입니다.", 5);
+    // getUserMedia는 사용자가 직접 누른 뒤에만 호출한다
+    stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: "user", width: { ideal: CAM_W }, height: { ideal: CAM_H } },
+      audio: false,
+    });
+    video.srcObject = stream;
+    await video.play();
+    if (video.videoWidth) aspect = video.videoWidth / video.videoHeight;
+
+    if (!landmarker) {
+      setLoad("손 인식 파일을 받는 중입니다. 처음 한 번만 받습니다.", 25);
+      const fileset = await FilesetResolver.forVisionTasks(WASM_DIR);
+
+      setLoad("손 모델을 준비하는 중입니다.", 60);
+      const options = (delegate) => ({
+        baseOptions: { modelAssetPath: MODEL_PATH, delegate },
+        runningMode: "VIDEO",
+        numHands: 2,
+        // 기본값 0.5는 교실 조명에서 손을 자주 놓친다
+        minHandDetectionConfidence: 0.3,
+        minHandPresenceConfidence: 0.3,
+        minTrackingConfidence: 0.3,
+      });
+      try {
+        landmarker = await HandLandmarker.createFromOptions(fileset, options("GPU"));
+      } catch (gpuErr) {
+        // GPU 경로가 막힌 기기가 있다. 느려도 CPU로 진행한다.
+        console.warn("GPU 실패, CPU로 전환합니다", gpuErr);
+        setLoad("이 기기에서는 CPU로 인식합니다.", 70);
+        landmarker = await HandLandmarker.createFromOptions(fileset, options("CPU"));
+      }
+
+      // 첫 추론만 유난히 오래 걸린다. 미리 한 번 돌려 첫 명령이 밀리지 않게 한다.
+      setLoad("마지막 준비 중입니다.", 90);
+      try { landmarker.detectForVideo(video, performance.now()); } catch { /* 첫 프레임 전이면 넘어간다 */ }
+    }
+
+    setLoad("준비 완료", 100);
+    resize();
+    me.calibrated = false;
+    calibSince = 0;
+    phase = "calib";
+    showPanel("panelCalib");
+    $("calibState").textContent = "손을 찾는 중입니다.";
+    say("오른손만 펴 주세요");
+    if (!rafId) loop();
+  } catch (err) {
+    console.error(err);
+    phase = "error";
+    const name = err?.name ?? "";
+    if (name === "NotAllowedError") {
+      $("errTitle").textContent = "카메라 권한이 필요합니다";
+      $("errText").textContent =
+        "이 게임은 카메라로 손 모양을 판정합니다. 주소창의 카메라 아이콘을 눌러 허용으로 바꾼 뒤 다시 시도하세요. 카메라 없이 교사가 직접 판정하며 진행할 수도 있습니다.";
+    } else if (name === "NotFoundError" || name === "OverconstrainedError") {
+      $("errTitle").textContent = "카메라를 찾지 못했습니다";
+      $("errText").textContent = "카메라가 있는 기기에서 열거나, 카메라 없이 진행하세요.";
+    } else {
+      $("errTitle").textContent = "시작하지 못했습니다";
+      $("errText").textContent = `오류: ${err?.message ?? err}`;
+    }
+    showPanel("panelError");
+    stopCamera();
+  } finally {
+    starting = false;
+  }
+}
+
+function stopCamera() {
+  if (stream) {
+    // 카메라 표시등이 남지 않게 트랙을 확실히 끈다
+    stream.getTracks().forEach((t) => t.stop());
+    stream = null;
+  }
+  video.srcObject = null;
+  lastVideoTime = -1;
+  if (rafId) { cancelAnimationFrame(rafId); rafId = 0; }
+  me.L.lm = null; me.R.lm = null;
+  ctx.clearRect(0, 0, scene.clientWidth, scene.clientHeight);
+}
+
+function loop() {
+  rafId = requestAnimationFrame(loop);
+  const now = performance.now();
+
+  if (landmarker && video.readyState >= 2 && video.currentTime !== lastVideoTime) {
+    lastVideoTime = video.currentTime;
+    try {
+      const res = landmarker.detectForVideo(video, now);
+      updateHands(res.landmarks ?? [], now);
+    } catch (err) {
+      console.error(err);
+    }
+    const gap = now - lastInferAt;
+    if (lastInferAt && gap > 0) fps = fps ? fps * 0.9 + (1000 / gap) * 0.1 : 1000 / gap;
+    lastInferAt = now;
+  }
+
+  updateGame(now);
+  draw();
+  renderCards();
+  $("diag").textContent = landmarker ? `인식 ${fps.toFixed(0)}fps` : (opt.manual ? "수동 판정" : "");
+
+  const far = sizeHint(now);
+  const line = far || baseHint;
+  const hintEl = $("hint");
+  if (hintEl.textContent !== line) {
+    hintEl.textContent = line;
+    hintEl.style.color = far ? "#fca5a5" : "";
+  }
+}
+
+// ===========================================================================
+// 게임 시작과 초기화
+// ===========================================================================
+function resetGame() {
+  round = 0;
+  noChangeStreak = 0;
+  reactMs = REACT_START;
+  officialState = { L: "fist", R: "fist" };
+  command = null; prevCommand = null; lastVerdict = null;
+  me.miss = 0; me.streak = 0; me.best = 0; me.mark = ""; me.why = "";
+  lostSince = 0;
+  $("verdict").classList.remove("show");
+  $("undoBtn").disabled = true;
+  setNotice("");
+  renderCards();
+}
+
+function pausePlay() {
+  stopSpeech();
+  // "wait"로 두면 손이 보이는 순간 자동으로 다시 시작해 버린다. 멈춤은 따로 둔다.
+  phase = "paused";
+  bothSince = 0;
+  lostSince = 0;
+  $("gauge").classList.remove("show");
+  $("verdict").classList.remove("show");
+  $("countdown").classList.remove("show");
+  setNotice("일시정지", true);
+}
+
+// ===========================================================================
+// 이벤트
+// ===========================================================================
+for (const b of $("segDiff").querySelectorAll("button")) {
+  b.addEventListener("click", () => {
+    for (const o of $("segDiff").querySelectorAll("button")) o.classList.remove("on");
+    b.classList.add("on");
+    opt.diff = b.dataset.v;
+  });
+}
+
+$("optScissors").addEventListener("click", (e) => {
+  opt.useScissors = !opt.useScissors;
+  e.currentTarget.classList.toggle("on", opt.useScissors);
+  e.currentTarget.textContent = opt.useScissors ? "가위 넣음" : "가위 넣기";
+});
+
+$("textBtn").addEventListener("click", () => {
+  opt.showText = !opt.showText;
+  $("textBtn").textContent = opt.showText ? "명령 글씨 끄기" : "명령 글씨 켜기";
+  $("textBtn").classList.toggle("on", opt.showText);
+  renderCommandLine();
+});
+
+$("videoBtn").addEventListener("click", () => {
+  opt.showVideo = !opt.showVideo;
+  $("stage").classList.toggle("hide-video", !opt.showVideo);
+  $("videoBtn").textContent = opt.showVideo ? "영상 끄기" : "영상 켜기";
+  $("videoBtn").classList.toggle("on", opt.showVideo);
+});
+
+$("beginBtn").addEventListener("click", () => {
+  opt.manual = false; wantDiag = false;
+  checkVoice();
+  prepare();
+});
+
+$("diagBtn").addEventListener("click", () => {
+  opt.manual = false; wantDiag = true;
+  checkVoice();
+  prepare();
+});
+
+function startManual() {
+  opt.manual = true;
+  wantDiag = false;
+  checkVoice();
+  stopCamera();
+  landmarker = null;
+  showPanel("");
+  phase = "wait";
+  $("playBtn").disabled = false;
+  $("manualBox").style.display = "";
+  baseHint = "시작을 누르고, 명령이 끝나면 학생을 보고 ○ 또는 ✕를 누르세요.";
+  resetGame();
+  renderCommandLine();
+  if (!rafId) loop();
+}
+$("manualBtn").addEventListener("click", startManual);
+$("errManualBtn").addEventListener("click", startManual);
+$("retryBtn").addEventListener("click", () => prepare());
+
+$("calibSkip").addEventListener("click", () => {
+  me.calibrated = true;
+  afterCalib();
+  if (!wantDiag) setNotice("기본 좌우 설정으로 진행합니다. 첫 판정이 반대면 다시 보정하세요.", true);
+});
+
+$("testBtn").addEventListener("click", startTest);
+$("diagPlayBtn").addEventListener("click", leaveDiag);
+
+$("playBtn").addEventListener("click", () => {
+  if (phase === "diag") { leaveDiag(); return; }
+  if (phase === "paused") {
+    // 멈춤을 풀면 두 손이 보이는 대로 자동으로 이어간다
+    phase = "wait";
+    bothSince = 0;
+    setNotice("");
+    $("playBtn").textContent = "일시정지";
+    return;
+  }
+  if (phase === "wait" || phase === "lost") {
+    // 손을 기다리지 않고 바로 시작한다 (수동 판정이나 시연용)
+    $("playBtn").textContent = "일시정지";
+    $("skipBtn").disabled = false;
+    lostSince = 0;
+    resetGame();
+    startRound();
+  } else {
+    $("playBtn").textContent = "시작";
+    pausePlay();
+  }
+});
+
+$("skipBtn").addEventListener("click", () => {
+  if (["wait", "over", "intro", "diag"].includes(phase)) return;
+  stopSpeech();
+  $("verdict").classList.remove("show");
+  $("gauge").classList.remove("show");
+  setNotice("이번 명령을 건너뜁니다.", true);
+  // 건너뛸 때도 기준 모양은 사람의 실제 손에 맞춘다
+  officialState = realState(performance.now()) ?? (command ? { ...command.target } : officialState);
+  setTimeout(() => { if (phase !== "over") { setNotice(""); startRound(); } }, 500);
+});
+
+$("undoBtn").addEventListener("click", undoVerdict);
+
+for (const b of $("manualBox").querySelectorAll("button")) {
+  b.addEventListener("click", () => {
+    if (phase !== "judge" || !manualPending) return;
+    me.mark = b.dataset.j === "o" ? "○" : "✕";
+    me.why = "";
+    manualPending = false;
+    setNotice("");
+    applyScore();
+  });
+}
+
+$("againBtn").addEventListener("click", () => {
+  showPanel("");
+  $("playBtn").disabled = false;
+  $("playBtn").textContent = "시작";
+  $("skipBtn").disabled = true;
+  resetGame();
+  phase = "wait";
+  bothSince = 0;
+  renderCommandLine();
+});
+
+$("backBtn").addEventListener("click", () => {
+  stopSpeech();
+  stopCamera();
+  $("diagBox").classList.remove("show");
+  $("hands").style.display = "";
+  $("scoreBox").style.display = "";
+  wantDiag = false;
+  phase = "intro";
+  $("playBtn").disabled = true;
+  $("playBtn").textContent = "시작";
+  $("skipBtn").disabled = true;
+  $("manualBox").style.display = "none";
+  showPanel("panelStart");
+});
+
+// 탭이 가려지면 추론과 음성을 멈춘다. iPad에서 발열과 배터리 소모가 크다.
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) {
+    stopSpeech();
+    if (rafId) { cancelAnimationFrame(rafId); rafId = 0; }
+    if (IN_PLAY.includes(phase)) pausePlay();
+  } else if (!rafId && (stream || opt.manual)) {
+    loop();
+  }
+});
+
+// 한국어 음성이 없으면 게임이 성립하지 않으므로 글씨 모드로 자동 전환한다
+function checkVoice() {
+  voice = findVoice();
+  if (!voice) {
+    opt.showText = true;
+    $("textBtn").textContent = "명령 글씨 끄기";
+    $("textBtn").classList.add("on");
+    setNotice("이 기기는 한국어 음성을 쓸 수 없어 글씨로 진행합니다.", true);
+    setTimeout(() => setNotice(""), 4000);
+  }
+}
+if (window.speechSynthesis) {
+  speechSynthesis.getVoices();
+  speechSynthesis.addEventListener("voiceschanged", () => { voice = findVoice(); });
+}
+
+// 인식 시험 슬라이더. 바꾸면 다음 프레임부터 바로 판정에 반영된다.
+const SLIDERS = [
+  { id: "thExt",    out: "vExt",    get: () => EXT_RATIO,     set: (v) => { EXT_RATIO = v; },     fix: 2 },
+  { id: "thOpen",   out: "vOpen",   get: () => OPEN_MIN,      set: (v) => { OPEN_MIN = v; },      unit: "개" },
+  { id: "thFist",   out: "vFist",   get: () => FIST_MAX,      set: (v) => { FIST_MAX = v; },      unit: "개" },
+  { id: "thHold",   out: "vHold",   get: () => HOLD_MS,       set: (v) => { HOLD_MS = v; },       unit: "ms" },
+  { id: "thFlinch", out: "vFlinch", get: () => FLINCH_CHANGE, set: (v) => { FLINCH_CHANGE = v; }, unit: "개" },
+  { id: "thReact",  out: "vReact",  get: () => REACT_START,   set: (v) => { REACT_START = v; reactMs = v; }, unit: "ms" },
+];
+for (const s of SLIDERS) {
+  const el = $(s.id);
+  const show = (v) => { $(s.out).textContent = (s.fix ? v.toFixed(s.fix) : String(v)) + (s.unit ?? ""); };
+  el.value = String(s.get());
+  show(s.get());
+  el.addEventListener("input", () => { const v = Number(el.value); s.set(v); show(v); });
+}
+
+resize();
+renderCards();
+</script>
+</body>
+</html>

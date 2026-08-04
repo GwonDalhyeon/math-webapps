@@ -75,7 +75,8 @@ p {
 }
 
 .home-page .subject-card,
-.ai-math-page .subject-card {
+.ai-math-page .subject-card,
+.icebreaking-page .subject-card {
   display: flex;
   height: 100%;
   padding: 0;
@@ -85,12 +86,14 @@ p {
 }
 
 .home-page .subject-card:hover,
-.ai-math-page .subject-card:hover {
+.ai-math-page .subject-card:hover,
+.icebreaking-page .subject-card:hover {
   border-color: #cbd5e1;
 }
 
 .home-page .subject-card:focus-visible,
-.ai-math-page .subject-card:focus-visible {
+.ai-math-page .subject-card:focus-visible,
+.icebreaking-page .subject-card:focus-visible {
   outline: 3px solid #2563eb;
   outline-offset: 3px;
 }
@@ -124,7 +127,8 @@ p {
 
 @media (prefers-reduced-motion: reduce) {
   .home-page .subject-card,
-  .ai-math-page .subject-card {
+  .ai-math-page .subject-card,
+  .icebreaking-page .subject-card {
     transition: none;
   }
 }
