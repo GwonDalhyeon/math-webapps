@@ -99,6 +99,12 @@ probability-statistics/sample proportion/index.html
 <link rel="stylesheet" href="C:/Users/User/Documents/GitHub/math-webapps/assets/common.css">
 ```
 
+## 파비콘
+
+- 새 HTML 페이지의 `<head>`에는 루트 `favicon.ico`, `assets/favicon.svg`, `assets/apple-touch-icon.png`를 모두 연결한다.
+- 각 HTML 파일의 폴더 깊이에 맞는 상대경로를 사용한다. 예를 들어 교과 내부 웹앱은 `../../favicon.ico`, 교과 목록은 `../favicon.ico`를 사용한다.
+- 빈 `data:,` 파비콘이나 로컬 절대경로로 파비콘 요청을 막지 않는다.
+
 ## 목록 페이지 수정
 
 새 웹앱을 추가할 때는 다음을 함께 처리한다.
