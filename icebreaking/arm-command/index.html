@@ -1,0 +1,1752 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="음성으로 나오는 팔 동작 명령을 듣고 그대로 따라 하는 아이스브레이킹 웹앱입니다. 카메라가 팔 자세를 판정하고, 부정문 명령과 움찔 반응까지 잡아냅니다." />
+  <title>오른손 들어! 왼손 들지 마!</title>
+  <link rel="stylesheet" href="../../assets/common.css" />
+  <style>
+    /* 교실 앞에서 두 명이 하는 게임 화면이라 공통 카드 레이아웃 대신 화면을 가득 쓴다. */
+    html, body { height: 100%; }
+    body { background: #0f172a; color: #e2e8f0; overflow: hidden; }
+
+    .app { height: 100dvh; display: flex; flex-direction: column; }
+
+    .bar {
+      display: flex; align-items: center; gap: 10px;
+      padding: 8px 14px; background: #111c33;
+      border-bottom: 1px solid #1e293b; flex: none;
+    }
+    .bar.bottom { border-bottom: none; border-top: 1px solid #1e293b; flex-wrap: wrap; }
+    .bar h1 { margin: 0; font-size: 20px; color: #f8fafc; }
+    .bar .spacer { flex: 1; }
+    .home { color: #93c5fd; text-decoration: none; font-weight: 700; font-size: 15px; }
+    .diag { font-size: 13px; color: #64748b; font-variant-numeric: tabular-nums; }
+
+    button {
+      font: inherit; font-weight: 700;
+      padding: 10px 18px; border-radius: 10px;
+      border: 1px solid #1d4ed8; background: #1d4ed8; color: #fff;
+      cursor: pointer; min-height: 44px;
+    }
+    button.ghost { background: #0b1220; border-color: #334155; color: #cbd5e1; }
+    button.mini { padding: 7px 12px; min-height: 36px; font-size: 14px; }
+    button.ok { background: #15803d; border-color: #15803d; }
+    button.no { background: #b91c1c; border-color: #b91c1c; }
+    button:disabled { opacity: .4; cursor: not-allowed; }
+    button.on { background: #0e7490; border-color: #0e7490; color: #fff; }
+
+    .stage { position: relative; flex: 1; min-height: 0; background: #000; overflow: hidden; }
+    .stage video, .stage canvas {
+      position: absolute; inset: 0; width: 100%; height: 100%;
+      object-fit: contain;
+      transform: scaleX(-1); /* 거울 표시: 영상과 그림에 같은 반전을 적용한다 */
+    }
+    .stage.hide-video video { visibility: hidden; }
+
+    /* 화면 위 글자는 모두 DOM으로 얹는다. 캔버스에 그리면 좌우가 뒤집힌다. */
+    .cmdwrap {
+      position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
+      width: min(96%, 1000px); text-align: center; pointer-events: none;
+    }
+    .cmd {
+      font-size: clamp(30px, 5.6vw, 68px); font-weight: 900; line-height: 1.15;
+      color: #f8fafc; text-shadow: 0 4px 22px rgba(0,0,0,.9);
+      min-height: 1.2em;
+    }
+    .cmd .neg { color: #fca5a5; text-decoration: underline; text-decoration-thickness: 4px; }
+    .cmd.quiet { font-size: clamp(20px, 2.6vw, 30px); color: #64748b; font-weight: 800; }
+    .gauge {
+      height: 14px; border-radius: 999px; background: rgba(30,41,59,.85);
+      overflow: hidden; margin: 10px auto 0; width: min(80%, 720px);
+      opacity: 0; transition: opacity .15s;
+    }
+    .gauge.show { opacity: 1; }
+    .gauge i { display: block; height: 100%; width: 100%; background: #38bdf8; }
+    .gauge.hurry i { background: #f97316; }
+
+    .players {
+      position: absolute; left: 0; right: 0; bottom: 10px;
+      display: flex; justify-content: space-between; gap: 10px;
+      padding: 0 12px; pointer-events: none;
+    }
+    .pcard {
+      background: rgba(15,23,42,.82); border: 2px solid #1e293b;
+      border-radius: 14px; padding: 8px 14px; min-width: 190px;
+    }
+    .pcard.p2 { text-align: right; }
+    .pcard.hidden { display: none; }
+    .pcard.lost { border-color: #7f1d1d; }
+    .pname { font-size: 15px; font-weight: 800; color: #93c5fd; }
+    .pcard.p2 .pname { color: #fda4af; }
+    .parms { font-size: clamp(17px, 2.2vw, 24px); font-weight: 800; margin: 2px 0; }
+    .parms .off { color: #64748b; }
+    .pinfo { font-size: 15px; color: #cbd5e1; font-variant-numeric: tabular-nums; }
+    .pmark { font-size: clamp(22px, 3vw, 34px); font-weight: 900; min-height: 1.1em; }
+    .pmark.o { color: #4ade80; }
+    .pmark.x { color: #fca5a5; }
+
+    .verdict {
+      position: absolute; inset: 0; display: none;
+      align-items: center; justify-content: center; gap: clamp(14px, 4vw, 48px);
+      background: rgba(2,6,23,.72); pointer-events: none; padding: 12px;
+    }
+    .verdict.show { display: flex; }
+    .verdict .vtext { max-width: 46%; }
+    .vcmd { font-size: clamp(22px, 3.4vw, 42px); font-weight: 900; color: #f8fafc; line-height: 1.2; }
+    .vcmd .neg { color: #fca5a5; text-decoration: underline; text-decoration-thickness: 3px; }
+    .vwhy { font-size: clamp(15px, 2vw, 22px); color: #fde047; font-weight: 800; margin-top: 10px; line-height: 1.4; }
+    .vlabel { font-size: 15px; color: #94a3b8; font-weight: 800; margin-bottom: 6px; }
+    .verdict svg { width: clamp(150px, 24vw, 260px); height: auto; }
+
+    .notice {
+      position: absolute; left: 50%; bottom: 96px; transform: translateX(-50%);
+      background: rgba(127,29,29,.92); padding: 9px 20px; border-radius: 999px;
+      font-size: clamp(15px, 2.1vw, 20px); font-weight: 800;
+      display: none; pointer-events: none; text-align: center;
+    }
+    .notice.show { display: block; }
+    .notice.calm { background: rgba(30,58,95,.94); }
+
+    .panel {
+      position: absolute; inset: 0; display: none;
+      align-items: center; justify-content: center;
+      background: rgba(2,6,23,.9); padding: 14px; overflow: auto;
+    }
+    .panel.show { display: flex; }
+    .sheet {
+      width: min(680px, 100%); background: #0f1a30;
+      border: 1px solid #1e3a5f; border-radius: 18px; padding: 20px 22px;
+    }
+    .sheet h2 { margin: 0 0 8px; font-size: 26px; color: #f8fafc; }
+    .sheet p { font-size: 15px; line-height: 1.6; color: #cbd5e1; margin: 0 0 10px; }
+    .sheet ol { font-size: 15px; line-height: 1.65; color: #cbd5e1; margin: 0 0 12px; padding-left: 20px; }
+    .sheet .small { font-size: 13px; color: #94a3b8; }
+    .opt { margin-bottom: 12px; }
+    .opt > span { display: block; font-size: 14px; color: #94a3b8; font-weight: 700; margin-bottom: 5px; }
+    .seg { display: flex; gap: 6px; flex-wrap: wrap; }
+    .seg button { flex: 1 1 auto; min-height: 40px; padding: 8px 12px; font-size: 15px; }
+    .actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 14px; }
+    .actions button { flex: 1 1 auto; }
+    /* 인식 시험 패널 */
+    .diagbox {
+      position: absolute; left: 12px; top: 12px; width: min(330px, 42vw);
+      max-height: calc(100% - 24px); overflow: auto;
+      background: rgba(15,23,42,.92); border: 1px solid #1e3a5f;
+      border-radius: 14px; padding: 12px 14px; display: none;
+    }
+    .diagbox.show { display: block; }
+    .diagbox h3 { margin: 0 0 8px; font-size: 17px; color: #f8fafc; }
+    .dlive { font-size: 14px; line-height: 1.55; color: #cbd5e1; font-variant-numeric: tabular-nums; }
+    .dlive b { color: #f8fafc; }
+    .dlive .warn { color: #fca5a5; font-weight: 800; }
+    .dsec { margin-top: 10px; padding-top: 10px; border-top: 1px solid #1e293b; }
+    .slider { margin-bottom: 8px; }
+    .slider label { display: flex; justify-content: space-between; font-size: 13px; color: #94a3b8; }
+    .slider label b { color: #7dd3fc; font-variant-numeric: tabular-nums; }
+    .slider input { width: 100%; }
+    .dtest { font-size: 14px; color: #cbd5e1; }
+    .dtable { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 8px; }
+    .dtable td { padding: 3px 4px; border-bottom: 1px solid #1e293b; }
+    .dtable td:last-child { text-align: right; font-variant-numeric: tabular-nums; font-weight: 800; }
+    .dtable .good { color: #4ade80; }
+    .dtable .soso { color: #fbbf24; }
+    .dtable .bad  { color: #fca5a5; }
+
+    .progress { height: 10px; border-radius: 999px; background: #1e293b; overflow: hidden; margin: 12px 0 8px; }
+    .progress i { display: block; height: 100%; width: 0; background: #38bdf8; transition: width .25s; }
+    .big { font-size: 60px; font-weight: 900; color: #4ade80; line-height: 1.1; margin: 6px 0; }
+
+    @media (orientation: portrait) {
+      .bar h1 { font-size: 17px; }
+      .players { flex-direction: column; align-items: stretch; }
+      .pcard.p2 { text-align: left; }
+      /* 세로 화면에서는 카드가 아래에 쌓이므로 안내 문구를 명령 아래로 올린다 */
+      .notice { bottom: auto; top: 128px; }
+      .verdict { flex-direction: column; gap: 12px; }
+      .verdict .vtext { max-width: 92%; text-align: center; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header class="bar">
+      <a class="home" href="../">← 아이스브레이킹</a>
+      <h1>오른손 들어! 왼손 들지 마!</h1>
+      <span class="spacer"></span>
+      <span class="diag" id="diag"></span>
+      <button class="mini ghost" id="textBtn" type="button">명령 글씨 켜기</button>
+      <button class="mini ghost on" id="videoBtn" type="button">영상 끄기</button>
+    </header>
+
+    <div class="stage" id="stage">
+      <video id="video" playsinline muted></video>
+      <canvas id="scene"></canvas>
+
+      <!-- 인식 시험 패널: 임계값을 바꿔가며 자세별 적중률을 잰다 -->
+      <div class="diagbox" id="diagBox">
+        <h3>인식 시험</h3>
+        <div class="dlive" id="dLive">카메라를 준비하는 중입니다.</div>
+
+        <div class="dsec">
+          <div class="slider">
+            <label for="thUp">들었다 기준 (낮출수록 관대) <b id="vUp"></b></label>
+            <input type="range" id="thUp" min="0.05" max="0.60" step="0.01" />
+          </div>
+          <div class="slider">
+            <label for="thSideX">옆으로 뻗은 거리 <b id="vSideX"></b></label>
+            <input type="range" id="thSideX" min="0.30" max="1.00" step="0.05" />
+          </div>
+          <div class="slider">
+            <label for="thSideY">옆 인정 높이 폭 <b id="vSideY"></b></label>
+            <input type="range" id="thSideY" min="0.20" max="1.00" step="0.05" />
+          </div>
+          <div class="slider">
+            <label for="thHold">자세 확정 시간 <b id="vHold"></b></label>
+            <input type="range" id="thHold" min="60" max="500" step="20" />
+          </div>
+          <div class="slider">
+            <label for="thFlinch">움찔 거리 <b id="vFlinch"></b></label>
+            <input type="range" id="thFlinch" min="0.20" max="0.90" step="0.05" />
+          </div>
+        </div>
+
+        <div class="dsec dtest">
+          <div id="testState">여섯 가지 자세를 순서대로 안내하며 적중률을 잽니다.</div>
+          <table class="dtable" id="testTable"></table>
+          <div class="actions" style="margin-top:10px">
+            <button class="mini" id="testBtn" type="button">자동 시험 시작</button>
+            <button class="mini ghost" id="diagPlayBtn" type="button">게임으로</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="cmdwrap">
+        <div class="cmd quiet" id="cmdText"></div>
+        <div class="gauge" id="gauge"><i id="gaugeBar"></i></div>
+      </div>
+
+      <div class="players" id="players">
+        <div class="pcard p1" id="card1">
+          <div class="pname" id="name1">도전자</div>
+          <div class="parms" id="arms1"><span class="off">인식 대기</span></div>
+          <div class="pinfo" id="info1"></div>
+          <div class="pmark" id="mark1"></div>
+        </div>
+        <div class="pcard p2 hidden" id="card2">
+          <div class="pname" id="name2">플레이어 2</div>
+          <div class="parms" id="arms2"><span class="off">인식 대기</span></div>
+          <div class="pinfo" id="info2"></div>
+          <div class="pmark" id="mark2"></div>
+        </div>
+      </div>
+
+      <div class="verdict" id="verdict">
+        <div class="vtext">
+          <div class="vlabel">방금 명령</div>
+          <div class="vcmd" id="vCmd"></div>
+          <div class="vwhy" id="vWhy"></div>
+        </div>
+        <div>
+          <div class="vlabel">정답 자세</div>
+          <div id="vPose"></div>
+        </div>
+      </div>
+
+      <div class="notice" id="notice"></div>
+
+      <!-- 시작 화면 -->
+      <div class="panel show" id="panelStart">
+        <div class="sheet">
+          <h2>오른손 들어! 왼손 들지 마!</h2>
+          <ol>
+            <li>스피커에서 <strong>명령이 음성으로</strong> 나옵니다. 글씨는 기본적으로 보이지 않습니다.</li>
+            <li>팔은 <strong>내려 / 옆으로 뻗어 / 들어</strong> 세 가지입니다.</li>
+            <li><strong>"~하지 마"</strong>가 붙으면 그 팔은 그대로 두어야 합니다.</li>
+            <li>카메라가 팔 자세를 보고 판정합니다. 라운드마다 조금씩 빨라집니다.</li>
+          </ol>
+
+          <div class="opt">
+            <span>인원</span>
+            <div class="seg" id="segMode">
+              <button type="button" data-v="1" class="on">1인 도전</button>
+              <button type="button" data-v="2">2인 대결</button>
+            </div>
+          </div>
+
+          <div class="opt" id="optRule" style="display:none">
+            <span>2인 대결 방식</span>
+            <div class="seg" id="segRule">
+              <button type="button" data-v="lives" class="on">목숨 3개 (먼저 3번 틀리면 패배)</button>
+              <button type="button" data-v="rounds">10라운드 (많이 맞힌 쪽 승리)</button>
+            </div>
+          </div>
+
+          <div class="opt">
+            <span>난이도 (부정문과 두 절 명령의 비율)</span>
+            <div class="seg" id="segDiff">
+              <button type="button" data-v="easy">쉬움</button>
+              <button type="button" data-v="normal" class="on">보통</button>
+              <button type="button" data-v="hard">어려움</button>
+            </div>
+          </div>
+
+          <div class="opt">
+            <span>추가 설정</span>
+            <div class="seg">
+              <button type="button" id="optSide" class="on">옆으로 뻗기 사용</button>
+              <button type="button" id="optFlinch" class="on">움찔도 실점</button>
+            </div>
+          </div>
+
+          <p class="small">
+            카메라 영상은 이 기기 안에서만 처리되고 어디에도 저장되거나 전송되지 않습니다.
+            지금은 인식을 확인하기 좋게 영상을 켠 상태가 기본이며, 위쪽 <strong>영상 끄기</strong>를 누르면
+            막대 사람만 남습니다. 상반신과 두 팔이 들어오도록 기기에서 <strong>두세 걸음</strong> 물러나세요.
+            소리가 커야 하니 스피커를 확인하세요.
+            처음 쓰신다면 <strong>인식 시험 먼저</strong>로 자세가 제대로 잡히는지 확인하세요.
+          </p>
+          <div class="actions">
+            <button id="beginBtn" type="button">카메라 켜고 시작</button>
+            <button class="ghost" id="diagBtn" type="button">인식 시험 먼저</button>
+            <button class="ghost" id="manualBtn" type="button">카메라 없이 (교사가 판정)</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 로딩 화면 -->
+      <div class="panel" id="panelLoad">
+        <div class="sheet">
+          <h2>준비 중</h2>
+          <p id="loadText">카메라 권한을 요청하는 중입니다.</p>
+          <div class="progress"><i id="loadBar"></i></div>
+          <p class="small">
+            자세 인식에 필요한 파일 약 17MB를 <strong>처음 한 번만</strong> 받습니다.
+            다음부터는 바로 시작됩니다.
+          </p>
+        </div>
+      </div>
+
+      <!-- 좌우 보정 화면 -->
+      <div class="panel" id="panelCalib">
+        <div class="sheet">
+          <h2>오른손을 들어 주세요</h2>
+          <p>
+            카메라가 어느 쪽이 오른손인지 확인합니다.
+            <strong>오른손만</strong> 머리 위로 들고 잠시 기다리세요.
+            왼손은 내린 채로 둡니다.
+          </p>
+          <p id="calibState" class="small">사람을 찾는 중입니다.</p>
+          <div class="actions">
+            <button class="ghost" id="calibSkip" type="button">건너뛰기 (기본값 사용)</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 종료 화면 -->
+      <div class="panel" id="panelOver">
+        <div class="sheet">
+          <h2 id="overTitle">게임 끝</h2>
+          <div class="big" id="overBig"></div>
+          <p id="overText"></p>
+          <div class="actions">
+            <button id="againBtn" type="button">다시 하기</button>
+            <button class="ghost" id="backBtn" type="button">설정 바꾸기</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 오류 화면 -->
+      <div class="panel" id="panelError">
+        <div class="sheet">
+          <h2 id="errTitle">카메라를 쓸 수 없습니다</h2>
+          <p id="errText"></p>
+          <div class="actions">
+            <button id="retryBtn" type="button">다시 시도</button>
+            <button class="ghost" id="errManualBtn" type="button">카메라 없이 진행</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <footer class="bar bottom">
+      <button class="mini" id="playBtn" type="button" disabled>시작</button>
+      <button class="mini ghost" id="skipBtn" type="button" disabled>건너뛰기</button>
+      <button class="mini ghost" id="undoBtn" type="button" disabled>방금 판정 취소</button>
+      <span class="spacer"></span>
+      <span id="manualBox" style="display:none">
+        <button class="mini ok" data-j="1o" type="button">1번 ○</button>
+        <button class="mini no" data-j="1x" type="button">1번 ✕</button>
+        <button class="mini ok" data-j="2o" type="button" style="display:none">2번 ○</button>
+        <button class="mini no" data-j="2x" type="button" style="display:none">2번 ✕</button>
+      </span>
+      <span class="diag" id="hint">시작을 누르면 첫 명령이 나옵니다.</span>
+    </footer>
+  </div>
+
+<script type="module">
+import {
+  FilesetResolver,
+  PoseLandmarker,
+} from "../../assets/vendor/mediapipe/tasks-vision/vision_bundle.mjs";
+
+// ===========================================================================
+// 판정 상수
+// 수업 직전에 손볼 값이라 한곳에 모아 둔다.
+// 길이 단위는 모두 "어깨너비 = 1"이다. 사람이 멀리 서든 가까이 서든 같은 기준이 된다.
+// ===========================================================================
+const CAM_W = 640, CAM_H = 480;
+
+// 놓친 판정과 우연한 통과 중에는 우연한 통과가 덜 나쁘다. 아이스브레이킹이므로 관대한 쪽으로 기울인다.
+// 아래 다섯 값은 인식 시험 화면에서 슬라이더로 바로 바꿀 수 있다. 여기 적힌 값이 시작값이다.
+let UP_MARGIN   = 0.22;  // 손목이 어깨보다 이만큼 위면 들었다고 본다
+let SIDE_X_MIN  = 0.60;  // 어깨에서 옆으로 이만큼 벌어지면 뻗었다고 본다
+let SIDE_Y_BAND = 0.60;  // 옆으로 뻗은 것으로 인정하는 위아래 폭. 팔이 처져도 인정한다
+let HOLD_MS     = 180;   // 이만큼 유지되어야 자세를 확정한다 (떨림 제거)
+
+// 사람이 화면에 크게 잡히면 손을 든 순간 손목이 화면 밖으로 나간다.
+// 화면 밖 좌표는 모델이 추정한 값이라 믿을 수 없으므로 팔꿈치로 판정을 넘긴다.
+// 팔꿈치는 어깨에 가까워 같은 자세에서도 값이 작게 나오므로 기준을 따로 둔다.
+const EDGE          = 0.02;  // 이 안쪽이면 화면 가장자리로 본다
+const WRIST_VIS_MIN = 0.5;   // 손목 신뢰도가 이보다 낮으면 팔꿈치를 쓴다
+const ELBOW_UP      = 0.15;
+const ELBOW_SIDE_X  = 0.35;
+const ELBOW_SIDE_Y  = 0.40;
+
+// 어깨너비가 화면 가로의 이 비율을 넘으면 너무 가까이 선 것이다
+const TOO_CLOSE = 0.34;
+const TOO_FAR   = 0.10;
+
+// 움찔 판정: 세 가지가 모두 맞아야 인정한다. 하나만 쓰면 반드시 오심이 난다.
+//  - 크기: 명령이 시작된 순간의 손목 위치에서 FLINCH_DIST 이상 벗어났다 → 미세한 떨림을 거른다
+//  - 단계: 팔의 자세 단계가 실제로 바뀌었다 → 경계에서 값이 흔들리는 경우를 거른다
+//  - 지속: 그 상태가 FLINCH_FRAMES 프레임 이어졌다 → 랜드마크가 한 프레임 튀는 경우를 거른다
+// 기준점은 직전 프레임이 아니라 "명령이 시작된 순간"이다. 프레임 간 차이를 누적하면 잡음도 쌓인다.
+let FLINCH_DIST     = 0.45;
+const FLINCH_FRAMES = 4;
+
+// 인식 시험에서 순서대로 안내할 자세
+const TEST_ITEMS = [
+  { arm: "R", level: "up" }, { arm: "R", level: "side" }, { arm: "R", level: "down" },
+  { arm: "L", level: "up" }, { arm: "L", level: "side" }, { arm: "L", level: "down" },
+];
+const TEST_READY_MS = 2400;   // 안내를 듣고 자세를 잡는 시간
+const TEST_HOLD_MS  = 2000;   // 이 동안 몇 프레임이나 목표대로 잡히는지 센다
+
+const DEFAULT_SHOW_VIDEO = true;  // 수업 배포 때는 false로 두어 영상을 감춘다
+
+const REACT_START = 1400;  // 첫 라운드 반응 시간(ms)
+const REACT_STEP  = 60;    // 라운드마다 이만큼 줄인다
+const REACT_MIN   = 700;
+const CLAUSE_GAP  = 240;   // 절 사이 간격
+const FALLBACK_CLAUSE_MS = 1050; // 음성을 못 쓸 때 절 표시 간격
+const RESULT_MS   = 2400;  // 정답 공개 시간
+const SYNC_MS     = 4000;  // 정답 자세로 맞출 시간 상한
+const CALIB_HOLD  = 500;   // 보정에서 자세를 유지해야 하는 시간
+const NO_POSE_MS  = 700;   // 이만큼 안 보이면 판정하지 않는다
+
+const LIVES     = 3;
+const ROUNDS_B  = 10;
+
+const WASM_DIR   = "../../assets/vendor/mediapipe/tasks-vision/wasm";
+const MODEL_PATH = "../../assets/vendor/mediapipe/models/pose_landmarker_lite.task";
+const BEST_KEY   = "arm-command-best-v1";
+
+// MediaPipe 자세 랜드마크 번호. 좌/우 이름은 촬영된 사람 기준이지만,
+// 실제 어느 쪽이 오른손인지는 시작할 때 보정으로 확정한다.
+const SIDE_A = { shoulder: 11, elbow: 13, wrist: 15 };
+const SIDE_B = { shoulder: 12, elbow: 14, wrist: 16 };
+const NOSE = 0, HIP_A = 23, HIP_B = 24;
+
+const DIFFS = {
+  easy:   { two: 0.12, neg: 0.18, same: 0.12, repeat: 0.10, rate: 1.0 },
+  normal: { two: 0.32, neg: 0.32, same: 0.20, repeat: 0.16, rate: 1.0 },
+  hard:   { two: 0.55, neg: 0.45, same: 0.24, repeat: 0.22, rate: 1.15 },
+};
+const NO_CHANGE_MAX = 2;   // "가만히 있기"가 정답인 라운드가 이보다 길게 이어지지 않게 한다
+
+const ARM_TEXT = { L: "왼손", R: "오른손", B: "양손" };
+const LEVEL_TEXT = { up: "위", side: "옆", down: "아래" };
+const LEVEL_MARK = { up: "↑", side: "→", down: "↓" };
+// 색만으로 구분하지 않도록 화면에는 항상 글자와 화살표를 함께 그린다
+const LEVEL_COLOR = { up: "#4ade80", side: "#fbbf24", down: "#94a3b8" };
+const VERB = {
+  up:   { final: "들어",        conn: "들고",        negFinal: "들지 마",        negConn: "들지 말고" },
+  side: { final: "옆으로 뻗어", conn: "옆으로 뻗고", negFinal: "옆으로 뻗지 마", negConn: "옆으로 뻗지 말고" },
+  down: { final: "내려",        conn: "내리고",      negFinal: "내리지 마",      negConn: "내리지 말고" },
+};
+
+// ===========================================================================
+// DOM
+// ===========================================================================
+const $ = (id) => document.getElementById(id);
+const video = $("video");
+const scene = $("scene");
+const ctx = scene.getContext("2d");
+
+// ===========================================================================
+// 상태
+// ===========================================================================
+let phase = "intro";   // intro | loading | calib | ready | speak | react | judge | result | sync | over | error
+let landmarker = null;
+let stream = null;
+let rafId = 0;
+let starting = false;  // 시작을 여러 번 눌러도 스트림이 겹치지 않게 한다
+let lastVideoTime = -1;
+
+const opt = {
+  players: 1,
+  rule: "lives",     // lives | rounds (2인 전용)
+  diff: "normal",
+  useSide: true,
+  useFlinch: true,
+  showText: false,
+  showVideo: DEFAULT_SHOW_VIDEO,
+  manual: false,     // 카메라 없이 교사가 판정
+};
+
+let voice = null;          // 한국어 음성. 없으면 글씨 모드로 자동 전환한다
+let speakTimer = 0;
+let watchdog = 0;
+
+let officialState = { L: "down", R: "down" };  // 명령이 쌓이는 공식 자세
+let command = null;        // { clauses, target, text }
+let prevCommand = null;
+let round = 0;
+let noChangeStreak = 0;
+let reactMs = REACT_START;
+let phaseUntil = 0;
+let lastVerdict = null;    // 방금 판정 취소용
+let manualPending = new Set();
+
+let fps = 0, lastInferAt = 0, seenCount = 0;
+let baseHint = "시작을 누르면 첫 명령이 나옵니다.";
+
+const players = [makePlayer(0), makePlayer(1)];
+
+function makePlayer(i) {
+  return {
+    i,
+    lm: null, lastSeenAt: 0,
+    rightSide: SIDE_B,        // 보정 전 기본값. 보정으로 확정한다
+    calibrated: false,
+    arms: {
+      L: { raw: "down", rawPrev: "down", since: 0, state: "down" },
+      R: { raw: "down", rawPrev: "down", since: 0, state: "down" },
+    },
+    base: { L: null, R: null },        // 명령 시작 시점 손목 위치
+    startLevel: { L: null, R: null },  // 명령 시작 시점 팔 단계
+    moved: { L: 0, R: 0 },             // 크게 벗어난 연속 프레임 수
+    flinched: { L: false, R: false },
+    detail: { L: null, R: null },      // 무엇을 근거로 판정했는지 (인식 시험 표시용)
+    frameRatio: 0,                     // 어깨너비 / 화면 가로. 서 있는 거리를 가늠한다
+    lives: LIVES, score: 0, streak: 0, best: 0,
+    mark: "", why: "",
+  };
+}
+
+// ===========================================================================
+// 좌표: X는 0..aspect, Y는 0..1. 화면 높이를 1로 두어 거리 계산을 단순하게 한다.
+// ===========================================================================
+let aspect = CAM_W / CAM_H;
+const pt = (lm, i) => ({ X: lm[i].x * aspect, Y: lm[i].y });
+const dist = (a, b) => Math.hypot(a.X - b.X, a.Y - b.Y);
+
+// 어깨를 기준으로 한 점이 어느 단계에 있는지 나눈다.
+function classifyPoint(sh, p, sw, upMargin, sideX, sideY) {
+  const dy = (sh.Y - p.Y) / sw;          // + 면 어깨보다 위
+  const dx = Math.abs(p.X - sh.X) / sw;  // 옆으로 벌어진 정도
+  if (dy > upMargin) return "up";
+  if (dx > sideX && dy > -sideY) return "side";
+  return "down";
+}
+
+// 팔 하나를 세 단계 중 하나로 나눈다. 무엇을 근거로 판정했는지도 함께 돌려준다.
+function classifyArm(lm, side, sw) {
+  const sh = pt(lm, side.shoulder);
+  const raw = lm[side.wrist];
+  const vis = raw.visibility ?? 1;
+
+  // 손목이 화면 위로 나갔다면 그것 자체가 손을 들었다는 뜻이다
+  if (raw.y < EDGE) return { level: "up", used: "화면 위로 나감", vis };
+
+  // 좌우나 아래로 나갔거나 신뢰도가 낮으면 손목 대신 팔꿈치로 판정한다
+  const shaky = vis < WRIST_VIS_MIN ||
+    raw.x < EDGE || raw.x > 1 - EDGE || raw.y > 1 - EDGE;
+  if (shaky) {
+    return {
+      level: classifyPoint(sh, pt(lm, side.elbow), sw, ELBOW_UP, ELBOW_SIDE_X, ELBOW_SIDE_Y),
+      used: "팔꿈치", vis,
+    };
+  }
+  return {
+    level: classifyPoint(sh, pt(lm, side.wrist), sw, UP_MARGIN, SIDE_X_MIN, SIDE_Y_BAND),
+    used: "손목", vis,
+  };
+}
+
+// 한 프레임의 인식 결과를 사람별 상태로 옮긴다.
+function updatePlayers(poses, now) {
+  seenCount = poses.length;
+
+  // 화면에 보이는 왼쪽부터 1번으로 배정한다. 화면은 거울이라 x를 뒤집어 정렬한다.
+  const sorted = poses
+    .map((lm) => ({ lm, mx: 1 - (lm[SIDE_A.shoulder].x + lm[SIDE_B.shoulder].x) / 2 }))
+    .sort((a, b) => a.mx - b.mx)
+    .slice(0, opt.players);
+
+  for (let i = 0; i < players.length; i++) {
+    const p = players[i];
+    const hit = sorted[i];
+    if (!hit) { p.lm = null; continue; }
+    p.lm = hit.lm;
+    p.lastSeenAt = now;
+
+    const sw = dist(pt(p.lm, SIDE_A.shoulder), pt(p.lm, SIDE_B.shoulder));
+    if (sw < 0.02) continue;  // 어깨가 겹쳐 보이면 기준을 못 잡는다
+    p.frameRatio = sw / aspect;
+
+    const left = p.rightSide === SIDE_B ? SIDE_A : SIDE_B;
+    for (const key of ["L", "R"]) {
+      const res = classifyArm(p.lm, key === "R" ? p.rightSide : left, sw);
+      p.detail[key] = res;
+      updateArm(p, key, res.level, now);
+    }
+
+    // 움찔 감시: 명령이 시작된 순간의 손목 위치에서 얼마나 벗어났는지 본다
+    if (opt.useFlinch && (phase === "speak" || phase === "react")) {
+      for (const key of ["L", "R"]) {
+        const side = key === "R" ? p.rightSide : left;
+        const wr = pt(p.lm, side.wrist);
+        if (!p.base[key]) {
+          p.base[key] = wr;
+          p.startLevel[key] = p.arms[key].state;
+          continue;
+        }
+        const far = dist(wr, p.base[key]) / sw > FLINCH_DIST;
+        const changed = p.arms[key].raw !== p.startLevel[key];
+        if (far && changed) {
+          p.moved[key] += 1;
+          if (p.moved[key] >= FLINCH_FRAMES) p.flinched[key] = true;
+        } else {
+          p.moved[key] = 0;
+        }
+      }
+    }
+  }
+}
+
+function updateArm(p, key, raw, now) {
+  const a = p.arms[key];
+  if (raw !== a.rawPrev) { a.rawPrev = raw; a.since = now; }
+  if (raw !== a.state && now - a.since >= HOLD_MS) a.state = raw;
+  a.raw = raw;
+}
+
+const isSeen = (p, now) => p.lm && now - p.lastSeenAt < NO_POSE_MS;
+
+// 서 있는 거리가 적절한지 알려준다. 너무 가까우면 손을 들었을 때 손목이 화면 밖으로 나간다.
+function distanceHint() {
+  const live = players.slice(0, opt.players).filter((p) => p.lm && p.frameRatio);
+  if (!live.length) return "";
+  const ratios = live.map((p) => p.frameRatio);
+  if (Math.max(...ratios) > TOO_CLOSE) return "너무 가깝습니다. 한두 걸음 물러나세요.";
+  if (Math.min(...ratios) < TOO_FAR) return "너무 멉니다. 한 걸음 다가오세요.";
+  return "";
+}
+
+// ===========================================================================
+// 명령 만들기
+// ===========================================================================
+const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
+
+function makeClause(arm, state, d, levels) {
+  const cur = arm === "B" ? null : state[arm];
+  const others = levels.filter((l) => l !== cur);
+  const neg = Math.random() < d.neg;
+  let level;
+  if (neg) {
+    // 부정문은 지금과 다른 동작을 말해야 미끼가 된다
+    level = pick(others.length ? others : levels);
+  } else if (cur && Math.random() < d.same) {
+    level = cur;              // 이미 그 자세인데 또 시키는 함정. 정답은 "변화 없음"
+  } else {
+    level = pick(others.length ? others : levels);
+  }
+  return { arm, level, neg };
+}
+
+const sameState = (a, b) => a.L === b.L && a.R === b.R;
+
+function makeCommand(state, d) {
+  let cmd = randomCommand(state, d);
+  // 부정문, 반복 명령, "이미 그 자세" 함정은 모두 정답이 무동작이다.
+  // 그대로 두면 절반 가까이가 가만히 있는 라운드가 되어 게임이 멈춘 것처럼 보인다.
+  if (sameState(cmd.target, state) && noChangeStreak >= NO_CHANGE_MAX) {
+    const levels = opt.useSide ? ["down", "side", "up"] : ["down", "up"];
+    const arm = Math.random() < 0.5 ? "L" : "R";
+    cmd = buildCommand(state, [makeClause(arm, state, { ...d, neg: 0, same: 0 }, levels)]);
+  }
+  noChangeStreak = sameState(cmd.target, state) ? noChangeStreak + 1 : 0;
+  return cmd;
+}
+
+function randomCommand(state, d) {
+  // 같은 명령을 연달아 내는 함정
+  if (prevCommand && Math.random() < d.repeat) {
+    return buildCommand(state, prevCommand.clauses.map((c) => ({ ...c })));
+  }
+  const levels = opt.useSide ? ["down", "side", "up"] : ["down", "up"];
+  let clauses;
+  if (Math.random() < d.two) {
+    const order = Math.random() < 0.5 ? ["L", "R"] : ["R", "L"];
+    clauses = order.map((a) => makeClause(a, state, d, levels));
+  } else {
+    const arm = Math.random() < 0.18 ? "B" : (Math.random() < 0.5 ? "L" : "R");
+    clauses = [makeClause(arm, state, d, levels)];
+  }
+  return buildCommand(state, clauses);
+}
+
+function buildCommand(state, clauses) {
+  const target = { ...state };
+  for (const c of clauses) {
+    if (c.neg) continue;                       // 부정 절은 그 팔을 그대로 둔다
+    if (c.arm === "B") { target.L = c.level; target.R = c.level; }
+    else target[c.arm] = c.level;
+  }
+  const parts = clauses.map((c, i) => {
+    const v = VERB[c.level];
+    const last = i === clauses.length - 1;
+    const word = c.neg ? (last ? v.negFinal : v.negConn) : (last ? v.final : v.conn);
+    return { text: `${ARM_TEXT[c.arm]} ${word}`, neg: c.neg };
+  });
+  return { clauses, target, parts };
+}
+
+const cmdHtml = (parts, upto) =>
+  parts
+    .slice(0, upto === undefined ? parts.length : upto)
+    .map((p) => `<span class="${p.neg ? "neg" : ""}">${p.text}</span>`)
+    .join(" ");
+
+// ===========================================================================
+// 음성
+// ===========================================================================
+function findVoice() {
+  const list = window.speechSynthesis ? speechSynthesis.getVoices() : [];
+  return list.find((v) => /^ko/i.test(v.lang)) ?? null;
+}
+
+function speakParts(parts, onShow, onDone) {
+  let i = 0;
+  const step = () => {
+    if (i >= parts.length) { onDone(); return; }
+    const idx = i++;
+    onShow(idx + 1);
+    if (!voice) {
+      // 음성을 못 쓰면 글씨를 순서대로 띄우고 같은 간격으로 넘어간다
+      speakTimer = setTimeout(step, FALLBACK_CLAUSE_MS);
+      return;
+    }
+    const u = new SpeechSynthesisUtterance(parts[idx].text);
+    u.voice = voice; u.lang = voice.lang; u.rate = DIFFS[opt.diff].rate;
+    let moved = false;
+    const next = () => {
+      if (moved) return;
+      moved = true;
+      clearTimeout(watchdog);
+      speakTimer = setTimeout(step, CLAUSE_GAP);
+    };
+    u.onend = next;
+    u.onerror = next;
+    // onend가 오지 않는 브라우저가 있다. 길이에 여유를 두고 강제로 넘긴다.
+    clearTimeout(watchdog);
+    watchdog = setTimeout(next, 1200 + parts[idx].text.length * 260);
+    speechSynthesis.speak(u);
+  };
+  step();
+}
+
+function say(text) {
+  if (!voice) return;
+  const u = new SpeechSynthesisUtterance(text);
+  u.voice = voice; u.lang = voice.lang;
+  speechSynthesis.speak(u);
+}
+
+function stopSpeech() {
+  clearTimeout(speakTimer); clearTimeout(watchdog);
+  if (window.speechSynthesis) speechSynthesis.cancel();
+}
+
+// ===========================================================================
+// 그리기: 막대 사람과 팔 상태 표시. 화면 전체 안내 문구는 DOM으로 얹는다.
+// ===========================================================================
+function fitRect(cw, ch) {
+  let w = cw, h = cw / aspect;
+  if (h > ch) { h = ch; w = ch * aspect; }
+  return { x: (cw - w) / 2, y: (ch - h) / 2, w, h };
+}
+
+function resize() {
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  scene.width = Math.round(scene.clientWidth * dpr);
+  scene.height = Math.round(scene.clientHeight * dpr);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+window.addEventListener("resize", resize);
+
+function draw() {
+  const cw = scene.clientWidth, ch = scene.clientHeight;
+  ctx.clearRect(0, 0, cw, ch);
+  const r = fitRect(cw, ch);
+  const P = (lm, i) => ({ x: r.x + lm[i].x * r.w, y: r.y + lm[i].y * r.h });
+
+  if (opt.players === 2) {
+    ctx.strokeStyle = "rgba(148,163,184,.35)";
+    ctx.setLineDash([10, 10]); ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(cw / 2, r.y); ctx.lineTo(cw / 2, r.y + r.h); ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  for (const p of players) {
+    if (!p.lm || p.i >= opt.players) continue;
+    const lm = p.lm;
+    const color = p.i === 0 ? "#60a5fa" : "#fb7185";
+    ctx.strokeStyle = color; ctx.fillStyle = color;
+    ctx.lineWidth = 7; ctx.lineCap = "round"; ctx.lineJoin = "round";
+
+    const sA = P(lm, SIDE_A.shoulder), sB = P(lm, SIDE_B.shoulder);
+    const hA = P(lm, HIP_A), hB = P(lm, HIP_B);
+    const head = P(lm, NOSE);
+
+    ctx.beginPath();
+    ctx.moveTo(sA.x, sA.y); ctx.lineTo(sB.x, sB.y);
+    ctx.moveTo((sA.x + sB.x) / 2, (sA.y + sB.y) / 2);
+    ctx.lineTo((hA.x + hB.x) / 2, (hA.y + hB.y) / 2);
+    ctx.moveTo(hA.x, hA.y); ctx.lineTo(hB.x, hB.y);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.arc(head.x, head.y - 6, 22, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // 지금 이 팔을 무엇으로 보고 있는지 팔 위에 바로 표시한다.
+    // 학생이 스스로 자세를 고칠 수 있고, 교사는 판정이 왜 그렇게 났는지 알 수 있다.
+    const swNorm = dist(pt(lm, SIDE_A.shoulder), pt(lm, SIDE_B.shoulder));
+    const leftSide = p.rightSide === SIDE_B ? SIDE_A : SIDE_B;
+
+    // "들었다"로 넘어가는 높이. 이 선을 넘기면 위로 판정된다.
+    const lineY = r.y + (lm[SIDE_A.shoulder].y - UP_MARGIN * swNorm) * r.h;
+    ctx.strokeStyle = "rgba(74,222,128,.45)";
+    ctx.lineWidth = 2; ctx.setLineDash([8, 8]);
+    ctx.beginPath();
+    ctx.moveTo(Math.min(sA.x, sB.x) - 70, lineY);
+    ctx.lineTo(Math.max(sA.x, sB.x) + 70, lineY);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    for (const key of ["L", "R"]) {
+      const side = key === "R" ? p.rightSide : leftSide;
+      const s = P(lm, side.shoulder), e = P(lm, side.elbow), w = P(lm, side.wrist);
+      const level = p.arms[key].state;
+      const tone = LEVEL_COLOR[level];
+
+      ctx.strokeStyle = tone; ctx.fillStyle = tone; ctx.lineWidth = 9;
+      ctx.beginPath();
+      ctx.moveTo(s.x, s.y); ctx.lineTo(e.x, e.y); ctx.lineTo(w.x, w.y);
+      ctx.stroke();
+      ctx.beginPath(); ctx.arc(w.x, w.y, 11, 0, Math.PI * 2); ctx.fill();
+
+      const dy = level === "up" ? -26 : 34;
+      drawLabel(w.x, w.y + dy, `${ARM_TEXT[key]} ${LEVEL_MARK[level]} ${LEVEL_TEXT[level]}`, tone);
+    }
+  }
+}
+
+// 캔버스 전체가 거울 반전되어 있으므로 글자만 다시 뒤집어 똑바로 보이게 한다
+function drawLabel(x, y, text, color) {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.scale(-1, 1);
+  ctx.font = "800 21px system-ui, -apple-system, sans-serif";
+  ctx.textAlign = "center"; ctx.textBaseline = "middle";
+  ctx.lineWidth = 6; ctx.strokeStyle = "rgba(2,6,23,.9)";
+  ctx.strokeText(text, 0, 0);
+  ctx.fillStyle = color;
+  ctx.fillText(text, 0, 0);
+  ctx.restore();
+}
+
+// 정답 자세 그림. 화면이 거울이므로 오른손을 보는 사람 기준 오른쪽에 그린다.
+function poseSvg(state) {
+  const arm = (level, mirror) => {
+    const g = {
+      down: [[152, 116], [160, 152]],
+      side: [[170, 82], [208, 82]],
+      up:   [[156, 52], [150, 14]],
+    }[level];
+    const p = g.map(([x, y]) => [mirror ? 220 - x : x, y]);
+    const sx = mirror ? 85 : 135;
+    return `<polyline points="${sx},82 ${p[0][0]},${p[0][1]} ${p[1][0]},${p[1][1]}"
+      fill="none" stroke="#facc15" stroke-width="9" stroke-linecap="round" stroke-linejoin="round" />
+      <circle cx="${p[1][0]}" cy="${p[1][1]}" r="8" fill="#facc15" />`;
+  };
+  return `<svg viewBox="0 0 220 230" role="img" aria-label="정답 자세">
+    <circle cx="110" cy="42" r="20" fill="none" stroke="#e2e8f0" stroke-width="7" />
+    <path d="M85 82 H135 M110 82 V150 M88 150 H132" fill="none" stroke="#e2e8f0"
+      stroke-width="8" stroke-linecap="round" />
+    ${arm(state.R, false)}
+    ${arm(state.L, true)}
+    <text x="46" y="222" fill="#94a3b8" font-size="17" font-weight="700">왼손</text>
+    <text x="150" y="222" fill="#94a3b8" font-size="17" font-weight="700">오른손</text>
+  </svg>`;
+}
+
+// ===========================================================================
+// 화면 갱신
+// ===========================================================================
+function showPanel(id) {
+  for (const el of document.querySelectorAll(".panel")) el.classList.toggle("show", el.id === id);
+}
+
+function setNotice(text, calm) {
+  const el = $("notice");
+  if (el.textContent === (text ?? "")) return;  // 매 프레임 같은 문구를 다시 쓰지 않는다
+  el.textContent = text ?? "";
+  el.classList.toggle("show", Boolean(text));
+  el.classList.toggle("calm", Boolean(calm));
+}
+
+function renderCards() {
+  for (const p of players) {
+    const n = p.i + 1;
+    $(`card${n}`).classList.toggle("hidden", p.i >= opt.players);
+    if (p.i >= opt.players) continue;
+    $(`name${n}`).textContent = opt.players === 1 ? "도전자" : `플레이어 ${n}`;
+
+    const seen = isSeen(p, performance.now()) || opt.manual;
+    $(`arms${n}`).innerHTML = seen
+      ? `왼손 ${LEVEL_MARK[p.arms.L.state]} ${LEVEL_TEXT[p.arms.L.state]}
+         &nbsp; 오른손 ${LEVEL_MARK[p.arms.R.state]} ${LEVEL_TEXT[p.arms.R.state]}`
+      : `<span class="off">보이지 않음</span>`;
+
+    let info;
+    if (opt.players === 1) info = `연속 ${p.streak}회 · 남은 기회 ${p.lives}`;
+    else if (opt.rule === "lives") info = `남은 목숨 ${p.lives}`;
+    else info = `${p.score}점 · ${round}/${ROUNDS_B}라운드`;
+    $(`info${n}`).textContent = info;
+
+    const mark = $(`mark${n}`);
+    mark.textContent = p.mark;
+    mark.className = `pmark ${p.mark === "○" ? "o" : p.mark === "✕" ? "x" : ""}`;
+    $(`card${n}`).classList.toggle("lost", p.lives <= 0);
+  }
+}
+
+function renderCommandLine() {
+  const el = $("cmdText");
+  if (!command || phase === "ready" || phase === "over") {
+    el.className = "cmd quiet";
+    el.textContent = phase === "ready" ? "시작을 누르세요" : "";
+    return;
+  }
+  if (opt.showText) {
+    el.className = "cmd";
+    el.innerHTML = cmdHtml(command.parts, command.shown);
+  } else {
+    el.className = "cmd quiet";
+    el.textContent = phase === "speak" ? "잘 들으세요" : "";
+  }
+}
+
+// ===========================================================================
+// 라운드 진행
+// ===========================================================================
+function startRound() {
+  round += 1;
+  command = makeCommand(officialState, DIFFS[opt.diff]);
+  command.shown = 0;
+  prevCommand = command;
+
+  for (const p of players) {
+    p.mark = ""; p.why = "";
+    p.base = { L: null, R: null };
+    p.startLevel = { L: null, R: null };
+    p.moved = { L: 0, R: 0 };
+    p.flinched = { L: false, R: false };
+  }
+  lastVerdict = null;
+  $("undoBtn").disabled = true;
+  $("verdict").classList.remove("show");
+  setNotice("");
+
+  phase = "speak";
+  renderCommandLine();
+  speakParts(
+    command.parts,
+    (n) => { command.shown = n; renderCommandLine(); },
+    () => {
+      if (phase !== "speak") return;
+      phase = "react";
+      phaseUntil = performance.now() + reactMs;
+      $("gauge").classList.add("show");
+      renderCommandLine();
+    }
+  );
+}
+
+function judgeRound() {
+  phase = "judge";
+  $("gauge").classList.remove("show");
+  const now = performance.now();
+  const target = command.target;
+  manualPending.clear();
+
+  for (const p of players) {
+    if (p.i >= opt.players) continue;
+    if (opt.manual) { manualPending.add(p.i); continue; }
+
+    if (!isSeen(p, now)) {
+      p.mark = "—"; p.why = "인식되지 않아 이번 라운드는 무효입니다.";
+      continue;
+    }
+    // 판정 순간에 막 도착한 자세도 인정한다. 확정 상태(state)는 HOLD_MS만큼 늦게 따라오므로
+    // 시간에 딱 맞춰 자세를 만든 학생이 억울하게 틀리는 일을 막는다.
+    const armOk = (key) => p.arms[key].state === target[key] || p.arms[key].raw === target[key];
+    const okPose = armOk("L") && armOk("R");
+    let flinch = "";
+    if (okPose && opt.useFlinch) {
+      for (const key of ["L", "R"]) {
+        // 그대로 두는 게 정답인 팔만 움찔 대상이다
+        if (target[key] === officialState[key] && p.flinched[key]) {
+          flinch = `${ARM_TEXT[key]}이 움직였다 돌아왔습니다`;
+          break;
+        }
+      }
+    }
+    if (!okPose) {
+      p.mark = "✕";
+      p.why = `${ARM_TEXT.L} ${LEVEL_TEXT[target.L]}, ${ARM_TEXT.R} ${LEVEL_TEXT[target.R]}가 정답입니다.`;
+    } else if (flinch) {
+      p.mark = "✕"; p.why = `움찔! ${flinch}.`;
+    } else {
+      p.mark = "○"; p.why = "";
+    }
+  }
+
+  if (opt.manual) {
+    setNotice("교사가 판정하세요. ○ 또는 ✕를 누릅니다.", true);
+    showVerdict();
+    return;
+  }
+  applyScores();
+}
+
+function applyScores() {
+  for (const p of players) {
+    if (p.i >= opt.players || p.mark === "—") continue;
+    if (p.mark === "○") { p.streak += 1; p.score += 1; }
+    else { p.streak = 0; p.lives -= 1; }
+  }
+  lastVerdict = players.slice(0, opt.players).map((p) => p.mark);
+  $("undoBtn").disabled = false;
+
+  showVerdict();
+  officialState = { ...command.target };
+  reactMs = Math.max(REACT_MIN, reactMs - REACT_STEP);
+
+  phase = "result";
+  phaseUntil = performance.now() + RESULT_MS;
+  renderCards();
+  if (isOver()) endGame();
+}
+
+function showVerdict() {
+  $("vCmd").innerHTML = cmdHtml(command.parts);
+  $("vPose").innerHTML = poseSvg(command.target);
+  const why = players
+    .slice(0, opt.players)
+    .filter((p) => p.why)
+    .map((p) => (opt.players === 1 ? p.why : `${p.i + 1}번: ${p.why}`))
+    .join(" / ");
+  $("vWhy").textContent = why;
+  $("verdict").classList.add("show");
+  renderCards();
+}
+
+function undoVerdict() {
+  if (!lastVerdict) return;
+  for (const p of players) {
+    if (p.i >= opt.players) continue;
+    const m = lastVerdict[p.i];
+    if (m === "○") { p.score -= 1; p.streak = Math.max(0, p.streak - 1); }
+    else if (m === "✕") { p.lives += 1; }
+    p.mark = ""; p.why = "";
+  }
+  lastVerdict = null;
+  $("undoBtn").disabled = true;
+  setNotice("방금 판정을 취소했습니다.", true);
+  renderCards();
+}
+
+function isOver() {
+  const live = players.slice(0, opt.players);
+  if (opt.players === 1) return live[0].lives <= 0;
+  if (opt.rule === "lives") return live.some((p) => p.lives <= 0);
+  return round >= ROUNDS_B;
+}
+
+function endGame() {
+  phase = "over";
+  stopSpeech();
+  $("gauge").classList.remove("show");
+  const a = players[0], b = players[1];
+
+  if (opt.players === 1) {
+    const best = Math.max(a.best, a.score);
+    a.best = best;
+    try { localStorage.setItem(BEST_KEY, String(best)); } catch { /* 저장 못해도 진행 */ }
+    $("overTitle").textContent = "게임 끝";
+    $("overBig").textContent = `${a.score}개 성공`;
+    $("overText").textContent = `총 ${round}라운드를 했습니다. 이 브라우저 최고 기록은 ${best}개입니다.`;
+  } else if (opt.rule === "lives") {
+    const loser = a.lives <= 0 && b.lives <= 0 ? null : (a.lives <= 0 ? a : b);
+    $("overTitle").textContent = loser ? `${loser.i === 0 ? 2 : 1}번 승리` : "무승부";
+    $("overBig").textContent = loser ? `플레이어 ${loser.i === 0 ? 2 : 1}` : "무승부";
+    $("overText").textContent = `${round}라운드 만에 끝났습니다. 목숨 ${a.lives} : ${b.lives}`;
+  } else if (a.score === b.score) {
+    // 동점이면 서든데스: 먼저 틀리는 쪽이 패배
+    $("overTitle").textContent = "동점";
+    $("overBig").textContent = `${a.score} : ${b.score}`;
+    $("overText").textContent = "서든데스로 이어서 하려면 다시 하기를 누르세요. 먼저 틀리는 쪽이 집니다.";
+  } else {
+    const win = a.score > b.score ? 1 : 2;
+    $("overTitle").textContent = `${win}번 승리`;
+    $("overBig").textContent = `${a.score} : ${b.score}`;
+    $("overText").textContent = `${ROUNDS_B}라운드를 마쳤습니다.`;
+  }
+  showPanel("panelOver");
+  $("playBtn").disabled = true;
+  $("skipBtn").disabled = true;
+}
+
+// 결과를 보여준 뒤, 모두가 정답 자세를 만들면 다음 라운드로 넘어간다.
+function syncDone(now) {
+  if (opt.manual) return true;
+  for (const p of players) {
+    if (p.i >= opt.players) continue;
+    if (!isSeen(p, now)) return false;
+    if (p.arms.L.state !== officialState.L || p.arms.R.state !== officialState.R) return false;
+  }
+  return true;
+}
+
+// 자세가 맞지 않은 채로 다음 라운드에 들어가면, 그 뒤로는 학생이 명령을 정확히 따라도
+// "그대로 두어야 하는 팔"이 계속 틀린 것으로 잡힌다. 한 번 어긋나면 계속 틀리는 구조가 된다.
+// 그래서 억지로 넘어가는 대신, 앱의 기준 자세를 사람의 실제 자세로 다시 맞춘다.
+function realState(now) {
+  if (opt.manual) return officialState;
+  const live = players.slice(0, opt.players).filter((p) => isSeen(p, now));
+  if (live.length < opt.players) return null;
+  const first = { L: live[0].arms.L.state, R: live[0].arms.R.state };
+  for (const p of live) {
+    // 두 사람 자세가 서로 다르면 기준을 정할 수 없다
+    if (p.arms.L.state !== first.L || p.arms.R.state !== first.R) return null;
+  }
+  return first;
+}
+
+// 무엇을 고쳐야 하는지 팔 단위로 알려준다
+function syncHint(now) {
+  const parts = [];
+  for (const p of players) {
+    if (p.i >= opt.players) continue;
+    const who = opt.players === 2 ? `${p.i + 1}번 ` : "";
+    if (!isSeen(p, now)) { parts.push(`${who}보이지 않습니다`); continue; }
+    const wrong = ["L", "R"].filter((k) => p.arms[k].state !== officialState[k]);
+    if (wrong.length) {
+      parts.push(who + wrong.map((k) => `${ARM_TEXT[k]} ${LEVEL_TEXT[officialState[k]]}`).join(", "));
+    }
+  }
+  return parts.length ? `정답 자세를 만드세요 — ${parts.join(" / ")}` : "정답 자세를 만드세요";
+}
+
+function updateGame(now) {
+  if (phase === "react") {
+    const left = Math.max(0, phaseUntil - now);
+    const ratio = left / reactMs;
+    $("gaugeBar").style.width = `${ratio * 100}%`;
+    $("gauge").classList.toggle("hurry", ratio < 0.35);
+    if (left <= 0) judgeRound();
+  } else if (phase === "result" && now >= phaseUntil) {
+    $("verdict").classList.remove("show");
+    phase = "sync";
+    phaseUntil = now + SYNC_MS;
+    setNotice("정답 자세를 만드세요", true);
+  } else if (phase === "sync") {
+    if (syncDone(now)) {
+      setNotice("");
+      startRound();
+    } else if (now >= phaseUntil) {
+      const real = realState(now);
+      if (real) { officialState = real; setNotice(""); startRound(); }
+      else { phaseUntil = now + 1200; setNotice(syncHint(now), true); }
+    } else {
+      setNotice(syncHint(now), true);
+    }
+  } else if (phase === "calib") {
+    updateCalib(now);
+  } else if (phase === "diag") {
+    updateDiag(now);
+  }
+}
+
+// ===========================================================================
+// 인식 시험: 임계값을 바꿔가며 자세별로 몇 %나 제대로 잡히는지 잰다
+// ===========================================================================
+let testStage = "idle";   // idle | ready | measure | done
+let testIndex = 0;
+let testUntil = 0;
+let testHit = 0, testTotal = 0;
+const testScores = [];
+
+function startTest() {
+  testStage = "ready";
+  testIndex = 0;
+  testScores.length = 0;
+  $("testTable").innerHTML = "";
+  nextTestItem(performance.now());
+}
+
+function nextTestItem(now) {
+  if (testIndex >= TEST_ITEMS.length) {
+    testStage = "done";
+    say("시험이 끝났습니다");
+    const worst = testScores.reduce((a, b) => (b.rate < a.rate ? b : a), testScores[0]);
+    $("testState").textContent = worst
+      ? `가장 낮은 항목은 ${ARM_TEXT[worst.arm]} ${LEVEL_TEXT[worst.level]} ${Math.round(worst.rate * 100)}%입니다.`
+      : "측정된 값이 없습니다.";
+    $("testBtn").textContent = "다시 시험";
+    return;
+  }
+  const item = TEST_ITEMS[testIndex];
+  testStage = "ready";
+  testUntil = now + TEST_READY_MS;
+  testHit = 0; testTotal = 0;
+  const verb = VERB[item.level].final;
+  say(`${ARM_TEXT[item.arm]} ${verb}`);
+  $("testState").textContent = `${testIndex + 1}/${TEST_ITEMS.length} · ${ARM_TEXT[item.arm]} ${verb} — 자세를 잡으세요`;
+}
+
+function updateDiag(now) {
+  const p = players[0];
+
+  if (testStage === "ready" && now >= testUntil) {
+    testStage = "measure";
+    testUntil = now + TEST_HOLD_MS;
+    const item = TEST_ITEMS[testIndex];
+    $("testState").textContent =
+      `${testIndex + 1}/${TEST_ITEMS.length} · ${ARM_TEXT[item.arm]} ${VERB[item.level].final} — 재는 중입니다. 그대로 유지하세요`;
+  } else if (testStage === "measure") {
+    const item = TEST_ITEMS[testIndex];
+    if (isSeen(p, now)) {
+      testTotal += 1;
+      // 게임에서 쓰는 판정과 같은 기준으로 센다 (확정 상태 또는 실시간 상태)
+      if (p.arms[item.arm].state === item.level || p.arms[item.arm].raw === item.level) testHit += 1;
+    }
+    if (now >= testUntil) {
+      const rate = testTotal ? testHit / testTotal : 0;
+      testScores.push({ ...item, rate, frames: testTotal });
+      renderTestTable();
+      testIndex += 1;
+      nextTestItem(now);
+    }
+  }
+  renderDiagLive(now);
+}
+
+function renderTestTable() {
+  $("testTable").innerHTML = testScores
+    .map((s) => {
+      const pct = Math.round(s.rate * 100);
+      const cls = pct >= 90 ? "good" : pct >= 60 ? "soso" : "bad";
+      const word = pct >= 90 ? "좋음" : pct >= 60 ? "보통" : "나쁨";
+      return `<tr><td>${ARM_TEXT[s.arm]} ${LEVEL_TEXT[s.level]}</td>
+        <td class="${cls}">${pct}% ${word}</td></tr>`;
+    })
+    .join("");
+}
+
+function renderDiagLive(now) {
+  const p = players[0];
+  const rows = [];
+  if (!isSeen(p, now)) {
+    rows.push(`<span class="warn">사람이 보이지 않습니다</span>`);
+  } else {
+    const near = distanceHint();
+    rows.push(`인식 <b>${fps.toFixed(0)}fps</b> · 거리 <b>${Math.round(p.frameRatio * 100)}%</b>` +
+      (near ? ` <span class="warn">${near}</span>` : " 적당"));
+    for (const key of ["L", "R"]) {
+      const d = p.detail[key];
+      if (!d) continue;
+      rows.push(
+        `${ARM_TEXT[key]} <b>${LEVEL_TEXT[p.arms[key].state]}</b>` +
+        ` (실시간 ${LEVEL_TEXT[p.arms[key].raw]}) · ${d.used} · 신뢰도 ${d.vis.toFixed(2)}`
+      );
+    }
+    rows.push(p.calibrated ? "좌우 보정 완료" : `<span class="warn">좌우 보정 전 (기본값 사용)</span>`);
+  }
+  $("dLive").innerHTML = rows.join("<br />");
+}
+
+// ===========================================================================
+// 좌우 보정: 한쪽 팔만 든 상태를 오른손으로 확정한다
+// ===========================================================================
+let calibSince = [0, 0];
+
+function updateCalib(now) {
+  const need = opt.players;
+  let done = 0, msg = "사람을 찾는 중입니다.";
+
+  for (let i = 0; i < need; i++) {
+    const p = players[i];
+    if (p.calibrated) { done += 1; continue; }
+    if (!isSeen(p, now)) { calibSince[i] = 0; continue; }
+
+    const sw = dist(pt(p.lm, SIDE_A.shoulder), pt(p.lm, SIDE_B.shoulder));
+    const upA = classifyArm(p.lm, SIDE_A, sw).level === "up";
+    const upB = classifyArm(p.lm, SIDE_B, sw).level === "up";
+
+    if (upA === upB) {           // 둘 다 들었거나 둘 다 안 들었다
+      calibSince[i] = 0;
+      msg = upA ? "한쪽 손만 들어 주세요." : "오른손만 들어 주세요.";
+      continue;
+    }
+    if (!calibSince[i]) calibSince[i] = now;
+    msg = "그대로 유지하세요.";
+    if (now - calibSince[i] >= CALIB_HOLD) {
+      p.rightSide = upA ? SIDE_A : SIDE_B;
+      p.calibrated = true;
+      done += 1;
+    }
+  }
+
+  const far = distanceHint();
+  $("calibState").textContent =
+    (far ? far + " " : "") + (need === 2 ? `${msg} (확인된 사람 ${done}/2)` : msg);
+
+  if (done >= need) afterCalib();
+}
+
+let wantDiag = false;   // 보정이 끝나면 게임 대신 인식 시험으로 간다
+
+function afterCalib() {
+  showPanel("");
+  $("playBtn").disabled = false;
+  renderCommandLine();
+  if (wantDiag) {
+    phase = "diag";
+    $("diagBox").classList.add("show");
+    $("players").style.display = "none";  // 같은 내용을 시험 패널이 보여주므로 겹치지 않게 감춘다
+    setNotice("");
+    baseHint = "임계값을 바꿔가며 자세가 제대로 잡히는지 확인하세요.";
+  } else {
+    phase = "ready";
+    setNotice("좌우를 확인했습니다. 손을 내리고 기다리세요.", true);
+    setTimeout(() => { if (phase === "ready") setNotice(""); }, 1800);
+  }
+}
+
+function leaveDiag() {
+  wantDiag = false;
+  testStage = "idle";
+  stopSpeech();
+  $("diagBox").classList.remove("show");
+  $("players").style.display = "";
+  phase = "ready";
+  baseHint = "시작을 누르면 첫 명령이 나옵니다.";
+  renderCommandLine();
+}
+
+// ===========================================================================
+// 카메라와 모델
+// ===========================================================================
+function setLoad(text, percent) {
+  $("loadText").textContent = text;
+  $("loadBar").style.width = `${percent}%`;
+}
+
+async function prepare() {
+  if (starting) return;
+  starting = true;
+  phase = "loading";
+  showPanel("panelLoad");
+
+  try {
+    setLoad("카메라 권한을 요청하는 중입니다.", 5);
+    // getUserMedia는 사용자가 직접 누른 뒤에만 호출한다
+    stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: "user", width: { ideal: CAM_W }, height: { ideal: CAM_H } },
+      audio: false,
+    });
+    video.srcObject = stream;
+    await video.play();
+    if (video.videoWidth) aspect = video.videoWidth / video.videoHeight;
+
+    const wantPoses = opt.players;
+    if (landmarker && landmarker._poses !== wantPoses) {
+      landmarker.close(); landmarker = null;
+    }
+    if (!landmarker) {
+      setLoad("자세 인식 파일을 받는 중입니다. 처음 한 번만 받습니다.", 25);
+      const fileset = await FilesetResolver.forVisionTasks(WASM_DIR);
+
+      setLoad("자세 모델을 준비하는 중입니다.", 60);
+      const options = (delegate) => ({
+        baseOptions: { modelAssetPath: MODEL_PATH, delegate },
+        runningMode: "VIDEO",
+        numPoses: wantPoses,
+        // 기본값 0.5는 교실 조명이나 옷 색깔에 따라 사람을 자주 놓친다
+        minPoseDetectionConfidence: 0.3,
+        minPosePresenceConfidence: 0.3,
+        minTrackingConfidence: 0.3,
+      });
+      try {
+        landmarker = await PoseLandmarker.createFromOptions(fileset, options("GPU"));
+      } catch (gpuErr) {
+        // GPU 경로가 막힌 기기가 있다. 느려도 CPU로 진행한다.
+        console.warn("GPU 실패, CPU로 전환합니다", gpuErr);
+        setLoad("이 기기에서는 CPU로 인식합니다.", 70);
+        landmarker = await PoseLandmarker.createFromOptions(fileset, options("CPU"));
+      }
+      landmarker._poses = wantPoses;
+
+      // 첫 추론만 유난히 오래 걸린다. 미리 한 번 돌려 첫 명령이 밀리지 않게 한다.
+      setLoad("마지막 준비 중입니다.", 90);
+      try { landmarker.detectForVideo(video, performance.now()); } catch { /* 첫 프레임 전이면 넘어간다 */ }
+    }
+
+    setLoad("준비 완료", 100);
+    resize();
+    for (const p of players) { p.calibrated = false; }
+    calibSince = [0, 0];
+    phase = "calib";
+    showPanel("panelCalib");
+    $("calibState").textContent = "사람을 찾는 중입니다.";
+    say("오른손을 들어 주세요");
+    if (!rafId) loop();
+  } catch (err) {
+    console.error(err);
+    phase = "error";
+    const name = err?.name ?? "";
+    if (name === "NotAllowedError") {
+      $("errTitle").textContent = "카메라 권한이 필요합니다";
+      $("errText").textContent =
+        "이 게임은 카메라로 팔 자세를 판정합니다. 주소창의 카메라 아이콘을 눌러 허용으로 바꾼 뒤 다시 시도하세요. 카메라 없이 교사가 직접 판정하며 진행할 수도 있습니다.";
+    } else if (name === "NotFoundError" || name === "OverconstrainedError") {
+      $("errTitle").textContent = "카메라를 찾지 못했습니다";
+      $("errText").textContent = "카메라가 있는 기기에서 열거나, 카메라 없이 진행하세요.";
+    } else {
+      $("errTitle").textContent = "시작하지 못했습니다";
+      $("errText").textContent = `오류: ${err?.message ?? err}`;
+    }
+    showPanel("panelError");
+    stopCamera();
+  } finally {
+    starting = false;
+  }
+}
+
+function stopCamera() {
+  if (stream) {
+    // 카메라 표시등이 남지 않게 트랙을 확실히 끈다
+    stream.getTracks().forEach((t) => t.stop());
+    stream = null;
+  }
+  video.srcObject = null;
+  lastVideoTime = -1;
+  if (rafId) { cancelAnimationFrame(rafId); rafId = 0; }
+  for (const p of players) p.lm = null;
+  ctx.clearRect(0, 0, scene.clientWidth, scene.clientHeight);
+}
+
+function loop() {
+  rafId = requestAnimationFrame(loop);
+  const now = performance.now();
+
+  if (landmarker && video.readyState >= 2 && video.currentTime !== lastVideoTime) {
+    lastVideoTime = video.currentTime;
+    try {
+      const res = landmarker.detectForVideo(video, now);
+      updatePlayers(res.landmarks ?? [], now);
+    } catch (err) {
+      console.error(err);
+    }
+    const gap = now - lastInferAt;
+    if (lastInferAt && gap > 0) fps = fps ? fps * 0.9 + (1000 / gap) * 0.1 : 1000 / gap;
+    lastInferAt = now;
+  }
+
+  updateGame(now);
+  draw();
+  renderCards();
+  $("diag").textContent = landmarker
+    ? `인식 ${fps.toFixed(0)}fps · ${seenCount}명`
+    : (opt.manual ? "수동 판정" : "");
+
+  // 거리 안내는 화면을 가리지 않게 아래 줄에만 띄운다
+  const far = distanceHint();
+  const line = far || baseHint;
+  const hintEl = $("hint");
+  if (hintEl.textContent !== line) {
+    hintEl.textContent = line;
+    hintEl.style.color = far ? "#fca5a5" : "";
+  }
+}
+
+// ===========================================================================
+// 게임 시작과 초기화
+// ===========================================================================
+function resetGame() {
+  round = 0;
+  noChangeStreak = 0;
+  reactMs = REACT_START;
+  officialState = { L: "down", R: "down" };
+  command = null; prevCommand = null; lastVerdict = null;
+  let best = 0;
+  try { best = Number(localStorage.getItem(BEST_KEY)) || 0; } catch { /* 무시 */ }
+  for (let i = 0; i < players.length; i++) {
+    const keep = { rightSide: players[i].rightSide, calibrated: players[i].calibrated };
+    players[i] = makePlayer(i);
+    players[i].rightSide = keep.rightSide;
+    players[i].calibrated = keep.calibrated;
+    players[i].best = best;
+  }
+  $("verdict").classList.remove("show");
+  $("undoBtn").disabled = true;
+  setNotice("");
+  renderCards();
+}
+
+function beginPlay() {
+  if (phase !== "ready") return;
+  resetGame();
+  $("playBtn").textContent = "일시정지";
+  $("skipBtn").disabled = false;
+  startRound();
+}
+
+function pausePlay() {
+  stopSpeech();
+  phase = "ready";
+  $("gauge").classList.remove("show");
+  $("verdict").classList.remove("show");
+  $("playBtn").textContent = "이어서";
+  setNotice("일시정지", true);
+}
+
+function resumePlay() {
+  setNotice("");
+  $("playBtn").textContent = "일시정지";
+  startRound();
+}
+
+// ===========================================================================
+// 이벤트
+// ===========================================================================
+function segPick(box, key) {
+  for (const b of box.querySelectorAll("button")) {
+    b.addEventListener("click", () => {
+      for (const o of box.querySelectorAll("button")) o.classList.remove("on");
+      b.classList.add("on");
+      opt[key] = key === "players" ? Number(b.dataset.v) : b.dataset.v;
+      if (key === "players") {
+        $("optRule").style.display = opt.players === 2 ? "" : "none";
+        renderCards();
+      }
+    });
+  }
+}
+segPick($("segMode"), "players");
+segPick($("segRule"), "rule");
+segPick($("segDiff"), "diff");
+
+$("optSide").addEventListener("click", (e) => {
+  opt.useSide = !opt.useSide;
+  e.currentTarget.classList.toggle("on", opt.useSide);
+  e.currentTarget.textContent = opt.useSide ? "옆으로 뻗기 사용" : "옆으로 뻗기 없음";
+});
+$("optFlinch").addEventListener("click", (e) => {
+  opt.useFlinch = !opt.useFlinch;
+  e.currentTarget.classList.toggle("on", opt.useFlinch);
+  e.currentTarget.textContent = opt.useFlinch ? "움찔도 실점" : "움찔은 넘어감";
+});
+
+$("textBtn").addEventListener("click", () => {
+  opt.showText = !opt.showText;
+  $("textBtn").textContent = opt.showText ? "명령 글씨 끄기" : "명령 글씨 켜기";
+  $("textBtn").classList.toggle("on", opt.showText);
+  renderCommandLine();
+});
+
+$("videoBtn").addEventListener("click", () => {
+  opt.showVideo = !opt.showVideo;
+  $("stage").classList.toggle("hide-video", !opt.showVideo);
+  $("videoBtn").textContent = opt.showVideo ? "영상 끄기" : "영상 켜기";
+  $("videoBtn").classList.toggle("on", opt.showVideo);
+});
+
+$("beginBtn").addEventListener("click", () => {
+  opt.manual = false;
+  checkVoice();
+  showPanel("panelLoad");
+  prepare();
+});
+
+function startManual() {
+  opt.manual = true;
+  checkVoice();
+  stopCamera();
+  landmarker = null;
+  showPanel("");
+  phase = "ready";
+  $("playBtn").disabled = false;
+  $("manualBox").style.display = "";
+  for (const b of $("manualBox").querySelectorAll("button")) {
+    b.style.display = Number(b.dataset.j[0]) <= opt.players ? "" : "none";
+  }
+  baseHint = "명령이 끝나면 학생 자세를 보고 ○ 또는 ✕를 누르세요.";
+  resetGame();
+  renderCommandLine();
+  if (!rafId) loop();
+}
+$("manualBtn").addEventListener("click", startManual);
+$("errManualBtn").addEventListener("click", startManual);
+$("retryBtn").addEventListener("click", () => prepare());
+$("calibSkip").addEventListener("click", () => {
+  for (const p of players) p.calibrated = true;
+  afterCalib();
+  if (!wantDiag) setNotice("기본 좌우 설정으로 진행합니다. 첫 판정이 반대면 다시 보정하세요.", true);
+});
+
+$("diagBtn").addEventListener("click", () => {
+  opt.manual = false;
+  wantDiag = true;
+  checkVoice();
+  showPanel("panelLoad");
+  prepare();
+});
+
+$("testBtn").addEventListener("click", startTest);
+$("diagPlayBtn").addEventListener("click", leaveDiag);
+
+// 인식 시험 슬라이더. 바꾸면 다음 프레임부터 바로 판정에 반영된다.
+const SLIDERS = [
+  { id: "thUp",     out: "vUp",     get: () => UP_MARGIN,   set: (v) => { UP_MARGIN = v; },   fix: 2 },
+  { id: "thSideX",  out: "vSideX",  get: () => SIDE_X_MIN,  set: (v) => { SIDE_X_MIN = v; },  fix: 2 },
+  { id: "thSideY",  out: "vSideY",  get: () => SIDE_Y_BAND, set: (v) => { SIDE_Y_BAND = v; }, fix: 2 },
+  { id: "thHold",   out: "vHold",   get: () => HOLD_MS,     set: (v) => { HOLD_MS = v; },     unit: "ms" },
+  { id: "thFlinch", out: "vFlinch", get: () => FLINCH_DIST, set: (v) => { FLINCH_DIST = v; }, fix: 2 },
+];
+for (const s of SLIDERS) {
+  const el = $(s.id);
+  const show = (v) => { $(s.out).textContent = (s.fix ? v.toFixed(s.fix) : String(v)) + (s.unit ?? ""); };
+  el.value = String(s.get());
+  show(s.get());
+  el.addEventListener("input", () => { const v = Number(el.value); s.set(v); show(v); });
+}
+
+$("playBtn").addEventListener("click", () => {
+  if (phase === "diag") { leaveDiag(); beginPlay(); return; }
+  if (phase === "ready") {
+    if (command) resumePlay(); else beginPlay();
+  } else {
+    pausePlay();
+  }
+});
+
+$("skipBtn").addEventListener("click", () => {
+  if (phase === "ready" || phase === "over") return;
+  stopSpeech();
+  $("verdict").classList.remove("show");
+  $("gauge").classList.remove("show");
+  setNotice("이번 명령을 건너뜁니다.", true);
+  // 건너뛸 때도 기준 자세는 사람의 실제 자세에 맞춘다
+  officialState = realState(performance.now()) ?? (command ? { ...command.target } : officialState);
+  setTimeout(() => { if (phase !== "over") { setNotice(""); startRound(); } }, 500);
+});
+
+$("undoBtn").addEventListener("click", undoVerdict);
+
+for (const b of $("manualBox").querySelectorAll("button")) {
+  b.addEventListener("click", () => {
+    if (phase !== "judge") return;
+    const idx = Number(b.dataset.j[0]) - 1;
+    const p = players[idx];
+    if (!manualPending.has(idx)) return;
+    p.mark = b.dataset.j[1] === "o" ? "○" : "✕";
+    manualPending.delete(idx);
+    renderCards();
+    if (manualPending.size === 0) { setNotice(""); applyScores(); }
+  });
+}
+
+$("againBtn").addEventListener("click", () => {
+  showPanel("");
+  phase = "ready";
+  $("playBtn").disabled = false;
+  $("playBtn").textContent = "시작";
+  $("skipBtn").disabled = true;
+  resetGame();
+  renderCommandLine();
+  beginPlay();
+});
+
+$("backBtn").addEventListener("click", () => {
+  stopSpeech();
+  stopCamera();
+  $("diagBox").classList.remove("show");
+  wantDiag = false;
+  phase = "intro";
+  $("playBtn").disabled = true;
+  $("playBtn").textContent = "시작";
+  $("skipBtn").disabled = true;
+  $("manualBox").style.display = "none";
+  showPanel("panelStart");
+});
+
+// 탭이 가려지면 추론과 음성을 멈춘다. iPad에서 발열과 배터리 소모가 크다.
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) {
+    stopSpeech();
+    if (rafId) { cancelAnimationFrame(rafId); rafId = 0; }
+    if (phase !== "intro" && phase !== "over" && phase !== "ready") pausePlay();
+  } else if (!rafId && (stream || opt.manual)) {
+    loop();
+  }
+});
+
+// 한국어 음성이 없으면 게임이 성립하지 않으므로 글씨 모드로 자동 전환한다
+function checkVoice() {
+  voice = findVoice();
+  if (!voice) {
+    opt.showText = true;
+    $("textBtn").textContent = "명령 글씨 끄기";
+    $("textBtn").classList.add("on");
+    setNotice("이 기기는 한국어 음성을 쓸 수 없어 글씨로 진행합니다.", true);
+    setTimeout(() => setNotice(""), 4000);
+  }
+}
+if (window.speechSynthesis) {
+  speechSynthesis.getVoices();
+  speechSynthesis.addEventListener("voiceschanged", () => { voice = findVoice(); });
+}
+
+resize();
+renderCards();
+</script>
+</body>
+</html>
