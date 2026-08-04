@@ -74,7 +74,8 @@ p {
   box-shadow: 0 14px 34px rgba(15, 23, 42, 0.12);
 }
 
-.home-page .subject-card {
+.home-page .subject-card,
+.ai-math-page .subject-card {
   display: flex;
   height: 100%;
   padding: 0;
@@ -83,11 +84,13 @@ p {
   transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
 }
 
-.home-page .subject-card:hover {
+.home-page .subject-card:hover,
+.ai-math-page .subject-card:hover {
   border-color: #cbd5e1;
 }
 
-.home-page .subject-card:focus-visible {
+.home-page .subject-card:focus-visible,
+.ai-math-page .subject-card:focus-visible {
   outline: 3px solid #2563eb;
   outline-offset: 3px;
 }
@@ -120,8 +123,23 @@ p {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .home-page .subject-card {
+  .home-page .subject-card,
+  .ai-math-page .subject-card {
     transition: none;
+  }
+}
+
+@media (min-width: 860px) {
+  .ai-math-page .card-grid {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+
+  .ai-math-page .subject-card {
+    grid-column: span 2;
+  }
+
+  .ai-math-page .subject-card:nth-last-child(2) {
+    grid-column: 2 / span 2;
   }
 }
 
