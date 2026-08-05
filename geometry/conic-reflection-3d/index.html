@@ -1,0 +1,870 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="description" content="이심률 하나로 원·타원·포물면·쌍곡면(회전체)을 잇고, 초점에서 나온 빛이 곡면에 반사되어 3차원 공간에서 모이거나 흩어지는 과정을 회전시켜 살펴보는 기하 웹앱입니다." />
+<title>이차곡선 반사 실험실 3D</title>
+<link rel="icon" href="../../favicon.ico" sizes="16x16 32x32 48x48" />
+<link rel="icon" href="../../assets/favicon.svg" type="image/svg+xml" />
+<link rel="apple-touch-icon" href="../../assets/apple-touch-icon.png" />
+<!-- MathJax: 자오면(회전축을 포함하는 단면) 방정식을 교과서식 분수로 렌더링. CDN 사용으로 인터넷 연결 필요. -->
+<script>
+  window.MathJax = {
+    tex: { inlineMath: [['\\(', '\\)']], displayMath: [['\\[', '\\]']] },
+    options: { skipHtmlTags: ['script', 'noscript', 'style', 'textarea'] }
+  };
+</script>
+<script id="MathJax-script" async
+  src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+<!-- three.js r184: 회전체(곡면) 렌더링과 카메라 회전(OrbitControls)에 사용. assets/vendor/three/에 로컬로 들어 있어 별도 설치가 필요 없다. -->
+<script type="importmap">
+{
+  "imports": {
+    "three": "../../assets/vendor/three/three.module.js",
+    "three/addons/": "../../assets/vendor/three/addons/"
+  }
+}
+</script>
+<link rel="stylesheet" href="../../assets/common.css" />
+<style>
+  :root {
+    --bg: #f6f8fb;
+    --panel: #ffffff;
+    --ink: #17202a;
+    --muted: #5d6d7e;
+    --line: #d8e0ea;
+    --blue: #2563eb;
+    --c-circle: #0891b2;
+    --c-ellipse: #7c3aed;
+    --c-parabola: #d97706;
+    --c-hyperbola: #e11d48;
+    --f1: #dc2626;
+    --f2: #2563eb;
+    --shadow: 0 6px 20px rgba(23,32,42,0.08);
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: "Malgun Gothic","Apple SD Gothic Neo",system-ui,sans-serif; background: var(--bg); color: var(--ink); }
+  .wrap { width: min(1320px, calc(100% - 24px)); margin: 0 auto; padding: 20px 0 40px; }
+  a.back-link { display:inline-block; margin-right:14px; color:var(--blue); font-weight:800; text-decoration:none; font-size:15px; }
+  .hero { margin-bottom: 14px; }
+  .hero h1 { margin: 0 0 4px; font-size: clamp(22px,3vw,34px); }
+  .hero p { margin: 0; color: var(--muted); font-size: 14.5px; max-width: 900px; line-height: 1.55; }
+  .hero .links { margin-top:6px; }
+
+  .panel-tabs { display:flex; gap:6px; margin: 12px 0 10px; }
+  .panel-tab {
+    flex:1; padding:10px 14px; border-radius:10px; border:2px solid var(--line);
+    background:var(--panel); font:800 15px inherit; color:var(--muted); cursor:pointer;
+    transition: background .15s, color .15s, border-color .15s;
+  }
+  .panel-tab.active { background: var(--ink); color:#fff; border-color: var(--ink); }
+
+  .app-layout { display:grid; grid-template-columns: minmax(0,1fr) 360px; gap:14px; align-items:start; }
+  @media (max-width: 980px) { .app-layout { grid-template-columns: 1fr; } }
+
+  .card { background:var(--panel); border:1px solid var(--line); border-radius:12px; box-shadow:var(--shadow); overflow:hidden; }
+  .card-head { padding:9px 14px; border-bottom:1px solid var(--line); font-size:13px; font-weight:800; color:var(--muted); background:#f9fafb; }
+  .card-body { padding:12px 14px; }
+
+  .viewport-wrap { position:relative; width:100%; height:470px; background:#0e1523; touch-action:none; }
+  #three-canvas { display:block; width:100%; height:100%; }
+  #labelLayer { position:absolute; inset:0; pointer-events:none; overflow:hidden; }
+  .label3d { font: 700 13px sans-serif; padding:1px 5px; border-radius:5px; background:rgba(14,21,35,0.55); white-space:nowrap; }
+
+  .blur-badge {
+    position:absolute; top:10px; left:10px; padding:6px 12px; border-radius:10px;
+    background:rgba(255,255,255,0.92); border:1px solid var(--line); font-size:12.5px; font-weight:700;
+    box-shadow: var(--shadow); color:var(--ink);
+  }
+  .blur-badge .val { color: var(--c-ellipse); font-variant-numeric: tabular-nums; }
+  .blur-badge.ok .val { color:#16a34a; }
+  .blur-badge.bad .val { color:#dc2626; }
+
+  .orbit-hint {
+    position:absolute; bottom:10px; left:10px; padding:5px 10px; border-radius:8px;
+    background:rgba(255,255,255,0.85); font-size:11.5px; color:var(--muted); font-weight:700;
+  }
+
+  .interp {
+    padding: 10px 14px; border-top:1px solid var(--line); background:#f9fafb;
+    font-size: 14.5px; line-height:1.6; color:#1f2937;
+  }
+  .interp strong { color: var(--ink); }
+
+  .curve-tabs { display:flex; gap:6px; margin-bottom:12px; flex-wrap:wrap; }
+  .curve-tab {
+    flex:1; min-width:64px; padding:8px 4px; border-radius:9px; border:2px solid var(--line);
+    background:#fff; font:700 13px inherit; cursor:pointer; text-align:center;
+  }
+  .curve-tab .dot { display:block; font-size:16px; margin-bottom:2px; }
+  .curve-tab.active[data-t="circle"]    { border-color: var(--c-circle); color:var(--c-circle); background:#ecfeff; }
+  .curve-tab.active[data-t="ellipse"]   { border-color: var(--c-ellipse); color:var(--c-ellipse); background:#f5f3ff; }
+  .curve-tab.active[data-t="parabola"]  { border-color: var(--c-parabola); color:var(--c-parabola); background:#fffbeb; }
+  .curve-tab.active[data-t="hyperbola"] { border-color: var(--c-hyperbola); color:var(--c-hyperbola); background:#fff1f2; }
+
+  .slider-group { margin-bottom: 12px; }
+  .slider-row { display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; }
+  .slider-label { font-size:13px; font-weight:700; color:var(--muted); }
+  .slider-val { font-size:14px; font-weight:800; color: var(--ink); font-variant-numeric: tabular-nums; }
+  input[type=range] { width:100%; accent-color: var(--blue); }
+  .slider-group.accent input[type=range] { accent-color:#f97316; }
+  .slider-group.warn input[type=range] { accent-color:#dc2626; }
+
+  .eq-box {
+    background:#0f172a; color:#e2e8f0; border-radius:10px; padding:12px 14px;
+    font-size: 16px; text-align:center; margin-bottom:6px; min-height:38px;
+  }
+  .eq-box.small { font-size: 12px; color:#94a3b8; margin-top:-2px; margin-bottom:10px; }
+
+  .param-table { display:grid; grid-template-columns: repeat(4,1fr); gap:6px; margin-bottom:10px; }
+  .param-cell { background:#f8fafc; border:1px solid var(--line); border-radius:8px; padding:6px 4px; text-align:center; }
+  .param-cell .k { font-size:10.5px; color:var(--muted); font-weight:700; }
+  .param-cell .v { font-size:14px; font-weight:800; font-variant-numeric: tabular-nums; }
+
+  .def-text { font-size:13px; color:#374151; line-height:1.7; background:#f8fafc; border-radius:8px; padding:10px 12px; margin-bottom:10px; }
+  .def-text b { color: var(--ink); }
+
+  .toggle-grid { display:grid; grid-template-columns: 1fr; gap:6px; margin-bottom:10px; }
+  .toggle-btn {
+    border:1.5px solid var(--line); background:#fff; border-radius:8px; padding:8px 6px;
+    font:700 12.5px inherit; color:var(--muted); cursor:pointer;
+  }
+  .toggle-btn.on { background:#eef2ff; border-color:#6366f1; color:#4338ca; }
+
+  .play-row { display:flex; gap:6px; margin-bottom:8px; }
+  .play-row button {
+    flex:1; padding:9px 8px; border-radius:8px; border:1px solid var(--line);
+    background:#fff; font:800 13px inherit; cursor:pointer;
+  }
+  .play-row button.primary { background: var(--blue); color:#fff; border-color:var(--blue); }
+
+  details.deepen { border:1px solid var(--line); border-radius:8px; padding:8px 10px; background:#fafbfc; }
+  details.deepen summary { cursor:pointer; font-weight:800; font-size:13px; color: var(--ink); }
+  details.deepen .body { margin-top:8px; font-size:12.5px; color:#374151; line-height:1.7; }
+
+  .hint-text { font-size:11.5px; color:var(--muted); margin-top:-4px; margin-bottom:10px; line-height:1.5; }
+</style>
+</head>
+<body>
+<main class="wrap">
+  <a class="back-link" href="../">← 기하 웹앱</a>
+  <a class="back-link" href="../conic-reflection/">2D 버전: 이차곡선 반사 실험실</a>
+  <header class="hero">
+    <h1>이차곡선 반사 실험실 3D</h1>
+    <p>이차곡선을 초점을 포함한 축으로 회전시킨 곡면(구·회전타원면·회전포물면·회전쌍곡면)에서, 초점에서 나온 빛이 3차원 공간 전체에서 어떻게 모이거나 흩어지는지 확인합니다. 2D 단면에서 성립하던 반사 성질이 회전축 둘레 어디서나 그대로 성립함을 눈으로 보여줍니다.</p>
+  </header>
+
+  <div class="panel-tabs">
+    <button class="panel-tab active" id="tab-standard">표준형 모드</button>
+    <button class="panel-tab" id="tab-continuous">연속 변형 모드 (c/a)</button>
+  </div>
+
+  <div class="app-layout">
+    <div class="card">
+      <div class="card-head" id="canvasHead">타원면 · 표준형</div>
+      <div class="card-body" style="padding:0;">
+        <div class="viewport-wrap">
+          <canvas id="three-canvas"></canvas>
+          <div id="labelLayer"></div>
+          <div class="blur-badge" id="blurBadge">흐림 반지름 r ≈ 0.00</div>
+          <div class="orbit-hint">드래그로 시점 회전 · 휠로 확대/축소</div>
+        </div>
+        <div class="interp" id="interpText"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-body" id="controlBody">
+        <div id="sliderZone"></div>
+        <div id="restZone"></div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script type="module">
+import * as THREE from "three";
+import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+import { CSS2DRenderer, CSS2DObject } from "three/addons/renderers/CSS2DRenderer.js";
+
+// ════════════════════════════════════════════════════════════
+// 수학 코어 — 자오면(회전축을 포함하는 단면)에서의 통합 방정식
+//   초점을 국소좌표 원점에, 회전축을 u축(=3D의 Y축)에 둔다.
+//   v는 축으로부터의 거리(반지름, v≥0). u²(축)+v²(반지름) 방향으로
+//   u² + v² = (l + e·u)²  가 항상 성립한다 (e=0 원↔구, 0<e<1 타원↔회전타원면,
+//   e=1 포물선↔회전포물면, e>1 쌍곡선↔회전쌍곡면의 한 잎).
+// ════════════════════════════════════════════════════════════
+const EPS_PARABOLA = 1e-3;
+
+function surfaceNearByV(v, l, e) {
+  if (Math.abs(1 - e) < EPS_PARABOLA) return v * v / (2 * l) - l / 2;
+  const k = 1 - e * e;
+  const disc = l * l - v * v * k;
+  if (disc < 0) return null;
+  return (l * e - Math.sqrt(disc)) / k;
+}
+function surfaceFarByV(v, l, e) {
+  if (Math.abs(1 - e) < EPS_PARABOLA) return null;
+  const k = 1 - e * e;
+  const disc = l * l - v * v * k;
+  if (disc < 0) return null;
+  return (l * e + Math.sqrt(disc)) / k;
+}
+function meridianNormal(u, v, l, e) {
+  const r = l + e * u;
+  const nu = u - e * r, nv = v;
+  const len = Math.hypot(nu, nv) || 1;
+  return { u: nu / len, v: nv / len };
+}
+function localCenterAndF2(l, e) {
+  if (Math.abs(1 - e) < EPS_PARABOLA) return { centerU: null, f2U: null };
+  const denom = 1 - e * e;
+  const cLocal = l * e / denom;
+  return { centerU: cLocal, f2U: 2 * cLocal };
+}
+
+// ── 3차원 벡터 유틸(순수 숫자 연산, three.js 객체를 만들지 않는다) ──
+const V3 = {
+  sub: (a, b) => ({ x: a.x - b.x, y: a.y - b.y, z: a.z - b.z }),
+  add: (a, b) => ({ x: a.x + b.x, y: a.y + b.y, z: a.z + b.z }),
+  dot: (a, b) => a.x * b.x + a.y * b.y + a.z * b.z,
+  scl: (a, s) => ({ x: a.x * s, y: a.y * s, z: a.z * s }),
+  len: (a) => Math.hypot(a.x, a.y, a.z),
+  norm(a) { const l = V3.len(a) || 1; return { x: a.x / l, y: a.y / l, z: a.z / l }; },
+  reflect(d, n) { const dn = V3.dot(d, n); return { x: d.x - 2 * dn * n.x, y: d.y - 2 * dn * n.y, z: d.z - 2 * dn * n.z }; },
+};
+
+// ════════════════════════════════════════════════════════════
+// 상태
+// ════════════════════════════════════════════════════════════
+const RAY_AZ = 20; // 자오각 슬라이더가 고른 위도(고리) 위에서 균등하게 나눈 광선 개수
+
+const state = {
+  panel: 'standard',
+  curveType: 'ellipse',
+  std: { circleR: 2.5, ellA: 3.2, ellB: 2.2, paraP: 1.3, hypA: 1.6, hypB: 2.2 },
+  contE: 0.6,
+  contL: 2.6,
+  progress: 0,
+  playing: false,
+  launchPct: 55,       // 0~100, 반지름(v) 최대치 대비 비율 → 자오각(발사각)을 결정
+  sourceOffsetPct: 0,   // 0~100, 초점에서 벗어난 광원 거리 (스큐 광선 데모)
+  toggles: { wave: false },
+};
+
+function typeColor(t) { return { circle: 0x0891b2, ellipse: 0x7c3aed, parabola: 0xd97706, hyperbola: 0xe11d48 }[t]; }
+function typeLabel(t) { return { circle: '구', ellipse: '회전타원면', parabola: '회전포물면', hyperbola: '회전쌍곡면' }[t]; }
+function isClosedType(t) { return t === 'circle' || t === 'ellipse'; }
+function apertureFor(p) {
+  if (p.type === 'circle') return p.l * 0.995;
+  if (p.type === 'ellipse') return p.b * 0.995;
+  return 4.4;
+}
+
+function computeParams() {
+  let l, e, type, aStd = null, bStd = null, pStd = null;
+  if (state.panel === 'continuous') {
+    l = state.contL; e = state.contE;
+    type = e < EPS_PARABOLA ? 'circle' : (Math.abs(1 - e) < EPS_PARABOLA ? 'parabola' : (e < 1 ? 'ellipse' : 'hyperbola'));
+  } else {
+    type = state.curveType;
+    if (type === 'circle') { const r = state.std.circleR; l = r; e = 0; }
+    else if (type === 'ellipse') {
+      const a = state.std.ellA, b = Math.min(state.std.ellB, a - 0.05);
+      const c = Math.sqrt(Math.max(a * a - b * b, 0));
+      l = b * b / a; e = c / a; aStd = a; bStd = b;
+    } else if (type === 'parabola') {
+      const p = state.std.paraP; l = 2 * p; e = 1; pStd = p;
+    } else {
+      const a = state.std.hypA, b = state.std.hypB;
+      const c = Math.sqrt(a * a + b * b);
+      l = b * b / a; e = c / a; aStd = a; bStd = b;
+    }
+  }
+
+  // 3D 장면은 항상 초점을 국소좌표 원점(=OrbitControls의 회전 중심)에 고정한다.
+  // 2D 앱은 표준형에서 꼭짓점/중심을 원점에 고정하지만, 3D는 카메라가 그 지점을 중심으로
+  // 궤도 운동을 하므로 학습의 초점인 F₁을 화면 중심에 고정하는 쪽이 조작감이 낫다.
+  const { centerU, f2U } = localCenterAndF2(l, e);
+  const aOut = aStd !== null ? aStd : (type === 'parabola' ? null : l / Math.abs(1 - e * e));
+  const bOut = bStd !== null ? bStd : (type === 'parabola' ? null : Math.sqrt(Math.abs((aOut || 0) * l)));
+  const cOut = (aOut !== null && type !== 'parabola') ? aOut * e : null;
+
+  return { type, l, e, a: aOut, b: bOut, c: cOut, p: pStd, f2U, centerU };
+}
+
+// ════════════════════════════════════════════════════════════
+// 광선 계산 (국소좌표: 초점=원점, 회전축=Y축)
+// ════════════════════════════════════════════════════════════
+function computeRing(params, v, azCount, sourceOffsetLocal) {
+  const { l, e } = params;
+  const u = surfaceNearByV(v, l, e);
+  if (u === null) return [];
+  const source = { x: sourceOffsetLocal, y: 0, z: 0 };
+  const mn = meridianNormal(u, v, l, e);
+  const rays = [];
+  for (let k = 0; k < azCount; k++) {
+    const phi = (k / azCount) * Math.PI * 2;
+    const cphi = Math.cos(phi), sphi = Math.sin(phi);
+    const hit = { x: v * cphi, y: u, z: v * sphi };
+    let normal = V3.norm({ x: mn.v * cphi, y: mn.u, z: mn.v * sphi });
+    const dirIn = V3.norm(V3.sub(hit, source));
+    if (V3.dot(dirIn, normal) > 0) normal = V3.scl(normal, -1);
+    const dirOut = V3.reflect(dirIn, normal);
+    const d1 = V3.len(V3.sub(hit, source));
+    rays.push({ source, hit, normal, dirIn, dirOut, d1, phi });
+  }
+  return rays;
+}
+
+function outgoingLength(ray, params) {
+  const MAXOUT = 9;
+  if (params.type === 'parabola' || params.f2U === null) return MAXOUT;
+  const f2 = { x: 0, y: params.f2U, z: 0 };
+  const vv = V3.sub(f2, ray.hit);
+  const t = V3.dot(vv, ray.dirOut);
+  return Math.min(Math.max(Math.abs(t), 0.4), MAXOUT * 2.2);
+}
+
+function computeBlur(rays, params) {
+  if (!rays.length) return { value: 0, label: '', unit: '', good: true };
+  if (params.type === 'parabola') {
+    let maxDeg = 0;
+    rays.forEach(r => {
+      const cosA = Math.max(-1, Math.min(1, r.dirOut.y));
+      maxDeg = Math.max(maxDeg, Math.acos(cosA) * 180 / Math.PI);
+    });
+    return { value: maxDeg, label: '평행에서 벗어난 각', unit: '°', good: maxDeg < 0.6 };
+  }
+  if (params.f2U === null) return { value: 0, label: '', unit: '', good: true };
+  const f2 = { x: 0, y: params.f2U, z: 0 };
+  let maxMiss = 0;
+  rays.forEach(r => {
+    const vv = V3.sub(f2, r.hit);
+    const t = V3.dot(vv, r.dirOut);
+    const closest = V3.add(r.hit, V3.scl(r.dirOut, t));
+    maxMiss = Math.max(maxMiss, V3.len(V3.sub(closest, f2)));
+  });
+  return { value: maxMiss, label: 'F₂ 근처 퍼짐', unit: '', good: maxMiss < 0.06 };
+}
+
+// ════════════════════════════════════════════════════════════
+// three.js 장면
+// ════════════════════════════════════════════════════════════
+let renderer, labelRenderer, scene, camera, controls, localGroup;
+let surfaceMesh = null, surfaceWire = null;
+let axisLine, f1Marker, f2Marker, centerMarker, sourceMarker;
+let f1Label, f2Label, centerLabel, sourceLabel;
+let inSegs, outSegs, hitPoints, waveLoop;
+let currentParams = null, currentRays = [];
+
+function initThree() {
+  const canvas = document.getElementById('three-canvas');
+  const wrap = canvas.parentElement;
+  const w = wrap.clientWidth, h = wrap.clientHeight;
+
+  renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+  renderer.setSize(w, h);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  renderer.setClearColor(0x0e1523);
+
+  labelRenderer = new CSS2DRenderer();
+  labelRenderer.setSize(w, h);
+  labelRenderer.domElement.style.position = 'absolute';
+  labelRenderer.domElement.style.top = '0';
+  labelRenderer.domElement.style.left = '0';
+  document.getElementById('labelLayer').appendChild(labelRenderer.domElement);
+
+  scene = new THREE.Scene();
+  camera = new THREE.PerspectiveCamera(45, w / h, 0.1, 200);
+  camera.position.set(7, 5.5, 9);
+
+  controls = new OrbitControls(camera, labelRenderer.domElement);
+  controls.enableDamping = true;
+  controls.dampingFactor = 0.08;
+  controls.minDistance = 2.5;
+  controls.maxDistance = 40;
+  controls.target.set(0, 0, 0);
+
+  scene.add(new THREE.AmbientLight(0x8899bb, 0.7));
+  const dl = new THREE.DirectionalLight(0xffffff, 0.9);
+  dl.position.set(6, 8, 5);
+  scene.add(dl);
+  scene.add(new THREE.GridHelper(20, 20, 0x223047, 0x18202f));
+
+  localGroup = new THREE.Group();
+  scene.add(localGroup);
+
+  axisLine = new THREE.Line(
+    new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0, -8, 0), new THREE.Vector3(0, 8, 0)]),
+    new THREE.LineBasicMaterial({ color: 0x475569, transparent: true, opacity: 0.5 })
+  );
+  localGroup.add(axisLine);
+
+  const mkMarker = (color) => new THREE.Mesh(new THREE.SphereGeometry(0.09, 16, 16), new THREE.MeshBasicMaterial({ color }));
+  f1Marker = mkMarker(0xdc2626); localGroup.add(f1Marker);
+  f2Marker = mkMarker(0x2563eb); localGroup.add(f2Marker);
+  centerMarker = mkMarker(0x94a3b8); localGroup.add(centerMarker);
+  sourceMarker = mkMarker(0xf97316); sourceMarker.visible = false; localGroup.add(sourceMarker);
+
+  const mkLabel = (text, color) => {
+    const div = document.createElement('div');
+    div.className = 'label3d';
+    div.textContent = text;
+    div.style.color = color;
+    const obj = new CSS2DObject(div);
+    localGroup.add(obj);
+    return obj;
+  };
+  f1Label = mkLabel('F₁', '#fca5a5');
+  f2Label = mkLabel('F₂', '#93c5fd');
+  centerLabel = mkLabel('중심', '#cbd5e1');
+  sourceLabel = mkLabel('광원', '#fdba74');
+
+  // 광선(입사/반사)을 매 프레임 새로 만들지 않고, 미리 만든 버퍼의 좌표만 갱신한다.
+  const mkSegs = (color) => {
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(RAY_AZ * 2 * 3), 3));
+    const mat = new THREE.LineBasicMaterial({ color, transparent: true, opacity: 0.85 });
+    const seg = new THREE.LineSegments(geo, mat);
+    localGroup.add(seg);
+    return seg;
+  };
+  inSegs = mkSegs(0xf59e0b);
+  outSegs = mkSegs(0x10b981);
+
+  const hpGeo = new THREE.BufferGeometry();
+  hpGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(RAY_AZ * 3), 3));
+  hitPoints = new THREE.Points(hpGeo, new THREE.PointsMaterial({ color: 0xffffff, size: 0.06, sizeAttenuation: true }));
+  localGroup.add(hitPoints);
+
+  const waveGeo = new THREE.BufferGeometry();
+  waveGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(RAY_AZ * 3), 3));
+  waveLoop = new THREE.LineLoop(waveGeo, new THREE.LineBasicMaterial({ color: 0xa78bfa, transparent: true, opacity: 0.85 }));
+  waveLoop.visible = false;
+  localGroup.add(waveLoop);
+
+  window.addEventListener('resize', onResize);
+  requestAnimationFrame(animate);
+}
+
+function onResize() {
+  const wrap = document.getElementById('three-canvas').parentElement;
+  const w = wrap.clientWidth, h = wrap.clientHeight;
+  renderer.setSize(w, h);
+  labelRenderer.setSize(w, h);
+  camera.aspect = w / h;
+  camera.updateProjectionMatrix();
+}
+
+function animate() {
+  requestAnimationFrame(animate);
+  controls.update();
+  renderer.render(scene, camera);
+  labelRenderer.render(scene, camera);
+}
+
+// ── 곡면(회전체) 지오메트리 재생성 — 곡선 종류/파라미터가 바뀔 때만 호출한다. ──
+function buildSurface(params) {
+  if (surfaceMesh) { surfaceMesh.geometry.dispose(); surfaceMesh.material.dispose(); localGroup.remove(surfaceMesh); }
+  if (surfaceWire) { surfaceWire.geometry.dispose(); surfaceWire.material.dispose(); localGroup.remove(surfaceWire); }
+
+  const AP = apertureFor(params);
+  const segs = 56;
+  const profile = [];
+  for (let i = 0; i <= segs; i++) {
+    const v = (i / segs) * AP;
+    const u = surfaceNearByV(v, params.l, params.e);
+    if (u !== null) profile.push(new THREE.Vector2(v, u));
+  }
+  if (isClosedType(params.type)) {
+    for (let i = segs; i >= 0; i--) {
+      const v = (i / segs) * AP;
+      const u = surfaceFarByV(v, params.l, params.e);
+      if (u !== null) profile.push(new THREE.Vector2(v, u));
+    }
+  }
+  if (profile.length < 3) return;
+
+  const geo = new THREE.LatheGeometry(profile, 56);
+  const color = typeColor(params.type);
+  surfaceWire = new THREE.Mesh(geo.clone(), new THREE.MeshBasicMaterial({ color, wireframe: true, transparent: true, opacity: 0.18 }));
+  surfaceMesh = new THREE.Mesh(geo, new THREE.MeshPhongMaterial({ color, transparent: true, opacity: 0.24, side: THREE.DoubleSide, shininess: 50 }));
+  localGroup.add(surfaceWire);
+  localGroup.add(surfaceMesh);
+}
+
+function updateMarkers(params) {
+  f2Marker.visible = f2Label.visible = params.f2U !== null;
+  centerMarker.visible = centerLabel.visible = params.centerU !== null;
+  if (params.f2U !== null) { f2Marker.position.set(0, params.f2U, 0); f2Label.position.set(0.25, params.f2U + 0.2, 0); }
+  if (params.centerU !== null) { centerMarker.position.set(0, params.centerU, 0); centerLabel.position.set(0.25, params.centerU - 0.25, 0); }
+  f1Label.position.set(0.25, 0.22, 0);
+
+  const AP = apertureFor(params);
+  const extent = Math.max(AP * 1.4, Math.abs(params.f2U || 0) * 1.3, Math.abs(params.centerU || 0) * 1.3, 3.5);
+  axisLine.geometry.setFromPoints([new THREE.Vector3(0, -extent, 0), new THREE.Vector3(0, extent, 0)]);
+}
+
+// ── 광선 다발 계산 + 시각 버퍼 갱신 (구조 변경 없이 매 틱 호출 가능) ──
+function updateRays(params) {
+  const AP = apertureFor(params);
+  const v = Math.max(AP * 0.03, (state.launchPct / 100) * AP);
+  const sourceOffsetLocal = (state.sourceOffsetPct / 100) * params.l * 0.55;
+  currentRays = computeRing(params, v, RAY_AZ, sourceOffsetLocal);
+  currentParams = params;
+
+  sourceMarker.visible = sourceLabel.visible = state.sourceOffsetPct > 0;
+  if (state.sourceOffsetPct > 0) {
+    sourceMarker.position.set(sourceOffsetLocal, 0, 0);
+    sourceLabel.position.set(sourceOffsetLocal + 0.2, 0.2, 0);
+  }
+
+  const frac = state.progress / 100;
+  const inArr = inSegs.geometry.attributes.position.array;
+  const outArr = outSegs.geometry.attributes.position.array;
+  const hpArr = hitPoints.geometry.attributes.position.array;
+  const waveArr = waveLoop.geometry.attributes.position.array;
+  hitPoints.geometry.setDrawRange(0, 0);
+  outSegs.geometry.setDrawRange(0, 0);
+
+  let hpCount = 0, outCount = 0;
+  currentRays.forEach((ray, i) => {
+    const d1 = ray.d1, d2 = outgoingLength(ray, params), total = d1 + d2, traveled = frac * total;
+    let inEnd;
+    if (traveled <= d1) {
+      const t = d1 > 0 ? traveled / d1 : 1;
+      inEnd = { x: ray.source.x + (ray.hit.x - ray.source.x) * t, y: ray.source.y + (ray.hit.y - ray.source.y) * t, z: ray.source.z + (ray.hit.z - ray.source.z) * t };
+    } else inEnd = ray.hit;
+    inArr[i * 6 + 0] = ray.source.x; inArr[i * 6 + 1] = ray.source.y; inArr[i * 6 + 2] = ray.source.z;
+    inArr[i * 6 + 3] = inEnd.x; inArr[i * 6 + 4] = inEnd.y; inArr[i * 6 + 5] = inEnd.z;
+
+    let wavePt = inEnd;
+    if (traveled > d1) {
+      const t2 = d2 > 0 ? Math.min(1, (traveled - d1) / d2) : 1;
+      const outEnd = { x: ray.hit.x + ray.dirOut.x * d2 * t2, y: ray.hit.y + ray.dirOut.y * d2 * t2, z: ray.hit.z + ray.dirOut.z * d2 * t2 };
+      outArr[outCount * 6 + 0] = ray.hit.x; outArr[outCount * 6 + 1] = ray.hit.y; outArr[outCount * 6 + 2] = ray.hit.z;
+      outArr[outCount * 6 + 3] = outEnd.x; outArr[outCount * 6 + 4] = outEnd.y; outArr[outCount * 6 + 5] = outEnd.z;
+      outCount++;
+      wavePt = outEnd;
+      hpArr[hpCount * 3 + 0] = ray.hit.x; hpArr[hpCount * 3 + 1] = ray.hit.y; hpArr[hpCount * 3 + 2] = ray.hit.z;
+      hpCount++;
+    }
+    waveArr[i * 3 + 0] = wavePt.x; waveArr[i * 3 + 1] = wavePt.y; waveArr[i * 3 + 2] = wavePt.z;
+  });
+
+  inSegs.geometry.attributes.position.needsUpdate = true;
+  inSegs.geometry.setDrawRange(0, RAY_AZ * 2);
+  outSegs.geometry.attributes.position.needsUpdate = true;
+  outSegs.geometry.setDrawRange(0, outCount * 2);
+  hitPoints.geometry.attributes.position.needsUpdate = true;
+  hitPoints.geometry.setDrawRange(0, hpCount);
+  waveLoop.geometry.attributes.position.needsUpdate = true;
+  waveLoop.visible = state.toggles.wave && frac > 0 && frac < 1;
+
+  updateBlurBadge(params);
+  updateInterp(params);
+}
+
+function updateBlurBadge(params) {
+  const badge = document.getElementById('blurBadge');
+  const b = computeBlur(currentRays, params);
+  const isOff = state.sourceOffsetPct > 0;
+  badge.className = 'blur-badge ' + (b.good ? 'ok' : 'bad');
+  const label = b.label || (params.type === 'parabola' ? '평행에서 벗어난 각' : 'F₂ 근처 퍼짐');
+  badge.innerHTML = label + ' <span class="val">' + b.value.toFixed(2) + (b.unit || '') + '</span>' + (isOff ? ' (광원 이탈)' : '');
+}
+
+function updateInterp(params) {
+  const el = document.getElementById('interpText');
+  const isOff = state.sourceOffsetPct > 0;
+  let msg = '';
+  if (isOff) {
+    msg = '광원이 초점 F₁에서 벗어나 있습니다. 초점에서 나온 광선은 항상 회전축을 포함한 평면(자오면) 안에 있지만, <strong>초점을 벗어난 광원의 광선은 자오면을 벗어나(skew) 반사되어 F₂ 한 점에 모이지 않고 고리 모양으로 흩어집니다.</strong>';
+  } else if (params.type === 'circle') {
+    msg = '중심(=초점)에서 나온 빛은 구면의 모든 점에서 수직으로 반사되어 <strong>그대로 중심으로 되돌아옵니다.</strong>';
+  } else if (params.type === 'ellipse') {
+    msg = 'F₁에서 나온 광선이 고리(위도선)를 따라 사방으로 퍼졌다가, 반사된 뒤에는 <strong>모두 F₂ 한 점에 다시 모입니다.</strong> 2D 단면에서 성립하던 성질이 회전축 둘레 어디서나 그대로 성립합니다.';
+  } else if (params.type === 'parabola') {
+    msg = 'F에서 나온 광선이 반사되어 <strong>회전축과 평행한 원통 모양의 빛다발</strong>로 나갑니다. 위성 안테나·손전등 반사판이 이 성질을 이용합니다.';
+  } else if (params.type === 'hyperbola') {
+    msg = 'F₁에서 나온 광선이 반사되면, 그 반사광을 거꾸로 연장한 직선이 <strong>모두 F₂를 지납니다</strong> — 마치 원뿔 모양으로 F₂에서 나오는 것처럼 흩어집니다.';
+  }
+  const eText = 'c/a ≈ ' + params.e.toFixed(3);
+  el.innerHTML = msg + ' <span style="color:#94a3b8;">(' + eText + ')</span>';
+}
+
+// ════════════════════════════════════════════════════════════
+// 구조 갱신(곡면 재생성) — a,b,p,e, 곡선 종류, 패널 전환에서만 호출
+// ════════════════════════════════════════════════════════════
+function fullRebuild() {
+  const params = computeParams();
+  buildSurface(params);
+  updateMarkers(params);
+  updateRays(params);
+  document.getElementById('canvasHead').textContent = typeLabel(params.type) + ' · ' + (state.panel === 'standard' ? '표준형' : '연속 변형');
+}
+
+// ════════════════════════════════════════════════════════════
+// 조작 패널 렌더링 (2D 앱과 같은 원칙: 슬라이더가 있는 sliderZone은
+// 구조가 바뀔 때만 다시 그리고, 슬라이더 자신의 input 이벤트는 절대
+// sliderZone을 다시 그리지 않는다 — 드래그 중 <input>이 재생성되면
+// 네이티브 드래그 제스처가 끊긴다.)
+// ════════════════════════════════════════════════════════════
+function sliderHTML(id, label, val, min, max, step, cls) {
+  return `<div class="slider-group ${cls || ''}">
+    <div class="slider-row"><span class="slider-label">${label}</span><span class="slider-val" id="val-${id}"></span></div>
+    <input type="range" id="in-${id}" min="${min}" max="${max}" step="${step}" value="${val}">
+  </div>`;
+}
+function paramCell(k, v) { return `<div class="param-cell"><div class="k">${k}</div><div class="v">${v}</div></div>`; }
+function toggleBtn(key, label) { return `<button class="toggle-btn ${state.toggles[key] ? 'on' : ''}" data-toggle="${key}">${label}</button>`; }
+function fmtBig(v) { if (v === null || !isFinite(v)) return '—'; if (Math.abs(v) >= 100) return v.toFixed(0); return v.toFixed(2); }
+function standardEquationTex(type) {
+  if (type === 'circle') return '\\(u^2+v^2=r^2\\)';
+  if (type === 'ellipse') return '\\(\\dfrac{u^2}{a^2}+\\dfrac{v^2}{b^2}=1\\)';
+  if (type === 'parabola') return '\\(v^2=4pu\\)';
+  return '\\(\\dfrac{u^2}{a^2}-\\dfrac{v^2}{b^2}=1\\)';
+}
+function defText(type) {
+  if (type === 'circle') return '중심(=초점)으로부터 <b>거리가 일정한</b> 점들이 만드는 구면.';
+  if (type === 'ellipse') return '두 초점 F₁, F₂까지 거리의 <b>합이 일정(=2a)</b>한 점들이 만드는 회전타원면.';
+  if (type === 'parabola') return '한 점(초점) F와 한 평면(준면)까지 <b>거리가 같은</b> 점들이 만드는 회전포물면.';
+  return '두 초점 F₁, F₂까지 거리의 <b>차가 일정(=2a)</b>한 점들이 만드는 회전쌍곡면(한 잎).';
+}
+
+function renderSliderZone() {
+  const zone = document.getElementById('sliderZone');
+  let html = '';
+
+  if (state.panel === 'standard') {
+    html += '<div class="curve-tabs">';
+    [['circle', '◯', '구'], ['ellipse', '⬮', '타원면'], ['parabola', '⌒', '포물면'], ['hyperbola', '⟩⟨', '쌍곡면']].forEach(([t, dot, label]) => {
+      html += `<button class="curve-tab ${state.curveType === t ? 'active' : ''}" data-t="${t}"><span class="dot">${dot}</span>${label}</button>`;
+    });
+    html += '</div>';
+
+    if (state.curveType === 'circle') html += sliderHTML('circleR', '반지름 r', state.std.circleR, 0.8, 5, 0.1);
+    else if (state.curveType === 'ellipse') {
+      html += sliderHTML('ellA', '장반축 a (회전축)', state.std.ellA, 1.5, 6, 0.1);
+      html += sliderHTML('ellB', '단반축 b', state.std.ellB, 0.6, state.std.ellA - 0.05, 0.1);
+    } else if (state.curveType === 'parabola') html += sliderHTML('paraP', '초점거리 p', state.std.paraP, 0.5, 3, 0.1);
+    else {
+      html += sliderHTML('hypA', '주축 a (회전축)', state.std.hypA, 0.6, 4, 0.1);
+      html += sliderHTML('hypB', '허축 b', state.std.hypB, 0.6, 4, 0.1);
+    }
+    html += `<div class="eq-box">${standardEquationTex(state.curveType)}</div>`;
+    html += `<div class="eq-box small">중심(또는 꼭짓점) 기준 방정식입니다. 화면에서는 초점 F₁을 항상 원점(카메라 회전 중심)에 고정해서 보여줍니다.</div>`;
+  } else {
+    html += `<div class="def-text">슬라이더 하나로 구 → 회전타원면 → 회전포물면 → 회전쌍곡면이 끊기지 않고 이어집니다. <b>c/a = 1</b>을 넘으면 제2초점 F₂가 화면 밖으로 사라졌다가 반대쪽에서 나타납니다.</div>`;
+    html += sliderHTML('contE', 'c/a (=이심률 e)', state.contE, 0, 1.9, 0.01);
+    html += `<div class="eq-box">\\(u^2+v^2=(l+eu)^2\\)</div>`;
+    html += `<div class="eq-box small">자오면(회전축을 포함하는 단면) 기준 통합 방정식입니다.</div>`;
+  }
+
+  html += sliderHTML('launchPct', '자오각(발사각)', state.launchPct, 3, 100, 1, 'accent');
+  html += `<div class="hint-text">초점에서 광선이 나가는 고도각을 조절해, 곡면 어느 위도(고리)에서 반사가 일어나는지 관찰합니다.</div>`;
+  html += sliderHTML('sourceOffsetPct', '광원 이탈 거리', state.sourceOffsetPct, 0, 100, 1, 'warn');
+  html += `<div class="hint-text">0이면 광원이 정확히 초점에 있습니다. 값을 올리면 광원이 회전축을 벗어나 skew 반사가 나타납니다.</div>`;
+
+  html += '<div class="play-row" style="margin-top:6px;">';
+  html += `<button class="primary" id="playBtn">${state.playing ? '⏸ 일시정지' : '▶ 재생'}</button>`;
+  html += `<button id="resetBtn">↺ 초기화</button>`;
+  html += '</div>';
+  html += sliderHTML('progress', '광선 진행', state.progress, 0, 100, 1);
+
+  zone.innerHTML = html;
+  wireSliderEvents();
+  refreshSliderLabels();
+  if (window.MathJax && MathJax.typesetPromise) MathJax.typesetPromise([zone]).catch(() => {});
+}
+
+function refreshSliderLabels() {
+  const params = computeParams();
+  const AP = apertureFor(params);
+  setValText('circleR', state.std.circleR.toFixed(2));
+  setValText('ellA', state.std.ellA.toFixed(2));
+  setValText('ellB', state.std.ellB.toFixed(2));
+  setValText('paraP', state.std.paraP.toFixed(2));
+  setValText('hypA', state.std.hypA.toFixed(2));
+  setValText('hypB', state.std.hypB.toFixed(2));
+  setValText('contE', state.contE.toFixed(2));
+  const v = Math.max(AP * 0.03, (state.launchPct / 100) * AP);
+  const u = surfaceNearByV(v, params.l, params.e);
+  const angDeg = u === null ? 0 : Math.abs(Math.atan2(v, u)) * 180 / Math.PI;
+  setValText('launchPct', '≈ ' + angDeg.toFixed(1) + '°');
+  const offsetWorld = (state.sourceOffsetPct / 100) * params.l * 0.55;
+  setValText('sourceOffsetPct', state.sourceOffsetPct === 0 ? '0 (정상)' : offsetWorld.toFixed(2));
+  setValText('progress', Math.round(state.progress) + '%');
+}
+function setValText(id, text) { const el = document.getElementById('val-' + id); if (el) el.textContent = text; }
+
+function renderRestZone(params) {
+  const zone = document.getElementById('restZone');
+  let html = '';
+
+  if (state.panel === 'continuous') {
+    const nearOne = Math.abs(params.e - 1) < EPS_PARABOLA;
+    html += `<div class="def-text" style="${nearOne ? '' : 'display:none;'}background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;">c/a = 1에서는 중심이 무한히 멀어져 표준형으로 나타낼 수 없습니다. 이때부터는 초점거리 p로 표현합니다.</div>`;
+  }
+
+  html += '<div class="param-table">';
+  html += paramCell('e (c/a)', params.e.toFixed(3));
+  html += paramCell('l (반통경)', params.l.toFixed(2));
+  html += paramCell('a', fmtBig(params.a));
+  html += paramCell('c', fmtBig(params.c));
+  html += '</div>';
+
+  html += `<div class="def-text">${defText(params.type)}</div>`;
+
+  html += '<div class="toggle-grid">';
+  html += toggleBtn('wave', '파면(위도선) 표시');
+  html += '</div>';
+
+  if (params.type === 'ellipse' || params.type === 'hyperbola') {
+    html += `<details class="deepen"><summary>심화: 왜 회전축 둘레 어디서나 반사가 성립할까?</summary>
+      <div class="body">초점이 회전축 위에 있으므로, 초점에서 나온 어떤 광선이든 "회전축 + 그 광선"이 하나의 자오면을 결정합니다. 그 자오면 안에서는 2D 반사 실험실과 똑같은 반사 법칙이 그대로 성립하고, 곡면이 회전축에 대해 대칭이므로 이 성질이 <b>모든 자오면(모든 방위각)에서 동일하게</b> 반복됩니다. 반대로 광원이 초점을 벗어나면 그 점은 더 이상 축 위에 있지 않아 "축+광선"이 하나의 평면으로 고정되지 않고, 반사가 자오면을 벗어나(skew) F₂를 비켜갑니다.</div>
+    </details>`;
+  } else {
+    html += `<div class="def-text" style="color:#94a3b8;">이 곡면은 초점이 하나(또는 중심 하나)뿐이라 두 초점을 이용한 작도는 타원면·쌍곡면에서만 의미가 있습니다.</div>`;
+  }
+
+  zone.innerHTML = html;
+  wireToggleEvents();
+}
+
+function renderControlPanel() {
+  renderSliderZone();
+  renderRestZone(computeParams());
+}
+
+// ════════════════════════════════════════════════════════════
+// 이벤트 배선
+// ════════════════════════════════════════════════════════════
+function onStructuralSliderInput(id, apply) {
+  const el = document.getElementById('in-' + id);
+  if (!el) return;
+  el.addEventListener('input', () => {
+    apply(Number(el.value));
+    refreshSliderLabels();
+    fullRebuild();
+    renderRestZone(computeParams());
+  });
+}
+function onLightSliderInput(id, apply, skipRest) {
+  const el = document.getElementById('in-' + id);
+  if (!el) return;
+  el.addEventListener('input', () => {
+    apply(Number(el.value));
+    refreshSliderLabels();
+    updateRays(computeParams());
+    if (!skipRest) renderRestZone(computeParams());
+  });
+}
+
+function wireSliderEvents() {
+  onStructuralSliderInput('circleR', v => state.std.circleR = v);
+  onStructuralSliderInput('ellA', v => { state.std.ellA = v; syncEllBMax(v); });
+  onStructuralSliderInput('ellB', v => state.std.ellB = v);
+  onStructuralSliderInput('paraP', v => state.std.paraP = v);
+  onStructuralSliderInput('hypA', v => state.std.hypA = v);
+  onStructuralSliderInput('hypB', v => state.std.hypB = v);
+  onStructuralSliderInput('contE', v => state.contE = v);
+
+  onLightSliderInput('launchPct', v => state.launchPct = v);
+  onLightSliderInput('sourceOffsetPct', v => state.sourceOffsetPct = v);
+  onLightSliderInput('progress', v => { state.progress = v; state.playing = false; updatePlayBtnLabel(); }, true);
+
+  const playBtn = document.getElementById('playBtn');
+  if (playBtn) playBtn.addEventListener('click', togglePlay);
+  const resetBtn = document.getElementById('resetBtn');
+  if (resetBtn) resetBtn.addEventListener('click', resetAll);
+
+  zoneClickDelegate('sliderZone', '.curve-tab', el => setCurveType(el.dataset.t));
+}
+function zoneClickDelegate(zoneId, selector, handler) {
+  const zone = document.getElementById(zoneId);
+  zone.querySelectorAll(selector).forEach(el => el.addEventListener('click', () => handler(el)));
+}
+function wireToggleEvents() {
+  zoneClickDelegate('restZone', '.toggle-btn', el => toggleFlag(el.dataset.toggle));
+}
+
+function syncEllBMax(a) {
+  const bMax = a - 0.05;
+  const ellBInput = document.getElementById('in-ellB');
+  if (!ellBInput) return;
+  ellBInput.max = bMax;
+  if (state.std.ellB > bMax) { state.std.ellB = bMax; ellBInput.value = bMax; }
+}
+
+document.getElementById('tab-standard').addEventListener('click', () => setPanel('standard'));
+document.getElementById('tab-continuous').addEventListener('click', () => setPanel('continuous'));
+
+function setPanel(p) {
+  state.panel = p;
+  document.getElementById('tab-standard').classList.toggle('active', p === 'standard');
+  document.getElementById('tab-continuous').classList.toggle('active', p === 'continuous');
+  state.sourceOffsetPct = 0;
+  renderSliderZone();
+  fullRebuild();
+  renderRestZone(computeParams());
+}
+function setCurveType(t) {
+  state.curveType = t;
+  state.sourceOffsetPct = 0;
+  renderSliderZone();
+  fullRebuild();
+  renderRestZone(computeParams());
+}
+function toggleFlag(key) {
+  state.toggles[key] = !state.toggles[key];
+  renderRestZone(computeParams());
+  updateRays(computeParams());
+}
+function updatePlayBtnLabel() {
+  const btn = document.getElementById('playBtn');
+  if (btn) btn.textContent = state.playing ? '⏸ 일시정지' : '▶ 재생';
+}
+function togglePlay() {
+  state.playing = !state.playing;
+  if (state.playing && state.progress >= 100) state.progress = 0;
+  updatePlayBtnLabel();
+  if (state.playing) requestAnimationFrame(playTick);
+}
+let lastTickTime = null;
+function playTick(ts) {
+  if (!state.playing) { lastTickTime = null; return; }
+  if (lastTickTime === null) lastTickTime = ts;
+  const dt = ts - lastTickTime; lastTickTime = ts;
+  state.progress = Math.min(100, state.progress + dt * 0.045);
+  const el = document.getElementById('in-progress');
+  if (el) el.value = state.progress;
+  setValText('progress', Math.round(state.progress) + '%');
+  updateRays(computeParams());
+  if (state.progress >= 100) { state.playing = false; updatePlayBtnLabel(); return; }
+  requestAnimationFrame(playTick);
+}
+function resetAll() {
+  state.progress = 0; state.playing = false;
+  state.launchPct = 55; state.sourceOffsetPct = 0;
+  if (state.panel === 'standard') state.std = { circleR: 2.5, ellA: 3.2, ellB: 2.2, paraP: 1.3, hypA: 1.6, hypB: 2.2 };
+  else state.contE = 0.6;
+  updatePlayBtnLabel();
+  renderSliderZone();
+  fullRebuild();
+  renderRestZone(computeParams());
+}
+
+// ════════════════════════════════════════════════════════════
+// 초기화
+// ════════════════════════════════════════════════════════════
+window.addEventListener('DOMContentLoaded', () => {
+  initThree();
+  renderControlPanel();
+  fullRebuild();
+});
+</script>
+</body>
+</html>
