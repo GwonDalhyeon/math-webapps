@@ -162,7 +162,10 @@
     </div>
 
     <div class="card">
-      <div class="card-body" id="controlBody"></div>
+      <div class="card-body" id="controlBody">
+        <div id="sliderZone"></div>
+        <div id="restZone"></div>
+      </div>
     </div>
   </div>
 </main>
@@ -699,9 +702,11 @@ function updateInterp(params) {
 // ════════════════════════════════════════════════════════════
 // 조작 패널 렌더링
 // ════════════════════════════════════════════════════════════
-function renderControlPanel() {
-  const body = document.getElementById('controlBody');
-  const params = computeParams();
+// 슬라이더가 들어 있는 영역 — 곡선 종류/패널 전환처럼 "구조"가 바뀔 때만 다시 그린다.
+// 슬라이더 자신의 input 이벤트로는 절대 다시 그리지 않는다 — 드래그 중간에 <input> 자체가
+// 파괴·재생성되면 네이티브 드래그 제스처가 끊겨 조작감이 나빠지기 때문이다.
+function renderSliderZone() {
+  const zone = document.getElementById('sliderZone');
   let html = '';
 
   if (state.panel === 'standard') {
@@ -723,12 +728,37 @@ function renderControlPanel() {
       html += sliderHTML('hypB', '허축 b', state.std.hypB, 0.6, 4, 0.1);
     }
 
+    // 표준형 식은 항상 일반형(문자식)이라 슬라이더를 움직여도 바뀌지 않는다 — 구조 영역에 둔다.
     html += `<div class="eq-box">${standardEquationTex(state.curveType)}</div>`;
   } else {
     html += `<div class="def-text">아래 슬라이더 하나로 원 → 타원 → 포물선 → 쌍곡선이 끊기지 않고 이어집니다. <b>c/a = 1</b>을 넘는 순간 제2초점 F₂가 화면 밖으로 사라졌다가 반대쪽에서 나타납니다.</div>`;
     html += sliderHTML('contE', 'c/a (=이심률 e)', state.contE, 0, 1.9, 0.01, true);
     html += `<div class="eq-box">\\(x^2+y^2=(l+ex)^2\\)</div>`;
     html += `<div class="eq-box small">이 통합 방정식은 e 값과 관계없이 항상 성립합니다.</div>`;
+  }
+
+  // 발사점 안내
+  html += `<div class="drag-hint">🖱️ 캔버스의 F₁(빨간 점)을 드래그하면 초점에서 벗어난 발사점을 실험할 수 있습니다.</div>`;
+
+  // 재생 제어
+  html += '<div class="play-row" style="margin-top:10px;">';
+  html += `<button class="primary" id="playBtn" onclick="togglePlay()">${state.playing ? '⏸ 일시정지' : '▶ 재생'}</button>`;
+  html += `<button onclick="resetAll()">↺ 초기화</button>`;
+  html += '</div>';
+  html += sliderHTML('progress', '광선 진행', state.progress, 0, 100, 1);
+
+  zone.innerHTML = html;
+  wireSliderEvents();
+  if (window.MathJax && MathJax.typesetPromise) MathJax.typesetPromise([zone]).catch(() => {});
+}
+
+// 슬라이더를 뺀 나머지(수치·문구·토글) — 슬라이더를 드래그할 때마다 이 영역만 새로 그린다.
+// <input> 이 하나도 없어서 자유롭게 innerHTML을 다시 써도 진행 중인 드래그를 방해하지 않는다.
+function renderRestZone(params) {
+  const zone = document.getElementById('restZone');
+  let html = '';
+
+  if (state.panel === 'continuous') {
     const nearOne = Math.abs(params.e - 1) < EPS_PARABOLA;
     html += `<div class="eq-warn ${nearOne ? 'show' : ''}" id="paraWarn">c/a = 1 에서는 중심이 무한히 멀어져 <b>표준형 x²/a²+y²/b²=1 로 나타낼 수 없습니다.</b> 이때부터는 a, b 대신 초점거리 p 하나로 표현합니다 → y²=4px.</div>`;
   }
@@ -742,16 +772,6 @@ function renderControlPanel() {
   html += '</div>';
 
   html += `<div class="def-text">${defText(params.type)}</div>`;
-
-  // 발사점 안내
-  html += `<div class="drag-hint">🖱️ 캔버스의 F₁(빨간 점)을 드래그하면 초점에서 벗어난 발사점을 실험할 수 있습니다.</div>`;
-
-  // 재생 제어
-  html += '<div class="play-row" style="margin-top:10px;">';
-  html += `<button class="primary" id="playBtn" onclick="togglePlay()">${state.playing ? '⏸ 일시정지' : '▶ 재생'}</button>`;
-  html += `<button onclick="resetAll()">↺ 초기화</button>`;
-  html += '</div>';
-  html += sliderHTML('progress', '광선 진행', state.progress, 0, 100, 1);
 
   // 토글
   html += '<div class="toggle-grid" style="margin-top:8px;">';
@@ -772,10 +792,13 @@ function renderControlPanel() {
     html += `<div class="def-text" style="color:#94a3b8;">이 곡선은 초점이 하나(또는 중심 하나)라서 F₂′ 작도는 타원·쌍곡선에서만 의미가 있습니다.</div>`;
   }
 
-  body.innerHTML = html;
+  zone.innerHTML = html;
   document.getElementById('canvasHead').textContent = typeLabel(params.type) + ' · ' + (state.panel === 'standard' ? '표준형' : '연속 변형');
-  wireControlEvents();
-  if (window.MathJax && MathJax.typesetPromise) MathJax.typesetPromise([body]).catch(() => {});
+}
+
+function renderControlPanel() {
+  renderSliderZone();
+  renderRestZone(computeParams());
 }
 
 function fmtBig(v) {
@@ -808,14 +831,14 @@ function defText(type) {
 // ════════════════════════════════════════════════════════════
 // 이벤트 배선
 // ════════════════════════════════════════════════════════════
-function wireControlEvents() {
+function wireSliderEvents() {
   const bind = (id, onInput) => {
     const el = document.getElementById('in-' + id);
     if (!el) return;
     el.addEventListener('input', () => onInput(Number(el.value)));
   };
   bind('circleR', v => { state.std.circleR = v; syncAndDraw('circleR', v); });
-  bind('ellA', v => { state.std.ellA = v; syncAndDraw('ellA', v); renderControlPanel(); });
+  bind('ellA', v => { state.std.ellA = v; syncEllBMax(v); syncAndDraw('ellA', v); });
   bind('ellB', v => { state.std.ellB = v; syncAndDraw('ellB', v); });
   bind('paraP', v => { state.std.paraP = v; syncAndDraw('paraP', v); });
   bind('hypA', v => { state.std.hypA = v; syncAndDraw('hypA', v); });
@@ -830,14 +853,28 @@ function wireControlEvents() {
       else contEl.classList.remove('snap-hot');
       state.contE = v;
       syncAndDraw('contE', v);
-      renderControlPanel();
     });
+  }
+}
+// ellA(장반축)가 바뀌면 ellB(단반축)의 상한도 같이 바뀐다 — sliderZone을 통째로 다시 그리지 않고
+// ellB <input>의 max만 직접 갱신해서, ellA를 드래그하는 도중에도 두 슬라이더 모두 살아있게 한다.
+function syncEllBMax(a) {
+  const bMax = a - 0.05;
+  const ellBInput = document.getElementById('in-ellB');
+  if (!ellBInput) return;
+  ellBInput.max = bMax;
+  if (state.std.ellB > bMax) {
+    state.std.ellB = bMax;
+    ellBInput.value = bMax;
+    const lbl = document.getElementById('val-ellB');
+    if (lbl) lbl.textContent = bMax.toFixed(2);
   }
 }
 function syncAndDraw(id, v) {
   const lbl = document.getElementById('val-' + id);
   if (lbl) lbl.textContent = (id === 'progress') ? Math.round(v) + '%' : v.toFixed(2);
   draw();
+  if (id !== 'progress') renderRestZone(computeParams());
 }
 
 function setPanel(p) {
@@ -854,7 +891,7 @@ function setCurveType(t) {
 }
 function toggleFlag(key) {
   state.toggles[key] = !state.toggles[key];
-  renderControlPanel(); draw();
+  renderRestZone(computeParams()); draw();
 }
 function updatePlayBtnLabel() {
   const btn = document.getElementById('playBtn');
@@ -920,7 +957,7 @@ function setupDrag() {
   canvas.addEventListener('pointerdown', e => {
     const rect = canvas.getBoundingClientRect();
     const mx = e.clientX - rect.left, my = e.clientY - rect.top;
-    if (nearLaunch(mx, my)) { dragging = true; canvas.classList.add('dragging'); canvas.setPointerCapture(e.pointerId); }
+    if (nearLaunch(mx, my)) { dragging = true; canvas.classList.add('dragging'); try { canvas.setPointerCapture(e.pointerId); } catch (err) {} }
   });
   const end = () => { dragging = false; canvas.classList.remove('dragging'); };
   canvas.addEventListener('pointerup', end);

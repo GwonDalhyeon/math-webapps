@@ -157,7 +157,10 @@
     </div>
 
     <div class="card">
-      <div class="card-body" id="controlBody"></div>
+      <div class="card-body" id="controlBody">
+        <div id="sliderZone"></div>
+        <div id="restZone"></div>
+      </div>
     </div>
   </div>
 </main>
@@ -567,12 +570,23 @@ function standardEquationTex(sf) {
 function paramCell(k, v) { return `<div class="param-cell"><div class="k">${k}</div><div class="v">${v}</div></div>`; }
 function toggleBtn(key, label) { return `<button class="toggle-btn ${state.toggles[key] ? 'on' : ''}" onclick="window.__toggle('${key}')">${label}</button>`; }
 
-function renderControlPanel(sf, ecc) {
-  const body = document.getElementById('controlBody');
+// 슬라이더 자체는 한 번만 그린다 — angle/height의 input 이벤트로 이 영역을 다시 그리면
+// 드래그 중간에 <input>이 파괴·재생성되어 네이티브 드래그 제스처가 끊긴다.
+function renderSliderZone() {
+  const zone = document.getElementById('sliderZone');
   let html = '';
   html += sliderHTML('angle', '자르는 각도 β', state.angleDeg, 0, 85, 0.1, '°');
   html += sliderHTML('height', '자르는 높이 h', state.heightPct, 5, 95, 1, '%');
-  html += `<div class="eq-box">${standardEquationTex(sf)}</div>`;
+  zone.innerHTML = html;
+  wireSliderEvents();
+}
+
+// 슬라이더를 뺀 나머지(방정식·파라미터·문구·토글) — 슬라이더를 움직일 때마다 이 영역만 새로 그린다.
+let mathjaxTimer = null;
+function renderRestZone(sf, ecc) {
+  const zone = document.getElementById('restZone');
+  let html = '';
+  html += `<div class="eq-box" id="eqBox">${standardEquationTex(sf)}</div>`;
   html += '<div class="param-table">';
   html += paramCell('e (=sinβ/sinα)', ecc.toFixed(3));
   html += paramCell('α (모선 각도)', ALPHA_DEG.toFixed(1) + '°');
@@ -596,10 +610,26 @@ function renderControlPanel(sf, ecc) {
     <div class="body" id="dandelinBody">원뿔에 내접하면서 동시에 절단면에 닿는 구 두 개를 그립니다. 구가 절단면에 닿는 점이 바로 초점입니다.
     곡선 위 아무 점 P에서 원뿔의 모선을 따라 각 구의 접점까지 잰 거리(주황)와, P에서 초점까지 거리(초록)가 같다는 것을 확인하세요.</div>
   </details>`;
-  body.innerHTML = html;
+  zone.innerHTML = html;
   document.getElementById('canvasHead').textContent = typeLabel(sf.type);
-  wireControlEvents();
-  if (window.MathJax && MathJax.typesetPromise) MathJax.typesetPromise([body]).catch(() => {});
+  wireRestZoneEvents();
+  // MathJax 재조판은 다소 무거워서, 드래그 중 매 tick마다 부르지 않고 살짝 늦춰(디바운스) 부른다.
+  clearTimeout(mathjaxTimer);
+  mathjaxTimer = setTimeout(() => {
+    const eqBox = document.getElementById('eqBox');
+    if (eqBox && window.MathJax && MathJax.typesetPromise) MathJax.typesetPromise([eqBox]).catch(() => {});
+  }, 80);
+}
+function wireRestZoneEvents() {
+  const dandelinDetails = document.getElementById('dandelinDetails');
+  dandelinDetails.addEventListener('toggle', () => {
+    if (state.toggles.dandelin === dandelinDetails.open) return; // update()가 다시 그린 <details>에도 open 상태가 반영되어 있으므로 중복 갱신 방지
+    state.toggles.dandelin = dandelinDetails.open;
+    update();
+  });
+}
+function renderControlPanel(sf, ecc) {
+  renderRestZone(sf, ecc);
 }
 function sliderHTML(id, label, val, min, max, step, unit) {
   return `<div class="slider-group">
@@ -608,7 +638,7 @@ function sliderHTML(id, label, val, min, max, step, unit) {
   </div>`;
 }
 
-function wireControlEvents() {
+function wireSliderEvents() {
   const angleEl = document.getElementById('in-angle');
   const heightEl = document.getElementById('in-height');
   angleEl.addEventListener('input', () => {
@@ -622,12 +652,6 @@ function wireControlEvents() {
   heightEl.addEventListener('input', () => {
     state.heightPct = Number(heightEl.value);
     document.getElementById('val-height').textContent = Math.round(state.heightPct) + '%';
-    update();
-  });
-  const dandelinDetails = document.getElementById('dandelinDetails');
-  dandelinDetails.addEventListener('toggle', () => {
-    if (state.toggles.dandelin === dandelinDetails.open) return; // update()가 다시 그린 <details>에도 open 상태가 반영되어 있으므로 중복 갱신 방지
-    state.toggles.dandelin = dandelinDetails.open;
     update();
   });
 }
@@ -701,7 +725,7 @@ let dividerDragging = false;
 splitDivider.addEventListener('pointerdown', e => {
   dividerDragging = true;
   splitDivider.classList.add('dragging');
-  splitDivider.setPointerCapture(e.pointerId);
+  try { splitDivider.setPointerCapture(e.pointerId); } catch (err) {}
 });
 splitDivider.addEventListener('pointermove', e => {
   if (!dividerDragging) return;
@@ -725,6 +749,7 @@ function animate() {
   labelRenderer.render(scene, camera);
 }
 
+renderSliderZone();
 resizeStage();
 update();
 animate();
