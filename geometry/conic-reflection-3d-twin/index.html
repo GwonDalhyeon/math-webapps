@@ -310,21 +310,57 @@ function traceMeridian(params, v0, gapL) {
   return { hitA, dirOut1, d1, hitB, dirOut2, d2: t2, reachedB: true, axisCrossU, Cc };
 }
 
-function computeAlignment(params, gapL) {
+// ════════════════════════════════════════════════════════════
+// 쌍곡면 전용: 하나의 쌍곡선 방정식이 만드는 두 가지(볼록한 면)를 그대로 마주보게 둔다.
+// 아주 먼 곳에서 F₂를 향해 날아오던 빛(직진했다면 F₂에 도달했을 경로)이 반대쪽 가지의
+// 볼록면에서 "한 번만" 반사되어 F₁을 향해 날아간다 — 실제 반사망원경 보조거울과 같은 구성.
+// (광원을 F₁에 두고 이 가지까지 직진시키려 하면, 가까운 가지 A의 오목한 벽에 거의 항상
+// 먼저 가로막힌다 — A가 만드는 오목한 공간 안에 F₁이 있기 때문이다. 실제 광학계에서도 이
+// 반대쪽 가지는 "안에서 밖으로 쏘는 광원"이 아니라 "밖에서 들어오는 광선을 가로채는 거울"로
+// 쓰인다. 그래서 입사광의 방향은 F₁이 아니라 F₂를 기준으로 정의한다.)
+// 두 가지가 같은 초점 쌍(F₁,F₂)을 공유하므로(거울 A·B가 각자 다른 로컬 초점을 갖던 이전
+// 방식과 달리) 별도의 간격 슬라이더가 필요 없다: 가지 사이 간격은 항상 2a로 정해진다.
+// ════════════════════════════════════════════════════════════
+function traceConfocalHyperbola(params, vB) {
+  const { l, e, centerU } = params;
+  const uLocal = surfaceNearByV(vB, l, e);
+  if (uLocal === null) return null;
+  const Cc = 2 * centerU; // 세계좌표 F2 (= 반대쪽 가지의 "자기 초점")
+  const Q = { u: Cc - uLocal, v: vB }; // 반대쪽 가지 위의 반사점
+  const dirIn = V2.norm({ u: uLocal, v: -vB }); // = normalize(F2 - Q), F2=(Cc,0)
+  let n = meridianNormal(uLocal, vB, l, e);
+  n = { u: -n.u, v: n.v }; // 반대쪽 가지는 방향이 뒤집혀 있으므로 축방향 성분만 반전
+  n = V2.flipIfNeeded(n, dirIn);
+  const dirOut = V2.reflect(dirIn, n);
+  let axisCrossU = null;
+  if (Math.abs(dirOut.v) > 1e-6) {
+    const tc = -Q.v / dirOut.v;
+    if (tc > 0) axisCrossU = Q.u + tc * dirOut.u;
+  }
+  return { Q, dirIn, dirOut, axisCrossU, Cc };
+}
+
+function computeAlignment(params) {
   const AP = apertureFor();
   const samples = [];
   for (let i = 1; i <= N_SAMPLE; i++) samples.push(AP * (0.12 + 0.8 * (i - 1) / (N_SAMPLE - 1)));
   const crossings = [];
   let missCount = 0;
+  const isPara = params.type === 'parabola';
   samples.forEach(v0 => {
-    const r = traceMeridian(params, v0, gapL);
-    if (!r || !r.reachedB || r.axisCrossU === null) { missCount++; return; }
+    const r = isPara ? traceMeridian(params, v0, state.gapL) : traceConfocalHyperbola(params, v0);
+    if (!r || (isPara && !r.reachedB) || r.axisCrossU === null) { missCount++; return; }
     crossings.push(r.axisCrossU);
   });
   if (crossings.length < 2) return { spread: null, missCount, mean: null };
   const mean = crossings.reduce((a, b) => a + b, 0) / crossings.length;
   const spread = Math.max(...crossings.map(c => Math.abs(c - mean)));
   return { spread, missCount, mean };
+}
+
+function mirrorBAxis(params) {
+  if (params.type === 'parabola') return 2 * vertexU(params.l, params.e) + state.gapL;
+  return 2 * params.centerU; // 쌍곡면: 중심에 대한 반대쪽 가지 (별도 간격 개념 없음)
 }
 
 // ════════════════════════════════════════════════════════════
@@ -444,10 +480,9 @@ function buildMirrorProfiles(params) {
 
 function disposeMesh(mesh) { if (mesh) { mesh.geometry.dispose(); mesh.material.dispose(); scene.remove(mesh); } }
 
-function buildSurfaces(params, gapL) {
+function buildSurfaces(params) {
   disposeMesh(meshA); disposeMesh(wireA); disposeMesh(meshB); disposeMesh(wireB);
-  const uV = vertexU(params.l, params.e);
-  const Cc = 2 * uV + gapL;
+  const Cc = mirrorBAxis(params);
   const color = typeColor(params.type);
   const profile = buildMirrorProfiles(params);
 
@@ -464,33 +499,36 @@ function buildSurfaces(params, gapL) {
   scene.add(wireB); scene.add(meshB);
 }
 
-function updateMarkers(params, gapL) {
-  const uV = vertexU(params.l, params.e);
-  const Cc = 2 * uV + gapL;
+function updateMarkers(params) {
+  const isPara = params.type === 'parabola';
+  const Cc = mirrorBAxis(params);
   f1AMarker.position.set(0, 0, 0);
-  f1BMarker.position.set(0, Cc, 0);
   f1ALabel.position.set(0.25, 0.2, 0);
-  f1BLabel.position.set(0.25, Cc + 0.2, 0);
 
-  const hasF2 = params.f2U !== null;
+  // 포물면: 거울 A·B가 각자 다른 초점을 갖는 진짜 "쌍둥이"라 F₁' 표시가 의미 있다.
+  // 쌍곡면: 반대쪽 가지의 "자기 초점"이 항상 F₂와 같은 점이라 F₁' 표시가 F₂와 겹쳐 중복된다.
+  f1BMarker.visible = f1BLabel.visible = isPara;
+  if (isPara) {
+    f1BMarker.position.set(0, Cc, 0);
+    f1BLabel.position.set(0.25, Cc + 0.2, 0);
+  }
+
+  const hasF2 = params.f2U !== null; // 쌍곡면만 true
   f2AMarker.visible = f2ALabel.visible = hasF2;
-  f2BMarker.visible = f2BLabel.visible = hasF2;
+  f2BMarker.visible = f2BLabel.visible = false;
   if (hasF2) {
     f2AMarker.position.set(0, params.f2U, 0);
     f2ALabel.position.set(0.22, params.f2U - 0.22, 0);
-    f2BMarker.position.set(0, Cc - params.f2U, 0);
-    f2BLabel.position.set(0.22, Cc - params.f2U + 0.22, 0);
   }
 
   const AP = apertureFor();
-  const extent = Math.max(Cc + AP, AP) * 1.3 + 1;
-  axisLine.geometry.setFromPoints([new THREE.Vector3(0, -1.5, 0), new THREE.Vector3(0, extent, 0)]);
+  const extent = Math.max(Math.abs(Cc), AP) * 1.3 + 2;
+  axisLine.geometry.setFromPoints([new THREE.Vector3(0, -extent, 0), new THREE.Vector3(0, extent, 0)]);
 }
 
-function updateRaysVisual(params, gapL) {
+function updateRaysVisual(params) {
   const AP = apertureFor();
-  const v0 = Math.max(AP * 0.05, (state.launchPct / 100) * AP);
-  const trace = traceMeridian(params, v0, gapL);
+  const vPick = Math.max(AP * 0.05, (state.launchPct / 100) * AP);
   currentParams = params;
 
   const s1 = seg1.geometry.attributes.position.array;
@@ -501,72 +539,126 @@ function updateRaysVisual(params, gapL) {
   seg3.geometry.setDrawRange(0, 0);
   hitPoints.geometry.setDrawRange(0, 0);
 
-  if (!trace) { seg1.geometry.setDrawRange(0, 0); return; }
+  if (params.type === 'parabola') {
+    const trace = traceMeridian(params, vPick, state.gapL);
+    if (!trace) { seg1.geometry.setDrawRange(0, 0); updateAlignBadge(params); updateInterp(params); return; }
 
-  const frac = state.progress / 100;
-  const d1 = trace.d1;
-  const d2 = trace.reachedB ? trace.d2 : 6;
-  const MAXOUT3 = trace.axisCrossU !== null ? Math.abs(trace.axisCrossU - (trace.hitB ? trace.hitB.u : 0)) + 0.6 : 6;
-  const total = d1 + d2 + (trace.reachedB ? MAXOUT3 : 0);
-  const traveled = frac * total;
+    const frac = state.progress / 100;
+    const d1 = trace.d1;
+    const d2 = trace.reachedB ? trace.d2 : 6;
+    const MAXOUT3 = trace.axisCrossU !== null ? Math.abs(trace.axisCrossU - (trace.hitB ? trace.hitB.u : 0)) + 0.6 : 6;
+    const total = d1 + d2 + (trace.reachedB ? MAXOUT3 : 0);
+    const traveled = frac * total;
 
-  let hpCount = 0;
-  for (let k = 0; k < RAY_AZ; k++) {
-    const phi = (k / RAY_AZ) * Math.PI * 2;
-    const c = Math.cos(phi), sn = Math.sin(phi);
-    const source3 = { x: 0, y: 0, z: 0 };
-    const hitA3 = { x: trace.hitA.v * c, y: trace.hitA.u, z: trace.hitA.v * sn };
+    let hpCount = 0;
+    for (let k = 0; k < RAY_AZ; k++) {
+      const phi = (k / RAY_AZ) * Math.PI * 2;
+      const c = Math.cos(phi), sn = Math.sin(phi);
+      const source3 = { x: 0, y: 0, z: 0 };
+      const hitA3 = { x: trace.hitA.v * c, y: trace.hitA.u, z: trace.hitA.v * sn };
 
-    let inEnd = hitA3;
-    if (traveled < d1) {
-      const t = d1 > 0 ? traveled / d1 : 1;
-      inEnd = { x: source3.x + (hitA3.x - source3.x) * t, y: source3.y + (hitA3.y - source3.y) * t, z: source3.z + (hitA3.z - source3.z) * t };
+      let inEnd = hitA3;
+      if (traveled < d1) {
+        const t = d1 > 0 ? traveled / d1 : 1;
+        inEnd = { x: source3.x + (hitA3.x - source3.x) * t, y: source3.y + (hitA3.y - source3.y) * t, z: source3.z + (hitA3.z - source3.z) * t };
+      }
+      s1[k * 6 + 0] = source3.x; s1[k * 6 + 1] = source3.y; s1[k * 6 + 2] = source3.z;
+      s1[k * 6 + 3] = inEnd.x; s1[k * 6 + 4] = inEnd.y; s1[k * 6 + 5] = inEnd.z;
+
+      if (!trace.reachedB) continue;
+      const hitB3 = { x: trace.hitB.v * c, y: trace.hitB.u, z: trace.hitB.v * sn };
+      if (traveled > d1) {
+        const t2 = d2 > 0 ? Math.min(1, (traveled - d1) / d2) : 1;
+        const p2 = { x: hitA3.x + (hitB3.x - hitA3.x) * t2, y: hitA3.y + (hitB3.y - hitA3.y) * t2, z: hitA3.z + (hitB3.z - hitA3.z) * t2 };
+        s2[k * 6 + 0] = hitA3.x; s2[k * 6 + 1] = hitA3.y; s2[k * 6 + 2] = hitA3.z;
+        s2[k * 6 + 3] = p2.x; s2[k * 6 + 4] = p2.y; s2[k * 6 + 5] = p2.z;
+        hp[hpCount * 3 + 0] = hitA3.x; hp[hpCount * 3 + 1] = hitA3.y; hp[hpCount * 3 + 2] = hitA3.z; hpCount++;
+      }
+      if (traveled > d1 + d2) {
+        const t3 = MAXOUT3 > 0 ? Math.min(1, (traveled - d1 - d2) / MAXOUT3) : 1;
+        // dirOut2는 자오면(u,v) 방향이므로, v(반지름) 성분을 방위각 c/sn에 다시 투영해야 world 좌표가 된다.
+        const newU = trace.hitB.u + trace.dirOut2.u * MAXOUT3 * t3;
+        const newV = trace.hitB.v + trace.dirOut2.v * MAXOUT3 * t3;
+        const exit = { x: newV * c, y: newU, z: newV * sn };
+        s3[k * 6 + 0] = hitB3.x; s3[k * 6 + 1] = hitB3.y; s3[k * 6 + 2] = hitB3.z;
+        s3[k * 6 + 3] = exit.x; s3[k * 6 + 4] = exit.y; s3[k * 6 + 5] = exit.z;
+        hp[hpCount * 3 + 0] = hitB3.x; hp[hpCount * 3 + 1] = hitB3.y; hp[hpCount * 3 + 2] = hitB3.z; hpCount++;
+      }
     }
-    s1[k * 6 + 0] = source3.x; s1[k * 6 + 1] = source3.y; s1[k * 6 + 2] = source3.z;
-    s1[k * 6 + 3] = inEnd.x; s1[k * 6 + 4] = inEnd.y; s1[k * 6 + 5] = inEnd.z;
 
-    if (!trace.reachedB) continue;
-    const hitB3 = { x: trace.hitB.v * c, y: trace.hitB.u, z: trace.hitB.v * sn };
-    if (traveled > d1) {
-      const t2 = d2 > 0 ? Math.min(1, (traveled - d1) / d2) : 1;
-      const p2 = { x: hitA3.x + (hitB3.x - hitA3.x) * t2, y: hitA3.y + (hitB3.y - hitA3.y) * t2, z: hitA3.z + (hitB3.z - hitA3.z) * t2 };
-      s2[k * 6 + 0] = hitA3.x; s2[k * 6 + 1] = hitA3.y; s2[k * 6 + 2] = hitA3.z;
-      s2[k * 6 + 3] = p2.x; s2[k * 6 + 4] = p2.y; s2[k * 6 + 5] = p2.z;
-      hp[hpCount * 3 + 0] = hitA3.x; hp[hpCount * 3 + 1] = hitA3.y; hp[hpCount * 3 + 2] = hitA3.z; hpCount++;
+    seg1.geometry.attributes.position.needsUpdate = true;
+    seg1.geometry.setDrawRange(0, RAY_AZ * 2);
+    if (trace.reachedB) {
+      seg2.geometry.attributes.position.needsUpdate = true;
+      seg2.geometry.setDrawRange(0, traveled > d1 ? RAY_AZ * 2 : 0);
+      seg3.geometry.attributes.position.needsUpdate = true;
+      seg3.geometry.setDrawRange(0, traveled > d1 + d2 ? RAY_AZ * 2 : 0);
+      hitPoints.geometry.attributes.position.needsUpdate = true;
+      hitPoints.geometry.setDrawRange(0, hpCount);
     }
-    if (traveled > d1 + d2) {
-      const t3 = MAXOUT3 > 0 ? Math.min(1, (traveled - d1 - d2) / MAXOUT3) : 1;
-      // dirOut2는 자오면(u,v) 방향이므로, v(반지름) 성분을 방위각 c/sn에 다시 투영해야 world 좌표가 된다.
-      const newU = trace.hitB.u + trace.dirOut2.u * MAXOUT3 * t3;
-      const newV = trace.hitB.v + trace.dirOut2.v * MAXOUT3 * t3;
-      const exit = { x: newV * c, y: newU, z: newV * sn };
-      s3[k * 6 + 0] = hitB3.x; s3[k * 6 + 1] = hitB3.y; s3[k * 6 + 2] = hitB3.z;
-      s3[k * 6 + 3] = exit.x; s3[k * 6 + 4] = exit.y; s3[k * 6 + 5] = exit.z;
-      hp[hpCount * 3 + 0] = hitB3.x; hp[hpCount * 3 + 1] = hitB3.y; hp[hpCount * 3 + 2] = hitB3.z; hpCount++;
-    }
-  }
+  } else {
+    // 쌍곡면: 아주 먼 곳에서 F₂를 향해 날아오던 빛이 반대쪽 가지(볼록면)에서 한 번만
+    // 반사되어 F₁로 향한다. 광원이 실제로는 무한히 멀리 있으므로, 화면에는 일정한
+    // 길이(VISUAL_IN)만큼만 "다가오는" 모습으로 그린다.
+    const trace = traceConfocalHyperbola(params, vPick);
+    if (!trace) { seg1.geometry.setDrawRange(0, 0); updateAlignBadge(params); updateInterp(params); return; }
 
-  seg1.geometry.attributes.position.needsUpdate = true;
-  seg1.geometry.setDrawRange(0, RAY_AZ * 2);
-  if (trace.reachedB) {
-    seg2.geometry.attributes.position.needsUpdate = true;
-    seg2.geometry.setDrawRange(0, traveled > d1 ? RAY_AZ * 2 : 0);
+    const frac = state.progress / 100;
+    const VISUAL_IN = 6.5;
+    const d1 = VISUAL_IN;
+    const MAXOUT = trace.axisCrossU !== null ? Math.abs(trace.axisCrossU - trace.Q.u) + 0.6 : 6;
+    const total = d1 + MAXOUT;
+    const traveled = frac * total;
+
+    const startU = trace.Q.u - trace.dirIn.u * VISUAL_IN;
+    const startV = trace.Q.v - trace.dirIn.v * VISUAL_IN;
+
+    let hpCount = 0;
+    for (let k = 0; k < RAY_AZ; k++) {
+      const phi = (k / RAY_AZ) * Math.PI * 2;
+      const c = Math.cos(phi), sn = Math.sin(phi);
+      const Q3 = { x: trace.Q.v * c, y: trace.Q.u, z: trace.Q.v * sn };
+      const start3 = { x: startV * c, y: startU, z: startV * sn };
+
+      let inEnd = Q3;
+      if (traveled < d1) {
+        const t = traveled / d1;
+        inEnd = { x: start3.x + (Q3.x - start3.x) * t, y: start3.y + (Q3.y - start3.y) * t, z: start3.z + (Q3.z - start3.z) * t };
+      }
+      s1[k * 6 + 0] = start3.x; s1[k * 6 + 1] = start3.y; s1[k * 6 + 2] = start3.z;
+      s1[k * 6 + 3] = inEnd.x; s1[k * 6 + 4] = inEnd.y; s1[k * 6 + 5] = inEnd.z;
+
+      if (traveled > d1) {
+        hp[hpCount * 3 + 0] = Q3.x; hp[hpCount * 3 + 1] = Q3.y; hp[hpCount * 3 + 2] = Q3.z; hpCount++;
+        const t3 = MAXOUT > 0 ? Math.min(1, (traveled - d1) / MAXOUT) : 1;
+        const newU = trace.Q.u + trace.dirOut.u * MAXOUT * t3;
+        const newV = trace.Q.v + trace.dirOut.v * MAXOUT * t3;
+        const exit = { x: newV * c, y: newU, z: newV * sn };
+        s3[k * 6 + 0] = Q3.x; s3[k * 6 + 1] = Q3.y; s3[k * 6 + 2] = Q3.z;
+        s3[k * 6 + 3] = exit.x; s3[k * 6 + 4] = exit.y; s3[k * 6 + 5] = exit.z;
+      }
+    }
+
+    seg1.geometry.attributes.position.needsUpdate = true;
+    seg1.geometry.setDrawRange(0, RAY_AZ * 2);
     seg3.geometry.attributes.position.needsUpdate = true;
-    seg3.geometry.setDrawRange(0, traveled > d1 + d2 ? RAY_AZ * 2 : 0);
+    seg3.geometry.setDrawRange(0, traveled > d1 ? RAY_AZ * 2 : 0);
     hitPoints.geometry.attributes.position.needsUpdate = true;
     hitPoints.geometry.setDrawRange(0, hpCount);
   }
 
-  updateAlignBadge(params, gapL);
-  updateInterp(params, gapL);
+  updateAlignBadge(params);
+  updateInterp(params);
 }
 
-function updateAlignBadge(params, gapL) {
+function updateAlignBadge(params) {
   const badge = document.getElementById('alignBadge');
-  const { spread, missCount } = computeAlignment(params, gapL);
+  const { spread, missCount } = computeAlignment(params);
   if (spread === null) {
     badge.className = 'align-badge bad';
-    badge.innerHTML = '이 간격에서는 둘째 거울까지 도달하지 못하는 광선이 많습니다';
+    badge.innerHTML = params.type === 'parabola'
+      ? '이 간격에서는 둘째 거울까지 도달하지 못하는 광선이 많습니다'
+      : '이 발사각에서는 반사 방향을 계산할 수 없습니다';
     return;
   }
   const scaleBase = Math.max(params.l, 0.5);
@@ -575,16 +667,13 @@ function updateAlignBadge(params, gapL) {
   badge.innerHTML = '정렬도(도착 위치 퍼짐) <span class="val">' + spread.toFixed(2) + '</span>' + (missCount > 0 ? ' · 미도달 ' + missCount + '개' : '');
 }
 
-function updateInterp(params, gapL) {
+function updateInterp(params) {
   const el = document.getElementById('interpText');
-  const { spread } = computeAlignment(params, gapL);
-  const scaleBase = Math.max(params.l, 0.5);
-  const good = spread !== null && spread < scaleBase * 0.08;
   let msg = '';
   if (params.type === 'parabola') {
     msg = 'F₁에서 나온 빛은 첫 거울에서 반사되면 <strong>평행광</strong>이 되어, 간격(L)이 얼마든 그대로 건너가 둘째 거울의 초점 F₁\'에 모입니다. <strong>간격을 바꿔도 정렬도는 거의 변하지 않습니다</strong> — 이게 실제 "속삭이는 접시"의 원리입니다.';
   } else {
-    msg = '회전쌍곡면은 첫 거울에서 반사된 빛이 <strong>자기 F₂에서 나오는 것처럼 퍼지며</strong> 나갑니다. 둘째 거울에서의 결과는 간격(L)에 민감합니다 — 지금은 ' + (good ? '<strong style="color:#16a34a">정렬되어 있습니다</strong>' : '<strong style="color:#dc2626">흩어집니다</strong>') + '.';
+    msg = '하나의 쌍곡선 방정식이 만드는 두 가지(볼록한 면)가 마주 봅니다. 아주 먼 곳에서 F₂를 향해 날아오던 빛이 반대쪽 가지의 볼록면에 부딪히면 <strong>정확히 F₁을 향해</strong> 반사됩니다 — 두 초점까지 거리의 차가 항상 일정하다는 쌍곡선의 반사 성질 그대로, <strong>a·b를 바꿔도 항상 정확히 성립합니다.</strong> 실제 반사망원경의 보조거울이 이 원리를 씁니다.';
   }
   el.innerHTML = msg;
 }
@@ -600,14 +689,13 @@ function ensureGapDefault(params) {
 function fullRebuild() {
   const params = computeParams();
   const minL = ensureGapDefault(params);
-  buildSurfaces(params, state.gapL);
-  updateMarkers(params, state.gapL);
-  updateRaysVisual(params, state.gapL);
+  buildSurfaces(params);
+  updateMarkers(params);
+  updateRaysVisual(params);
   document.getElementById('canvasHead').textContent = typeLabel(params.type) + ' 쌍';
-  // 곡선 종류가 바뀔 때만 카메라 시점을 두 거울 사이 중앙으로 다시 맞춘다(간격 슬라이더를
+  // 곡선 종류가 바뀔 때만 카메라 시점을 두 가지 사이 중앙으로 다시 맞춘다(슬라이더를
   // 드래그하는 동안에는 사용자가 직접 돌린 시점을 건드리지 않는다).
-  const uV = vertexU(params.l, params.e);
-  const Cc = 2 * uV + state.gapL;
+  const Cc = mirrorBAxis(params);
   controls.target.set(0, Cc / 2, 0);
   controls.update();
   return { params, minL };
@@ -630,7 +718,7 @@ function standardEquationTex(type) {
 }
 function defText(type) {
   if (type === 'parabola') return '초점과 준면까지 거리가 같은 회전포물면 거울 두 개를 마주 보게 놓았습니다.';
-  return '두 초점까지 거리의 차가 일정(=2a)한 회전쌍곡면 거울 두 개를 마주 보게 놓았습니다.';
+  return '두 초점까지 거리의 차가 일정(=2a)한 하나의 회전쌍곡면이 만드는 두 가지(볼록한 면)가 마주 봅니다.';
 }
 
 function renderSliderZone() {
@@ -649,13 +737,19 @@ function renderSliderZone() {
   }
   html += `<div class="eq-box">${standardEquationTex(state.curveType)}</div>`;
 
-  const params0 = computeParams();
-  const minL = minGapFor(params0);
-  html += sliderHTML('gapL', '거울 간 간격 L', state.gapL || minL * 3.2, minL, minL * 7, 0.05, 'accent');
-  html += `<div class="hint-text">두 거울 꼭짓점 사이의 거리입니다. 최솟값은 거울 테두리가 겹치지 않도록 자동으로 제한됩니다.</div>`;
+  if (state.curveType === 'parabola') {
+    const params0 = computeParams();
+    const minL = minGapFor(params0);
+    html += sliderHTML('gapL', '거울 간 간격 L', state.gapL || minL * 3.2, minL, minL * 7, 0.05, 'accent');
+    html += `<div class="hint-text">두 거울 꼭짓점 사이의 거리입니다. 최솟값은 거울 테두리가 겹치지 않도록 자동으로 제한됩니다.</div>`;
+  } else {
+    html += `<div class="hint-text">쌍곡면은 하나의 방정식이 만드는 두 가지를 그대로 쓰므로, 가지 사이 간격(=2a)은 위 a·b 슬라이더만으로 정해집니다.</div>`;
+  }
 
   html += sliderHTML('launchPct', '자오각(발사각)', state.launchPct, 5, 100, 1);
-  html += `<div class="hint-text">첫 거울의 어느 위도(고리)에서 반사가 시작되는지 조절합니다.</div>`;
+  html += state.curveType === 'parabola'
+    ? `<div class="hint-text">첫 거울의 어느 위도(고리)에서 반사가 시작되는지 조절합니다.</div>`
+    : `<div class="hint-text">반대쪽 가지의 어느 위도(고리)에서 반사가 일어나는지 조절합니다.</div>`;
 
   html += '<div class="play-row" style="margin-top:6px;">';
   html += `<button class="primary" id="playBtn">${state.playing ? '⏸ 일시정지' : '▶ 재생'}</button>`;
@@ -674,11 +768,20 @@ function refreshSliderLabels() {
   setValText('paraP', state.std.paraP.toFixed(2));
   setValText('hypA', state.std.hypA.toFixed(2));
   setValText('hypB', state.std.hypB.toFixed(2));
-  setValText('gapL', (state.gapL || 0).toFixed(2));
   const AP = apertureFor();
   const v = Math.max(AP * 0.05, (state.launchPct / 100) * AP);
-  const uA = surfaceNearByV(v, params.l, params.e);
-  const angDeg = uA === null ? 0 : Math.abs(Math.atan2(v, uA)) * 180 / Math.PI;
+  let angDeg = 0;
+  if (params.type === 'parabola') {
+    setValText('gapL', (state.gapL || 0).toFixed(2));
+    const uA = surfaceNearByV(v, params.l, params.e);
+    angDeg = uA === null ? 0 : Math.abs(Math.atan2(v, uA)) * 180 / Math.PI;
+  } else {
+    const uLocal = surfaceNearByV(v, params.l, params.e);
+    if (uLocal !== null) {
+      const hitU = 2 * params.centerU - uLocal; // 반대쪽 가지 위 점의 world u
+      angDeg = Math.abs(Math.atan2(v, hitU)) * 180 / Math.PI;
+    }
+  }
   setValText('launchPct', '≈ ' + angDeg.toFixed(1) + '°');
   setValText('progress', Math.round(state.progress) + '%');
 }
@@ -717,18 +820,18 @@ function onGapSliderInput() {
     state.gapL = Number(el.value);
     refreshSliderLabels();
     const params = computeParams();
-    buildSurfaces(params, state.gapL);
-    updateMarkers(params, state.gapL);
-    updateRaysVisual(params, state.gapL);
+    buildSurfaces(params);
+    updateMarkers(params);
+    updateRaysVisual(params);
   });
 }
-function onLightSliderInput(id, apply, skipRest) {
+function onLightSliderInput(id, apply) {
   const el = document.getElementById('in-' + id);
   if (!el) return;
   el.addEventListener('input', () => {
     apply(Number(el.value));
     refreshSliderLabels();
-    updateRaysVisual(computeParams(), state.gapL);
+    updateRaysVisual(computeParams());
   });
 }
 
@@ -775,7 +878,7 @@ function playTick(ts) {
   const el = document.getElementById('in-progress');
   if (el) el.value = state.progress;
   setValText('progress', Math.round(state.progress) + '%');
-  updateRaysVisual(computeParams(), state.gapL);
+  updateRaysVisual(computeParams());
   if (state.progress >= 100) {
     // 도착한 채로 잠깐 멈춰 보여준 뒤, 처음(광원)부터 자동으로 다시 재생한다.
     lastTickTime = null;

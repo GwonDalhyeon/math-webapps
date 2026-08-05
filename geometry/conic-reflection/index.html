@@ -237,6 +237,7 @@ function osculatingCircle(l, e) {
 const state = {
   panel: 'standard',        // 'standard' | 'continuous'
   curveType: 'ellipse',     // 'circle' | 'ellipse' | 'parabola' | 'hyperbola'
+  hypMode: 'diverge',       // 쌍곡선 전용: 'diverge'(F1에서 흩어짐) | 'converge'(F2로 향하다 F1로 모임)
   std: { circleR: 2.5, ellA: 3.2, ellB: 2.2, paraP: 1.3, hypA: 1.6, hypB: 2.2 },
   contE: 0.6,
   contL: 2.6,
@@ -321,8 +322,33 @@ function apertureFor(params) {
 function computeRays(params) {
   const AP = apertureFor(params);
   const N = 6; // 위/아래 각 6개
-  const launchLocal = state.launchLocalOffset; // 참초점(국소원점) 기준 오프셋
   const rays = [];
+
+  if (params.type === 'hyperbola' && state.hypMode === 'converge') {
+    // 수렴형: 발산형 반사(F1→반사점→가상 F2 방향)의 반사 법칙을 그대로 뒤집는다.
+    // 새 입사방향 = -(기존 반사방향) 이면, 반사 후 방향은 항상 정확히 F1(국소원점)을 향한다(반사 공식의 가역성).
+    const LAUNCH_LEN = 6.5; // 화면 밖에서 날아오는 것처럼 보이도록 잡은 입사 구간 길이(장식적 값)
+    const addConvergeRay = (pt) => {
+      if (!pt) return;
+      const dOldIn = normalize({ x: pt.x, y: pt.y }); // 기존 발산형: F1(원점)→반사점 방향
+      let n = normalAt(pt, params.l, params.e);
+      if (dOldIn.x * n.x + dOldIn.y * n.y > 0) n = { x: -n.x, y: -n.y };
+      const dOldOut = reflectDir(dOldIn, n);
+      const dIn = { x: -dOldOut.x, y: -dOldOut.y }; // 새 입사(진행) 방향
+      const dOut = reflectDir(dIn, n); // = -dOldIn, 즉 F1을 향함
+      const launch = { x: pt.x - dIn.x * LAUNCH_LEN, y: pt.y - dIn.y * LAUNCH_LEN };
+      rays.push({ launch, hit: pt, n, dirIn: dIn, dirOut: dOut, d1: LAUNCH_LEN });
+    };
+    for (let sign of [1, -1]) {
+      for (let k = 1; k <= N; k++) {
+        const y = sign * AP * (k / N);
+        addConvergeRay(surfaceNearByY(y, params.l, params.e));
+      }
+    }
+    return rays;
+  }
+
+  const launchLocal = state.launchLocalOffset; // 참초점(국소원점) 기준 오프셋
   const addRay = (pt) => {
     if (!pt) return;
     const d = normalize({ x: pt.x - launchLocal.x, y: pt.y - launchLocal.y });
@@ -346,6 +372,9 @@ function computeRays(params) {
 // 광선의 "도착" 목표까지 남은 거리(2번째 구간 길이) — 곡선 종류별 의미가 다름
 function outgoingLength(ray, params) {
   const MAXOUT = 9;
+  if (params.type === 'hyperbola' && state.hypMode === 'converge') {
+    return Math.hypot(ray.hit.x, ray.hit.y); // 국소좌표 F1(원점)까지 정확한 거리 — 실제로 도착한다
+  }
   if (params.type === 'parabola') return MAXOUT;
   const { center } = localCenterAndF2(params.l, params.e);
   if (!center) return MAXOUT;
@@ -359,6 +388,15 @@ function outgoingLength(ray, params) {
 // 목표 지점(F2 또는 축 방향)에서 벗어난 정도 — "흐림" 정량화
 function computeBlur(rays, params) {
   if (!rays.length) return { value: 0, label: '', good: true };
+  if (params.type === 'hyperbola' && state.hypMode === 'converge') {
+    let maxMiss = 0;
+    rays.forEach(r => {
+      const dist = outgoingLength(r, params);
+      const ex = r.hit.x + r.dirOut.x * dist, ey = r.hit.y + r.dirOut.y * dist;
+      maxMiss = Math.max(maxMiss, Math.hypot(ex, ey)); // F1(원점)까지 남은 거리 — 0이어야 정확히 도착
+    });
+    return { value: maxMiss, label: 'F₁ 도달 오차', unit: '', good: maxMiss < 0.05 };
+  }
   if (params.type === 'parabola') {
     let maxDeg = 0;
     rays.forEach(r => {
@@ -641,8 +679,10 @@ function drawDistBars(rays, params) {
   ctx.beginPath(); ctx.roundRect ? ctx.roundRect(ox, oy, boxW, boxH, 8) : ctx.rect(ox, oy, boxW, boxH);
   ctx.fill(); ctx.stroke();
   ctx.font = '700 10px sans-serif'; ctx.fillStyle = '#475569';
+  const isHypConverge = params.type === 'hyperbola' && state.hypMode === 'converge';
   let title = '경로 길이';
   if (params.type === 'ellipse' || params.type === 'circle') title = 'F₁+F₂ 총 경로(=2a, 광선마다 비교)';
+  else if (isHypConverge) title = '거울→F₁ 거리(제각각이지만 모두 F₁에 도착)';
   else if (params.type === 'hyperbola') title = '|F₁−F₂| 경로차(=2a, 광선마다 비교)';
   else if (params.type === 'parabola') title = '보라 PF · 주황 PH (광선마다 같음)';
   ctx.fillText(title, ox + 6, oy + 12);
@@ -660,7 +700,9 @@ function drawDistBars(rays, params) {
       return;
     }
     let val;
-    if (center) {
+    if (isHypConverge) {
+      val = outgoingLength(ray, params);
+    } else if (center) {
       const f2 = { x: 2 * center.x, y: 0 };
       const d2f = Math.hypot(ray.hit.x - f2.x, ray.hit.y - f2.y);
       val = params.type === 'hyperbola' ? Math.abs(ray.d1 - d2f) : (ray.d1 + d2f);
@@ -693,7 +735,11 @@ function updateInterp(params) {
   } else if (params.type === 'parabola') {
     msg = 'F에서 나온 빛이 반사되어 <strong>축과 평행하게</strong> 나갑니다. 거꾸로, 축에 평행하게 들어온 빛은 모두 F로 모입니다.';
   } else if (params.type === 'hyperbola') {
-    msg = 'F₁에서 나온 빛이 반사되면, 그 반사광을 거꾸로 연장한 직선이 <strong>모두 F₂를 지납니다</strong> — 마치 F₂에서 나온 것처럼 흩어집니다.';
+    if (state.hypMode === 'converge') {
+      msg = '화면 밖에서 F₂를 향해 날아오던 빛이 거울에 가로막혀 반사되면, <strong>진짜 초점 F₁에 정확히 모입니다.</strong> 방금 본 발산형과 똑같은 거울이며, 빛의 방향만 반대로 뒤집은 것입니다.';
+    } else {
+      msg = 'F₁에서 나온 빛이 반사되면, 그 반사광을 거꾸로 연장한 직선이 <strong>모두 F₂를 지납니다</strong> — 마치 F₂에서 나온 것처럼 흩어집니다.';
+    }
   }
   const eText = 'c/a ≈ ' + params.e.toFixed(3);
   el.innerHTML = msg + ' <span style="color:#94a3b8;">(' + eText + ')</span>';
@@ -737,9 +783,6 @@ function renderSliderZone() {
     html += `<div class="eq-box small">이 통합 방정식은 e 값과 관계없이 항상 성립합니다.</div>`;
   }
 
-  // 발사점 안내
-  html += `<div class="drag-hint">🖱️ 캔버스의 F₁(빨간 점)을 드래그하면 초점에서 벗어난 발사점을 실험할 수 있습니다.</div>`;
-
   // 재생 제어
   html += '<div class="play-row" style="margin-top:10px;">';
   html += `<button class="primary" id="playBtn" onclick="togglePlay()">${state.playing ? '⏸ 일시정지' : '▶ 재생'}</button>`;
@@ -761,6 +804,21 @@ function renderRestZone(params) {
   if (state.panel === 'continuous') {
     const nearOne = Math.abs(params.e - 1) < EPS_PARABOLA;
     html += `<div class="eq-warn ${nearOne ? 'show' : ''}" id="paraWarn">c/a = 1 에서는 중심이 무한히 멀어져 <b>표준형 x²/a²+y²/b²=1 로 나타낼 수 없습니다.</b> 이때부터는 a, b 대신 초점거리 p 하나로 표현합니다 → y²=4px.</div>`;
+  }
+
+  const isHypConverge = params.type === 'hyperbola' && state.hypMode === 'converge';
+
+  // 쌍곡선: 발산형(F1에서 흩어짐) ↔ 수렴형(F2로 향하다 F1로 모임) 전환
+  if (params.type === 'hyperbola') {
+    html += '<div class="curve-tabs" style="margin-bottom:10px;">';
+    html += `<button class="curve-tab ${!isHypConverge ? 'active' : ''}" data-t="hyperbola" onclick="setHypMode('diverge')"><span class="dot">↗</span>발산형</button>`;
+    html += `<button class="curve-tab ${isHypConverge ? 'active' : ''}" data-t="hyperbola" onclick="setHypMode('converge')"><span class="dot">🎯</span>수렴형</button>`;
+    html += '</div>';
+  }
+
+  // 발사점 드래그 안내 — 수렴형은 발사점 개념이 없어 드래그가 비활성화되므로 숨긴다.
+  if (!isHypConverge) {
+    html += `<div class="drag-hint">🖱️ 캔버스의 F₁(빨간 점)을 드래그하면 초점에서 벗어난 발사점을 실험할 수 있습니다.</div>`;
   }
 
   // 공통 파라미터 표
@@ -889,6 +947,12 @@ function setCurveType(t) {
   state.launchLocalOffset = { x: 0, y: 0 };
   renderControlPanel(); draw();
 }
+function setHypMode(mode) {
+  state.hypMode = mode;
+  state.launchLocalOffset = { x: 0, y: 0 };
+  state.progress = 0; state.playing = false;
+  renderControlPanel(); draw();
+}
 function toggleFlag(key) {
   state.toggles[key] = !state.toggles[key];
   renderRestZone(computeParams()); draw();
@@ -920,6 +984,7 @@ function playTick(ts) {
 function resetAll() {
   state.progress = 0; state.playing = false;
   state.launchLocalOffset = { x: 0, y: 0 };
+  state.hypMode = 'diverge';
   if (state.panel === 'standard') {
     state.std = { circleR: 2.5, ellA: 3.2, ellB: 2.2, paraP: 1.3, hypA: 1.6, hypB: 2.2 };
   } else {
@@ -934,6 +999,7 @@ function setupDrag() {
   let dragging = false;
   const nearLaunch = (mx, my) => {
     const params = lastParams || computeParams();
+    if (params.type === 'hyperbola' && state.hypMode === 'converge') return false; // 수렴형은 발사점 드래그 비활성화
     const launchWorld = { x: state.launchLocalOffset.x + params.F1world.x, y: state.launchLocalOffset.y };
     const s = w2s(launchWorld);
     return Math.hypot(mx - s.x, my - s.y) < 16;
