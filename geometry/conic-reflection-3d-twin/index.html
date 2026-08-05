@@ -1,0 +1,847 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="description" content="같은 종류의 회전곡면 거울 두 개를 마주 보게 두고, 한쪽 초점에서 나온 빛이 간격을 지나 반대쪽에서 다시 모이는지 흩어지는지 직접 비교하는 기하 웹앱입니다." />
+<title>쌍둥이 곡면 반사 실험실 3D</title>
+<link rel="icon" href="../../favicon.ico" sizes="16x16 32x32 48x48" />
+<link rel="icon" href="../../assets/favicon.svg" type="image/svg+xml" />
+<link rel="apple-touch-icon" href="../../assets/apple-touch-icon.png" />
+<!-- MathJax: 자오면(회전축을 포함하는 단면) 방정식을 교과서식 분수로 렌더링. CDN 사용으로 인터넷 연결 필요. -->
+<script>
+  window.MathJax = {
+    tex: { inlineMath: [['\\(', '\\)']], displayMath: [['\\[', '\\]']] },
+    options: { skipHtmlTags: ['script', 'noscript', 'style', 'textarea'] }
+  };
+</script>
+<script id="MathJax-script" async
+  src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+<!-- three.js r184: 두 회전곡면과 카메라 회전(OrbitControls)에 사용. assets/vendor/three/에 로컬로 들어 있어 별도 설치가 필요 없다. -->
+<script type="importmap">
+{
+  "imports": {
+    "three": "../../assets/vendor/three/three.module.js",
+    "three/addons/": "../../assets/vendor/three/addons/"
+  }
+}
+</script>
+<link rel="stylesheet" href="../../assets/common.css" />
+<style>
+  :root {
+    --bg: #f6f8fb;
+    --panel: #ffffff;
+    --ink: #17202a;
+    --muted: #5d6d7e;
+    --line: #d8e0ea;
+    --blue: #2563eb;
+    --c-circle: #0891b2;
+    --c-ellipse: #7c3aed;
+    --c-parabola: #d97706;
+    --c-hyperbola: #e11d48;
+    --shadow: 0 6px 20px rgba(23,32,42,0.08);
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: "Malgun Gothic","Apple SD Gothic Neo",system-ui,sans-serif; background: var(--bg); color: var(--ink); }
+  .wrap { width: min(1320px, calc(100% - 24px)); margin: 0 auto; padding: 20px 0 40px; }
+  a.back-link { display:inline-block; margin-right:14px; color:var(--blue); font-weight:800; text-decoration:none; font-size:15px; }
+  .hero { margin-bottom: 14px; }
+  .hero h1 { margin: 0 0 4px; font-size: clamp(22px,3vw,34px); }
+  .hero p { margin: 0; color: var(--muted); font-size: 14.5px; max-width: 900px; line-height: 1.55; }
+
+  .app-layout { display:grid; grid-template-columns: minmax(0,1fr) 360px; gap:14px; align-items:start; margin-top:12px; }
+  @media (max-width: 980px) { .app-layout { grid-template-columns: 1fr; } }
+
+  .card { background:var(--panel); border:1px solid var(--line); border-radius:12px; box-shadow:var(--shadow); overflow:hidden; }
+  .card-head { padding:9px 14px; border-bottom:1px solid var(--line); font-size:13px; font-weight:800; color:var(--muted); background:#f9fafb; }
+  .card-body { padding:12px 14px; }
+
+  .viewport-wrap { position:relative; width:100%; height:470px; background:#0e1523; touch-action:none; }
+  #three-canvas { display:block; width:100%; height:100%; }
+  #labelLayer { position:absolute; inset:0; pointer-events:none; overflow:hidden; }
+  .label3d { font: 700 13px sans-serif; padding:1px 5px; border-radius:5px; background:rgba(14,21,35,0.55); white-space:nowrap; }
+
+  .align-badge {
+    position:absolute; top:10px; left:10px; padding:6px 12px; border-radius:10px;
+    background:rgba(255,255,255,0.92); border:1px solid var(--line); font-size:12.5px; font-weight:700;
+    box-shadow: var(--shadow); color:var(--ink); max-width: 70%;
+  }
+  .align-badge .val { color: var(--c-ellipse); font-variant-numeric: tabular-nums; }
+  .align-badge.ok .val { color:#16a34a; }
+  .align-badge.bad .val { color:#dc2626; }
+
+  .orbit-hint {
+    position:absolute; bottom:10px; left:10px; padding:5px 10px; border-radius:8px;
+    background:rgba(255,255,255,0.85); font-size:11.5px; color:var(--muted); font-weight:700;
+  }
+
+  .interp {
+    padding: 10px 14px; border-top:1px solid var(--line); background:#f9fafb;
+    font-size: 14.5px; line-height:1.6; color:#1f2937;
+  }
+  .interp strong { color: var(--ink); }
+
+  .curve-tabs { display:flex; gap:6px; margin-bottom:12px; flex-wrap:wrap; }
+  .curve-tab {
+    flex:1; min-width:64px; padding:8px 4px; border-radius:9px; border:2px solid var(--line);
+    background:#fff; font:700 13px inherit; cursor:pointer; text-align:center;
+  }
+  .curve-tab .dot { display:block; font-size:16px; margin-bottom:2px; }
+  .curve-tab.active[data-t="circle"]    { border-color: var(--c-circle); color:var(--c-circle); background:#ecfeff; }
+  .curve-tab.active[data-t="ellipse"]   { border-color: var(--c-ellipse); color:var(--c-ellipse); background:#f5f3ff; }
+  .curve-tab.active[data-t="parabola"]  { border-color: var(--c-parabola); color:var(--c-parabola); background:#fffbeb; }
+  .curve-tab.active[data-t="hyperbola"] { border-color: var(--c-hyperbola); color:var(--c-hyperbola); background:#fff1f2; }
+
+  .slider-group { margin-bottom: 12px; }
+  .slider-row { display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; }
+  .slider-label { font-size:13px; font-weight:700; color:var(--muted); }
+  .slider-val { font-size:14px; font-weight:800; color: var(--ink); font-variant-numeric: tabular-nums; }
+  input[type=range] { width:100%; accent-color: var(--blue); }
+  .slider-group.accent input[type=range] { accent-color:#f97316; }
+
+  .eq-box {
+    background:#0f172a; color:#e2e8f0; border-radius:10px; padding:12px 14px;
+    font-size: 16px; text-align:center; margin-bottom:6px; min-height:38px;
+  }
+
+  .param-table { display:grid; grid-template-columns: repeat(4,1fr); gap:6px; margin-bottom:10px; }
+  .param-cell { background:#f8fafc; border:1px solid var(--line); border-radius:8px; padding:6px 4px; text-align:center; }
+  .param-cell .k { font-size:10.5px; color:var(--muted); font-weight:700; }
+  .param-cell .v { font-size:14px; font-weight:800; font-variant-numeric: tabular-nums; }
+
+  .def-text { font-size:13px; color:#374151; line-height:1.7; background:#f8fafc; border-radius:8px; padding:10px 12px; margin-bottom:10px; }
+  .def-text b { color: var(--ink); }
+
+  .play-row { display:flex; gap:6px; margin-bottom:8px; }
+  .play-row button {
+    flex:1; padding:9px 8px; border-radius:8px; border:1px solid var(--line);
+    background:#fff; font:800 13px inherit; cursor:pointer;
+  }
+  .play-row button.primary { background: var(--blue); color:#fff; border-color:var(--blue); }
+
+  .hint-text { font-size:11.5px; color:var(--muted); margin-top:-4px; margin-bottom:10px; line-height:1.5; }
+</style>
+</head>
+<body>
+<main class="wrap">
+  <a class="back-link" href="../">← 기하 웹앱</a>
+  <a class="back-link" href="../conic-reflection-3d/">단일곡면 반사 3D</a>
+  <header class="hero">
+    <h1>쌍둥이 곡면 반사 실험실 3D</h1>
+    <p>같은 종류·같은 크기의 회전곡면 거울 두 개를 오목한 면이 마주 보게 놓습니다. 한쪽 거울의 초점에서 나온 빛이 간격을 지나 반대쪽에서 실제로 어떻게 되는지 — 항상 깔끔히 모이는지, 간격에 따라 달라지는지 — 곡면 종류별로 직접 비교합니다.</p>
+  </header>
+
+  <div class="app-layout">
+    <div class="card">
+      <div class="card-head" id="canvasHead">회전포물면 쌍</div>
+      <div class="card-body" style="padding:0;">
+        <div class="viewport-wrap">
+          <canvas id="three-canvas"></canvas>
+          <div id="labelLayer"></div>
+          <div class="align-badge" id="alignBadge">정렬도 계산 중…</div>
+          <div class="orbit-hint">드래그로 시점 회전 · 휠로 확대/축소</div>
+        </div>
+        <div class="interp" id="interpText"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-body" id="controlBody">
+        <div id="sliderZone"></div>
+        <div id="restZone"></div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script type="module">
+import * as THREE from "three";
+import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+import { CSS2DRenderer, CSS2DObject } from "three/addons/renderers/CSS2DRenderer.js";
+
+// ════════════════════════════════════════════════════════════
+// 수학 코어 — 자오면(회전축을 포함하는 단면) 좌표계.
+//   초점을 국소좌표 원점에, 회전축을 u축(=3D의 Y축)에 둔다. v는 축으로부터의
+//   반지름(v≥0). 통합 방정식 u²+v²=(l+eu)² 는 e값과 관계없이 항상 성립한다.
+//   (e=0 구, 0<e<1 회전타원면, e=1 회전포물면, e>1 회전쌍곡면 한 잎)
+//   conic-reflection-3d(단일곡면 앱)와 같은 코어를 재사용한다.
+// ════════════════════════════════════════════════════════════
+const EPS_PARABOLA = 1e-3;
+
+function surfaceNearByV(v, l, e) {
+  if (Math.abs(1 - e) < EPS_PARABOLA) return v * v / (2 * l) - l / 2;
+  const k = 1 - e * e;
+  const disc = l * l - v * v * k;
+  if (disc < 0) return null;
+  return (l * e - Math.sqrt(disc)) / k;
+}
+function surfaceFarByV(v, l, e) {
+  if (Math.abs(1 - e) < EPS_PARABOLA) return null;
+  const k = 1 - e * e;
+  const disc = l * l - v * v * k;
+  if (disc < 0) return null;
+  return (l * e + Math.sqrt(disc)) / k;
+}
+function meridianNormal(u, v, l, e) {
+  const r = l + e * u;
+  const nu = u - e * r, nv = v;
+  const len = Math.hypot(nu, nv) || 1;
+  return { u: nu / len, v: nv / len };
+}
+function localCenterAndF2(l, e) {
+  if (Math.abs(1 - e) < EPS_PARABOLA) return { centerU: null, f2U: null };
+  const denom = 1 - e * e;
+  const cLocal = l * e / denom;
+  return { centerU: cLocal, f2U: 2 * cLocal };
+}
+function vertexU(l, e) { return surfaceNearByV(0, l, e); }
+
+// ── 자오면(2D) 벡터 유틸 ──
+const V2 = {
+  sub: (a, b) => ({ u: a.u - b.u, v: a.v - b.v }),
+  dot: (a, b) => a.u * b.u + a.v * b.v,
+  len: (a) => Math.hypot(a.u, a.v),
+  norm(a) { const l = V2.len(a) || 1; return { u: a.u / l, v: a.v / l }; },
+  reflect(d, n) { const dn = V2.dot(d, n); return { u: d.u - 2 * dn * n.u, v: d.v - 2 * dn * n.v }; },
+  flipIfNeeded(n, d) { return V2.dot(d, n) > 0 ? { u: -n.u, v: -n.v } : n; },
+};
+
+// 광선(u0,v0)+t(du,dv) 이 통합 방정식 곡면과 만나는 가장 가까운 양의 t를 구한다.
+// (프로토타입의 hitP1/hitP2와 같은 이차방정식 교점 계산을, e에 관계없이 통일된 식으로 일반화했다.)
+function intersectMirror(u0, v0, du, dv, l, e, vMax) {
+  const A = dv * dv + du * du * (1 - e * e);
+  const B = 2 * (u0 * du + v0 * dv - e * du * (l + e * u0));
+  const C = u0 * u0 + v0 * v0 - (l + e * u0) * (l + e * u0);
+  let ts = [];
+  if (Math.abs(A) < 1e-10) {
+    if (Math.abs(B) > 1e-10) ts.push(-C / B);
+  } else {
+    const disc = B * B - 4 * A * C;
+    if (disc >= 0) {
+      const sq = Math.sqrt(disc);
+      ts.push((-B - sq) / (2 * A), (-B + sq) / (2 * A));
+    }
+  }
+  let best = null;
+  ts.forEach(t => {
+    if (t < 1e-4) return;
+    const v = v0 + t * dv;
+    if (v < -1e-6 || v > vMax * 1.02) return;
+    if (best === null || t < best) best = t;
+  });
+  return best;
+}
+
+function typeColor(t) { return { circle: 0x0891b2, ellipse: 0x7c3aed, parabola: 0xd97706, hyperbola: 0xe11d48 }[t]; }
+function typeLabel(t) { return { circle: '구', ellipse: '회전타원면', parabola: '회전포물면', hyperbola: '회전쌍곡면' }[t]; }
+function isClosedType(t) { return t === 'circle' || t === 'ellipse'; }
+function apertureFor(type, p) {
+  if (type === 'circle') return p.l * 0.995;
+  if (type === 'ellipse') return p.b * 0.995;
+  return 4.4;
+}
+
+// ════════════════════════════════════════════════════════════
+// 상태
+// ════════════════════════════════════════════════════════════
+const RAY_AZ = 20;
+const N_SAMPLE = 7; // 정렬도 측정용 — 서로 다른 발사각 7개를 자오면에서만 계산(화면에는 안 그림)
+
+const state = {
+  curveType: 'parabola',
+  std: { circleR: 2.5, ellA: 3.2, ellB: 2.2, paraP: 1.3, hypA: 1.6, hypB: 2.2 },
+  gapL: null, // 최초 계산 후 채워짐(곡면 크기에 맞춘 기본값)
+  progress: 0,
+  playing: false,
+  launchPct: 55,
+};
+
+function computeParams() {
+  const type = state.curveType;
+  let l, e, aStd = null, bStd = null, pStd = null;
+  if (type === 'circle') { const r = state.std.circleR; l = r; e = 0; }
+  else if (type === 'ellipse') {
+    const a = state.std.ellA, b = Math.min(state.std.ellB, a - 0.05);
+    const c = Math.sqrt(Math.max(a * a - b * b, 0));
+    l = b * b / a; e = c / a; aStd = a; bStd = b;
+  } else if (type === 'parabola') {
+    const p = state.std.paraP; l = 2 * p; e = 1; pStd = p;
+  } else {
+    const a = state.std.hypA, b = state.std.hypB;
+    const c = Math.sqrt(a * a + b * b);
+    l = b * b / a; e = c / a; aStd = a; bStd = b;
+  }
+  const { centerU, f2U } = localCenterAndF2(l, e);
+  const aOut = aStd !== null ? aStd : l / Math.abs(1 - e * e);
+  const bOut = bStd !== null ? bStd : Math.sqrt(Math.abs(aOut * l));
+  const cOut = type === 'parabola' ? null : aOut * e;
+  return { type, l, e, a: aOut, b: bOut, c: cOut, p: pStd, f2U, centerU };
+}
+
+function minGapFor(params) {
+  const AP = apertureFor(params.type, params);
+  const uRim = surfaceNearByV(AP, params.l, params.e);
+  const uV = vertexU(params.l, params.e);
+  return (uRim - uV) * 1.06; // 두 거울의 테두리가 겹치지 않을 최소 간격 + 여유
+}
+
+// ════════════════════════════════════════════════════════════
+// 광선 계산 (자오면 2D 추적 → 방위각으로 3D에 복제)
+//   초점이 회전축 위에 있으므로, 초점에서 나온 광선은 두 번 반사되는 동안에도
+//   항상 하나의 자오면 안에 머문다. 그래서 2D 평면에서 두 번 반사만 계산한 뒤
+//   방위각(φ)만큼 회전시켜 3D 고리로 복제하면 된다(온-축 광원 한정, 스큐 없음).
+// ════════════════════════════════════════════════════════════
+function traceMeridian(params, v0, gapL) {
+  const { l, e } = params;
+  const AP = apertureFor(params.type, params);
+  const uV = vertexU(l, e);
+  const Cc = 2 * uV + gapL; // 거울 B의 초점(F1_B) 월드 u좌표
+
+  const uA = surfaceNearByV(v0, l, e);
+  if (uA === null) return null;
+  const source = { u: 0, v: 0 };
+  const hitA = { u: uA, v: v0 };
+  const dirIn1 = V2.norm(V2.sub(hitA, source));
+  let n1 = meridianNormal(uA, v0, l, e);
+  n1 = V2.flipIfNeeded(n1, dirIn1);
+  const dirOut1 = V2.reflect(dirIn1, n1);
+  const d1 = V2.len(V2.sub(hitA, source));
+
+  // 거울 B의 국소좌표로 변환: world_u = Cc - u_B  ⇒  u_B = Cc - world_u
+  const u0B = Cc - hitA.u, v0B = hitA.v, duB = -dirOut1.u, dvB = dirOut1.v;
+  const t2 = intersectMirror(u0B, v0B, duB, dvB, l, e, AP);
+  if (t2 === null) return { hitA, dirOut1, d1, reachedB: false, Cc };
+
+  const hitB = { u: hitA.u + t2 * dirOut1.u, v: hitA.v + t2 * dirOut1.v };
+  const uBlocal = Cc - hitB.u, vBlocal = hitB.v;
+  let n2 = meridianNormal(uBlocal, vBlocal, l, e);
+  n2 = { u: -n2.u, v: n2.v }; // B는 방향이 뒤집혀 있으므로 축방향 성분만 반전
+  n2 = V2.flipIfNeeded(n2, dirOut1);
+  const dirOut2 = V2.reflect(dirOut1, n2);
+
+  // 최종 광선이 회전축(v=0)과 만나는 지점 — 여러 발사각의 결과가 이 지점에서
+  // 일치하는지가 "정렬도"의 기준이 된다.
+  let axisCrossU = null;
+  if (Math.abs(dirOut2.v) > 1e-6) {
+    const tc = -hitB.v / dirOut2.v;
+    if (tc > 0) axisCrossU = hitB.u + tc * dirOut2.u;
+  }
+
+  return { hitA, dirOut1, d1, hitB, dirOut2, d2: t2, reachedB: true, axisCrossU, Cc };
+}
+
+function computeAlignment(params, gapL) {
+  const AP = apertureFor(params.type, params);
+  const samples = [];
+  for (let i = 1; i <= N_SAMPLE; i++) samples.push(AP * (0.12 + 0.8 * (i - 1) / (N_SAMPLE - 1)));
+  const crossings = [];
+  let missCount = 0;
+  samples.forEach(v0 => {
+    const r = traceMeridian(params, v0, gapL);
+    if (!r || !r.reachedB || r.axisCrossU === null) { missCount++; return; }
+    crossings.push(r.axisCrossU);
+  });
+  if (crossings.length < 2) return { spread: null, missCount, mean: null };
+  const mean = crossings.reduce((a, b) => a + b, 0) / crossings.length;
+  const spread = Math.max(...crossings.map(c => Math.abs(c - mean)));
+  return { spread, missCount, mean };
+}
+
+// ════════════════════════════════════════════════════════════
+// three.js 장면
+// ════════════════════════════════════════════════════════════
+let renderer, labelRenderer, scene, camera, controls;
+let meshA = null, wireA = null, meshB = null, wireB = null;
+let axisLine, f1AMarker, f1BMarker, f2AMarker, f2BMarker;
+let f1ALabel, f1BLabel, f2ALabel, f2BLabel;
+let seg1, seg2, seg3, hitPoints;
+let currentParams = null;
+
+function initThree() {
+  const canvas = document.getElementById('three-canvas');
+  const wrap = canvas.parentElement;
+  const w = wrap.clientWidth, h = wrap.clientHeight;
+
+  renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+  renderer.setSize(w, h);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  renderer.setClearColor(0x0e1523);
+
+  labelRenderer = new CSS2DRenderer();
+  labelRenderer.setSize(w, h);
+  labelRenderer.domElement.style.position = 'absolute';
+  labelRenderer.domElement.style.top = '0';
+  labelRenderer.domElement.style.left = '0';
+  document.getElementById('labelLayer').appendChild(labelRenderer.domElement);
+
+  scene = new THREE.Scene();
+  camera = new THREE.PerspectiveCamera(45, w / h, 0.1, 300);
+  camera.position.set(9, 6, 12);
+
+  controls = new OrbitControls(camera, labelRenderer.domElement);
+  controls.enableDamping = true;
+  controls.dampingFactor = 0.08;
+  controls.minDistance = 2.5;
+  controls.maxDistance = 60;
+
+  scene.add(new THREE.AmbientLight(0x8899bb, 0.7));
+  const dl = new THREE.DirectionalLight(0xffffff, 0.9);
+  dl.position.set(6, 8, 5);
+  scene.add(dl);
+  scene.add(new THREE.GridHelper(30, 30, 0x223047, 0x18202f));
+
+  axisLine = new THREE.Line(
+    new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0, -10, 0), new THREE.Vector3(0, 10, 0)]),
+    new THREE.LineBasicMaterial({ color: 0x475569, transparent: true, opacity: 0.5 })
+  );
+  scene.add(axisLine);
+
+  const mkMarker = (color, r) => { const m = new THREE.Mesh(new THREE.SphereGeometry(r || 0.09, 16, 16), new THREE.MeshBasicMaterial({ color })); scene.add(m); return m; };
+  f1AMarker = mkMarker(0xdc2626);
+  f1BMarker = mkMarker(0x2563eb);
+  f2AMarker = mkMarker(0xdc2626, 0.06); f2AMarker.material.transparent = true; f2AMarker.material.opacity = 0.55;
+  f2BMarker = mkMarker(0x2563eb, 0.06); f2BMarker.material.transparent = true; f2BMarker.material.opacity = 0.55;
+
+  const mkLabel = (text, color) => {
+    const div = document.createElement('div');
+    div.className = 'label3d'; div.textContent = text; div.style.color = color;
+    const obj = new CSS2DObject(div); scene.add(obj); return obj;
+  };
+  f1ALabel = mkLabel('F₁', '#fca5a5');
+  f1BLabel = mkLabel("F₁'", '#93c5fd');
+  f2ALabel = mkLabel('F₂', '#fca5a5');
+  f2BLabel = mkLabel("F₂'", '#93c5fd');
+
+  const mkSegs = (color) => {
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(RAY_AZ * 2 * 3), 3));
+    const seg = new THREE.LineSegments(geo, new THREE.LineBasicMaterial({ color, transparent: true, opacity: 0.85 }));
+    scene.add(seg);
+    return seg;
+  };
+  seg1 = mkSegs(0xf59e0b); // 원래 초점 → 거울A
+  seg2 = mkSegs(0x10b981); // 거울A → 거울B
+  seg3 = mkSegs(0x38bdf8); // 거울B → 이후
+
+  const hpGeo = new THREE.BufferGeometry();
+  hpGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(RAY_AZ * 2 * 3), 3));
+  hitPoints = new THREE.Points(hpGeo, new THREE.PointsMaterial({ color: 0xffffff, size: 0.06, sizeAttenuation: true }));
+  scene.add(hitPoints);
+
+  window.addEventListener('resize', onResize);
+  requestAnimationFrame(animate);
+  window.__debug = { scene, camera, renderer, labelRenderer };
+}
+window.__forceRender = () => { if (window.__debug) { window.__debug.renderer.render(window.__debug.scene, window.__debug.camera); window.__debug.labelRenderer.render(window.__debug.scene, window.__debug.camera); } };
+
+function onResize() {
+  const wrap = document.getElementById('three-canvas').parentElement;
+  const w = wrap.clientWidth, h = wrap.clientHeight;
+  renderer.setSize(w, h);
+  labelRenderer.setSize(w, h);
+  camera.aspect = w / h;
+  camera.updateProjectionMatrix();
+}
+function animate() {
+  requestAnimationFrame(animate);
+  controls.update();
+  renderer.render(scene, camera);
+  labelRenderer.render(scene, camera);
+}
+
+function buildMirrorProfiles(params) {
+  const AP = apertureFor(params.type, params);
+  const segs = 56;
+  const near = [], far = [];
+  for (let i = 0; i <= segs; i++) {
+    const v = (i / segs) * AP;
+    const u = surfaceNearByV(v, params.l, params.e);
+    if (u !== null) near.push([v, u]);
+  }
+  if (isClosedType(params.type)) {
+    for (let i = segs; i >= 0; i--) {
+      const v = (i / segs) * AP;
+      const u = surfaceFarByV(v, params.l, params.e);
+      if (u !== null) far.push([v, u]);
+    }
+  }
+  return near.concat(far);
+}
+
+function disposeMesh(mesh) { if (mesh) { mesh.geometry.dispose(); mesh.material.dispose(); scene.remove(mesh); } }
+
+function buildSurfaces(params, gapL) {
+  disposeMesh(meshA); disposeMesh(wireA); disposeMesh(meshB); disposeMesh(wireB);
+  const uV = vertexU(params.l, params.e);
+  const Cc = 2 * uV + gapL;
+  const color = typeColor(params.type);
+  const profile = buildMirrorProfiles(params);
+
+  const profA = profile.map(([v, u]) => new THREE.Vector2(v, u));
+  const geoA = new THREE.LatheGeometry(profA, 56);
+  wireA = new THREE.Mesh(geoA.clone(), new THREE.MeshBasicMaterial({ color, wireframe: true, transparent: true, opacity: 0.16 }));
+  meshA = new THREE.Mesh(geoA, new THREE.MeshPhongMaterial({ color, transparent: true, opacity: 0.22, side: THREE.DoubleSide, shininess: 50 }));
+  scene.add(wireA); scene.add(meshA);
+
+  const profB = profile.map(([v, u]) => new THREE.Vector2(v, Cc - u));
+  const geoB = new THREE.LatheGeometry(profB, 56);
+  wireB = new THREE.Mesh(geoB.clone(), new THREE.MeshBasicMaterial({ color, wireframe: true, transparent: true, opacity: 0.16 }));
+  meshB = new THREE.Mesh(geoB, new THREE.MeshPhongMaterial({ color, transparent: true, opacity: 0.22, side: THREE.DoubleSide, shininess: 50 }));
+  scene.add(wireB); scene.add(meshB);
+}
+
+function updateMarkers(params, gapL) {
+  const uV = vertexU(params.l, params.e);
+  const Cc = 2 * uV + gapL;
+  f1AMarker.position.set(0, 0, 0);
+  f1BMarker.position.set(0, Cc, 0);
+  f1ALabel.position.set(0.25, 0.2, 0);
+  f1BLabel.position.set(0.25, Cc + 0.2, 0);
+
+  const hasF2 = params.f2U !== null;
+  f2AMarker.visible = f2ALabel.visible = hasF2;
+  f2BMarker.visible = f2BLabel.visible = hasF2;
+  if (hasF2) {
+    f2AMarker.position.set(0, params.f2U, 0);
+    f2ALabel.position.set(0.22, params.f2U - 0.22, 0);
+    f2BMarker.position.set(0, Cc - params.f2U, 0);
+    f2BLabel.position.set(0.22, Cc - params.f2U + 0.22, 0);
+  }
+
+  const AP = apertureFor(params.type, params);
+  const extent = Math.max(Cc + AP, AP) * 1.3 + 1;
+  axisLine.geometry.setFromPoints([new THREE.Vector3(0, -1.5, 0), new THREE.Vector3(0, extent, 0)]);
+}
+
+function updateRaysVisual(params, gapL) {
+  const AP = apertureFor(params.type, params);
+  const v0 = Math.max(AP * 0.05, (state.launchPct / 100) * AP);
+  const trace = traceMeridian(params, v0, gapL);
+  currentParams = params;
+
+  const s1 = seg1.geometry.attributes.position.array;
+  const s2 = seg2.geometry.attributes.position.array;
+  const s3 = seg3.geometry.attributes.position.array;
+  const hp = hitPoints.geometry.attributes.position.array;
+  seg2.geometry.setDrawRange(0, 0);
+  seg3.geometry.setDrawRange(0, 0);
+  hitPoints.geometry.setDrawRange(0, 0);
+
+  if (!trace) { seg1.geometry.setDrawRange(0, 0); return; }
+
+  const frac = state.progress / 100;
+  const d1 = trace.d1;
+  const d2 = trace.reachedB ? trace.d2 : 6;
+  const MAXOUT3 = trace.axisCrossU !== null ? Math.abs(trace.axisCrossU - (trace.hitB ? trace.hitB.u : 0)) + 0.6 : 6;
+  const total = d1 + d2 + (trace.reachedB ? MAXOUT3 : 0);
+  const traveled = frac * total;
+
+  let hpCount = 0;
+  for (let k = 0; k < RAY_AZ; k++) {
+    const phi = (k / RAY_AZ) * Math.PI * 2;
+    const c = Math.cos(phi), sn = Math.sin(phi);
+    const source3 = { x: 0, y: 0, z: 0 };
+    const hitA3 = { x: trace.hitA.v * c, y: trace.hitA.u, z: trace.hitA.v * sn };
+
+    let inEnd = hitA3;
+    if (traveled < d1) {
+      const t = d1 > 0 ? traveled / d1 : 1;
+      inEnd = { x: source3.x + (hitA3.x - source3.x) * t, y: source3.y + (hitA3.y - source3.y) * t, z: source3.z + (hitA3.z - source3.z) * t };
+    }
+    s1[k * 6 + 0] = source3.x; s1[k * 6 + 1] = source3.y; s1[k * 6 + 2] = source3.z;
+    s1[k * 6 + 3] = inEnd.x; s1[k * 6 + 4] = inEnd.y; s1[k * 6 + 5] = inEnd.z;
+
+    if (!trace.reachedB) continue;
+    const hitB3 = { x: trace.hitB.v * c, y: trace.hitB.u, z: trace.hitB.v * sn };
+    if (traveled > d1) {
+      const t2 = d2 > 0 ? Math.min(1, (traveled - d1) / d2) : 1;
+      const p2 = { x: hitA3.x + (hitB3.x - hitA3.x) * t2, y: hitA3.y + (hitB3.y - hitA3.y) * t2, z: hitA3.z + (hitB3.z - hitA3.z) * t2 };
+      s2[k * 6 + 0] = hitA3.x; s2[k * 6 + 1] = hitA3.y; s2[k * 6 + 2] = hitA3.z;
+      s2[k * 6 + 3] = p2.x; s2[k * 6 + 4] = p2.y; s2[k * 6 + 5] = p2.z;
+      hp[hpCount * 3 + 0] = hitA3.x; hp[hpCount * 3 + 1] = hitA3.y; hp[hpCount * 3 + 2] = hitA3.z; hpCount++;
+    }
+    if (traveled > d1 + d2) {
+      const t3 = MAXOUT3 > 0 ? Math.min(1, (traveled - d1 - d2) / MAXOUT3) : 1;
+      // dirOut2는 자오면(u,v) 방향이므로, v(반지름) 성분을 방위각 c/sn에 다시 투영해야 world 좌표가 된다.
+      const newU = trace.hitB.u + trace.dirOut2.u * MAXOUT3 * t3;
+      const newV = trace.hitB.v + trace.dirOut2.v * MAXOUT3 * t3;
+      const exit = { x: newV * c, y: newU, z: newV * sn };
+      s3[k * 6 + 0] = hitB3.x; s3[k * 6 + 1] = hitB3.y; s3[k * 6 + 2] = hitB3.z;
+      s3[k * 6 + 3] = exit.x; s3[k * 6 + 4] = exit.y; s3[k * 6 + 5] = exit.z;
+      hp[hpCount * 3 + 0] = hitB3.x; hp[hpCount * 3 + 1] = hitB3.y; hp[hpCount * 3 + 2] = hitB3.z; hpCount++;
+    }
+  }
+
+  seg1.geometry.attributes.position.needsUpdate = true;
+  seg1.geometry.setDrawRange(0, RAY_AZ * 2);
+  if (trace.reachedB) {
+    seg2.geometry.attributes.position.needsUpdate = true;
+    seg2.geometry.setDrawRange(0, traveled > d1 ? RAY_AZ * 2 : 0);
+    seg3.geometry.attributes.position.needsUpdate = true;
+    seg3.geometry.setDrawRange(0, traveled > d1 + d2 ? RAY_AZ * 2 : 0);
+    hitPoints.geometry.attributes.position.needsUpdate = true;
+    hitPoints.geometry.setDrawRange(0, hpCount);
+  }
+
+  updateAlignBadge(params, gapL);
+  updateInterp(params, gapL);
+}
+
+function updateAlignBadge(params, gapL) {
+  const badge = document.getElementById('alignBadge');
+  const { spread, missCount } = computeAlignment(params, gapL);
+  if (spread === null) {
+    badge.className = 'align-badge bad';
+    badge.innerHTML = '이 간격에서는 둘째 거울까지 도달하지 못하는 광선이 많습니다';
+    return;
+  }
+  const scaleBase = Math.max(params.l, 0.5);
+  const good = spread < scaleBase * 0.08;
+  badge.className = 'align-badge ' + (good ? 'ok' : 'bad');
+  badge.innerHTML = '정렬도(도착 위치 퍼짐) <span class="val">' + spread.toFixed(2) + '</span>' + (missCount > 0 ? ' · 미도달 ' + missCount + '개' : '');
+}
+
+function updateInterp(params, gapL) {
+  const el = document.getElementById('interpText');
+  const { spread } = computeAlignment(params, gapL);
+  const scaleBase = Math.max(params.l, 0.5);
+  const good = spread !== null && spread < scaleBase * 0.08;
+  let msg = '';
+  if (params.type === 'parabola') {
+    msg = 'F₁에서 나온 빛은 첫 거울에서 반사되면 <strong>평행광</strong>이 되어, 간격(L)이 얼마든 그대로 건너가 둘째 거울의 초점 F₁\'에 모입니다. <strong>간격을 바꿔도 정렬도는 거의 변하지 않습니다</strong> — 이게 실제 "속삭이는 접시"의 원리입니다.';
+  } else if (params.type === 'circle') {
+    msg = '구는 초점이 곧 중심입니다. F₁에서 나온 빛은 첫 거울에서 반사되자마자 <strong>그대로 F₁으로 되돌아가</strong> 둘째 거울까지 가지도 않습니다.';
+  } else if (params.type === 'ellipse') {
+    msg = '회전타원면은 첫 거울만으로 이미 <strong>자기 자신의 F₂로 수렴</strong>합니다(평행광이 아닙니다). 그 뒤 둘째 거울에 부딪히는 결과는 간격(L)에 따라 달라집니다 — 지금은 ' + (good ? '<strong style="color:#16a34a">정렬되어 있습니다</strong>' : '<strong style="color:#dc2626">흩어집니다</strong>') + '. 간격을 조절해 정렬되는 지점을 찾아보세요.';
+  } else {
+    msg = '회전쌍곡면은 첫 거울에서 반사된 빛이 <strong>자기 F₂에서 나오는 것처럼 퍼지며</strong> 나갑니다. 둘째 거울에서의 결과는 간격(L)에 민감합니다 — 지금은 ' + (good ? '<strong style="color:#16a34a">정렬되어 있습니다</strong>' : '<strong style="color:#dc2626">흩어집니다</strong>') + '.';
+  }
+  el.innerHTML = msg;
+}
+
+// ════════════════════════════════════════════════════════════
+// 구조 갱신
+// ════════════════════════════════════════════════════════════
+function ensureGapDefault(params) {
+  const minL = minGapFor(params);
+  if (state.gapL === null || state.gapL < minL) state.gapL = minL * 1.7;
+  return minL;
+}
+function fullRebuild() {
+  const params = computeParams();
+  const minL = ensureGapDefault(params);
+  buildSurfaces(params, state.gapL);
+  updateMarkers(params, state.gapL);
+  updateRaysVisual(params, state.gapL);
+  document.getElementById('canvasHead').textContent = typeLabel(params.type) + ' 쌍';
+  return { params, minL };
+}
+
+// ════════════════════════════════════════════════════════════
+// 조작 패널
+// ════════════════════════════════════════════════════════════
+function sliderHTML(id, label, val, min, max, step, cls) {
+  return `<div class="slider-group ${cls || ''}">
+    <div class="slider-row"><span class="slider-label">${label}</span><span class="slider-val" id="val-${id}"></span></div>
+    <input type="range" id="in-${id}" min="${min}" max="${max}" step="${step}" value="${val}">
+  </div>`;
+}
+function paramCell(k, v) { return `<div class="param-cell"><div class="k">${k}</div><div class="v">${v}</div></div>`; }
+function fmtBig(v) { if (v === null || !isFinite(v)) return '—'; if (Math.abs(v) >= 100) return v.toFixed(0); return v.toFixed(2); }
+function standardEquationTex(type) {
+  if (type === 'circle') return '\\(u^2+v^2=r^2\\)';
+  if (type === 'ellipse') return '\\(\\dfrac{u^2}{a^2}+\\dfrac{v^2}{b^2}=1\\)';
+  if (type === 'parabola') return '\\(v^2=4pu\\)';
+  return '\\(\\dfrac{u^2}{a^2}-\\dfrac{v^2}{b^2}=1\\)';
+}
+function defText(type) {
+  if (type === 'circle') return '중심(=초점)으로부터 거리가 일정한 구면 거울 두 개를 마주 보게 놓았습니다.';
+  if (type === 'ellipse') return '두 초점까지 거리의 합이 일정(=2a)한 회전타원면 거울 두 개를 마주 보게 놓았습니다.';
+  if (type === 'parabola') return '초점과 준면까지 거리가 같은 회전포물면 거울 두 개를 마주 보게 놓았습니다.';
+  return '두 초점까지 거리의 차가 일정(=2a)한 회전쌍곡면 거울 두 개를 마주 보게 놓았습니다.';
+}
+
+function renderSliderZone() {
+  const zone = document.getElementById('sliderZone');
+  let html = '';
+  html += '<div class="curve-tabs">';
+  [['circle', '◯', '구'], ['ellipse', '⬮', '타원면'], ['parabola', '⌒', '포물면'], ['hyperbola', '⟩⟨', '쌍곡면']].forEach(([t, dot, label]) => {
+    html += `<button class="curve-tab ${state.curveType === t ? 'active' : ''}" data-t="${t}"><span class="dot">${dot}</span>${label}</button>`;
+  });
+  html += '</div>';
+
+  if (state.curveType === 'circle') html += sliderHTML('circleR', '반지름 r', state.std.circleR, 0.8, 3.5, 0.1);
+  else if (state.curveType === 'ellipse') {
+    html += sliderHTML('ellA', '장반축 a (회전축)', state.std.ellA, 1.5, 4, 0.1);
+    html += sliderHTML('ellB', '단반축 b', state.std.ellB, 0.6, state.std.ellA - 0.05, 0.1);
+  } else if (state.curveType === 'parabola') html += sliderHTML('paraP', '초점거리 p', state.std.paraP, 0.5, 2.5, 0.1);
+  else {
+    html += sliderHTML('hypA', '주축 a (회전축)', state.std.hypA, 0.6, 3, 0.1);
+    html += sliderHTML('hypB', '허축 b', state.std.hypB, 0.6, 3, 0.1);
+  }
+  html += `<div class="eq-box">${standardEquationTex(state.curveType)}</div>`;
+
+  const params0 = computeParams();
+  const minL = minGapFor(params0);
+  html += sliderHTML('gapL', '거울 간 간격 L', state.gapL || minL * 1.7, minL, minL * 5, 0.05, 'accent');
+  html += `<div class="hint-text">두 거울 꼭짓점 사이의 거리입니다. 최솟값은 거울 테두리가 겹치지 않도록 자동으로 제한됩니다.</div>`;
+
+  html += sliderHTML('launchPct', '자오각(발사각)', state.launchPct, 5, 100, 1);
+  html += `<div class="hint-text">첫 거울의 어느 위도(고리)에서 반사가 시작되는지 조절합니다.</div>`;
+
+  html += '<div class="play-row" style="margin-top:6px;">';
+  html += `<button class="primary" id="playBtn">${state.playing ? '⏸ 일시정지' : '▶ 재생'}</button>`;
+  html += `<button id="resetBtn">↺ 초기화</button>`;
+  html += '</div>';
+  html += sliderHTML('progress', '광선 진행', state.progress, 0, 100, 1);
+
+  zone.innerHTML = html;
+  wireSliderEvents();
+  refreshSliderLabels();
+  if (window.MathJax && MathJax.typesetPromise) MathJax.typesetPromise([zone]).catch(() => {});
+}
+
+function refreshSliderLabels() {
+  const params = computeParams();
+  setValText('circleR', state.std.circleR.toFixed(2));
+  setValText('ellA', state.std.ellA.toFixed(2));
+  setValText('ellB', state.std.ellB.toFixed(2));
+  setValText('paraP', state.std.paraP.toFixed(2));
+  setValText('hypA', state.std.hypA.toFixed(2));
+  setValText('hypB', state.std.hypB.toFixed(2));
+  setValText('gapL', (state.gapL || 0).toFixed(2));
+  const AP = apertureFor(params.type, params);
+  const v = Math.max(AP * 0.05, (state.launchPct / 100) * AP);
+  const uA = surfaceNearByV(v, params.l, params.e);
+  const angDeg = uA === null ? 0 : Math.abs(Math.atan2(v, uA)) * 180 / Math.PI;
+  setValText('launchPct', '≈ ' + angDeg.toFixed(1) + '°');
+  setValText('progress', Math.round(state.progress) + '%');
+}
+function setValText(id, text) { const el = document.getElementById('val-' + id); if (el) el.textContent = text; }
+
+function renderRestZone(params) {
+  const zone = document.getElementById('restZone');
+  let html = '';
+  html += '<div class="param-table">';
+  html += paramCell('e (c/a)', params.e.toFixed(3));
+  html += paramCell('l (반통경)', params.l.toFixed(2));
+  html += paramCell('a', fmtBig(params.a));
+  html += paramCell('c', fmtBig(params.c));
+  html += '</div>';
+  html += `<div class="def-text">${defText(params.type)}</div>`;
+  zone.innerHTML = html;
+}
+
+// ════════════════════════════════════════════════════════════
+// 이벤트 배선
+// ════════════════════════════════════════════════════════════
+function onStructuralSliderInput(id, apply) {
+  const el = document.getElementById('in-' + id);
+  if (!el) return;
+  el.addEventListener('input', () => {
+    apply(Number(el.value));
+    refreshSliderLabels();
+    const { params } = fullRebuild();
+    renderRestZone(params);
+  });
+}
+function onGapSliderInput() {
+  const el = document.getElementById('in-gapL');
+  if (!el) return;
+  el.addEventListener('input', () => {
+    state.gapL = Number(el.value);
+    refreshSliderLabels();
+    const params = computeParams();
+    buildSurfaces(params, state.gapL);
+    updateMarkers(params, state.gapL);
+    updateRaysVisual(params, state.gapL);
+  });
+}
+function onLightSliderInput(id, apply, skipRest) {
+  const el = document.getElementById('in-' + id);
+  if (!el) return;
+  el.addEventListener('input', () => {
+    apply(Number(el.value));
+    refreshSliderLabels();
+    updateRaysVisual(computeParams(), state.gapL);
+  });
+}
+
+function wireSliderEvents() {
+  onStructuralSliderInput('circleR', v => state.std.circleR = v);
+  onStructuralSliderInput('ellA', v => { state.std.ellA = v; syncEllBMax(v); });
+  onStructuralSliderInput('ellB', v => state.std.ellB = v);
+  onStructuralSliderInput('paraP', v => state.std.paraP = v);
+  onStructuralSliderInput('hypA', v => state.std.hypA = v);
+  onStructuralSliderInput('hypB', v => state.std.hypB = v);
+  onGapSliderInput();
+  onLightSliderInput('launchPct', v => state.launchPct = v);
+  onLightSliderInput('progress', v => { state.progress = v; state.playing = false; updatePlayBtnLabel(); });
+
+  const playBtn = document.getElementById('playBtn');
+  if (playBtn) playBtn.addEventListener('click', togglePlay);
+  const resetBtn = document.getElementById('resetBtn');
+  if (resetBtn) resetBtn.addEventListener('click', resetAll);
+
+  document.querySelectorAll('.curve-tab').forEach(el => el.addEventListener('click', () => setCurveType(el.dataset.t)));
+}
+
+function syncEllBMax(a) {
+  const bMax = a - 0.05;
+  const ellBInput = document.getElementById('in-ellB');
+  if (!ellBInput) return;
+  ellBInput.max = bMax;
+  if (state.std.ellB > bMax) { state.std.ellB = bMax; ellBInput.value = bMax; }
+}
+
+function setCurveType(t) {
+  state.curveType = t;
+  state.gapL = null; // 곡선이 바뀌면 간격을 새 크기에 맞춰 다시 계산
+  renderSliderZone();
+  const { params } = fullRebuild();
+  renderRestZone(params);
+}
+function updatePlayBtnLabel() {
+  const btn = document.getElementById('playBtn');
+  if (btn) btn.textContent = state.playing ? '⏸ 일시정지' : '▶ 재생';
+}
+function togglePlay() {
+  state.playing = !state.playing;
+  if (state.playing && state.progress >= 100) state.progress = 0;
+  updatePlayBtnLabel();
+  if (state.playing) requestAnimationFrame(playTick);
+}
+let lastTickTime = null;
+function playTick(ts) {
+  if (!state.playing) { lastTickTime = null; return; }
+  if (lastTickTime === null) lastTickTime = ts;
+  const dt = ts - lastTickTime; lastTickTime = ts;
+  state.progress = Math.min(100, state.progress + dt * 0.035);
+  const el = document.getElementById('in-progress');
+  if (el) el.value = state.progress;
+  setValText('progress', Math.round(state.progress) + '%');
+  updateRaysVisual(computeParams(), state.gapL);
+  if (state.progress >= 100) { state.playing = false; updatePlayBtnLabel(); return; }
+  requestAnimationFrame(playTick);
+}
+function resetAll() {
+  state.progress = 0; state.playing = false; state.launchPct = 55; state.gapL = null;
+  state.std = { circleR: 2.5, ellA: 3.2, ellB: 2.2, paraP: 1.3, hypA: 1.6, hypB: 2.2 };
+  updatePlayBtnLabel();
+  renderSliderZone();
+  const { params } = fullRebuild();
+  renderRestZone(params);
+}
+
+// ════════════════════════════════════════════════════════════
+// 초기화
+// ════════════════════════════════════════════════════════════
+window.addEventListener('DOMContentLoaded', () => {
+  initThree();
+  renderSliderZone();
+  const { params } = fullRebuild();
+  renderRestZone(params);
+});
+</script>
+</body>
+</html>
