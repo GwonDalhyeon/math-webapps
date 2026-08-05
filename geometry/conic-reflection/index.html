@@ -908,13 +908,13 @@ function playTick(ts) {
   if (!state.playing) { lastTickTime = null; return; }
   if (lastTickTime === null) lastTickTime = ts;
   const dt = ts - lastTickTime; lastTickTime = ts;
-  state.progress = Math.min(100, state.progress + dt * 0.045);
+  state.progress += dt * 0.045;
+  if (state.progress >= 100) state.progress -= 100; // 끝에 도달하면 처음부터 무한 반복
   const el = document.getElementById('in-progress');
   if (el) el.value = state.progress;
   const lbl = document.getElementById('val-progress');
   if (lbl) lbl.textContent = Math.round(state.progress) + '%';
   draw();
-  if (state.progress >= 100) { state.playing = false; updatePlayBtnLabel(); return; }
   requestAnimationFrame(playTick);
 }
 function resetAll() {
