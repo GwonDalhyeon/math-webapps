@@ -380,7 +380,7 @@ function initThree() {
   camera = new THREE.PerspectiveCamera(45, w / h, 0.1, 200);
   camera.position.set(7, 5.5, 9);
 
-  controls = new OrbitControls(camera, labelRenderer.domElement);
+  controls = new OrbitControls(camera, renderer.domElement);
   controls.enableDamping = true;
   controls.dampingFactor = 0.08;
   controls.minDistance = 2.5;
