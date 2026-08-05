@@ -35,7 +35,6 @@
     --muted: #5d6d7e;
     --line: #d8e0ea;
     --blue: #2563eb;
-    --c-circle: #0891b2;
     --c-ellipse: #7c3aed;
     --c-parabola: #d97706;
     --c-hyperbola: #e11d48;
@@ -87,8 +86,6 @@
     background:#fff; font:700 13px inherit; cursor:pointer; text-align:center;
   }
   .curve-tab .dot { display:block; font-size:16px; margin-bottom:2px; }
-  .curve-tab.active[data-t="circle"]    { border-color: var(--c-circle); color:var(--c-circle); background:#ecfeff; }
-  .curve-tab.active[data-t="ellipse"]   { border-color: var(--c-ellipse); color:var(--c-ellipse); background:#f5f3ff; }
   .curve-tab.active[data-t="parabola"]  { border-color: var(--c-parabola); color:var(--c-parabola); background:#fffbeb; }
   .curve-tab.active[data-t="hyperbola"] { border-color: var(--c-hyperbola); color:var(--c-hyperbola); background:#fff1f2; }
 
@@ -175,13 +172,6 @@ function surfaceNearByV(v, l, e) {
   if (disc < 0) return null;
   return (l * e - Math.sqrt(disc)) / k;
 }
-function surfaceFarByV(v, l, e) {
-  if (Math.abs(1 - e) < EPS_PARABOLA) return null;
-  const k = 1 - e * e;
-  const disc = l * l - v * v * k;
-  if (disc < 0) return null;
-  return (l * e + Math.sqrt(disc)) / k;
-}
 function meridianNormal(u, v, l, e) {
   const r = l + e * u;
   const nu = u - e * r, nv = v;
@@ -232,14 +222,9 @@ function intersectMirror(u0, v0, du, dv, l, e, vMax) {
   return best;
 }
 
-function typeColor(t) { return { circle: 0x0891b2, ellipse: 0x7c3aed, parabola: 0xd97706, hyperbola: 0xe11d48 }[t]; }
-function typeLabel(t) { return { circle: '구', ellipse: '회전타원면', parabola: '회전포물면', hyperbola: '회전쌍곡면' }[t]; }
-function isClosedType(t) { return t === 'circle' || t === 'ellipse'; }
-function apertureFor(type, p) {
-  if (type === 'circle') return p.l * 0.995;
-  if (type === 'ellipse') return p.b * 0.995;
-  return 4.4;
-}
+function typeColor(t) { return { parabola: 0xd97706, hyperbola: 0xe11d48 }[t]; }
+function typeLabel(t) { return { parabola: '회전포물면', hyperbola: '회전쌍곡면' }[t]; }
+function apertureFor() { return 4.4; }
 
 // ════════════════════════════════════════════════════════════
 // 상태
@@ -249,7 +234,7 @@ const N_SAMPLE = 7; // 정렬도 측정용 — 서로 다른 발사각 7개를 �
 
 const state = {
   curveType: 'parabola',
-  std: { circleR: 2.5, ellA: 3.2, ellB: 2.2, paraP: 1.3, hypA: 1.6, hypB: 2.2 },
+  std: { paraP: 1.3, hypA: 1.6, hypB: 2.2 },
   gapL: null, // 최초 계산 후 채워짐(곡면 크기에 맞춘 기본값)
   progress: 0,
   playing: false,
@@ -259,12 +244,7 @@ const state = {
 function computeParams() {
   const type = state.curveType;
   let l, e, aStd = null, bStd = null, pStd = null;
-  if (type === 'circle') { const r = state.std.circleR; l = r; e = 0; }
-  else if (type === 'ellipse') {
-    const a = state.std.ellA, b = Math.min(state.std.ellB, a - 0.05);
-    const c = Math.sqrt(Math.max(a * a - b * b, 0));
-    l = b * b / a; e = c / a; aStd = a; bStd = b;
-  } else if (type === 'parabola') {
+  if (type === 'parabola') {
     const p = state.std.paraP; l = 2 * p; e = 1; pStd = p;
   } else {
     const a = state.std.hypA, b = state.std.hypB;
@@ -279,7 +259,7 @@ function computeParams() {
 }
 
 function minGapFor(params) {
-  const AP = apertureFor(params.type, params);
+  const AP = apertureFor();
   const uRim = surfaceNearByV(AP, params.l, params.e);
   const uV = vertexU(params.l, params.e);
   return (uRim - uV) * 1.06; // 두 거울의 테두리가 겹치지 않을 최소 간격 + 여유
@@ -293,7 +273,7 @@ function minGapFor(params) {
 // ════════════════════════════════════════════════════════════
 function traceMeridian(params, v0, gapL) {
   const { l, e } = params;
-  const AP = apertureFor(params.type, params);
+  const AP = apertureFor();
   const uV = vertexU(l, e);
   const Cc = 2 * uV + gapL; // 거울 B의 초점(F1_B) 월드 u좌표
 
@@ -331,7 +311,7 @@ function traceMeridian(params, v0, gapL) {
 }
 
 function computeAlignment(params, gapL) {
-  const AP = apertureFor(params.type, params);
+  const AP = apertureFor();
   const samples = [];
   for (let i = 1; i <= N_SAMPLE; i++) samples.push(AP * (0.12 + 0.8 * (i - 1) / (N_SAMPLE - 1)));
   const crossings = [];
@@ -376,9 +356,11 @@ function initThree() {
 
   scene = new THREE.Scene();
   camera = new THREE.PerspectiveCamera(45, w / h, 0.1, 300);
-  camera.position.set(9, 6, 12);
+  camera.position.set(13, 9, 18);
 
-  controls = new OrbitControls(camera, labelRenderer.domElement);
+  // CSS2DRenderer의 domElement는 라벨 레이어(pointer-events:none) 안에 있어 마우스 이벤트를
+  // 받지 못한다 — OrbitControls는 실제로 입력이 들어오는 WebGL 캔버스에 붙여야 한다.
+  controls = new OrbitControls(camera, renderer.domElement);
   controls.enableDamping = true;
   controls.dampingFactor = 0.08;
   controls.minDistance = 2.5;
@@ -448,22 +430,16 @@ function animate() {
 }
 
 function buildMirrorProfiles(params) {
-  const AP = apertureFor(params.type, params);
+  // 포물면·쌍곡면은 열린 곡면(한쪽 가지)만 회전시키면 되므로 근접 가지만 쓴다.
+  const AP = apertureFor();
   const segs = 56;
-  const near = [], far = [];
+  const near = [];
   for (let i = 0; i <= segs; i++) {
     const v = (i / segs) * AP;
     const u = surfaceNearByV(v, params.l, params.e);
     if (u !== null) near.push([v, u]);
   }
-  if (isClosedType(params.type)) {
-    for (let i = segs; i >= 0; i--) {
-      const v = (i / segs) * AP;
-      const u = surfaceFarByV(v, params.l, params.e);
-      if (u !== null) far.push([v, u]);
-    }
-  }
-  return near.concat(far);
+  return near;
 }
 
 function disposeMesh(mesh) { if (mesh) { mesh.geometry.dispose(); mesh.material.dispose(); scene.remove(mesh); } }
@@ -506,13 +482,13 @@ function updateMarkers(params, gapL) {
     f2BLabel.position.set(0.22, Cc - params.f2U + 0.22, 0);
   }
 
-  const AP = apertureFor(params.type, params);
+  const AP = apertureFor();
   const extent = Math.max(Cc + AP, AP) * 1.3 + 1;
   axisLine.geometry.setFromPoints([new THREE.Vector3(0, -1.5, 0), new THREE.Vector3(0, extent, 0)]);
 }
 
 function updateRaysVisual(params, gapL) {
-  const AP = apertureFor(params.type, params);
+  const AP = apertureFor();
   const v0 = Math.max(AP * 0.05, (state.launchPct / 100) * AP);
   const trace = traceMeridian(params, v0, gapL);
   currentParams = params;
@@ -607,10 +583,6 @@ function updateInterp(params, gapL) {
   let msg = '';
   if (params.type === 'parabola') {
     msg = 'F₁에서 나온 빛은 첫 거울에서 반사되면 <strong>평행광</strong>이 되어, 간격(L)이 얼마든 그대로 건너가 둘째 거울의 초점 F₁\'에 모입니다. <strong>간격을 바꿔도 정렬도는 거의 변하지 않습니다</strong> — 이게 실제 "속삭이는 접시"의 원리입니다.';
-  } else if (params.type === 'circle') {
-    msg = '구는 초점이 곧 중심입니다. F₁에서 나온 빛은 첫 거울에서 반사되자마자 <strong>그대로 F₁으로 되돌아가</strong> 둘째 거울까지 가지도 않습니다.';
-  } else if (params.type === 'ellipse') {
-    msg = '회전타원면은 첫 거울만으로 이미 <strong>자기 자신의 F₂로 수렴</strong>합니다(평행광이 아닙니다). 그 뒤 둘째 거울에 부딪히는 결과는 간격(L)에 따라 달라집니다 — 지금은 ' + (good ? '<strong style="color:#16a34a">정렬되어 있습니다</strong>' : '<strong style="color:#dc2626">흩어집니다</strong>') + '. 간격을 조절해 정렬되는 지점을 찾아보세요.';
   } else {
     msg = '회전쌍곡면은 첫 거울에서 반사된 빛이 <strong>자기 F₂에서 나오는 것처럼 퍼지며</strong> 나갑니다. 둘째 거울에서의 결과는 간격(L)에 민감합니다 — 지금은 ' + (good ? '<strong style="color:#16a34a">정렬되어 있습니다</strong>' : '<strong style="color:#dc2626">흩어집니다</strong>') + '.';
   }
@@ -622,7 +594,7 @@ function updateInterp(params, gapL) {
 // ════════════════════════════════════════════════════════════
 function ensureGapDefault(params) {
   const minL = minGapFor(params);
-  if (state.gapL === null || state.gapL < minL) state.gapL = minL * 1.7;
+  if (state.gapL === null || state.gapL < minL) state.gapL = minL * 3.2; // 반사 구간(거울 사이 공간)이 화면에서 충분히 보이도록 여유를 넉넉히 둔다
   return minL;
 }
 function fullRebuild() {
@@ -632,6 +604,12 @@ function fullRebuild() {
   updateMarkers(params, state.gapL);
   updateRaysVisual(params, state.gapL);
   document.getElementById('canvasHead').textContent = typeLabel(params.type) + ' 쌍';
+  // 곡선 종류가 바뀔 때만 카메라 시점을 두 거울 사이 중앙으로 다시 맞춘다(간격 슬라이더를
+  // 드래그하는 동안에는 사용자가 직접 돌린 시점을 건드리지 않는다).
+  const uV = vertexU(params.l, params.e);
+  const Cc = 2 * uV + state.gapL;
+  controls.target.set(0, Cc / 2, 0);
+  controls.update();
   return { params, minL };
 }
 
@@ -647,14 +625,10 @@ function sliderHTML(id, label, val, min, max, step, cls) {
 function paramCell(k, v) { return `<div class="param-cell"><div class="k">${k}</div><div class="v">${v}</div></div>`; }
 function fmtBig(v) { if (v === null || !isFinite(v)) return '—'; if (Math.abs(v) >= 100) return v.toFixed(0); return v.toFixed(2); }
 function standardEquationTex(type) {
-  if (type === 'circle') return '\\(u^2+v^2=r^2\\)';
-  if (type === 'ellipse') return '\\(\\dfrac{u^2}{a^2}+\\dfrac{v^2}{b^2}=1\\)';
   if (type === 'parabola') return '\\(v^2=4pu\\)';
   return '\\(\\dfrac{u^2}{a^2}-\\dfrac{v^2}{b^2}=1\\)';
 }
 function defText(type) {
-  if (type === 'circle') return '중심(=초점)으로부터 거리가 일정한 구면 거울 두 개를 마주 보게 놓았습니다.';
-  if (type === 'ellipse') return '두 초점까지 거리의 합이 일정(=2a)한 회전타원면 거울 두 개를 마주 보게 놓았습니다.';
   if (type === 'parabola') return '초점과 준면까지 거리가 같은 회전포물면 거울 두 개를 마주 보게 놓았습니다.';
   return '두 초점까지 거리의 차가 일정(=2a)한 회전쌍곡면 거울 두 개를 마주 보게 놓았습니다.';
 }
@@ -663,16 +637,12 @@ function renderSliderZone() {
   const zone = document.getElementById('sliderZone');
   let html = '';
   html += '<div class="curve-tabs">';
-  [['circle', '◯', '구'], ['ellipse', '⬮', '타원면'], ['parabola', '⌒', '포물면'], ['hyperbola', '⟩⟨', '쌍곡면']].forEach(([t, dot, label]) => {
+  [['parabola', '⌒', '포물면'], ['hyperbola', '⟩⟨', '쌍곡면']].forEach(([t, dot, label]) => {
     html += `<button class="curve-tab ${state.curveType === t ? 'active' : ''}" data-t="${t}"><span class="dot">${dot}</span>${label}</button>`;
   });
   html += '</div>';
 
-  if (state.curveType === 'circle') html += sliderHTML('circleR', '반지름 r', state.std.circleR, 0.8, 3.5, 0.1);
-  else if (state.curveType === 'ellipse') {
-    html += sliderHTML('ellA', '장반축 a (회전축)', state.std.ellA, 1.5, 4, 0.1);
-    html += sliderHTML('ellB', '단반축 b', state.std.ellB, 0.6, state.std.ellA - 0.05, 0.1);
-  } else if (state.curveType === 'parabola') html += sliderHTML('paraP', '초점거리 p', state.std.paraP, 0.5, 2.5, 0.1);
+  if (state.curveType === 'parabola') html += sliderHTML('paraP', '초점거리 p', state.std.paraP, 0.5, 2.5, 0.1);
   else {
     html += sliderHTML('hypA', '주축 a (회전축)', state.std.hypA, 0.6, 3, 0.1);
     html += sliderHTML('hypB', '허축 b', state.std.hypB, 0.6, 3, 0.1);
@@ -681,7 +651,7 @@ function renderSliderZone() {
 
   const params0 = computeParams();
   const minL = minGapFor(params0);
-  html += sliderHTML('gapL', '거울 간 간격 L', state.gapL || minL * 1.7, minL, minL * 5, 0.05, 'accent');
+  html += sliderHTML('gapL', '거울 간 간격 L', state.gapL || minL * 3.2, minL, minL * 7, 0.05, 'accent');
   html += `<div class="hint-text">두 거울 꼭짓점 사이의 거리입니다. 최솟값은 거울 테두리가 겹치지 않도록 자동으로 제한됩니다.</div>`;
 
   html += sliderHTML('launchPct', '자오각(발사각)', state.launchPct, 5, 100, 1);
@@ -701,14 +671,11 @@ function renderSliderZone() {
 
 function refreshSliderLabels() {
   const params = computeParams();
-  setValText('circleR', state.std.circleR.toFixed(2));
-  setValText('ellA', state.std.ellA.toFixed(2));
-  setValText('ellB', state.std.ellB.toFixed(2));
   setValText('paraP', state.std.paraP.toFixed(2));
   setValText('hypA', state.std.hypA.toFixed(2));
   setValText('hypB', state.std.hypB.toFixed(2));
   setValText('gapL', (state.gapL || 0).toFixed(2));
-  const AP = apertureFor(params.type, params);
+  const AP = apertureFor();
   const v = Math.max(AP * 0.05, (state.launchPct / 100) * AP);
   const uA = surfaceNearByV(v, params.l, params.e);
   const angDeg = uA === null ? 0 : Math.abs(Math.atan2(v, uA)) * 180 / Math.PI;
@@ -766,9 +733,6 @@ function onLightSliderInput(id, apply, skipRest) {
 }
 
 function wireSliderEvents() {
-  onStructuralSliderInput('circleR', v => state.std.circleR = v);
-  onStructuralSliderInput('ellA', v => { state.std.ellA = v; syncEllBMax(v); });
-  onStructuralSliderInput('ellB', v => state.std.ellB = v);
   onStructuralSliderInput('paraP', v => state.std.paraP = v);
   onStructuralSliderInput('hypA', v => state.std.hypA = v);
   onStructuralSliderInput('hypB', v => state.std.hypB = v);
@@ -782,14 +746,6 @@ function wireSliderEvents() {
   if (resetBtn) resetBtn.addEventListener('click', resetAll);
 
   document.querySelectorAll('.curve-tab').forEach(el => el.addEventListener('click', () => setCurveType(el.dataset.t)));
-}
-
-function syncEllBMax(a) {
-  const bMax = a - 0.05;
-  const ellBInput = document.getElementById('in-ellB');
-  if (!ellBInput) return;
-  ellBInput.max = bMax;
-  if (state.std.ellB > bMax) { state.std.ellB = bMax; ellBInput.value = bMax; }
 }
 
 function setCurveType(t) {
@@ -820,12 +776,21 @@ function playTick(ts) {
   if (el) el.value = state.progress;
   setValText('progress', Math.round(state.progress) + '%');
   updateRaysVisual(computeParams(), state.gapL);
-  if (state.progress >= 100) { state.playing = false; updatePlayBtnLabel(); return; }
+  if (state.progress >= 100) {
+    // 도착한 채로 잠깐 멈춰 보여준 뒤, 처음(광원)부터 자동으로 다시 재생한다.
+    lastTickTime = null;
+    setTimeout(() => {
+      if (!state.playing) return;
+      state.progress = 0;
+      requestAnimationFrame(playTick);
+    }, 600);
+    return;
+  }
   requestAnimationFrame(playTick);
 }
 function resetAll() {
   state.progress = 0; state.playing = false; state.launchPct = 55; state.gapL = null;
-  state.std = { circleR: 2.5, ellA: 3.2, ellB: 2.2, paraP: 1.3, hypA: 1.6, hypB: 2.2 };
+  state.std = { paraP: 1.3, hypA: 1.6, hypB: 2.2 };
   updatePlayBtnLabel();
   ensureGapDefault(computeParams());
   renderSliderZone();

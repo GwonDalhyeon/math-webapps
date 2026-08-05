@@ -838,12 +838,13 @@ function playTick(ts) {
   if (!state.playing) { lastTickTime = null; return; }
   if (lastTickTime === null) lastTickTime = ts;
   const dt = ts - lastTickTime; lastTickTime = ts;
-  state.progress = Math.min(100, state.progress + dt * 0.045);
+  // 무한 재생: 도착점(100%)에 닿은 다음 틱에는 광원(0%)에서 다시 출발한다.
+  if (state.progress >= 100) state.progress = 0;
+  else state.progress = Math.min(100, state.progress + dt * 0.045);
   const el = document.getElementById('in-progress');
   if (el) el.value = state.progress;
   setValText('progress', Math.round(state.progress) + '%');
   updateRays(computeParams());
-  if (state.progress >= 100) { state.playing = false; updatePlayBtnLabel(); return; }
   requestAnimationFrame(playTick);
 }
 function resetAll() {
