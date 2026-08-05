@@ -325,18 +325,16 @@ function computeRays(params) {
   const rays = [];
 
   if (params.type === 'hyperbola' && state.hypMode === 'converge') {
-    // 수렴형: 발산형 반사(F1→반사점→가상 F2 방향)의 반사 법칙을 그대로 뒤집는다.
-    // 새 입사방향 = -(기존 반사방향) 이면, 반사 후 방향은 항상 정확히 F1(국소원점)을 향한다(반사 공식의 가역성).
+    // 수렴형: 볼록한 바깥쪽(오목한 안쪽의 반대편)에서 F1을 향해 날아오는 빛이
+    // 거울에 가로막혀 반사되면, 반사 법칙(법선 부호에 무관한 성질)에 의해 항상 정확히 F2로 향한다.
     const LAUNCH_LEN = 6.5; // 화면 밖에서 날아오는 것처럼 보이도록 잡은 입사 구간 길이(장식적 값)
     const addConvergeRay = (pt) => {
       if (!pt) return;
-      const dOldIn = normalize({ x: pt.x, y: pt.y }); // 기존 발산형: F1(원점)→반사점 방향
+      const dIn = normalize({ x: -pt.x, y: -pt.y }); // 반사점 → F1(원점) 방향 = F1을 향해 날아오는 빛
       let n = normalAt(pt, params.l, params.e);
-      if (dOldIn.x * n.x + dOldIn.y * n.y > 0) n = { x: -n.x, y: -n.y };
-      const dOldOut = reflectDir(dOldIn, n);
-      const dIn = { x: -dOldOut.x, y: -dOldOut.y }; // 새 입사(진행) 방향
-      const dOut = reflectDir(dIn, n); // = -dOldIn, 즉 F1을 향함
-      const launch = { x: pt.x - dIn.x * LAUNCH_LEN, y: pt.y - dIn.y * LAUNCH_LEN };
+      if (dIn.x * n.x + dIn.y * n.y > 0) n = { x: -n.x, y: -n.y };
+      const dOut = reflectDir(dIn, n); // 정확히 F2를 향함
+      const launch = { x: pt.x - dIn.x * LAUNCH_LEN, y: pt.y - dIn.y * LAUNCH_LEN }; // 볼록한 바깥쪽에 위치
       rays.push({ launch, hit: pt, n, dirIn: dIn, dirOut: dOut, d1: LAUNCH_LEN });
     };
     for (let sign of [1, -1]) {
@@ -373,7 +371,10 @@ function computeRays(params) {
 function outgoingLength(ray, params) {
   const MAXOUT = 9;
   if (params.type === 'hyperbola' && state.hypMode === 'converge') {
-    return Math.hypot(ray.hit.x, ray.hit.y); // 국소좌표 F1(원점)까지 정확한 거리 — 실제로 도착한다
+    const { center } = localCenterAndF2(params.l, params.e);
+    if (!center) return MAXOUT;
+    const f2 = { x: 2 * center.x, y: 0 };
+    return Math.hypot(ray.hit.x - f2.x, ray.hit.y - f2.y); // 실제 F2까지 정확한 거리 — 실제로 도착한다
   }
   if (params.type === 'parabola') return MAXOUT;
   const { center } = localCenterAndF2(params.l, params.e);
@@ -389,13 +390,15 @@ function outgoingLength(ray, params) {
 function computeBlur(rays, params) {
   if (!rays.length) return { value: 0, label: '', good: true };
   if (params.type === 'hyperbola' && state.hypMode === 'converge') {
+    const { center } = localCenterAndF2(params.l, params.e);
+    const f2 = center ? { x: 2 * center.x, y: 0 } : { x: 0, y: 0 };
     let maxMiss = 0;
     rays.forEach(r => {
       const dist = outgoingLength(r, params);
       const ex = r.hit.x + r.dirOut.x * dist, ey = r.hit.y + r.dirOut.y * dist;
-      maxMiss = Math.max(maxMiss, Math.hypot(ex, ey)); // F1(원점)까지 남은 거리 — 0이어야 정확히 도착
+      maxMiss = Math.max(maxMiss, Math.hypot(ex - f2.x, ey - f2.y)); // F2까지 남은 거리 — 0이어야 정확히 도착
     });
-    return { value: maxMiss, label: 'F₁ 도달 오차', unit: '', good: maxMiss < 0.05 };
+    return { value: maxMiss, label: 'F₂ 도달 오차', unit: '', good: maxMiss < 0.05 };
   }
   if (params.type === 'parabola') {
     let maxDeg = 0;
@@ -682,7 +685,7 @@ function drawDistBars(rays, params) {
   const isHypConverge = params.type === 'hyperbola' && state.hypMode === 'converge';
   let title = '경로 길이';
   if (params.type === 'ellipse' || params.type === 'circle') title = 'F₁+F₂ 총 경로(=2a, 광선마다 비교)';
-  else if (isHypConverge) title = '거울→F₁ 거리(제각각이지만 모두 F₁에 도착)';
+  else if (isHypConverge) title = '거울→F₂ 거리(제각각이지만 모두 F₂에 도착)';
   else if (params.type === 'hyperbola') title = '|F₁−F₂| 경로차(=2a, 광선마다 비교)';
   else if (params.type === 'parabola') title = '보라 PF · 주황 PH (광선마다 같음)';
   ctx.fillText(title, ox + 6, oy + 12);
@@ -736,7 +739,7 @@ function updateInterp(params) {
     msg = 'F에서 나온 빛이 반사되어 <strong>축과 평행하게</strong> 나갑니다. 거꾸로, 축에 평행하게 들어온 빛은 모두 F로 모입니다.';
   } else if (params.type === 'hyperbola') {
     if (state.hypMode === 'converge') {
-      msg = '화면 밖에서 F₂를 향해 날아오던 빛이 거울에 가로막혀 반사되면, <strong>진짜 초점 F₁에 정확히 모입니다.</strong> 방금 본 발산형과 똑같은 거울이며, 빛의 방향만 반대로 뒤집은 것입니다.';
+      msg = '볼록한 바깥쪽에서 F₁을 향해 날아오던 빛이 거울에 가로막혀 반사되면, <strong>반대쪽 초점 F₂로 정확히 날아갑니다.</strong> 방금 본 발산형과 똑같은 거울이며, 빛의 방향만 반대로 뒤집은 것입니다.';
     } else {
       msg = 'F₁에서 나온 빛이 반사되면, 그 반사광을 거꾸로 연장한 직선이 <strong>모두 F₂를 지납니다</strong> — 마치 F₂에서 나온 것처럼 흩어집니다.';
     }
