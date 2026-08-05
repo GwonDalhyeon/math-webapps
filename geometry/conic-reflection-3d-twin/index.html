@@ -229,7 +229,13 @@ function apertureFor() { return 4.4; }
 // ════════════════════════════════════════════════════════════
 // 상태
 // ════════════════════════════════════════════════════════════
-const RAY_AZ = 20;
+// 자오각 슬라이더가 고른 각도 하나만 보여주면 "여러 방향에서 온 빛이 모두 한 점에 모인다"는
+// 느낌이 잘 안 산다. 슬라이더 각도 + 고정 프리셋 각도 세 개를 동시에 그려서 다양한 방향에서
+// 날아온 빛이 함께 모이는(또는 흩어지는) 모습을 한 화면에서 비교할 수 있게 한다.
+const AZ_PER_RING = 8;                    // 고리(각도) 하나당 방위각 복제 수
+const PRESET_FRACS = [0.18, 0.42, 0.68];  // 슬라이더 값 외에 항상 함께 보여줄 세 각도(조리개 대비 비율)
+const N_RINGS = 1 + PRESET_FRACS.length;  // 슬라이더 고리 1개 + 프리셋 3개
+const RAY_AZ = N_RINGS * AZ_PER_RING;     // 총 광선 개수 — 3d-webapp.md의 20~40개 가이드 안에 있다
 const N_SAMPLE = 7; // 정렬도 측정용 — 서로 다른 발사각 7개를 자오면에서만 계산(화면에는 안 그림)
 
 const state = {
@@ -526,123 +532,122 @@ function updateMarkers(params) {
   axisLine.geometry.setFromPoints([new THREE.Vector3(0, -extent, 0), new THREE.Vector3(0, extent, 0)]);
 }
 
+function zeroSeg(arr, idx) {
+  const o = idx * 6;
+  arr[o] = arr[o + 1] = arr[o + 2] = arr[o + 3] = arr[o + 4] = arr[o + 5] = 0;
+}
+
 function updateRaysVisual(params) {
   const AP = apertureFor();
-  const vPick = Math.max(AP * 0.05, (state.launchPct / 100) * AP);
   currentParams = params;
+  // 자오각 슬라이더가 고른 각도 + 항상 함께 보여주는 프리셋 각도들을 한 화면에 동시에 그린다.
+  const ringFracs = [state.launchPct / 100, ...PRESET_FRACS];
 
   const s1 = seg1.geometry.attributes.position.array;
   const s2 = seg2.geometry.attributes.position.array;
   const s3 = seg3.geometry.attributes.position.array;
   const hp = hitPoints.geometry.attributes.position.array;
-  seg2.geometry.setDrawRange(0, 0);
-  seg3.geometry.setDrawRange(0, 0);
-  hitPoints.geometry.setDrawRange(0, 0);
+  const frac = state.progress / 100;
+  let hpCount = 0;
 
   if (params.type === 'parabola') {
-    const trace = traceMeridian(params, vPick, state.gapL);
-    if (!trace) { seg1.geometry.setDrawRange(0, 0); updateAlignBadge(params); updateInterp(params); return; }
+    ringFracs.forEach((fr, ringIdx) => {
+      const base = ringIdx * AZ_PER_RING;
+      const v0 = Math.max(AP * 0.05, fr * AP);
+      const trace = traceMeridian(params, v0, state.gapL);
+      if (!trace) { for (let k = 0; k < AZ_PER_RING; k++) { zeroSeg(s1, base + k); zeroSeg(s2, base + k); zeroSeg(s3, base + k); } return; }
 
-    const frac = state.progress / 100;
-    const d1 = trace.d1;
-    const d2 = trace.reachedB ? trace.d2 : 6;
-    const MAXOUT3 = trace.axisCrossU !== null ? Math.abs(trace.axisCrossU - (trace.hitB ? trace.hitB.u : 0)) + 0.6 : 6;
-    const total = d1 + d2 + (trace.reachedB ? MAXOUT3 : 0);
-    const traveled = frac * total;
+      const d1 = trace.d1;
+      const d2 = trace.reachedB ? trace.d2 : 6;
+      const MAXOUT3 = trace.axisCrossU !== null ? Math.abs(trace.axisCrossU - (trace.hitB ? trace.hitB.u : 0)) + 0.6 : 6;
+      const total = d1 + d2 + (trace.reachedB ? MAXOUT3 : 0);
+      const traveled = frac * total;
 
-    let hpCount = 0;
-    for (let k = 0; k < RAY_AZ; k++) {
-      const phi = (k / RAY_AZ) * Math.PI * 2;
-      const c = Math.cos(phi), sn = Math.sin(phi);
-      const source3 = { x: 0, y: 0, z: 0 };
-      const hitA3 = { x: trace.hitA.v * c, y: trace.hitA.u, z: trace.hitA.v * sn };
+      for (let k = 0; k < AZ_PER_RING; k++) {
+        const idx = base + k;
+        const phi = (k / AZ_PER_RING) * Math.PI * 2;
+        const c = Math.cos(phi), sn = Math.sin(phi);
+        const source3 = { x: 0, y: 0, z: 0 };
+        const hitA3 = { x: trace.hitA.v * c, y: trace.hitA.u, z: trace.hitA.v * sn };
+        const t1 = d1 > 0 ? Math.max(0, Math.min(1, traveled / d1)) : 1;
+        const inEnd = { x: source3.x + (hitA3.x - source3.x) * t1, y: source3.y + (hitA3.y - source3.y) * t1, z: source3.z + (hitA3.z - source3.z) * t1 };
+        s1[idx * 6 + 0] = source3.x; s1[idx * 6 + 1] = source3.y; s1[idx * 6 + 2] = source3.z;
+        s1[idx * 6 + 3] = inEnd.x; s1[idx * 6 + 4] = inEnd.y; s1[idx * 6 + 5] = inEnd.z;
 
-      let inEnd = hitA3;
-      if (traveled < d1) {
-        const t = d1 > 0 ? traveled / d1 : 1;
-        inEnd = { x: source3.x + (hitA3.x - source3.x) * t, y: source3.y + (hitA3.y - source3.y) * t, z: source3.z + (hitA3.z - source3.z) * t };
-      }
-      s1[k * 6 + 0] = source3.x; s1[k * 6 + 1] = source3.y; s1[k * 6 + 2] = source3.z;
-      s1[k * 6 + 3] = inEnd.x; s1[k * 6 + 4] = inEnd.y; s1[k * 6 + 5] = inEnd.z;
+        if (traveled > d1) { hp[hpCount * 3 + 0] = hitA3.x; hp[hpCount * 3 + 1] = hitA3.y; hp[hpCount * 3 + 2] = hitA3.z; hpCount++; }
 
-      if (!trace.reachedB) continue;
-      const hitB3 = { x: trace.hitB.v * c, y: trace.hitB.u, z: trace.hitB.v * sn };
-      if (traveled > d1) {
-        const t2 = d2 > 0 ? Math.min(1, (traveled - d1) / d2) : 1;
+        if (!trace.reachedB) { zeroSeg(s2, idx); zeroSeg(s3, idx); continue; }
+        const hitB3 = { x: trace.hitB.v * c, y: trace.hitB.u, z: trace.hitB.v * sn };
+        const t2 = d2 > 0 ? Math.max(0, Math.min(1, (traveled - d1) / d2)) : (traveled > d1 ? 1 : 0);
         const p2 = { x: hitA3.x + (hitB3.x - hitA3.x) * t2, y: hitA3.y + (hitB3.y - hitA3.y) * t2, z: hitA3.z + (hitB3.z - hitA3.z) * t2 };
-        s2[k * 6 + 0] = hitA3.x; s2[k * 6 + 1] = hitA3.y; s2[k * 6 + 2] = hitA3.z;
-        s2[k * 6 + 3] = p2.x; s2[k * 6 + 4] = p2.y; s2[k * 6 + 5] = p2.z;
-        hp[hpCount * 3 + 0] = hitA3.x; hp[hpCount * 3 + 1] = hitA3.y; hp[hpCount * 3 + 2] = hitA3.z; hpCount++;
-      }
-      if (traveled > d1 + d2) {
-        const t3 = MAXOUT3 > 0 ? Math.min(1, (traveled - d1 - d2) / MAXOUT3) : 1;
+        s2[idx * 6 + 0] = hitA3.x; s2[idx * 6 + 1] = hitA3.y; s2[idx * 6 + 2] = hitA3.z;
+        s2[idx * 6 + 3] = p2.x; s2[idx * 6 + 4] = p2.y; s2[idx * 6 + 5] = p2.z;
+
         // dirOut2는 자오면(u,v) 방향이므로, v(반지름) 성분을 방위각 c/sn에 다시 투영해야 world 좌표가 된다.
+        const t3 = MAXOUT3 > 0 ? Math.max(0, Math.min(1, (traveled - d1 - d2) / MAXOUT3)) : (traveled > d1 + d2 ? 1 : 0);
         const newU = trace.hitB.u + trace.dirOut2.u * MAXOUT3 * t3;
         const newV = trace.hitB.v + trace.dirOut2.v * MAXOUT3 * t3;
         const exit = { x: newV * c, y: newU, z: newV * sn };
-        s3[k * 6 + 0] = hitB3.x; s3[k * 6 + 1] = hitB3.y; s3[k * 6 + 2] = hitB3.z;
-        s3[k * 6 + 3] = exit.x; s3[k * 6 + 4] = exit.y; s3[k * 6 + 5] = exit.z;
-        hp[hpCount * 3 + 0] = hitB3.x; hp[hpCount * 3 + 1] = hitB3.y; hp[hpCount * 3 + 2] = hitB3.z; hpCount++;
+        s3[idx * 6 + 0] = hitB3.x; s3[idx * 6 + 1] = hitB3.y; s3[idx * 6 + 2] = hitB3.z;
+        s3[idx * 6 + 3] = exit.x; s3[idx * 6 + 4] = exit.y; s3[idx * 6 + 5] = exit.z;
+
+        if (traveled > d1 + d2) { hp[hpCount * 3 + 0] = hitB3.x; hp[hpCount * 3 + 1] = hitB3.y; hp[hpCount * 3 + 2] = hitB3.z; hpCount++; }
       }
-    }
+    });
 
     seg1.geometry.attributes.position.needsUpdate = true;
     seg1.geometry.setDrawRange(0, RAY_AZ * 2);
-    if (trace.reachedB) {
-      seg2.geometry.attributes.position.needsUpdate = true;
-      seg2.geometry.setDrawRange(0, traveled > d1 ? RAY_AZ * 2 : 0);
-      seg3.geometry.attributes.position.needsUpdate = true;
-      seg3.geometry.setDrawRange(0, traveled > d1 + d2 ? RAY_AZ * 2 : 0);
-      hitPoints.geometry.attributes.position.needsUpdate = true;
-      hitPoints.geometry.setDrawRange(0, hpCount);
-    }
+    seg2.geometry.attributes.position.needsUpdate = true;
+    seg2.geometry.setDrawRange(0, RAY_AZ * 2);
+    seg3.geometry.attributes.position.needsUpdate = true;
+    seg3.geometry.setDrawRange(0, RAY_AZ * 2);
+    hitPoints.geometry.attributes.position.needsUpdate = true;
+    hitPoints.geometry.setDrawRange(0, hpCount);
   } else {
     // 쌍곡면: 아주 먼 곳에서 F₂를 향해 날아오던 빛이 반대쪽 가지(볼록면)에서 한 번만
     // 반사되어 F₁로 향한다. 광원이 실제로는 무한히 멀리 있으므로, 화면에는 일정한
-    // 길이(VISUAL_IN)만큼만 "다가오는" 모습으로 그린다.
-    const trace = traceConfocalHyperbola(params, vPick);
-    if (!trace) { seg1.geometry.setDrawRange(0, 0); updateAlignBadge(params); updateInterp(params); return; }
+    // 길이(VISUAL_IN)만큼만 "다가오는" 모습으로 그린다. 1회 반사라 가운데 구간(seg2)은 안 쓴다.
+    ringFracs.forEach((fr, ringIdx) => {
+      const base = ringIdx * AZ_PER_RING;
+      const v0 = Math.max(AP * 0.05, fr * AP);
+      const trace = traceConfocalHyperbola(params, v0);
+      if (!trace) { for (let k = 0; k < AZ_PER_RING; k++) { zeroSeg(s1, base + k); zeroSeg(s3, base + k); } return; }
 
-    const frac = state.progress / 100;
-    const VISUAL_IN = 6.5;
-    const d1 = VISUAL_IN;
-    const MAXOUT = trace.axisCrossU !== null ? Math.abs(trace.axisCrossU - trace.Q.u) + 0.6 : 6;
-    const total = d1 + MAXOUT;
-    const traveled = frac * total;
+      const VISUAL_IN = 6.5;
+      const d1 = VISUAL_IN;
+      const MAXOUT = trace.axisCrossU !== null ? Math.abs(trace.axisCrossU - trace.Q.u) + 0.6 : 6;
+      const total = d1 + MAXOUT;
+      const traveled = frac * total;
+      const startU = trace.Q.u - trace.dirIn.u * VISUAL_IN;
+      const startV = trace.Q.v - trace.dirIn.v * VISUAL_IN;
 
-    const startU = trace.Q.u - trace.dirIn.u * VISUAL_IN;
-    const startV = trace.Q.v - trace.dirIn.v * VISUAL_IN;
+      for (let k = 0; k < AZ_PER_RING; k++) {
+        const idx = base + k;
+        const phi = (k / AZ_PER_RING) * Math.PI * 2;
+        const c = Math.cos(phi), sn = Math.sin(phi);
+        const Q3 = { x: trace.Q.v * c, y: trace.Q.u, z: trace.Q.v * sn };
+        const start3 = { x: startV * c, y: startU, z: startV * sn };
+        const t1 = Math.max(0, Math.min(1, traveled / d1));
+        const inEnd = { x: start3.x + (Q3.x - start3.x) * t1, y: start3.y + (Q3.y - start3.y) * t1, z: start3.z + (Q3.z - start3.z) * t1 };
+        s1[idx * 6 + 0] = start3.x; s1[idx * 6 + 1] = start3.y; s1[idx * 6 + 2] = start3.z;
+        s1[idx * 6 + 3] = inEnd.x; s1[idx * 6 + 4] = inEnd.y; s1[idx * 6 + 5] = inEnd.z;
 
-    let hpCount = 0;
-    for (let k = 0; k < RAY_AZ; k++) {
-      const phi = (k / RAY_AZ) * Math.PI * 2;
-      const c = Math.cos(phi), sn = Math.sin(phi);
-      const Q3 = { x: trace.Q.v * c, y: trace.Q.u, z: trace.Q.v * sn };
-      const start3 = { x: startV * c, y: startU, z: startV * sn };
+        if (traveled > d1) { hp[hpCount * 3 + 0] = Q3.x; hp[hpCount * 3 + 1] = Q3.y; hp[hpCount * 3 + 2] = Q3.z; hpCount++; }
 
-      let inEnd = Q3;
-      if (traveled < d1) {
-        const t = traveled / d1;
-        inEnd = { x: start3.x + (Q3.x - start3.x) * t, y: start3.y + (Q3.y - start3.y) * t, z: start3.z + (Q3.z - start3.z) * t };
-      }
-      s1[k * 6 + 0] = start3.x; s1[k * 6 + 1] = start3.y; s1[k * 6 + 2] = start3.z;
-      s1[k * 6 + 3] = inEnd.x; s1[k * 6 + 4] = inEnd.y; s1[k * 6 + 5] = inEnd.z;
-
-      if (traveled > d1) {
-        hp[hpCount * 3 + 0] = Q3.x; hp[hpCount * 3 + 1] = Q3.y; hp[hpCount * 3 + 2] = Q3.z; hpCount++;
-        const t3 = MAXOUT > 0 ? Math.min(1, (traveled - d1) / MAXOUT) : 1;
+        const t3 = MAXOUT > 0 ? Math.max(0, Math.min(1, (traveled - d1) / MAXOUT)) : (traveled > d1 ? 1 : 0);
         const newU = trace.Q.u + trace.dirOut.u * MAXOUT * t3;
         const newV = trace.Q.v + trace.dirOut.v * MAXOUT * t3;
         const exit = { x: newV * c, y: newU, z: newV * sn };
-        s3[k * 6 + 0] = Q3.x; s3[k * 6 + 1] = Q3.y; s3[k * 6 + 2] = Q3.z;
-        s3[k * 6 + 3] = exit.x; s3[k * 6 + 4] = exit.y; s3[k * 6 + 5] = exit.z;
+        s3[idx * 6 + 0] = Q3.x; s3[idx * 6 + 1] = Q3.y; s3[idx * 6 + 2] = Q3.z;
+        s3[idx * 6 + 3] = exit.x; s3[idx * 6 + 4] = exit.y; s3[idx * 6 + 5] = exit.z;
       }
-    }
+    });
 
     seg1.geometry.attributes.position.needsUpdate = true;
     seg1.geometry.setDrawRange(0, RAY_AZ * 2);
+    seg2.geometry.setDrawRange(0, 0);
     seg3.geometry.attributes.position.needsUpdate = true;
-    seg3.geometry.setDrawRange(0, traveled > d1 ? RAY_AZ * 2 : 0);
+    seg3.geometry.setDrawRange(0, RAY_AZ * 2);
     hitPoints.geometry.attributes.position.needsUpdate = true;
     hitPoints.geometry.setDrawRange(0, hpCount);
   }
@@ -748,8 +753,8 @@ function renderSliderZone() {
 
   html += sliderHTML('launchPct', '자오각(발사각)', state.launchPct, 5, 100, 1);
   html += state.curveType === 'parabola'
-    ? `<div class="hint-text">첫 거울의 어느 위도(고리)에서 반사가 시작되는지 조절합니다.</div>`
-    : `<div class="hint-text">반대쪽 가지의 어느 위도(고리)에서 반사가 일어나는지 조절합니다.</div>`;
+    ? `<div class="hint-text">첫 거울의 어느 위도(고리)에서 반사가 시작되는지 조절합니다. 화면에는 이 각도 외에도 세 가지 각도가 항상 함께 보여, 서로 다른 방향에서 온 빛이 모두 같은 곳에 모이는지 한눈에 비교할 수 있습니다.</div>`
+    : `<div class="hint-text">반대쪽 가지의 어느 위도(고리)에서 반사가 일어나는지 조절합니다. 화면에는 이 각도 외에도 세 가지 각도가 항상 함께 보여, 서로 다른 방향에서 온 빛이 모두 같은 곳으로 모이는지 한눈에 비교할 수 있습니다.</div>`;
 
   html += '<div class="play-row" style="margin-top:6px;">';
   html += `<button class="primary" id="playBtn">${state.playing ? '⏸ 일시정지' : '▶ 재생'}</button>`;
