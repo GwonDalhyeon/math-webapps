@@ -1,0 +1,733 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="description" content="원뿔을 어떤 각도와 높이로 자르는지에 따라 원·타원·포물선·쌍곡선이 만들어지는 과정을, 이심률 e=sinβ/sinα와 단델린 구 증명으로 탐구하는 기하 웹앱입니다." />
+<title>원뿔을 잘라보면? — 이차곡선 탐구</title>
+<link rel="icon" href="../../favicon.ico" sizes="16x16 32x32 48x48" />
+<link rel="icon" href="../../assets/favicon.svg" type="image/svg+xml" />
+<link rel="apple-touch-icon" href="../../assets/apple-touch-icon.png" />
+<!-- MathJax: 표준형 방정식의 분수·지수를 교과서식으로 렌더링. CDN 사용으로 인터넷 연결 필요. -->
+<script>
+  window.MathJax = {
+    tex: { inlineMath: [['\\(', '\\)']], displayMath: [['\\[', '\\]']] },
+    options: { skipHtmlTags: ['script', 'noscript', 'style', 'textarea'] }
+  };
+</script>
+<script id="MathJax-script" async
+  src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+<link rel="stylesheet" href="../../assets/common.css" />
+<!-- three.js r184: 저장소에 내려받아 둔 로컬 파일을 importmap으로 연결 (빌드 없이 ES module 그대로 사용) -->
+<script type="importmap">
+{
+  "imports": {
+    "three": "../../assets/vendor/three/three.module.js",
+    "three/addons/": "../../assets/vendor/three/addons/"
+  }
+}
+</script>
+<style>
+  :root {
+    --bg: #f6f8fb; --panel: #ffffff; --ink: #17202a; --muted: #5d6d7e; --line: #d8e0ea;
+    --blue: #2563eb;
+    --c-circle: #0891b2; --c-ellipse: #7c3aed; --c-parabola: #d97706; --c-hyperbola: #e11d48;
+    --shadow: 0 6px 20px rgba(23,32,42,0.08);
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: "Malgun Gothic","Apple SD Gothic Neo",system-ui,sans-serif; background: var(--bg); color: var(--ink); }
+  .wrap { width: min(1320px, calc(100% - 24px)); margin: 0 auto; padding: 20px 0 40px; }
+  a.back-link { display:inline-block; margin-bottom:12px; color:var(--blue); font-weight:800; text-decoration:none; font-size:15px; }
+  .hero { margin-bottom: 14px; }
+  .hero h1 { margin: 0 0 4px; font-size: clamp(22px,3vw,34px); }
+  .hero p { margin: 0; color: var(--muted); font-size: 14.5px; max-width: 900px; line-height: 1.55; }
+
+  .app-layout { display:grid; grid-template-columns: minmax(0,1fr) 360px; gap:14px; align-items:start; }
+
+  .card { background:var(--panel); border:1px solid var(--line); border-radius:12px; box-shadow:var(--shadow); overflow:hidden; }
+  .card-head { padding:9px 14px; border-bottom:1px solid var(--line); font-size:13px; font-weight:800; color:var(--muted); background:#f9fafb; }
+  .card-body { padding:12px 14px; }
+
+  /* 3D·2D 카드를 나란히 놓고 사이 구분선으로 크기를 조절 */
+  .visual-split { display:flex; align-items:stretch; gap:0; }
+  .split-pane { min-width: 140px; }
+  .split-divider {
+    flex: 0 0 14px; cursor: col-resize; touch-action: none;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .split-divider .grip { width:4px; height:44px; border-radius:3px; background:var(--line); transition: background .15s; }
+  .split-divider:hover .grip, .split-divider.dragging .grip { background: var(--blue); }
+
+  /* 이 미디어쿼리는 위의 .app-layout/.visual-split/.split-divider/.split-pane 기본 규칙을 덮어써야 하므로,
+     소스 순서상 반드시 그 규칙들보다 뒤에 와야 한다(동일 우선순위에서는 나중 규칙이 이긴다). */
+  @media (max-width: 980px) {
+    .app-layout { grid-template-columns: 1fr; }
+    .visual-split { flex-direction: column; }
+    .split-divider { display: none; }
+    .split-pane { flex-basis: auto !important; }
+  }
+
+  .canvas-wrap { position:relative; height:500px; }
+  #stage3d { display:block; width:100%; height:100%; touch-action:none; }
+  #labelLayer { position:absolute; top:0; left:0; width:100%; height:100%; overflow:hidden; pointer-events:none; }
+  #preview2d { display:block; width:100%; height:100%; }
+
+  .e-badge {
+    position:absolute; top:10px; left:10px; padding:8px 12px; border-radius:10px;
+    background:rgba(255,255,255,0.92); border:1px solid var(--line); font-size:12.5px; font-weight:700;
+    box-shadow: var(--shadow); line-height:1.5;
+  }
+  .e-badge .val { font-variant-numeric: tabular-nums; }
+  .mouse-hint {
+    position:absolute; bottom:10px; right:12px; font-size:11px; color:#94a3b8;
+    background:rgba(255,255,255,0.85); padding:4px 8px; border-radius:6px;
+  }
+
+  .interp { padding: 10px 14px; border-top:1px solid var(--line); background:#f9fafb; font-size: 14.5px; line-height:1.6; color:#1f2937; }
+  .interp strong { color: var(--ink); }
+
+  .slider-group { margin-bottom: 12px; }
+  .slider-row { display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; }
+  .slider-label { font-size:13px; font-weight:700; color:var(--muted); }
+  .slider-val { font-size:14px; font-weight:800; color: var(--ink); font-variant-numeric: tabular-nums; }
+  input[type=range] { width:100%; accent-color: var(--blue); }
+  input[type=range].snap-hot { accent-color: #dc2626; }
+
+  .eq-box { background:#0f172a; color:#e2e8f0; border-radius:10px; padding:12px 14px; font-size: 17px; text-align:center; margin-bottom:10px; min-height:38px; }
+
+  .param-table { display:grid; grid-template-columns: repeat(2,1fr); gap:6px; margin-bottom:10px; }
+  .param-cell { background:#f8fafc; border:1px solid var(--line); border-radius:8px; padding:6px 8px; }
+  .param-cell .k { font-size:10.5px; color:var(--muted); font-weight:700; }
+  .param-cell .v { font-size:13.5px; font-weight:800; font-variant-numeric: tabular-nums; }
+
+  .def-text { font-size:13px; color:#374151; line-height:1.7; background:#f8fafc; border-radius:8px; padding:10px 12px; margin-bottom:10px; }
+  .def-text b { color: var(--ink); }
+
+  .toggle-grid { display:grid; grid-template-columns: 1fr 1fr; gap:6px; margin-bottom:10px; }
+  .toggle-btn { border:1.5px solid var(--line); background:#fff; border-radius:8px; padding:8px 6px; font:700 12.5px inherit; color:var(--muted); cursor:pointer; }
+  .toggle-btn.on { background:#eef2ff; border-color:#6366f1; color:#4338ca; }
+
+  details.deepen { border:1px solid var(--line); border-radius:8px; padding:8px 10px; background:#fafbfc; }
+  details.deepen summary { cursor:pointer; font-weight:800; font-size:13px; color: var(--ink); }
+  details.deepen .body { margin-top:8px; font-size:12.5px; color:#374151; line-height:1.7; }
+
+  .label2d {
+    position:absolute; font-size:12px; font-weight:800; color:#0f172a;
+    background:rgba(255,255,255,0.8); padding:1px 5px; border-radius:5px;
+    transform: translate(-50%,-130%); white-space:nowrap;
+  }
+</style>
+</head>
+<body>
+<main class="wrap">
+  <a class="back-link" href="../">← 기하 웹앱</a>
+  <header class="hero">
+    <h1>원뿔을 잘라보면? 이차곡선 탐구</h1>
+    <p>원뿔을 자르는 각도 β와 높이 h를 바꾸며 원·타원·포물선·쌍곡선이 만들어지는 과정을 봅니다. e = sinβ/sinα는
+      <a href="../conic-reflection/">이차곡선 반사 실험실</a>의 c/a와 같은 이심률입니다.</p>
+  </header>
+
+  <div class="app-layout">
+    <div class="visual-split" id="visualSplit">
+      <div class="card split-pane" id="pane3d">
+        <div class="card-head" id="canvasHead">타원</div>
+        <div class="card-body" style="padding:0;">
+          <div class="canvas-wrap">
+            <canvas id="stage3d"></canvas>
+            <div id="labelLayer"></div>
+            <div class="e-badge" id="eBadge">e ≈ 0.000</div>
+            <div class="mouse-hint">🖱️ 드래그: 회전 · 스크롤: 확대</div>
+          </div>
+          <div class="interp" id="interpText"></div>
+        </div>
+      </div>
+
+      <div class="split-divider" id="splitDivider" title="드래그해서 3D·2D 크기 조절">
+        <span class="grip"></span>
+      </div>
+
+      <div class="card split-pane" id="pane2d">
+        <div class="card-head">잘린 면 위의 곡선 (2D)</div>
+        <div class="card-body" style="padding:0;">
+          <div class="canvas-wrap">
+            <canvas id="preview2d"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-body" id="controlBody"></div>
+    </div>
+  </div>
+</main>
+
+<script type="module">
+import * as THREE from "three";
+import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+import { CSS2DRenderer, CSS2DObject } from "three/addons/renderers/CSS2DRenderer.js";
+
+// ════════════════════════════════════════════════════════════
+// 원뿔 상수 — 꼭짓점(apex)=원점, 축=y, 상부 y∈[0,H], 하부 y∈[-H,0]
+//   곡면: x²+z² = S²y²  (S = R/H = cot α)
+//   α = arctan(H/R) = 밑면과 모선(빗면) 사이각 ≈ 66.3°
+//   원뿔의 축과 모선 사이각(반각) φ = 90°-α
+// ════════════════════════════════════════════════════════════
+const H = 5, R = 2.2;
+const S = R / H;
+const ALPHA = Math.atan(H / R);
+const ALPHA_DEG = ALPHA * 180 / Math.PI;
+const PHI = Math.PI / 2 - ALPHA; // 축 기준 반각
+
+// ════════════════════════════════════════════════════════════
+// 수학 코어 — THREE 객체를 만들지 않는 순수 함수
+// ════════════════════════════════════════════════════════════
+function heightFromPct(pct) { return ((pct - 50) / 50) * H * 0.9; }
+
+function standardForm(thetaRad, h) {
+  const absH = Math.abs(h) || 0.001;
+  const cosT = Math.cos(thetaRad), sinT = Math.sin(thetaRad);
+  const angleDeg = thetaRad * 180 / Math.PI;
+  const Bdisc = cosT * cosT - S * S * sinT * sinT;
+
+  if (angleDeg < 0.6) {
+    const r = S * absH;
+    return { type: 'circle', A: r, B: r, C: 0, p: 0, r };
+  }
+  if (Bdisc > 0.004) {
+    const a = S * absH * cosT / Bdisc;
+    const b = S * absH * cosT / Math.sqrt(Bdisc);
+    const c = Math.sqrt(Math.max(a * a - b * b, 0));
+    return { type: 'ellipse', A: a, B: b, C: c, p: 0 };
+  }
+  if (Bdisc > -0.004) {
+    const p = S * S * absH * sinT / 2;
+    return { type: 'parabola', A: 0, B: 0, C: 0, p };
+  }
+  const absB = Math.abs(Bdisc);
+  const a = S * absH * cosT / absB;
+  const b = S * absH * cosT / Math.sqrt(absB);
+  const c = Math.sqrt(a * a + b * b);
+  return { type: 'hyperbola', A: a, B: b, C: c, p: 0 };
+}
+
+function eccentricityOf(angleDeg) {
+  if (angleDeg < 0.6) return 0;
+  return Math.min(Math.sin(angleDeg * Math.PI / 180) / Math.sin(ALPHA), 3);
+}
+
+// 절단 교점을 원뿔면 위에서 θ로 훑어 수집 — null/점프로 세그먼트를 나눈다
+function intersectionSegments(thetaRad, h) {
+  const k = S * Math.tan(thetaRad);
+  const N = 480;
+  const rawUpper = [], rawLower = [];
+  for (let i = 0; i <= N; i++) {
+    const t = (i / N) * Math.PI * 2;
+    const st = Math.sin(t), ct = Math.cos(t);
+    const du = 1 + k * st;
+    if (Math.abs(du) > 0.01) {
+      const y = h / du;
+      rawUpper.push(y > 0.001 && y <= H ? { x: S * y * ct, y, z: S * y * st } : null);
+    } else rawUpper.push(null);
+    const dl = 1 - k * st;
+    if (Math.abs(dl) > 0.01) {
+      const y = h / dl;
+      rawLower.push(y < -0.001 && y >= -H ? { x: -S * y * ct, y, z: -S * y * st } : null);
+    } else rawLower.push(null);
+  }
+  const split = (raw) => {
+    const segs = []; let cur = [];
+    const distXYZ = (a, b) => Math.hypot(a.x - b.x, a.y - b.y, a.z - b.z);
+    for (const pt of raw) {
+      if (pt === null) { if (cur.length >= 3) segs.push(cur); cur = []; continue; }
+      if (cur.length > 0 && distXYZ(pt, cur[cur.length - 1]) > 0.5) {
+        if (cur.length >= 3) segs.push(cur); cur = [];
+      }
+      cur.push(pt);
+    }
+    if (cur.length >= 3) segs.push(cur);
+    return segs;
+  };
+  const hasUpperGap = rawUpper.some(p => p === null);
+  const upperSegs = split(rawUpper);
+  const lowerSegs = split(rawLower);
+  const upperClosed = !hasUpperGap && upperSegs.length === 1 && upperSegs[0].length > 10;
+  return { upperSegs, lowerSegs, upperClosed };
+}
+
+// 3D 초점·꼭짓점 위치 (절단면 로컬 v방향 = (0,sinθ,-cosθ))
+function fociWorld(thetaRad, h, sf) {
+  const sinT = Math.sin(thetaRad), cosT = Math.cos(thetaRad);
+  const Bdisc = cosT * cosT - S * S * sinT * sinT;
+  const vDir = { x: 0, y: sinT, z: -cosT };
+  const add = (p, v, s) => ({ x: p.x + v.x * s, y: p.y + v.y * s, z: p.z + v.z * s });
+
+  if (sf.type === 'circle') return { foci: [{ x: 0, y: h, z: 0 }], vertices: [] };
+  if (sf.type === 'ellipse' || sf.type === 'hyperbola') {
+    const v0 = S * S * h * sinT / Bdisc;
+    const center = { x: 0, y: h + v0 * sinT, z: -v0 * cosT };
+    return {
+      foci: [add(center, vDir, sf.C), add(center, vDir, -sf.C)],
+      vertices: [add(center, vDir, sf.A), add(center, vDir, -sf.A)],
+      center,
+    };
+  }
+  // parabola
+  const k = S * Math.tan(thetaRad);
+  const yV = h / (1 + k);
+  const vertex = { x: 0, y: yV, z: S * yV };
+  return { foci: [add(vertex, vDir, sf.p)], vertices: [vertex], directrixCenter: add(vertex, vDir, -sf.p) };
+}
+
+// 단델린 구: 축 위 (0,y0,0), 반지름 |y0|·cosα, 절단면에 접하는 y0을 구간별 선형식으로 푼다
+function dandelinSpheres(thetaRad, h) {
+  const cosT = Math.cos(thetaRad);
+  const cosA = Math.cos(ALPHA);
+  const bps = [Math.min(0, h), Math.max(0, h)];
+  const mids = [bps[0] - 1, (bps[0] + bps[1]) / 2, bps[1] + 1];
+  const roots = [];
+  mids.forEach((mid, idx) => {
+    const sH = (mid >= h) ? 1 : -1;
+    const sZero = (mid >= 0) ? 1 : -1;
+    const denom = sH * cosT - sZero * cosA;
+    if (Math.abs(denom) < 1e-6) return;
+    const y0 = sH * h * cosT / denom;
+    // 이 구간(idx)에 실제로 속하는지 확인
+    const lo = idx === 0 ? -Infinity : bps[idx - 1];
+    const hi = idx === bps.length ? Infinity : bps[idx];
+    if (y0 >= lo - 1e-6 && y0 <= hi + 1e-6 && Math.abs(y0) < H * 1.5) roots.push(y0);
+  });
+  // 중복 제거
+  const uniq = [];
+  roots.forEach(r => { if (!uniq.some(u => Math.abs(u - r) < 1e-4)) uniq.push(r); });
+  return uniq.map(y0 => {
+    const rho = Math.abs(y0) * cosA;
+    const signedDist = (y0 - h) * cosT;
+    const nrm = { x: 0, y: cosT, z: Math.sin(thetaRad) };
+    const focus = { x: 0 - signedDist * nrm.x, y: y0 - signedDist * nrm.y, z: 0 - signedDist * nrm.z };
+    return { y0, rho, focus, nappe: y0 >= 0 ? 'upper' : 'lower' };
+  });
+}
+
+// ════════════════════════════════════════════════════════════
+// 상태
+// ════════════════════════════════════════════════════════════
+const state = {
+  angleDeg: 35, heightPct: 65,
+  toggles: { foci: true, autorotate: true, dandelin: false },
+};
+
+// ════════════════════════════════════════════════════════════
+// Three.js 장면
+// ════════════════════════════════════════════════════════════
+const canvasWrap = document.querySelector('.canvas-wrap');
+const canvas = document.getElementById('stage3d');
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+renderer.setClearColor(0x000000, 0);
+
+const labelRenderer = new CSS2DRenderer();
+labelRenderer.domElement.style.position = 'absolute';
+labelRenderer.domElement.style.top = '0';
+labelRenderer.domElement.style.left = '0';
+labelRenderer.domElement.style.pointerEvents = 'none';
+document.getElementById('labelLayer').appendChild(labelRenderer.domElement);
+
+scene.add(new THREE.AmbientLight(0x404060, 0.7));
+const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+dirLight.position.set(5, 8, 5); scene.add(dirLight);
+
+scene.add(new THREE.AxesHelper(H + 1.5));
+
+const coneGeo = new THREE.ConeGeometry(R, H, 64, 1, true);
+const coneMat = new THREE.MeshPhysicalMaterial({ color: 0x1e3a5f, transparent: true, opacity: 0.18, side: THREE.DoubleSide, roughness: 0.35, metalness: 0.05, depthWrite: false });
+const upperCone = new THREE.Mesh(coneGeo, coneMat);
+upperCone.rotation.x = Math.PI; upperCone.position.y = H / 2; scene.add(upperCone);
+const lowerCone = new THREE.Mesh(coneGeo, coneMat.clone());
+lowerCone.position.y = -H / 2; scene.add(lowerCone);
+
+const wireGeo = new THREE.ConeGeometry(R, H, 20, 1, true);
+const wireMat = new THREE.MeshBasicMaterial({ color: 0x94a3b8, wireframe: true, transparent: true, opacity: 0.25 });
+const wu = new THREE.Mesh(wireGeo, wireMat); wu.rotation.x = Math.PI; wu.position.y = H / 2; scene.add(wu);
+const wl = new THREE.Mesh(wireGeo, wireMat.clone()); wl.position.y = -H / 2; scene.add(wl);
+
+const planeGeo = new THREE.PlaneGeometry(7, 7);
+const planeMat = new THREE.MeshPhysicalMaterial({ color: 0x7c3aed, transparent: true, opacity: 0.12, side: THREE.DoubleSide, depthWrite: false });
+const cuttingPlane = new THREE.Mesh(planeGeo, planeMat);
+scene.add(cuttingPlane);
+const planeBorderMat = new THREE.LineBasicMaterial({ color: 0x7c3aed, transparent: true, opacity: 0.4 });
+cuttingPlane.add(new THREE.LineSegments(new THREE.EdgesGeometry(planeGeo), planeBorderMat));
+
+let ixGroup = new THREE.Group(); scene.add(ixGroup);
+let focusGroup = new THREE.Group(); scene.add(focusGroup);
+let dandelinGroup = new THREE.Group(); scene.add(dandelinGroup);
+let cssLabels = [];
+
+function clearGroup(g) {
+  while (g.children.length) {
+    const c = g.children[0]; g.remove(c);
+    if (c.geometry) c.geometry.dispose();
+    if (c.material) (Array.isArray(c.material) ? c.material : [c.material]).forEach(m => m.dispose());
+  }
+}
+function clearLabels() { cssLabels.forEach(l => l.element.remove()); cssLabels = []; }
+function addLabel(pos, text, color) {
+  const div = document.createElement('div');
+  div.className = 'label2d'; div.textContent = text; div.style.color = color || '#0f172a';
+  const obj = new CSS2DObject(div);
+  obj.position.set(pos.x, pos.y, pos.z);
+  focusGroup.add(obj);
+  cssLabels.push(obj);
+}
+
+const camera_target = new THREE.Vector3(0, 0, 0);
+camera.position.set(7, 5, 9);
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.target.copy(camera_target);
+controls.enableDamping = true;
+controls.dampingFactor = 0.08;
+controls.minDistance = 5; controls.maxDistance = 22;
+controls.autoRotate = true; controls.autoRotateSpeed = 1.1;
+controls.update();
+
+function typeColor(t) { return { circle: 0x0891b2, ellipse: 0x7c3aed, parabola: 0xd97706, hyperbola: 0xe11d48 }[t]; }
+function typeColorHex(t) { return { circle: '#0891b2', ellipse: '#7c3aed', parabola: '#d97706', hyperbola: '#e11d48' }[t]; }
+function typeLabel(t) { return { circle: '원', ellipse: '타원', parabola: '포물선', hyperbola: '쌍곡선' }[t]; }
+
+// ── 절단곡선 렌더 ──
+function drawIntersection(thetaRad, h) {
+  clearGroup(ixGroup);
+  const { upperSegs, lowerSegs, upperClosed } = intersectionSegments(thetaRad, h);
+  const sf = standardForm(thetaRad, h);
+  const color = typeColor(sf.type);
+  const addCurve = (pts, closed) => {
+    if (pts.length < 3) return;
+    const vecs = pts.map(p => new THREE.Vector3(p.x, p.y, p.z));
+    if (closed) vecs.push(vecs[0].clone());
+    try {
+      const curve = new THREE.CatmullRomCurve3(vecs, closed);
+      const seg = Math.max(vecs.length * 2, 80);
+      const tube = new THREE.TubeGeometry(curve, seg, 0.035, 8, closed);
+      ixGroup.add(new THREE.Mesh(tube, new THREE.MeshBasicMaterial({ color })));
+    } catch (e) {
+      ixGroup.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(vecs), new THREE.LineBasicMaterial({ color })));
+    }
+  };
+  if (upperClosed) addCurve(upperSegs[0], true);
+  else upperSegs.forEach(s => addCurve(s, false));
+  lowerSegs.forEach(s => addCurve(s, false));
+}
+
+// ── 초점·꼭짓점·준선 렌더 ──
+function drawFoci(thetaRad, h, sf) {
+  clearGroup(focusGroup); clearLabels();
+  if (!state.toggles.foci) return;
+  if (Math.abs(h) < 0.05 && sf.type !== 'circle') return;
+  const fw = fociWorld(thetaRad, h, sf);
+  const addSphere = (pos, r, color, opac) => {
+    const m = new THREE.Mesh(new THREE.SphereGeometry(r, 16, 16), new THREE.MeshBasicMaterial({ color, transparent: opac !== undefined, opacity: opac !== undefined ? opac : 1 }));
+    m.position.set(pos.x, pos.y, pos.z); focusGroup.add(m); return m;
+  };
+  fw.foci.forEach((f, i) => {
+    addSphere(f, 0.1, 0xffffff);
+    addSphere(f, 0.2, 0xffffff, 0.15);
+    addLabel(f, i === 0 ? 'F' : "F'", '#0f172a');
+  });
+  (fw.vertices || []).forEach(v => addSphere(v, 0.06, 0xffffff, 0.75));
+  if (sf.type === 'parabola' && fw.directrixCenter) {
+    const u = { x: 1, y: 0, z: 0 };
+    const halfW = Math.max(sf.p * 1.6, 1.4);
+    const p1 = { x: fw.directrixCenter.x + halfW, y: fw.directrixCenter.y, z: fw.directrixCenter.z };
+    const p2 = { x: fw.directrixCenter.x - halfW, y: fw.directrixCenter.y, z: fw.directrixCenter.z };
+    const geo = new THREE.BufferGeometry().setFromPoints([p1, p2].map(p => new THREE.Vector3(p.x, p.y, p.z)));
+    const mat = new THREE.LineDashedMaterial({ color: 0xffffff, dashSize: 0.12, gapSize: 0.08, transparent: true, opacity: 0.5 });
+    const line = new THREE.Line(geo, mat); line.computeLineDistances();
+    focusGroup.add(line);
+    addLabel(fw.directrixCenter, '준선 ℓ', '#64748b');
+  }
+}
+
+// ── 단델린 구 심화 렌더 ──
+function drawDandelin(thetaRad, h, sf) {
+  clearGroup(dandelinGroup);
+  if (!state.toggles.dandelin) return;
+  const spheres = dandelinSpheres(thetaRad, h);
+  const cosA = Math.cos(ALPHA), sinA = Math.sin(ALPHA);
+  spheres.forEach((sp, i) => {
+    const m = new THREE.Mesh(new THREE.SphereGeometry(sp.rho, 24, 24), new THREE.MeshPhysicalMaterial({ color: 0xffffff, transparent: true, opacity: 0.22, roughness: 0.4 }));
+    m.position.set(0, sp.y0, 0); dandelinGroup.add(m);
+    const wf = new THREE.Mesh(new THREE.SphereGeometry(sp.rho, 16, 12), new THREE.MeshBasicMaterial({ color: 0x94a3b8, wireframe: true, transparent: true, opacity: 0.3 }));
+    wf.position.set(0, sp.y0, 0); dandelinGroup.add(wf);
+  });
+  // 대표점 P: 곡선 위 유효한 점 하나 (θ_gen = 60°)
+  const { upperSegs, lowerSegs } = intersectionSegments(thetaRad, h);
+  const allSegs = upperSegs.length ? upperSegs : lowerSegs;
+  if (!allSegs.length) return;
+  const seg = allSegs[0];
+  const P = seg[Math.floor(seg.length * 0.32)];
+  if (!P) return;
+  const dLen = Math.hypot(P.x, P.y, P.z);
+  const d = { x: P.x / dLen, y: P.y / dLen, z: P.z / dLen };
+
+  const pMarker = new THREE.Mesh(new THREE.SphereGeometry(0.09, 14, 14), new THREE.MeshBasicMaterial({ color: 0x111827 }));
+  pMarker.position.set(P.x, P.y, P.z); dandelinGroup.add(pMarker);
+
+  const lengths = [];
+  spheres.forEach(sp => {
+    const s = sp.y0 * sinA; // 꼭짓점부터 접점까지 모선을 따른 거리(모든 모선에서 공통)
+    const T = { x: d.x * s, y: d.y * s, z: d.z * s };
+    const geoPT = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(P.x, P.y, P.z), new THREE.Vector3(T.x, T.y, T.z)]);
+    dandelinGroup.add(new THREE.Line(geoPT, new THREE.LineBasicMaterial({ color: 0xf59e0b })));
+    const geoPF = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(P.x, P.y, P.z), new THREE.Vector3(sp.focus.x, sp.focus.y, sp.focus.z)]);
+    dandelinGroup.add(new THREE.Line(geoPF, new THREE.LineBasicMaterial({ color: 0x10b981 })));
+    lengths.push(Math.hypot(P.x - T.x, P.y - T.y, P.z - T.z));
+  });
+  return lengths;
+}
+
+// ════════════════════════════════════════════════════════════
+// 2D 미리보기 (잘린 면을 정면으로 본 모습 + PF 정의 시각화)
+// ════════════════════════════════════════════════════════════
+function draw2DPreview(sf) {
+  const cv = document.getElementById('preview2d');
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const w = cv.clientWidth, hh = cv.clientHeight;
+  cv.width = w * dpr; cv.height = hh * dpr;
+  const ctx = cv.getContext('2d');
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, w, hh);
+  const cx = w / 2, cy = hh / 2;
+  const color = typeColorHex(sf.type);
+  const maxDim = Math.min(w, hh) / 2 - 22;
+
+  ctx.strokeStyle = '#e2e8f0'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(8, cy); ctx.lineTo(w - 8, cy); ctx.moveTo(cx, 8); ctx.lineTo(cx, hh - 8); ctx.stroke();
+
+  const dot = (x, y, r, c) => { ctx.fillStyle = c; ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill(); };
+  const dash = (x1, y1, x2, y2, c) => { ctx.strokeStyle = c; ctx.setLineDash([4, 3]); ctx.lineWidth = 1.3; ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke(); ctx.setLineDash([]); };
+  const label = (x, y, t, c) => { ctx.fillStyle = c; ctx.font = '700 10.5px sans-serif'; ctx.textAlign = 'center'; ctx.fillText(t, x, y); };
+
+  if (sf.type === 'circle') {
+    const sc = maxDim / (sf.r || 1);
+    ctx.strokeStyle = color; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(cx, cy, sf.r * sc, 0, Math.PI * 2); ctx.stroke();
+    const P = { x: cx + sf.r * sc * Math.cos(-0.7), y: cy + sf.r * sc * Math.sin(-0.7) };
+    dot(cx, cy, 3, '#111827'); dot(P.x, P.y, 3, color); dash(cx, cy, P.x, P.y, '#94a3b8');
+    label(cx, cy - 8, 'O', '#111827'); label((cx + P.x) / 2, (cy + P.y) / 2 - 6, 'r', '#475569');
+  } else if (sf.type === 'ellipse') {
+    const sc = maxDim / sf.A;
+    ctx.strokeStyle = color; ctx.lineWidth = 2; ctx.beginPath(); ctx.ellipse(cx, cy, sf.A * sc, sf.B * sc, 0, 0, Math.PI * 2); ctx.stroke();
+    const f1 = { x: cx + sf.C * sc, y: cy }, f2 = { x: cx - sf.C * sc, y: cy };
+    const t = -0.9, P = { x: cx + sf.A * sc * Math.cos(t), y: cy + sf.B * sc * Math.sin(t) };
+    dot(f1.x, f1.y, 3, '#111827'); dot(f2.x, f2.y, 3, '#111827'); dot(P.x, P.y, 3, color);
+    dash(P.x, P.y, f1.x, f1.y, '#f59e0b'); dash(P.x, P.y, f2.x, f2.y, '#10b981');
+    label(f1.x, f1.y + 14, 'F', '#111827'); label(f2.x, f2.y + 14, "F'", '#111827');
+  } else if (sf.type === 'parabola') {
+    const p = Math.max(sf.p, 0.15);
+    const sc = maxDim / (4 * p);
+    ctx.strokeStyle = color; ctx.lineWidth = 2; ctx.beginPath();
+    for (let i = -60; i <= 60; i++) { const yy = i / 60 * 2 * p; const xx = yy * yy / (4 * p); const px = cx + xx * sc, py = cy - yy * sc; if (i === -60) ctx.moveTo(px, py); else ctx.lineTo(px, py); }
+    ctx.stroke();
+    const F = { x: cx + p * sc, y: cy };
+    dot(F.x, F.y, 3, '#111827'); ctx.strokeStyle = '#94a3b8'; ctx.beginPath(); ctx.moveTo(cx - p * sc, cy - maxDim * 0.75); ctx.lineTo(cx - p * sc, cy + maxDim * 0.75); ctx.stroke();
+    const yy = p, xx = yy * yy / (4 * p), P = { x: cx + xx * sc, y: cy - yy * sc }, H2 = { x: cx - p * sc, y: P.y };
+    dot(P.x, P.y, 3, color); dash(P.x, P.y, F.x, F.y, '#f59e0b'); dash(P.x, P.y, H2.x, H2.y, '#10b981');
+    label(F.x, F.y + 14, 'F', '#111827'); label(cx - p * sc, cy - maxDim * 0.75 - 4, 'ℓ', '#64748b');
+  } else {
+    const sc = maxDim / (sf.A * 1.8);
+    ctx.strokeStyle = color; ctx.lineWidth = 2;
+    [1, -1].forEach(sign => {
+      ctx.beginPath();
+      for (let i = -50; i <= 50; i++) { const tt = i / 50 * 1.2; const xx = sf.A * Math.cosh(tt) * sign, yy = sf.B * Math.sinh(tt); const px = cx + xx * sc, py = cy - yy * sc; if (i === -50) ctx.moveTo(px, py); else ctx.lineTo(px, py); }
+      ctx.stroke();
+    });
+    const f1 = { x: cx + sf.C * sc, y: cy }, f2 = { x: cx - sf.C * sc, y: cy };
+    dot(f1.x, f1.y, 3, '#111827'); dot(f2.x, f2.y, 3, '#111827');
+    const tt = 0.5, P = { x: cx + sf.A * Math.cosh(tt) * sc, y: cy - sf.B * Math.sinh(tt) * sc };
+    dot(P.x, P.y, 3, color); dash(P.x, P.y, f1.x, f1.y, '#f59e0b'); dash(P.x, P.y, f2.x, f2.y, '#10b981');
+    label(f1.x, f1.y + 14, 'F', '#111827'); label(f2.x, f2.y + 14, "F'", '#111827');
+  }
+}
+
+// ════════════════════════════════════════════════════════════
+// 조작 패널 / 텍스트
+// ════════════════════════════════════════════════════════════
+function defText(type) {
+  if (type === 'circle') return '한 점(중심) O로부터 <b>거리가 일정한(=r)</b> 점들의 집합.';
+  if (type === 'ellipse') return '두 초점 F, F′까지 거리의 <b>합이 일정(=2a)</b>한 점들의 집합.';
+  if (type === 'parabola') return '한 점(초점) F와 한 직선(준선 ℓ)까지 <b>거리가 같은</b> 점들의 집합.';
+  return '두 초점 F, F′까지 거리의 <b>차가 일정(=2a)</b>한 점들의 집합.';
+}
+function standardEquationTex(sf) {
+  if (sf.type === 'circle') return `\\(x^2+y^2=${sf.r.toFixed(2)}^2\\)`;
+  if (sf.type === 'ellipse') return `\\(\\dfrac{x^2}{${sf.A.toFixed(2)}^2}+\\dfrac{y^2}{${sf.B.toFixed(2)}^2}=1\\)`;
+  if (sf.type === 'parabola') return `\\(x^2=${(4 * sf.p).toFixed(2)}y\\)`;
+  return `\\(\\dfrac{x^2}{${sf.A.toFixed(2)}^2}-\\dfrac{y^2}{${sf.B.toFixed(2)}^2}=1\\)`;
+}
+function paramCell(k, v) { return `<div class="param-cell"><div class="k">${k}</div><div class="v">${v}</div></div>`; }
+function toggleBtn(key, label) { return `<button class="toggle-btn ${state.toggles[key] ? 'on' : ''}" onclick="window.__toggle('${key}')">${label}</button>`; }
+
+function renderControlPanel(sf, ecc) {
+  const body = document.getElementById('controlBody');
+  let html = '';
+  html += sliderHTML('angle', '자르는 각도 β', state.angleDeg, 0, 85, 0.1, '°');
+  html += sliderHTML('height', '자르는 높이 h', state.heightPct, 5, 95, 1, '%');
+  html += `<div class="eq-box">${standardEquationTex(sf)}</div>`;
+  html += '<div class="param-table">';
+  html += paramCell('e (=sinβ/sinα)', ecc.toFixed(3));
+  html += paramCell('α (모선 각도)', ALPHA_DEG.toFixed(1) + '°');
+  if (sf.type === 'ellipse' || sf.type === 'hyperbola') {
+    html += paramCell('a', sf.A.toFixed(2));
+    html += paramCell('c', sf.C.toFixed(2));
+  } else if (sf.type === 'parabola') {
+    html += paramCell('p', sf.p.toFixed(2));
+    html += paramCell('4p', (4 * sf.p).toFixed(2));
+  } else {
+    html += paramCell('r', sf.r.toFixed(2));
+    html += paramCell('', '');
+  }
+  html += '</div>';
+  html += `<div class="def-text">${defText(sf.type)}</div>`;
+  html += '<div class="toggle-grid">';
+  html += toggleBtn('foci', '초점·준선 표시');
+  html += toggleBtn('autorotate', '자동 회전');
+  html += '</div>';
+  html += `<details class="deepen" id="dandelinDetails" ${state.toggles.dandelin ? 'open' : ''}><summary>심화: 단델린 구로 초점 증명하기</summary>
+    <div class="body" id="dandelinBody">원뿔에 내접하면서 동시에 절단면에 닿는 구 두 개를 그립니다. 구가 절단면에 닿는 점이 바로 초점입니다.
+    곡선 위 아무 점 P에서 원뿔의 모선을 따라 각 구의 접점까지 잰 거리(주황)와, P에서 초점까지 거리(초록)가 같다는 것을 확인하세요.</div>
+  </details>`;
+  body.innerHTML = html;
+  document.getElementById('canvasHead').textContent = typeLabel(sf.type);
+  wireControlEvents();
+  if (window.MathJax && MathJax.typesetPromise) MathJax.typesetPromise([body]).catch(() => {});
+}
+function sliderHTML(id, label, val, min, max, step, unit) {
+  return `<div class="slider-group">
+    <div class="slider-row"><span class="slider-label">${label}</span><span class="slider-val" id="val-${id}">${val.toFixed(unit === '°' ? 1 : 0)}${unit}</span></div>
+    <input type="range" id="in-${id}" min="${min}" max="${max}" step="${step}" value="${val}">
+  </div>`;
+}
+
+function wireControlEvents() {
+  const angleEl = document.getElementById('in-angle');
+  const heightEl = document.getElementById('in-height');
+  angleEl.addEventListener('input', () => {
+    let v = Number(angleEl.value);
+    if (Math.abs(v - ALPHA_DEG) < 1.2) { v = ALPHA_DEG; angleEl.value = v; angleEl.classList.add('snap-hot'); }
+    else angleEl.classList.remove('snap-hot');
+    state.angleDeg = v;
+    document.getElementById('val-angle').textContent = v.toFixed(1) + '°';
+    update();
+  });
+  heightEl.addEventListener('input', () => {
+    state.heightPct = Number(heightEl.value);
+    document.getElementById('val-height').textContent = Math.round(state.heightPct) + '%';
+    update();
+  });
+  const dandelinDetails = document.getElementById('dandelinDetails');
+  dandelinDetails.addEventListener('toggle', () => {
+    if (state.toggles.dandelin === dandelinDetails.open) return; // update()가 다시 그린 <details>에도 open 상태가 반영되어 있으므로 중복 갱신 방지
+    state.toggles.dandelin = dandelinDetails.open;
+    update();
+  });
+}
+window.__toggle = function (key) {
+  state.toggles[key] = !state.toggles[key];
+  if (key === 'autorotate') controls.autoRotate = state.toggles.autorotate;
+  update();
+};
+
+function interpText(sf, ecc) {
+  const rel = sf.type === 'circle' ? 'β = 0°' : sf.type === 'ellipse' ? 'β &lt; α' : sf.type === 'parabola' ? 'β = α' : 'β &gt; α';
+  const msgs = {
+    circle: '자르는 면이 원뿔 축에 <strong>수직</strong>입니다(β=0°). 밑면과 나란해서 둥근 단면이 됩니다.',
+    ellipse: '자르는 각도가 모선 각도보다 작습니다(<strong>β &lt; α</strong>) — 자른 면이 원뿔의 한쪽 옆면만 지나가며 <strong>닫힌 곡선</strong>이 됩니다.',
+    parabola: '자르는 각도가 모선 각도와 <strong>같습니다(β = α)</strong> — 자르는 면이 모선과 평행해지는 순간, 곡선이 무한히 벌어지며 열립니다.',
+    hyperbola: '자르는 각도가 모선 각도보다 큽니다(<strong>β &gt; α</strong>) — 자른 면이 위·아래 두 원뿔을 <strong>모두</strong> 지나가 두 갈래로 갈라집니다.',
+  };
+  return msgs[sf.type] + ` <span style="color:#94a3b8;">(${rel}, e≈${ecc.toFixed(2)})</span>`;
+}
+
+// ════════════════════════════════════════════════════════════
+// 갱신 / 리사이즈 / 루프
+// ════════════════════════════════════════════════════════════
+function resizeStage() {
+  const w = canvasWrap.clientWidth, h = 500;
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  renderer.setSize(w, h);
+  labelRenderer.setSize(w, h);
+  document.getElementById('labelLayer').style.height = h + 'px';
+  camera.aspect = w / h; camera.updateProjectionMatrix();
+}
+
+let lastSF = null;
+
+function update() {
+  const thetaRad = state.angleDeg * Math.PI / 180;
+  const h = heightFromPct(state.heightPct);
+  cuttingPlane.position.set(0, h, 0);
+  cuttingPlane.rotation.set(-Math.PI / 2 + thetaRad, 0, 0);
+
+  const sf = standardForm(thetaRad, h);
+  lastSF = sf;
+  const ecc = eccentricityOf(state.angleDeg);
+  const colorHex = typeColorHex(sf.type);
+  planeMat.color.set(colorHex); planeBorderMat.color.set(colorHex);
+
+  drawIntersection(thetaRad, h);
+  drawFoci(thetaRad, h, sf);
+  drawDandelin(thetaRad, h, sf);
+  document.getElementById('eBadge').innerHTML = 'e ≈ <span class="val">' + ecc.toFixed(3) + '</span> (β=' + state.angleDeg.toFixed(1) + '°)';
+  document.getElementById('interpText').innerHTML = interpText(sf, ecc);
+  renderControlPanel(sf, ecc);
+  draw2DPreview(sf);
+}
+
+// ── 3D·2D 카드 사이 구분선 드래그로 폭 조절 ──
+const visualSplit = document.getElementById('visualSplit');
+const pane3d = document.getElementById('pane3d');
+const pane2d = document.getElementById('pane2d');
+const splitDivider = document.getElementById('splitDivider');
+let splitRatio = 0.62;
+function applySplit() {
+  pane3d.style.flexBasis = (splitRatio * 100).toFixed(2) + '%';
+  pane2d.style.flexBasis = ((1 - splitRatio) * 100).toFixed(2) + '%';
+}
+function onSplitResize() {
+  resizeStage();
+  if (lastSF) draw2DPreview(lastSF);
+}
+let dividerDragging = false;
+splitDivider.addEventListener('pointerdown', e => {
+  dividerDragging = true;
+  splitDivider.classList.add('dragging');
+  splitDivider.setPointerCapture(e.pointerId);
+});
+splitDivider.addEventListener('pointermove', e => {
+  if (!dividerDragging) return;
+  const rect = visualSplit.getBoundingClientRect();
+  let ratio = (e.clientX - rect.left) / rect.width;
+  ratio = Math.max(0.25, Math.min(0.78, ratio));
+  splitRatio = ratio;
+  applySplit();
+  onSplitResize();
+});
+function endDividerDrag() { dividerDragging = false; splitDivider.classList.remove('dragging'); }
+splitDivider.addEventListener('pointerup', endDividerDrag);
+splitDivider.addEventListener('pointercancel', endDividerDrag);
+applySplit();
+
+window.addEventListener('resize', onSplitResize);
+function animate() {
+  requestAnimationFrame(animate);
+  controls.update();
+  renderer.render(scene, camera);
+  labelRenderer.render(scene, camera);
+}
+
+resizeStage();
+update();
+animate();
+</script>
+</body>
+</html>
