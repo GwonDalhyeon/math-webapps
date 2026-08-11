@@ -1,0 +1,237 @@
+:root {
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+
+html, body { min-height: 100%; }
+
+body {
+  margin: 0;
+  color: #f6f8ff;
+  background:
+    radial-gradient(circle at 11% 2%, rgba(92, 142, 232, .3), transparent 29rem),
+    radial-gradient(circle at 90% 90%, rgba(242, 148, 63, .16), transparent 24rem),
+    linear-gradient(135deg, #0b1527, #192b47 50%, #0d192c);
+}
+
+button, a { font: inherit; }
+
+button { cursor: pointer; }
+
+button:focus-visible, a:focus-visible {
+  outline: 3px solid #ffd089;
+  outline-offset: 4px;
+}
+
+.worldcup-app {
+  position: relative;
+  min-height: 100dvh;
+  overflow: hidden;
+  padding: 18px clamp(18px, 4vw, 54px) 32px;
+}
+
+.worldcup-app::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  opacity: .13;
+  background-image: linear-gradient(rgba(255, 255, 255, .35) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, .35) 1px, transparent 1px);
+  background-size: 38px 38px;
+  mask-image: linear-gradient(to bottom, #000, transparent 76%);
+}
+
+.app-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  width: min(1100px, 100%);
+  margin: 0 auto;
+}
+
+.app-header .back-link {
+  color: #c7d8f6;
+  font-weight: 800;
+}
+
+.sound-button, .quiet-button {
+  min-height: 42px;
+  padding: 9px 13px;
+  border: 1px solid rgba(229, 240, 255, .35);
+  border-radius: 999px;
+  color: #f6f8ff;
+  background: rgba(11, 24, 43, .62);
+  font-weight: 800;
+}
+
+.screen {
+  width: min(1100px, 100%);
+  margin: 0 auto;
+}
+
+/* 공통 CSS의 .screen 표시값보다 hidden 상태가 우선해야 한다. */
+.screen[hidden] { display: none !important; }
+
+.start-screen {
+  display: grid;
+  justify-items: center;
+  padding: clamp(78px, 15vh, 150px) 0 34px;
+  text-align: center;
+}
+
+.eyebrow {
+  margin: 0;
+  color: #b9d2ff;
+  font-size: .8rem;
+  font-weight: 900;
+  letter-spacing: .11em;
+}
+
+h1, h2, p { margin-top: 0; }
+
+h1 {
+  margin: 8px 0 16px;
+  color: #fff;
+  font-size: clamp(2.25rem, 6vw, 4.6rem);
+  line-height: .99;
+  letter-spacing: -.06em;
+}
+
+.start-copy {
+  max-width: 38rem;
+  margin-bottom: 22px;
+  color: #d5e2f7;
+  font-size: clamp(1rem, 2.2vw, 1.3rem);
+  font-weight: 700;
+}
+
+.pilot-note {
+  display: grid;
+  gap: 3px;
+  margin-bottom: 20px;
+  padding: 12px 16px;
+  border: 1px solid rgba(165, 201, 255, .3);
+  border-radius: 14px;
+  color: #d8e6fa;
+  background: rgba(255, 255, 255, .08);
+  text-align: left;
+}
+
+.pilot-note strong { color: #ffd08a; }
+.pilot-note span { font-size: .88rem; }
+
+.start-button, .poster-button, .result-actions button:not(.quiet-button) {
+  min-height: 54px;
+  padding: 13px 22px;
+  border: 1px solid #ffc374;
+  border-radius: 14px;
+  color: #1c2940;
+  background: linear-gradient(135deg, #ffd593, #f5a95e);
+  box-shadow: 0 10px 25px rgba(245, 166, 88, .24);
+  font-weight: 900;
+}
+
+.mode-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
+.tournament-button { min-height: 54px; padding: 13px 22px; border-radius: 14px; }
+
+.key-hint { margin: 16px 0 0; color: #aec2e2; font-size: .85rem; }
+kbd { padding: 2px 5px; border: 1px solid rgba(255,255,255,.35); border-radius: 4px; color: #fff; background: rgba(255,255,255,.12); }
+
+.game-screen { padding-top: 22px; }
+
+.round-header {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, .24);
+}
+
+.round-header h1 { margin: 4px 0 0; font-size: clamp(1.8rem, 4vw, 3.2rem); }
+.round-header > p { margin: 0; color: #b9d2ff; font-weight: 900; font-variant-numeric: tabular-nums; }
+
+.question {
+  margin: 19px 0 11px;
+  color: #fff;
+  font-size: clamp(1.05rem, 2.1vw, 1.35rem);
+  font-weight: 900;
+  text-align: center;
+}
+
+.progress { height: 8px; overflow: hidden; border-radius: 999px; background: rgba(255,255,255,.18); }
+.progress span { display: block; width: 0; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #8bc3ff, #ffc177); transition: width .25s ease; }
+
+.matchup {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: clamp(12px, 3vw, 28px);
+  margin-top: 22px;
+}
+
+.reason-card {
+  min-width: 0;
+  overflow: hidden;
+  padding: 0;
+  border: 2px solid rgba(247, 251, 255, .38);
+  border-radius: 22px;
+  color: #192942;
+  background: #edf3fa;
+  text-align: left;
+  box-shadow: 0 14px 30px rgba(0,0,0,.24);
+  transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease;
+}
+
+.reason-card:hover { transform: translateY(-4px); border-color: #fff; }
+.reason-card.selected { border-color: #ffc06e; box-shadow: 0 0 0 6px rgba(255, 190, 110, .22), 0 14px 30px rgba(0,0,0,.24); transform: translateY(-5px) scale(1.015); }
+.reason-card img { display: block; width: 100%; aspect-ratio: 4 / 4.55; object-fit: cover; background: #cfd7e2; }
+.reason-card.image-error img { display: none; }
+.reason-card.image-error::before { content: "이미지를 불러오지 못했습니다"; display: grid; min-height: 18rem; place-items: center; color: #48617e; font-weight: 800; }
+
+.card-copy { display: grid; gap: 6px; padding: 13px 15px 16px; }
+.card-meta { color: #537092; font-size: .78rem; font-weight: 900; }
+.card-copy strong { font-size: clamp(1.05rem, 2.25vw, 1.45rem); line-height: 1.24; }
+.versus { color: #ffd18c; font-size: clamp(1.2rem, 3vw, 2rem); font-weight: 1000; font-style: italic; }
+
+.bracket-dots { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin: 17px 0 0; padding: 0 4px; }
+.bracket-dots span { width: 24px; height: 7px; border-radius: 999px; background: rgba(255,255,255,.25); }
+.bracket-dots span.done { background: #9bc7ff; }
+
+.result-screen { padding-top: 30px; }
+.result-screen > h1 { margin-bottom: 6px; font-size: clamp(2rem, 5vw, 3.4rem); }
+.result-layout { display: grid; grid-template-columns: minmax(0, .85fr) minmax(0, 1.15fr); gap: clamp(22px, 4vw, 52px); align-items: center; }
+.winner-card { overflow: hidden; border: 3px solid #ffc170; border-radius: 24px; background: #edf3fa; box-shadow: 0 0 0 8px rgba(255,190,104,.13), 0 16px 34px rgba(0,0,0,.25); }
+.winner-card img { display: block; width: 100%; aspect-ratio: 4 / 4.5; object-fit: cover; }
+.winner-card > div { padding: 14px 16px 17px; color: #1a2b43; }
+.winner-card p { margin-bottom: 7px; color: #55728f; font-size: .8rem; font-weight: 900; }
+.winner-card h2 { margin: 0; font-size: clamp(1.25rem, 3vw, 2rem); line-height: 1.18; }
+.route-panel { min-width: 0; }
+.winner-kicker { margin: 0 0 6px; color: #a9c9f9; font-size: .8rem; font-weight: 900; }
+.winner-announcement { margin: 0 0 24px; color: #fff; font-size: clamp(1.75rem, 3.2vw, 2.7rem); line-height: 1.08; letter-spacing: -.045em; }
+.route-label { margin-bottom: 6px; color: #ffd291; font-size: .78rem; font-weight: 900; letter-spacing: .12em; }
+.route-copy { margin-bottom: 14px; color: #c4d4ed; }
+#winner-route { display: grid; gap: 8px; margin: 0 0 21px; padding: 0; list-style: none; }
+#winner-route li { display: flex; gap: 10px; align-items: baseline; padding: 10px 12px; border-left: 3px solid #8ec1ff; color: #f8fbff; background: rgba(255,255,255,.09); }
+#winner-route span { min-width: 35px; color: #b8cff1; font-size: .78rem; font-weight: 900; }
+.result-actions { display: flex; flex-wrap: wrap; gap: 9px; }
+.result-actions button { min-height: 46px; padding: 10px 13px; border-radius: 12px; font-weight: 900; }
+.result-actions #again-button { border: 1px solid rgba(255,255,255,.36); color: #fff; background: rgba(255,255,255,.1); }
+
+/* iPad 세로에서는 이미지와 대사가 한 카드 안에 함께 보여야 한다. */
+@media (max-width: 900px) {
+  .worldcup-app { padding: 14px 14px 28px; }
+  .matchup, .result-layout { grid-template-columns: 1fr; }
+  .versus { justify-self: center; margin: -4px 0; }
+  .reason-card { display: grid; grid-template-columns: 38% 1fr; align-items: stretch; }
+  .reason-card img { height: 100%; min-height: 162px; aspect-ratio: auto; }
+  .card-copy { align-content: center; }
+  .winner-card { display: grid; grid-template-columns: 44% 1fr; align-items: stretch; }
+  .winner-card img { height: 100%; min-height: 340px; aspect-ratio: auto; }
+  .winner-card > div { display: grid; align-content: center; }
+  .mode-actions { width: min(100%, 360px); }
+  .mode-actions button { flex: 1 1 145px; }
+  .start-screen { padding-top: 14vh; }
+}

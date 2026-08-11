@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="고3 2학기 특유의 대사를 이미지 카드로 고르는 아이스브레이킹 월드컵입니다." />
+  <title>고3 2학기 수업 안 듣는 이유 월드컵</title>
+  <link rel="icon" href="../../favicon.ico" sizes="16x16 32x32 48x48" />
+  <link rel="icon" href="../../assets/favicon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="../../assets/apple-touch-icon.png" />
+  <link rel="stylesheet" href="../../assets/common.css" />
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+  <main class="worldcup-app" id="app">
+    <header class="app-header">
+      <a class="back-link" href="../">← 아이스브레이킹</a>
+      <button class="sound-button" id="sound-button" type="button">🔊 소리 끄기</button>
+    </header>
+
+    <section class="screen start-screen" id="start-screen">
+      <p class="eyebrow">G3 SECOND SEMESTER LAB</p>
+      <h1>고3 2학기<br />수업 안 듣는 이유 월드컵</h1>
+      <p class="start-copy">둘 중 더 “고3 2학기답다” 싶은 대사를 고르세요.</p>
+      <div class="pilot-note">
+        <strong id="pilot-round">활성 이미지 카드</strong>
+        <span>현재 승인된 카드 <b id="pilot-count">0</b>장으로 진행합니다.</span>
+      </div>
+      <div class="mode-actions" aria-label="대진 크기 선택">
+        <button class="start-button" data-tournament-size="16" type="button">빠른 16강</button>
+        <button class="quiet-button tournament-button" data-tournament-size="32" type="button">본선 32강</button>
+      </div>
+      <p class="key-hint">카드를 누르거나 <kbd>←</kbd> <kbd>→</kbd> / <kbd>A</kbd> <kbd>D</kbd>로 고를 수 있습니다.</p>
+    </section>
+
+    <section class="screen game-screen" id="game-screen" hidden>
+      <div class="round-header">
+        <div>
+          <p class="eyebrow">고3 2학기 수업 안 듣는 이유 월드컵</p>
+          <h1 id="round-label">4강</h1>
+        </div>
+        <p id="match-label">1 / 2</p>
+      </div>
+      <p class="question" id="status">둘 중 더 “고3 2학기답다” 싶은 대사는?</p>
+      <div class="progress" aria-label="진행률"><span id="progress-fill"></span></div>
+      <div class="matchup" aria-live="polite">
+        <button class="reason-card left" id="left-card" type="button"></button>
+        <span class="versus" aria-hidden="true">VS</span>
+        <button class="reason-card right" id="right-card" type="button"></button>
+      </div>
+      <div class="bracket-dots" id="bracket-dots" aria-label="현재 대진 진행 표시"></div>
+    </section>
+
+    <section class="screen result-screen" id="result-screen" hidden>
+      <p class="eyebrow">고3 2학기 수업 안 듣는 이유 월드컵</p>
+      <h1>🏆 최종 우승</h1>
+      <div class="result-layout">
+        <article class="winner-card">
+          <img id="winner-image" src="" alt="" width="768" height="960" />
+          <div>
+            <p id="winner-category"></p>
+            <h2 id="winner-text"></h2>
+          </div>
+        </article>
+        <div class="route-panel">
+          <p class="winner-kicker" id="winner-category-copy"></p>
+          <h2 class="winner-announcement" id="winner-text-copy"></h2>
+          <p class="route-label">WINNER ROUTE</p>
+          <p class="route-copy">결승까지 이긴 대결</p>
+          <ol id="winner-route"></ol>
+          <div class="result-actions">
+            <button class="poster-button" id="poster-button" type="button">결과 포스터 저장</button>
+            <button id="again-button" type="button">다시 뽑기</button>
+            <button class="quiet-button" id="home-button" type="button">처음으로</button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+  <script type="module" src="./game.js"></script>
+</body>
+</html>
