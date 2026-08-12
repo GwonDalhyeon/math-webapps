@@ -59,7 +59,7 @@
     .viewport { position: relative; min-height: 420px; background: radial-gradient(circle at 48% 45%, #172b50 0%, #0b1730 67%, #091126 100%); touch-action: none; overflow: hidden; }
     #scene { display: block; width: 100%; height: 100%; }
     #labels { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
-    .label3d { display: inline-block; padding: 2px 6px; border-radius: 6px; color: white; background: rgba(4, 12, 29, .72); border: 1px solid rgba(255,255,255,.25); font: 800 13px system-ui, sans-serif; white-space: nowrap; }
+    .label3d { display: inline-block; padding: 2px 6px; border-radius: 6px; color: white; background: rgba(4, 12, 29, .82); border: 1px solid rgba(255,255,255,.25); font: 800 13px system-ui, sans-serif; white-space: nowrap; transform: translateZ(0); }
     .scene-hint { position: absolute; left: 11px; bottom: 10px; padding: 6px 9px; border-radius: 9px; background: rgba(255,255,255,.9); color: #40516b; font-size: 12px; font-weight: 750; }
     .scene-legend { position: absolute; right: 11px; top: 50px; padding: 8px 10px; border-radius: 10px; background: rgba(7, 18, 40, .8); color: #eef6ff; font-size: 12px; line-height: 1.65; }
     .scene-legend i { display: inline-block; width: 10px; height: 10px; margin-right: 5px; border-radius: 99px; vertical-align: -1px; }
@@ -229,6 +229,11 @@
     let sceneTransition = null;
     let cameraTransition = null;
     let isFirstBuild = true;
+    // 라벨은 도형의 3D 기준점에 연결하되, 화면 방향의 여백을 매 프레임 계산합니다.
+    const labelRight = new THREE.Vector3();
+    const labelUp = new THREE.Vector3();
+    const labelOffset = new THREE.Vector3();
+    const labelViewAnchor = new THREE.Vector3();
     scene.add(new THREE.HemisphereLight(0xb9d7ff, 0x081126, 2.1));
     const keyLight = new THREE.DirectionalLight(0xffffff, 1.5);
     keyLight.position.set(4, 8, 7); scene.add(keyLight);
@@ -247,9 +252,31 @@
       cameraTransition = { start: performance.now(), duration: 560, from: camera.position.clone(), to: target, fromTarget: controls.target.clone(), toTarget: new THREE.Vector3(0, 0, 0) };
     }
     setCamera("iso", true);
-    function addLabel(text, position) {
+    function addLabel(text, anchor, screenOffset = [8, -18]) {
       const el = document.createElement("div"); el.className = "label3d"; el.textContent = text;
-      const label = new CSS2DObject(el); label.position.copy(position); label.userData.transitionKey = `label:${text}`; label.userData.transitionTarget = position.clone(); content.add(label);
+      const label = new CSS2DObject(el);
+      label.position.copy(anchor);
+      label.userData.transitionKey = `label:${text}`;
+      label.userData.transitionTarget = anchor.clone();
+      label.userData.labelAnchor = anchor.clone();
+      label.userData.labelScreenOffset = screenOffset;
+      content.add(label);
+    }
+    function updateLabelPositions() {
+      const height = Math.max(viewport.clientHeight, 1);
+      camera.updateMatrixWorld();
+      labelRight.setFromMatrixColumn(camera.matrixWorld, 0).normalize();
+      labelUp.setFromMatrixColumn(camera.matrixWorld, 1).normalize();
+      content.traverse(object => {
+        if (!object.isCSS2DObject || !object.userData.labelAnchor) return;
+        const [offsetX, offsetY] = object.userData.labelScreenOffset;
+        const distance = Math.max(camera.position.distanceTo(object.userData.labelAnchor), 1);
+        const worldPerPixel = 2 * distance * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) / height;
+        labelOffset.copy(labelRight).multiplyScalar(offsetX * worldPerPixel);
+        labelOffset.addScaledVector(labelUp, offsetY * worldPerPixel);
+        labelViewAnchor.copy(object.userData.labelAnchor).add(labelOffset);
+        object.position.copy(labelViewAnchor);
+      });
     }
     function lineBetween(a, b, color, dashed = false, opacity = 1) {
       const geometry = new THREE.BufferGeometry().setFromPoints([a, b]);
@@ -258,11 +285,11 @@
     }
     function addPoint(position, color, label) {
       const mesh = new THREE.Mesh(new THREE.SphereGeometry(.16, 22, 16), new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: .16, roughness: .45 }));
-      mesh.position.copy(position); mesh.userData.transitionKey = `point:${label}`; mesh.userData.transitionTarget = position.clone(); content.add(mesh); addLabel(label, position.clone().add(new THREE.Vector3(.14, .22, .06)));
+      mesh.position.copy(position); mesh.userData.transitionKey = `point:${label}`; mesh.userData.transitionTarget = position.clone(); content.add(mesh); addLabel(label, position, [10, -18]);
     }
     function addLine(a, b, color, label, dashed = false) {
       const line = lineBetween(a, b, color, dashed); line.material.linewidth = 2;
-      if (label) addLabel(label, a.clone().lerp(b, .78).add(new THREE.Vector3(.18, .25, .1)));
+      if (label) addLabel(label, a.clone().lerp(b, .78), [8, -18]);
     }
     function makePlane(center, u, v, width, height, color = COLORS.plane, opacity = .24, target = content) {
       const U = u.clone().normalize().multiplyScalar(width / 2);
@@ -290,7 +317,7 @@
       const C = currentCase === "collinear" ? new THREE.Vector3(0, 0, 0) : new THREE.Vector3(.4, 2.2, .9);
       addPoint(C, COLORS.orange, "C");
       if (currentCase === "collinear") addRotatingPlanes();
-      else { makePlane(C.clone().setX(0).multiplyScalar(.25), new THREE.Vector3(1, 0, 0), C.clone().setX(0), 9, 6); addLabel("평면 α", new THREE.Vector3(-3.5, 2, .8)); }
+      else { makePlane(C.clone().setX(0).multiplyScalar(.25), new THREE.Vector3(1, 0, 0), C.clone().setX(0), 9, 6); addLabel("평면 α", new THREE.Vector3(-3.5, 2, .8), [0, -18]); }
     }
     function buildLinePointCase() {
       const A = new THREE.Vector3(-4, 0, 0), B = new THREE.Vector3(4, 0, 0); addLine(A, B, COLORS.blue, "직선 l");
@@ -298,25 +325,25 @@
       const P = currentCase === "online" ? new THREE.Vector3(.6, 0, 0) : new THREE.Vector3(.7, 2.1, 1.15);
       addPoint(P, COLORS.orange, "P");
       if (currentCase === "online") addRotatingPlanes();
-      else { makePlane(P.clone().setX(0).multiplyScalar(.25), new THREE.Vector3(1, 0, 0), P.clone().setX(0), 9, 6); addLabel("평면 α", new THREE.Vector3(-3.5, 2, .9)); }
+      else { makePlane(P.clone().setX(0).multiplyScalar(.25), new THREE.Vector3(1, 0, 0), P.clone().setX(0), 9, 6); addLabel("평면 α", new THREE.Vector3(-3.5, 2, .9), [0, -18]); }
     }
     function buildLinesCase() {
       const l1 = new THREE.Vector3(-4.2, 0, 0), l2 = new THREE.Vector3(4.2, 0, 0); addLine(l1, l2, COLORS.blue, "직선 l");
       if (currentCase === "coincide") { addLine(l1, l2, COLORS.orange, "직선 m (l과 일치)", true); addRotatingPlanes(); return; }
       if (currentCase === "intersect") {
-        const a = new THREE.Vector3(0, -3, 0), b = new THREE.Vector3(0, 3, 0); addLine(a, b, COLORS.orange, "직선 m"); addPoint(new THREE.Vector3(0, 0, 0), COLORS.green, "교점 O"); makePlane(new THREE.Vector3(0, 0, 0), new THREE.Vector3(1, 0, 0), new THREE.Vector3(0, 1, 0), 9, 6); addLabel("평면 α", new THREE.Vector3(-3.5, 2.25, 0)); return;
+        const a = new THREE.Vector3(0, -3, 0), b = new THREE.Vector3(0, 3, 0); addLine(a, b, COLORS.orange, "직선 m"); addPoint(new THREE.Vector3(0, 0, 0), COLORS.green, "교점 O"); makePlane(new THREE.Vector3(0, 0, 0), new THREE.Vector3(1, 0, 0), new THREE.Vector3(0, 1, 0), 9, 6); addLabel("평면 α", new THREE.Vector3(-3.5, 2.25, 0), [0, -18]); return;
       }
       if (currentCase === "parallel") {
-        const a = new THREE.Vector3(-4.2, 2.2, 0), b = new THREE.Vector3(4.2, 2.2, 0); addLine(a, b, COLORS.orange, "직선 m"); makePlane(new THREE.Vector3(0, 1.1, 0), new THREE.Vector3(1, 0, 0), new THREE.Vector3(0, 1, 0), 9, 6); addLabel("평면 α", new THREE.Vector3(-3.5, 2.75, 0)); return;
+        const a = new THREE.Vector3(-4.2, 2.2, 0), b = new THREE.Vector3(4.2, 2.2, 0); addLine(a, b, COLORS.orange, "직선 m"); makePlane(new THREE.Vector3(0, 1.1, 0), new THREE.Vector3(1, 0, 0), new THREE.Vector3(0, 1, 0), 9, 6); addLabel("평면 α", new THREE.Vector3(-3.5, 2.75, 0), [0, -18]); return;
       }
       const m1 = new THREE.Vector3(1, -2.6, 1), m2 = new THREE.Vector3(1, 2.6, 1); addLine(m1, m2, COLORS.red, "직선 m (평면 밖)");
       const angle = THREE.MathUtils.degToRad(attemptAngle), v = new THREE.Vector3(0, Math.cos(angle), Math.sin(angle));
       const normal = new THREE.Vector3(1, 0, 0).cross(v).normalize();
-      makePlane(new THREE.Vector3(0, 0, 0), new THREE.Vector3(1, 0, 0), v, 9, 6, 0xc4b5fd, .27); addLabel("후보 평면 α", new THREE.Vector3(-3.2, 1.8 * Math.cos(angle), 1.8 * Math.sin(angle)));
+      makePlane(new THREE.Vector3(0, 0, 0), new THREE.Vector3(1, 0, 0), v, 9, 6, 0xc4b5fd, .27); addLabel("후보 평면 α", new THREE.Vector3(-3.2, 1.8 * Math.cos(angle), 1.8 * Math.sin(angle)), [0, -18]);
       const qY = Math.cos(angle) / Math.sin(angle);
       if (qY > -2.6 && qY < 2.6) { const Q = new THREE.Vector3(1, qY, 1); addPoint(Q, COLORS.green, "Q: m의 한 점만 α 위"); }
       const mid = new THREE.Vector3(1, 0, 1), projection = mid.clone().sub(normal.multiplyScalar(mid.dot(normal)));
-      lineBetween(mid, projection, COLORS.red, true); addLabel("평면까지의 거리", mid.clone().lerp(projection, .45).add(new THREE.Vector3(.15, .05, .1)));
+      lineBetween(mid, projection, COLORS.red, true); addLabel("평면까지의 거리", mid.clone().lerp(projection, .45), [8, -18]);
     }
     function setLayerOpacity(layer, amount) {
       layer.traverse(object => {
@@ -430,7 +457,7 @@
       updateCameraTransition(time);
       updateSceneTransition(time);
       if (!reducedMotion && currentInfo().result === "many") rotatingCandidates.rotation.x = time * .00012;
-      controls.update(); renderer.render(scene, camera); labelRenderer.render(scene, camera);
+      controls.update(); updateLabelPositions(); renderer.render(scene, camera); labelRenderer.render(scene, camera);
     }
     animate(0);
   </script>
