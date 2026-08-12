@@ -74,7 +74,7 @@ function renderMatch() {
   renderCard(rightCard, right, "right");
   roundLabel.textContent = `${roundSize}강`;
   matchLabel.textContent = `${matchNumber} / ${roundSize / 2}`;
-  status.textContent = "둘 중 더 “고3 2학기답다” 싶은 대사는?";
+  status.textContent = "둘 중 고3 2학기에 더 많이 들어본 핑계를 골라 보세요.";
   progressFill.style.width = `${(choicesMade / Math.max(1, totalChoices)) * 100}%`;
   renderBracket();
 }
