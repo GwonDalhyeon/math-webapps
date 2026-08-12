@@ -204,7 +204,7 @@ kbd { padding: 2px 5px; border: 1px solid rgba(255,255,255,.35); border-radius: 
 .result-screen > h1 { margin-bottom: 6px; font-size: clamp(2rem, 5vw, 3.4rem); }
 .result-layout { display: grid; grid-template-columns: minmax(0, .85fr) minmax(0, 1.15fr); gap: clamp(22px, 4vw, 52px); align-items: center; }
 .winner-card { overflow: hidden; border: 3px solid #ffc170; border-radius: 24px; background: #edf3fa; box-shadow: 0 0 0 8px rgba(255,190,104,.13), 0 16px 34px rgba(0,0,0,.25); }
-.winner-card img { display: block; width: 100%; aspect-ratio: 4 / 4.5; object-fit: cover; }
+.winner-card img { display: block; width: 100%; height: auto; aspect-ratio: 1 / 1.08; object-fit: contain; background: #cfd7e2; }
 .winner-card > div { padding: 14px 16px 17px; color: #1a2b43; }
 .winner-card p { margin-bottom: 7px; color: #55728f; font-size: .8rem; font-weight: 900; }
 .winner-card h2 { margin: 0; font-size: clamp(1.25rem, 3vw, 2rem); line-height: 1.18; }
@@ -228,8 +228,8 @@ kbd { padding: 2px 5px; border: 1px solid rgba(255,255,255,.35); border-radius: 
   .reason-card { display: grid; grid-template-columns: 42% 1fr; align-items: stretch; }
   .reason-card img { height: auto; min-height: 0; aspect-ratio: 1 / 1; object-fit: contain; }
   .card-copy { align-content: center; }
-  .winner-card { display: grid; grid-template-columns: 44% 1fr; align-items: stretch; }
-  .winner-card img { height: 100%; min-height: 340px; aspect-ratio: auto; }
+  .winner-card { display: grid; grid-template-columns: 42% 1fr; align-items: stretch; }
+  .winner-card img { height: auto; min-height: 0; aspect-ratio: 1 / 1; object-fit: contain; }
   .winner-card > div { display: grid; align-content: center; }
   .mode-actions { width: min(100%, 360px); }
   .mode-actions button { flex: 1 1 145px; }
