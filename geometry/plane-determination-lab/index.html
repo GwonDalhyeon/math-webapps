@@ -59,7 +59,7 @@
     .viewport { position: relative; min-height: 420px; background: radial-gradient(circle at 48% 45%, #172b50 0%, #0b1730 67%, #091126 100%); touch-action: none; overflow: hidden; }
     #scene { display: block; width: 100%; height: 100%; }
     #labels { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
-    .label3d { display: inline-block; padding: 2px 6px; border-radius: 6px; color: white; background: rgba(4, 12, 29, .82); border: 1px solid rgba(255,255,255,.25); font: 800 13px system-ui, sans-serif; white-space: nowrap; transform: translateZ(0); }
+    .label3d { display: inline-block; padding: 2px 6px; border-radius: 6px; color: white; background: rgba(4, 12, 29, .82); border: 1px solid rgba(255,255,255,.25); font: 800 13px system-ui, sans-serif; white-space: nowrap; transform: translateZ(0); backface-visibility: hidden; will-change: transform; }
     .scene-hint { position: absolute; left: 11px; bottom: 10px; padding: 6px 9px; border-radius: 9px; background: rgba(255,255,255,.9); color: #40516b; font-size: 12px; font-weight: 750; }
     .scene-legend { position: absolute; right: 11px; top: 50px; padding: 8px 10px; border-radius: 10px; background: rgba(7, 18, 40, .8); color: #eef6ff; font-size: 12px; line-height: 1.65; }
     .scene-legend i { display: inline-block; width: 10px; height: 10px; margin-right: 5px; border-radius: 99px; vertical-align: -1px; }
@@ -237,7 +237,10 @@
     const labelProjectedAnchor = new THREE.Vector3();
     const labelProjectedA = new THREE.Vector3();
     const labelProjectedB = new THREE.Vector3();
+    const LABEL_SWITCH_MARGIN = 120;
+    const LABEL_SMOOTHING_SPEED = 8;
     let labelObstacles = [];
+    let previousLabelTime = 0;
     scene.add(new THREE.HemisphereLight(0xb9d7ff, 0x081126, 2.1));
     const keyLight = new THREE.DirectionalLight(0xffffff, 1.5);
     keyLight.position.set(4, 8, 7); scene.add(keyLight);
@@ -263,7 +266,9 @@
       label.userData.transitionKey = `label:${text}`;
       label.userData.transitionTarget = anchor.clone();
       label.userData.labelAnchor = anchor.clone();
-      label.userData.labelScreenOffset = screenOffset;
+      label.userData.labelPreferredOffset = screenOffset.slice();
+      label.userData.labelTargetOffset = screenOffset.slice();
+      label.userData.labelDisplayOffset = screenOffset.slice();
       content.add(label);
     }
     function projectToViewport(position, target) {
@@ -336,31 +341,45 @@
       for (const placed of placedRects) if (rectsOverlap(rect, expandRect(placed, 4))) score += 3200;
       return score;
     }
-    function updateLabelPositions() {
+    function updateLabelPositions(time = performance.now()) {
       const height = Math.max(viewport.clientHeight, 1);
       camera.updateMatrixWorld();
       labelRight.setFromMatrixColumn(camera.matrixWorld, 0).normalize();
       labelUp.setFromMatrixColumn(camera.matrixWorld, 1).normalize();
+      const delta = previousLabelTime ? Math.min((time - previousLabelTime) / 1000, .05) : 1 / 60;
+      const smoothing = 1 - Math.exp(-LABEL_SMOOTHING_SPEED * delta);
+      previousLabelTime = time;
       const projectedObstacles = labelObstacles;
       const placedRects = [];
       content.traverse(object => {
         if (!object.isCSS2DObject || !object.userData.labelAnchor) return;
-        const preferred = object.userData.labelScreenOffset;
+        const preferred = object.userData.labelPreferredOffset;
+        const currentTarget = object.userData.labelTargetOffset;
         projectToViewport(object.userData.labelAnchor, labelProjectedAnchor);
         const candidates = labelCandidateOffsets(object.element, preferred);
         const width = object.element.offsetWidth || Math.max(38, object.element.textContent.length * 8);
         const labelHeight = object.element.offsetHeight || 22;
-        let bestOffset = candidates[0];
-        let bestScore = Infinity;
-        for (const candidate of candidates) {
+        const scoreCandidate = candidate => {
           const centerX = labelProjectedAnchor.x + candidate[0];
           const centerY = labelProjectedAnchor.y - candidate[1];
           const rect = makeLabelRect(centerX, centerY, width, labelHeight);
-          const score = candidateScore(rect, { preferredX: preferred[0], preferredY: preferred[1] }, candidate, placedRects, projectedObstacles);
-          if (score < bestScore) { bestScore = score; bestOffset = candidate; }
+          return { candidate, rect, score: candidateScore(rect, { preferredX: preferred[0], preferredY: preferred[1] }, candidate, placedRects, projectedObstacles) };
+        };
+        const current = scoreCandidate(currentTarget);
+        let best = current;
+        for (const candidate of candidates) {
+          const scored = scoreCandidate(candidate);
+          if (scored.score < best.score) best = scored;
         }
-        object.userData.labelScreenOffset = bestOffset;
-        const [offsetX, offsetY] = bestOffset;
+        // 점수가 비슷할 때는 기존 후보를 유지하고, 실제로 가려질 때만 후보를 바꿉니다.
+        if (best.candidate !== currentTarget && best.score + LABEL_SWITCH_MARGIN < current.score) {
+          currentTarget[0] = best.candidate[0];
+          currentTarget[1] = best.candidate[1];
+        }
+        const displayOffset = object.userData.labelDisplayOffset;
+        displayOffset[0] += (currentTarget[0] - displayOffset[0]) * smoothing;
+        displayOffset[1] += (currentTarget[1] - displayOffset[1]) * smoothing;
+        const [offsetX, offsetY] = displayOffset;
         const distance = Math.max(camera.position.distanceTo(object.userData.labelAnchor), 1);
         const worldPerPixel = 2 * distance * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) / height;
         labelOffset.copy(labelRight).multiplyScalar(offsetX * worldPerPixel);
@@ -469,6 +488,7 @@
       }
       const oldLayer = sceneLayer;
       labelObstacles = [];
+      previousLabelTime = 0;
       content = new THREE.Group();
       rotatingCandidates = new THREE.Group();
       sceneLayer = new THREE.Group();
@@ -552,7 +572,7 @@
       updateCameraTransition(time);
       updateSceneTransition(time);
       if (!reducedMotion && currentInfo().result === "many") rotatingCandidates.rotation.x = time * .00012;
-      controls.update(); updateLabelPositions(); renderer.render(scene, camera); labelRenderer.render(scene, camera);
+      controls.update(); updateLabelPositions(time); renderer.render(scene, camera); labelRenderer.render(scene, camera);
     }
     animate(0);
   </script>
