@@ -234,6 +234,10 @@
     const labelUp = new THREE.Vector3();
     const labelOffset = new THREE.Vector3();
     const labelViewAnchor = new THREE.Vector3();
+    const labelProjectedAnchor = new THREE.Vector3();
+    const labelProjectedA = new THREE.Vector3();
+    const labelProjectedB = new THREE.Vector3();
+    let labelObstacles = [];
     scene.add(new THREE.HemisphereLight(0xb9d7ff, 0x081126, 2.1));
     const keyLight = new THREE.DirectionalLight(0xffffff, 1.5);
     keyLight.position.set(4, 8, 7); scene.add(keyLight);
@@ -262,29 +266,119 @@
       label.userData.labelScreenOffset = screenOffset;
       content.add(label);
     }
+    function projectToViewport(position, target) {
+      target.copy(position).project(camera);
+      target.x = (target.x + 1) * viewport.clientWidth / 2;
+      target.y = (1 - target.y) * viewport.clientHeight / 2;
+      return target;
+    }
+    function segmentIntersectsRect(a, b, rect) {
+      let tMin = 0;
+      let tMax = 1;
+      const dx = b.x - a.x;
+      const dy = b.y - a.y;
+      const constraints = [
+        [-dx, a.x - rect.left],
+        [dx, rect.right - a.x],
+        [-dy, a.y - rect.top],
+        [dy, rect.bottom - a.y]
+      ];
+      for (const [p, q] of constraints) {
+        if (p === 0) { if (q < 0) return false; continue; }
+        const t = q / p;
+        if (p < 0) { if (t > tMax) return false; tMin = Math.max(tMin, t); }
+        else { if (t < tMin) return false; tMax = Math.min(tMax, t); }
+      }
+      return tMin <= tMax;
+    }
+    function rectsOverlap(a, b) {
+      return a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
+    }
+    function makeLabelRect(centerX, centerY, width, height) {
+      return { left: centerX - width / 2, right: centerX + width / 2, top: centerY - height / 2, bottom: centerY + height / 2 };
+    }
+    function expandRect(rect, amount) {
+      return { left: rect.left - amount, right: rect.right + amount, top: rect.top - amount, bottom: rect.bottom + amount };
+    }
+    function labelCandidateOffsets(element, preferred) {
+      const width = element.offsetWidth || Math.max(38, element.textContent.length * 8);
+      const height = element.offsetHeight || 22;
+      const vertical = Math.max(22, height / 2 + 10);
+      const horizontal = Math.max(28, width / 2 + 10);
+      const diagonalX = Math.max(18, width * .24 + 8);
+      const diagonalY = Math.max(20, height * .72 + 8);
+      return [
+        preferred,
+        [0, -vertical], [0, vertical],
+        [horizontal, -diagonalY], [-horizontal, -diagonalY],
+        [horizontal, diagonalY], [-horizontal, diagonalY],
+        [diagonalX, -vertical], [-diagonalX, -vertical],
+        [diagonalX, vertical], [-diagonalX, vertical],
+        [horizontal * 1.22, 0], [-horizontal * 1.22, 0]
+      ];
+    }
+    function candidateScore(rect, anchorScreen, offset, placedRects, obstacles) {
+      const viewportWidth = viewport.clientWidth;
+      const viewportHeight = viewport.clientHeight;
+      let score = Math.hypot(offset[0] - anchorScreen.preferredX, offset[1] - anchorScreen.preferredY) * .22;
+      const overflow = Math.max(0, -rect.left) + Math.max(0, rect.right - viewportWidth) + Math.max(0, -rect.top) + Math.max(0, rect.bottom - viewportHeight);
+      score += overflow * 24;
+      for (const obstacle of obstacles) {
+        if (obstacle.type === "point") {
+          const point = projectToViewport(obstacle.position, labelProjectedA);
+          if (rectsOverlap(rect, expandRect(makeLabelRect(point.x, point.y, 1, 1), obstacle.radius))) score += 1600;
+        } else {
+          const a = projectToViewport(obstacle.a, labelProjectedA);
+          const b = projectToViewport(obstacle.b, labelProjectedB);
+          if (segmentIntersectsRect(a, b, expandRect(rect, obstacle.radius))) score += 1600;
+        }
+      }
+      for (const placed of placedRects) if (rectsOverlap(rect, expandRect(placed, 4))) score += 3200;
+      return score;
+    }
     function updateLabelPositions() {
       const height = Math.max(viewport.clientHeight, 1);
       camera.updateMatrixWorld();
       labelRight.setFromMatrixColumn(camera.matrixWorld, 0).normalize();
       labelUp.setFromMatrixColumn(camera.matrixWorld, 1).normalize();
+      const projectedObstacles = labelObstacles;
+      const placedRects = [];
       content.traverse(object => {
         if (!object.isCSS2DObject || !object.userData.labelAnchor) return;
-        const [offsetX, offsetY] = object.userData.labelScreenOffset;
+        const preferred = object.userData.labelScreenOffset;
+        projectToViewport(object.userData.labelAnchor, labelProjectedAnchor);
+        const candidates = labelCandidateOffsets(object.element, preferred);
+        const width = object.element.offsetWidth || Math.max(38, object.element.textContent.length * 8);
+        const labelHeight = object.element.offsetHeight || 22;
+        let bestOffset = candidates[0];
+        let bestScore = Infinity;
+        for (const candidate of candidates) {
+          const centerX = labelProjectedAnchor.x + candidate[0];
+          const centerY = labelProjectedAnchor.y - candidate[1];
+          const rect = makeLabelRect(centerX, centerY, width, labelHeight);
+          const score = candidateScore(rect, { preferredX: preferred[0], preferredY: preferred[1] }, candidate, placedRects, projectedObstacles);
+          if (score < bestScore) { bestScore = score; bestOffset = candidate; }
+        }
+        object.userData.labelScreenOffset = bestOffset;
+        const [offsetX, offsetY] = bestOffset;
         const distance = Math.max(camera.position.distanceTo(object.userData.labelAnchor), 1);
         const worldPerPixel = 2 * distance * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) / height;
         labelOffset.copy(labelRight).multiplyScalar(offsetX * worldPerPixel);
         labelOffset.addScaledVector(labelUp, offsetY * worldPerPixel);
         labelViewAnchor.copy(object.userData.labelAnchor).add(labelOffset);
         object.position.copy(labelViewAnchor);
+        placedRects.push(makeLabelRect(labelProjectedAnchor.x + offsetX, labelProjectedAnchor.y - offsetY, width, labelHeight));
       });
     }
     function lineBetween(a, b, color, dashed = false, opacity = 1) {
       const geometry = new THREE.BufferGeometry().setFromPoints([a, b]);
       const material = dashed ? new THREE.LineDashedMaterial({ color, dashSize: .18, gapSize: .12, transparent: opacity < 1, opacity }) : new THREE.LineBasicMaterial({ color, transparent: opacity < 1, opacity });
+      labelObstacles.push({ type: "line", a: a.clone(), b: b.clone(), radius: dashed ? 6 : 7 });
       const line = new THREE.Line(geometry, material); if (dashed) line.computeLineDistances(); content.add(line); return line;
     }
     function addPoint(position, color, label) {
       const mesh = new THREE.Mesh(new THREE.SphereGeometry(.16, 22, 16), new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: .16, roughness: .45 }));
+      labelObstacles.push({ type: "point", position: position.clone(), radius: 12 });
       mesh.position.copy(position); mesh.userData.transitionKey = `point:${label}`; mesh.userData.transitionTarget = position.clone(); content.add(mesh); addLabel(label, position, [10, -18]);
     }
     function addLine(a, b, color, label, dashed = false) {
@@ -374,6 +468,7 @@
         setLayerOpacity(sceneLayer, 1);
       }
       const oldLayer = sceneLayer;
+      labelObstacles = [];
       content = new THREE.Group();
       rotatingCandidates = new THREE.Group();
       sceneLayer = new THREE.Group();
