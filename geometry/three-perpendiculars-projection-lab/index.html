@@ -62,6 +62,7 @@
     #label-layer { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
     .label3d { padding: 2px 6px; border-radius: 5px; background: rgba(8, 18, 34, .76); color: #fff; font-size: 13px; font-weight: 800; white-space: nowrap; }
     .label3d.math-label { font-style: italic; font-family: Georgia, "Times New Roman", serif; font-size: 16px; }
+    .label3d.plane-label { border: 1px solid rgba(196, 181, 253, .7); background: rgba(76, 29, 149, .78); }
     .scene-hint { position: absolute; left: 12px; bottom: 10px; padding: 6px 9px; border-radius: 8px; background: rgba(255,255,255,.9); color: var(--muted); font-size: 12px; font-weight: 700; }
     .projection { padding: 12px; border-left: 1px solid var(--line); background: #fbfdff; }
     .projection h2 { margin: 0 0 4px; font-size: 16px; }
@@ -80,6 +81,8 @@
     .button-row.three { grid-template-columns: repeat(3, 1fr); }
     .action-btn { min-height: 40px; padding: 8px 7px; border: 1px solid var(--line); border-radius: 9px; background: #fff; color: var(--ink); font-weight: 800; cursor: pointer; }
     .action-btn.primary { background: var(--blue); border-color: var(--blue); color: #fff; }
+    .action-btn.compare { margin-top: 8px; width: 100%; border-color: #fbbf24; background: #fffbeb; color: #92400e; }
+    .action-btn.compare.is-running { border-color: #dc2626; background: #fef2f2; color: #b91c1c; }
     .action-btn:disabled { cursor: not-allowed; opacity: .48; }
     .slider { margin: 11px 0; }
     .slider-head { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 4px; font-size: 13px; font-weight: 800; }
@@ -103,6 +106,7 @@
     .swatch.purple { background: var(--purple); }
     .swatch.teal { background: var(--teal); }
     .swatch.orange { background: var(--orange); }
+    .swatch.dashed { background: repeating-linear-gradient(90deg, #94a3b8 0 5px, transparent 5px 8px); }
     @media (max-width: 1080px) {
       .layout { grid-template-columns: 1fr; }
       .controls { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
@@ -153,7 +157,7 @@
           </div>
           <aside class="projection" aria-label="바닥 투영 평면도">
             <h2>바닥 투영</h2>
-            <p><i>PH</i>를 바닥에 내리면 <i>OH</i>가 됩니다. <i>H</i>를 기준선 <i>l</i> 위에서 움직여 보세요.</p>
+            <p id="projection-description"><i>PH</i>를 바닥에 내리면 <i>OH</i>가 됩니다. <i>H</i>를 기준선 <i>l</i> 위에서 움직여 보세요.</p>
             <svg id="projection-svg" viewBox="-5 -4 10 8" role="img" aria-label="바닥의 기준선과 정사영"></svg>
             <div id="angle-readout" class="angle-readout"></div>
           </aside>
@@ -170,30 +174,27 @@
             <button class="action-btn" type="button" id="replay-button">다시 보기</button>
             <button class="action-btn" type="button" id="reset-button">초기화</button>
           </div>
+          <button class="action-btn compare" type="button" id="break-button">조건 깨기 비교 재생</button>
           <div class="checks" id="checks"></div>
         </section>
 
         <section class="control-section">
-          <h2>점의 위치 조절</h2>
-          <div class="slider">
+          <h2>조작</h2>
+          <div class="slider" id="h-control">
             <div class="slider-head"><label for="h-offset"><i>H</i> 위치: 기준선 <i>l</i> 위 이동</label><output id="h-output" for="h-offset">정확한 수선</output></div>
             <input id="h-offset" type="range" min="-2.2" max="2.2" step="0.01" value="0" />
           </div>
-          <div class="slider">
-            <div class="slider-head"><label for="p-height"><i>P</i> 높이</label><output id="p-output" for="p-height">3.8</output></div>
-            <input id="p-height" type="range" min="2.6" max="5.4" step="0.1" value="3.8" />
-          </div>
-          <p>점은 자유롭게 떠다니지 않습니다. <i>H</i>는 <i>l</i> 위에서, <i>P</i>는 <i>O</i>를 지나는 수직선 위에서만 움직입니다.</p>
+          <p id="control-note">제1정리에서는 <i>H</i>를 움직여 바닥에서 수선의 발을 찾습니다.</p>
         </section>
 
         <section class="control-section">
           <h2>현재 정리</h2>
           <div class="formula" id="formula"></div>
           <div class="result" id="result"></div>
-          <div class="legend" aria-label="선분 범례">
+          <div class="legend" id="legend" aria-label="선분 범례">
             <span><i class="swatch purple"></i><i>PO</i>: 바닥에 수직인 기준 기둥</span>
             <span><i class="swatch teal"></i><i>OH</i>: 바닥에서 찾는 정사영 수선</span>
-            <span><i class="swatch orange"></i><i>PH</i>: 마지막 후보 지지대</span>
+            <span><i class="swatch dashed"></i>점선: 아직 증명되지 않은 결론 후보</span>
           </div>
         </section>
       </aside>
@@ -204,17 +205,19 @@
     import * as THREE from "three";
     import { OrbitControls } from "three/addons/controls/OrbitControls.js";
     import { CSS2DRenderer, CSS2DObject } from "three/addons/renderers/CSS2DRenderer.js";
+    import { Line2 } from "three/addons/lines/Line2.js";
+    import { LineGeometry } from "three/addons/lines/LineGeometry.js";
+    import { LineMaterial } from "three/addons/lines/LineMaterial.js";
 
     const COLORS = { ground: 0x94a3b8, line: 0x2563eb, p: 0x7c3aed, oh: 0x0f9f9a, ph: 0xf59e0b, point: 0xf8fafc, bad: 0x94a3b8, text: 0x0f172a };
     const lineBase = new THREE.Vector3(0.8, 0, 0.6).normalize();
     // O에서 기준선 l까지의 거리를 넓혀 바닥의 O-H-l 삼각형을 읽기 쉽게 한다.
     const lineAnchor = new THREE.Vector3(3.6, 0, 1.2);
     const hFoot = lineAnchor.clone().addScaledVector(lineBase, -lineAnchor.dot(lineBase));
-    const lineStart = lineAnchor.clone().addScaledVector(lineBase, -4.5);
-    const lineEnd = lineAnchor.clone().addScaledVector(lineBase, 4.5);
+    const lineHalfLength = 3.15;
     const groundLabelAnchor = new THREE.Vector3(-4.2, 0.05, -3.7);
 
-    const state = { mode: "make", stage: 0, hOffset: 0, height: 3.8, animationFrame: 0, animation: null };
+    const state = { mode: "make", stage: 0, hOffset: 0, lineTurn: 0, height: 3.8, planeProgress: 0, animationFrame: 0, breakAnimationFrame: 0, animation: null, breakActive: false, breakBroken: false };
     const modeInfo = {
       make: {
         title: "제1정리: 바닥에서 만든 수선으로 공간의 수선을 완성합니다.",
@@ -231,8 +234,8 @@
         resultBad: "PH ⟂ l 조건이 아직 확인되지 않았습니다. 바닥 투영에서 OH와 l의 각도를 확인하세요."
       },
       plane: {
-        title: "제3정리: 세 수직 조건으로 기준 기둥의 평면 수직을 확인합니다.",
-        description: "PH와 OH가 l에 수직이고 PO가 OH에 수직이면, PO가 바닥 평면 전체에 수직임을 확인합니다.",
+        title: "제3정리: 평면 PHO를 거쳐 기준 기둥의 평면 수직을 확인합니다.",
+        description: "PH와 OH가 l에 수직이면 l은 평면 PHO에 수직입니다. 이어서 PO의 바닥 평면 수직을 확인합니다.",
         formula: "\\[PH\\perp l,\\quad OH\\perp l,\\quad PO\\perp OH\\quad\\Longrightarrow\\quad PO\\perp\\alpha\\]",
         resultGood: "세 조건이 모였습니다. 제3정리에 따라 PO는 바닥 평면 α에 수직입니다.",
         resultBad: "PH와 OH가 l에 수직인 조건을 먼저 맞춰야 PO ⟂ α를 확인할 수 있습니다."
@@ -241,33 +244,58 @@
     const stageSegments = {
       make: ["OP", "OH", "PH"],
       check: ["OP", "PH", "OH"],
-      plane: ["PH", "OH", "OP"]
+      plane: ["PH", "OH", "OP", "PLANE"]
     };
+    const conclusionSegments = { make: "PH", check: "OH", plane: null };
 
     let renderer, labelRenderer, scene, camera, controls;
-    let ground, groundGrid, lineObject, poLine, ohLine, phLine, poRightAngle, ohRightAngle, phRightAngle;
-    let pointP, pointO, pointH;
+    let ground, groundGrid, lineObject, poLine, ohLine, phLine, poRightAngle, ohRightAngle, phRightAngle, planeMesh, planeOutline, lineStartArrow, lineEndArrow;
+    let pointP, pointO, pointH, planeLabel;
     let currentPoints;
     const labelObjects = [];
     const temp = new THREE.Vector3();
     const labelRight = new THREE.Vector3();
     const labelUp = new THREE.Vector3();
     const labelDirection = new THREE.Vector3();
+    const verticalAxis = new THREE.Vector3(0, 1, 0);
+    const currentLineDirection = new THREE.Vector3();
+    const planeLabelAnchor = new THREE.Vector3();
+    const lineObjects = [];
 
     const el = (id) => document.getElementById(id);
-    const isPerpendicular = () => Math.abs(state.hOffset) < 0.055;
+    const getLineDirection = () => currentLineDirection.copy(lineBase).applyAxisAngle(verticalAxis, state.lineTurn);
+    const getLineEndpoints = (H) => {
+      const direction = getLineDirection();
+      return {
+        start: H.clone().addScaledVector(direction, -lineHalfLength),
+        end: H.clone().addScaledVector(direction, lineHalfLength),
+        direction
+      };
+    };
     const getPoints = () => {
       const O = new THREE.Vector3(0, 0, 0);
       const P = new THREE.Vector3(0, state.height, 0);
       const H = hFoot.clone().addScaledVector(lineBase, state.hOffset);
       return { P, O, H };
     };
+    const isPerpendicular = (points = getPoints()) => Math.abs(points.H.clone().sub(points.O).dot(getLineDirection())) < 0.06;
+    const maxStage = () => stageSegments[state.mode].length;
 
     function easeOut(t) { return 1 - Math.pow(1 - t, 3); }
     function clearAnimation() {
       if (state.animationFrame) cancelAnimationFrame(state.animationFrame);
       state.animationFrame = 0;
       state.animation = null;
+      const wasBreaking = state.breakActive;
+      if (state.breakAnimationFrame) cancelAnimationFrame(state.breakAnimationFrame);
+      state.breakAnimationFrame = 0;
+      state.breakActive = false;
+      state.breakBroken = false;
+      state.lineTurn = 0;
+      if (wasBreaking) {
+        state.hOffset = 0;
+        el("h-offset").value = "0";
+      }
     }
     function animateSegment(line, from, to, duration = 760, onDone = null) {
       clearAnimation();
@@ -277,28 +305,97 @@
         if (!state.animation) return;
         const t = Math.min(1, (now - started) / duration);
         const q = from.clone().lerp(to, easeOut(t));
-        line.geometry.setFromPoints([from, q]);
+        line.geometry.setPositions([from.x, from.y, from.z, q.x, q.y, q.z]);
         if (t < 1) state.animationFrame = requestAnimationFrame(tick);
         else { state.animationFrame = 0; const done = state.animation.onDone; state.animation = null; if (done) done(); }
       };
       state.animationFrame = requestAnimationFrame(tick);
     }
+    function animatePlane() {
+      const started = performance.now();
+      const tick = (now) => {
+        const t = Math.min(1, (now - started) / 820);
+        state.planeProgress = easeOut(t);
+        updatePlane(currentPoints, true, false);
+        if (t < 1) state.animationFrame = requestAnimationFrame(tick);
+        else state.animationFrame = 0;
+      };
+      state.animationFrame = requestAnimationFrame(tick);
+    }
+    function stopConditionBreak() {
+      if (!state.breakActive) return;
+      if (state.breakAnimationFrame) cancelAnimationFrame(state.breakAnimationFrame);
+      state.breakAnimationFrame = 0;
+      state.breakActive = false;
+      state.breakBroken = false;
+      state.hOffset = 0;
+      state.lineTurn = 0;
+      el("h-offset").value = "0";
+      updateScene(false);
+      updateInterface(false);
+    }
+    function startConditionBreak() {
+      clearAnimation();
+      state.stage = maxStage();
+      state.hOffset = 0;
+      state.lineTurn = 0;
+      state.planeProgress = state.mode === "plane" ? 1 : 0;
+      updateScene(false);
+      state.breakActive = true;
+      updateInterface(false);
+      const started = performance.now();
+      const tick = (now) => {
+        if (!state.breakActive) return;
+        const phase = .5 - .5 * Math.cos(((now - started) / 1700) * Math.PI * 2);
+        if (state.mode === "plane") state.lineTurn = .62 * phase;
+        else {
+          state.hOffset = 1.05 * phase;
+          el("h-offset").value = state.hOffset.toFixed(2);
+        }
+        const broken = phase > .07;
+        if (broken !== state.breakBroken) {
+          state.breakBroken = broken;
+          updateInterface(false);
+        }
+        updateScene(false);
+        state.breakAnimationFrame = requestAnimationFrame(tick);
+      };
+      state.breakAnimationFrame = requestAnimationFrame(tick);
+    }
 
-    function makeLine(color, dashed = false) {
-      const material = dashed
-        ? new THREE.LineDashedMaterial({ color, dashSize: 0.18, gapSize: 0.11, transparent: true, opacity: 0.8 })
-        : new THREE.LineBasicMaterial({ color, transparent: true, opacity: 0.96 });
-      const line = new THREE.Line(new THREE.BufferGeometry(), material);
-      if (dashed) line.userData.dashed = true;
+    function makeLine(color, dashed = false, width = 3.2) {
+      const material = new LineMaterial({ color, linewidth: width, dashed, dashSize: 0.18, gapSize: 0.11, transparent: true, opacity: 0.96 });
+      material.resolution.set(renderer.domElement.clientWidth, renderer.domElement.clientHeight);
+      const line = new Line2(new LineGeometry(), material);
+      line.userData.dashed = dashed;
       scene.add(line);
+      lineObjects.push(line);
       return line;
     }
     function setLine(line, a, b, visible = true) {
       line.visible = visible;
       if (!visible) return;
       line.geometry.dispose();
-      line.geometry = new THREE.BufferGeometry().setFromPoints([a, b]);
+      line.geometry = new LineGeometry();
+      line.geometry.setPositions([a.x, a.y, a.z, b.x, b.y, b.z]);
       if (line.userData.dashed) line.computeLineDistances();
+    }
+    function setLineStyle(line, { color, dashed = false, width = 3.2, opacity = .96 }) {
+      line.userData.dashed = dashed;
+      line.material.color.setHex(color);
+      line.material.dashed = dashed;
+      line.material.linewidth = width;
+      line.material.opacity = opacity;
+      line.material.needsUpdate = true;
+    }
+    function setSegment(line, a, b, shown, candidate, color, conclusion = false) {
+      setLineStyle(line, {
+        color: candidate ? COLORS.bad : color,
+        dashed: candidate,
+        width: shown && conclusion ? 4.6 : 3.25,
+        opacity: candidate ? .72 : .98
+      });
+      setLine(line, a, b, shown || candidate);
     }
     function addLabel(text, position, color = "#ffffff", className = "") {
       const div = document.createElement("div");
@@ -317,7 +414,7 @@
       return mesh;
     }
     function makeRightAngle(color) {
-      const line = makeLine(color);
+      const line = makeLine(color, false, 2.4);
       line.material.opacity = 0.95;
       return line;
     }
@@ -327,10 +424,11 @@
       line.visible = visible;
       if (!visible) return;
       line.geometry.dispose();
-      line.geometry = new THREE.BufferGeometry().setFromPoints([
-        center.clone().add(a),
-        center.clone().add(a).add(b),
-        center.clone().add(b)
+      line.geometry = new LineGeometry();
+      line.geometry.setPositions([
+        center.x + a.x, center.y + a.y, center.z + a.z,
+        center.x + a.x + b.x, center.y + a.y + b.y, center.z + a.z + b.z,
+        center.x + b.x, center.y + b.y, center.z + b.z
       ]);
     }
     function updateSpatialRightAngle(line, center, aDir, bDir, size = 0.36, visible = true) {
@@ -339,10 +437,11 @@
       const a = aDir.clone().normalize().multiplyScalar(size);
       const b = bDir.clone().normalize().multiplyScalar(size);
       line.geometry.dispose();
-      line.geometry = new THREE.BufferGeometry().setFromPoints([
-        center.clone().add(a),
-        center.clone().add(a).add(b),
-        center.clone().add(b)
+      line.geometry = new LineGeometry();
+      line.geometry.setPositions([
+        center.x + a.x, center.y + a.y, center.z + a.z,
+        center.x + a.x + b.x, center.y + a.y + b.y, center.z + a.z + b.z,
+        center.x + b.x, center.y + b.y, center.z + b.z
       ]);
     }
     function updateVerticalRightAngle(line, center, horizontalDir, size = 0.34, visible = true) {
@@ -351,10 +450,11 @@
       const horizontal = horizontalDir.clone().setY(0).normalize().multiplyScalar(size);
       const vertical = new THREE.Vector3(0, size, 0);
       line.geometry.dispose();
-      line.geometry = new THREE.BufferGeometry().setFromPoints([
-        center.clone().add(vertical),
-        center.clone().add(vertical).add(horizontal),
-        center.clone().add(horizontal)
+      line.geometry = new LineGeometry();
+      line.geometry.setPositions([
+        center.x, center.y + vertical.y, center.z,
+        center.x + horizontal.x, center.y + vertical.y, center.z + horizontal.z,
+        center.x + horizontal.x, center.y, center.z + horizontal.z
       ]);
     }
     function disposeObject(object) {
@@ -407,7 +507,7 @@
       lineObject = makeLine(COLORS.line);
       poLine = makeLine(COLORS.p);
       ohLine = makeLine(COLORS.oh);
-      phLine = makeLine(COLORS.ph, true);
+      phLine = makeLine(COLORS.ph);
       poRightAngle = makeRightAngle(COLORS.p);
       ohRightAngle = makeRightAngle(COLORS.oh);
       phRightAngle = makeRightAngle(COLORS.ph);
@@ -419,6 +519,15 @@
       addLabel("H", hFoot.clone().add(new THREE.Vector3(0.05, 0.12, 0.05)), "#bbf7d0");
       addLabel("바닥 α", new THREE.Vector3(-4.2, 0.05, -3.7), "#cbd5e1");
       addLabel("l", hFoot.clone().addScaledVector(lineBase, 1.05), "#93c5fd", "math-label");
+      planeLabel = addLabel("평면 PHO", new THREE.Vector3(.3, 2, .1), "#ede9fe", "plane-label");
+      planeLabel.visible = false;
+
+      planeMesh = new THREE.Mesh(new THREE.BufferGeometry(), new THREE.MeshBasicMaterial({ color: 0x8b5cf6, transparent: true, opacity: 0, side: THREE.DoubleSide, depthWrite: false }));
+      planeMesh.renderOrder = 1;
+      scene.add(planeMesh);
+      lineStartArrow = new THREE.ArrowHelper(lineBase, new THREE.Vector3(), .26, COLORS.line, .14, .08);
+      lineEndArrow = new THREE.ArrowHelper(lineBase.clone().negate(), new THREE.Vector3(), .26, COLORS.line, .14, .08);
+      scene.add(lineStartArrow, lineEndArrow);
 
       new ResizeObserver(() => resizeThree()).observe(wrap);
       window.addEventListener("resize", resizeThree);
@@ -432,6 +541,7 @@
       camera.updateProjectionMatrix();
       renderer.setSize(width, height, false);
       labelRenderer.setSize(width, height);
+      lineObjects.forEach((line) => line.material.resolution.set(width, height));
     }
 
     function placeLabel(label, anchor, rightOffset, upOffset) {
@@ -448,8 +558,38 @@
       placeLabel(labelObjects[1], points.O, -0.34, 0.27);
       placeLabel(labelObjects[2], points.H, 0.34, 0.27);
       placeLabel(labelObjects[3], groundLabelAnchor, -0.05, 0.28);
-      temp.copy(points.H).addScaledVector(lineBase, 1.05);
+      temp.copy(points.H).addScaledVector(getLineDirection(), 1.05);
       placeLabel(labelObjects[4], temp, 0.22, 0.28);
+      planeLabelAnchor.copy(points.O).lerp(points.P, .58);
+      temp.copy(points.H).sub(points.O).normalize();
+      planeLabelAnchor.addScaledVector(temp, .34);
+      placeLabel(planeLabel, planeLabelAnchor, .18, .18);
+    }
+
+    function updateLineArrows(start, end, direction) {
+      lineStartArrow.position.copy(start).addScaledVector(direction, .05);
+      lineStartArrow.setDirection(direction.clone().negate());
+      lineEndArrow.position.copy(end).addScaledVector(direction, -.05);
+      lineEndArrow.setDirection(direction);
+    }
+    function updatePlane(points, visible, refreshGeometry = true) {
+      planeMesh.visible = visible;
+      planeLabel.visible = visible && state.planeProgress > .08;
+      if (!visible) return;
+      planeMesh.material.opacity = .28 * state.planeProgress;
+      if (!refreshGeometry) return;
+      const base = points.H.clone().sub(points.O).normalize();
+      const lowO = points.O.clone().addScaledVector(base, -.28).add(new THREE.Vector3(0, -.04, 0));
+      const lowH = points.H.clone().addScaledVector(base, .28).add(new THREE.Vector3(0, -.04, 0));
+      const topO = lowO.clone().add(new THREE.Vector3(0, state.height + .32, 0));
+      const topH = lowH.clone().add(new THREE.Vector3(0, state.height + .32, 0));
+      planeMesh.geometry.dispose();
+      planeMesh.geometry = new THREE.BufferGeometry();
+      planeMesh.geometry.setAttribute("position", new THREE.Float32BufferAttribute([
+        lowO.x, lowO.y, lowO.z, lowH.x, lowH.y, lowH.z, topH.x, topH.y, topH.z,
+        lowO.x, lowO.y, lowO.z, topH.x, topH.y, topH.z, topO.x, topO.y, topO.z
+      ], 3));
+      planeMesh.geometry.computeVertexNormals();
     }
 
     function updateScene(animate = false, segment = null) {
@@ -457,21 +597,25 @@
       currentPoints = points;
       pointP.position.copy(points.P); pointO.position.copy(points.O); pointH.position.copy(points.H);
       updateLabels(points);
-      setLine(lineObject, lineStart, lineEnd, true);
+      const lineEndpoints = getLineEndpoints(points.H);
+      setLineStyle(lineObject, { color: COLORS.line, width: 3.15 });
+      setLine(lineObject, lineEndpoints.start, lineEndpoints.end, true);
+      updateLineArrows(lineEndpoints.start, lineEndpoints.end, lineEndpoints.direction);
       const shownSegments = stageSegments[state.mode].slice(0, state.stage);
       const showPO = shownSegments.includes("OP");
       const showOH = shownSegments.includes("OH");
       const showPH = shownSegments.includes("PH");
-      const good = isPerpendicular();
-      setLine(poLine, points.O, points.P, showPO);
-      setLine(ohLine, points.O, points.H, showOH);
-      setLine(phLine, points.H, points.P, showPH);
-      phLine.material.color.setHex(good ? COLORS.ph : COLORS.bad);
-      phLine.material.opacity = good ? 0.88 : 0.55;
+      const conclusion = conclusionSegments[state.mode];
+      const candidate = conclusion && !shownSegments.includes(conclusion) ? conclusion : null;
+      const good = isPerpendicular(points);
+      setSegment(poLine, points.O, points.P, showPO, candidate === "OP", COLORS.p, conclusion === "OP");
+      setSegment(ohLine, points.O, points.H, showOH, candidate === "OH", COLORS.oh, conclusion === "OH");
+      setSegment(phLine, points.H, points.P, showPH, candidate === "PH", COLORS.ph, conclusion === "PH");
       updateVerticalRightAngle(poRightAngle, points.O, points.H.clone().sub(points.O), 0.34, showPO);
-      updateRightAngle(ohRightAngle, points.H, points.O.clone().sub(points.H), lineBase, 0.32, showOH && good);
+      updateRightAngle(ohRightAngle, points.H, points.O.clone().sub(points.H), lineEndpoints.direction, 0.32, showOH && good);
       // PH와 l의 직각은 바닥 투영이 아닌, 두 선분이 실제로 만나는 공간의 H에 표시한다.
-      updateSpatialRightAngle(phRightAngle, points.H, points.P.clone().sub(points.H), lineBase, 0.38, showPH && good);
+      updateSpatialRightAngle(phRightAngle, points.H, points.P.clone().sub(points.H), lineEndpoints.direction, 0.38, showPH && good);
+      updatePlane(points, state.mode === "plane" && state.stage >= 4, !state.breakActive);
       if (animate && segment) {
         const line = segment === "OP" ? poLine : segment === "OH" ? ohLine : phLine;
         // OP와 PH는 꼭짓점 P에서 출발해 수선이 내려오는 방향으로 자란다.
@@ -480,7 +624,7 @@
         setLine(line, from, from, true);
         animateSegment(line, from, to);
       }
-      updateProjection(points);
+      updateProjection(points, shownSegments, candidate);
     }
 
     function renderProjectionLine(svg, tag, attrs) {
@@ -490,7 +634,7 @@
       return node;
     }
     function mapGround(point) { return { x: point.x, y: -point.z }; }
-    function updateProjection(points) {
+    function updateProjection(points, shownSegments, candidate) {
       const svg = el("projection-svg");
       while (svg.firstChild) svg.removeChild(svg.firstChild);
       renderProjectionLine(svg, "rect", { x: -5, y: -4, width: 10, height: 8, fill: "#f1f5f9" });
@@ -498,15 +642,17 @@
         renderProjectionLine(svg, "line", { x1: i, y1: -4, x2: i, y2: 4, stroke: "#dbe5ef", "stroke-width": .025 });
         renderProjectionLine(svg, "line", { x1: -5, y1: i, x2: 5, y2: i, stroke: "#dbe5ef", "stroke-width": .025 });
       }
-      const a = mapGround(lineStart), b = mapGround(lineEnd), o = mapGround(points.O), h = mapGround(points.H);
+      const lineEndpoints = getLineEndpoints(points.H);
+      const a = mapGround(lineEndpoints.start), b = mapGround(lineEndpoints.end), o = mapGround(points.O), h = mapGround(points.H);
       renderProjectionLine(svg, "line", { x1: a.x, y1: a.y, x2: b.x, y2: b.y, stroke: "#2563eb", "stroke-width": .09 });
-      if (state.stage >= 2) renderProjectionLine(svg, "line", { x1: o.x, y1: o.y, x2: h.x, y2: h.y, stroke: "#0f9f9a", "stroke-width": .11 });
+      const showOH = shownSegments.includes("OH") || candidate === "OH";
+      if (showOH) renderProjectionLine(svg, "line", { x1: o.x, y1: o.y, x2: h.x, y2: h.y, stroke: candidate === "OH" ? "#94a3b8" : "#0f9f9a", "stroke-width": candidate === "OH" ? .075 : .12, "stroke-dasharray": candidate === "OH" ? ".15 .1" : "" });
       const foot = hFoot.clone().addScaledVector(lineBase, state.hOffset);
       const oh = new THREE.Vector3(foot.x, 0, foot.z).sub(points.O);
       const ohUnit = oh.normalize();
-      const lUnit = lineBase.clone();
+      const lUnit = lineEndpoints.direction;
       const s = .34;
-      if (state.stage >= 2 && isPerpendicular()) {
+      if (showOH && isPerpendicular(points)) {
         const p1 = mapGround(points.H.clone().addScaledVector(ohUnit, -s));
         const p2 = mapGround(points.H.clone().addScaledVector(ohUnit, -s).addScaledVector(lUnit, s));
         const p3 = mapGround(points.H.clone().addScaledVector(lUnit, s));
@@ -516,15 +662,16 @@
       renderProjectionLine(svg, "circle", { cx: h.x, cy: h.y, r: .14, fill: isPerpendicular() ? "#10b981" : "#f59e0b", stroke: "#ffffff", "stroke-width": .06 });
       renderProjectionLine(svg, "text", { x: o.x + .18, y: o.y - .18, fill: "#0f172a", "font-size": .34, "font-weight": 800 }).textContent = "O";
       renderProjectionLine(svg, "text", { x: h.x + .18, y: h.y - .18, fill: "#0f172a", "font-size": .34, "font-weight": 800 }).textContent = "H";
-      renderProjectionLine(svg, "text", { x: b.x - .65, y: b.y - .18, fill: "#1d4ed8", "font-size": .34, "font-weight": 800 }).textContent = "l";
+      renderProjectionLine(svg, "text", { x: b.x - .4, y: b.y - .18, fill: "#1d4ed8", "font-size": .38, "font-style": "italic", "font-weight": 800 }).textContent = "l";
       const angle = getAngleDegrees(points);
       const readout = el("angle-readout");
-      readout.className = `angle-readout ${isPerpendicular() ? "ok" : "bad"}`;
-      readout.innerHTML = `<strong>바닥에서 읽는 각도</strong><br>∠(OH, l) = <b>${angle.toFixed(1)}°</b><br>${isPerpendicular() ? "✓ 정사영 수선 조건 만족" : "→ H를 움직여 90°를 찾아보세요"}`;
+      readout.className = `angle-readout ${isPerpendicular(points) ? "ok" : "bad"}`;
+      const breakMessage = state.mode === "plane" ? "→ l이 평면 PHO에 수직이 아니게 됩니다" : "→ 전제가 깨져 결론을 보장할 수 없습니다";
+      readout.innerHTML = `<strong>바닥에서 읽는 각도</strong><br>∠(OH, l) = <b>${angle.toFixed(1)}°</b><br>${isPerpendicular(points) ? "✓ 정사영 수선 조건 만족" : breakMessage}`;
     }
     function getAngleDegrees(points = getPoints()) {
       const u = points.H.clone().sub(points.O).normalize();
-      const v = lineBase.clone().normalize();
+      const v = getLineDirection().normalize();
       const dot = THREE.MathUtils.clamp(u.dot(v), -1, 1);
       return Math.acos(Math.abs(dot)) * 180 / Math.PI;
     }
@@ -541,13 +688,23 @@
         window.setTimeout(typesetPageMath, 180);
       }
     }
-    function updateInterface() {
+    function updateInterface(typeset = true) {
       const info = modeInfo[state.mode];
-      const good = isPerpendicular();
+      const good = isPerpendicular(currentPoints);
       el("scene-title").textContent = info.title;
       el("mode-description").textContent = info.description;
+      el("projection-description").innerHTML = state.mode === "make"
+        ? `<i>PH</i>를 바닥에 내리면 <i>OH</i>가 됩니다. <i>H</i>를 기준선 <i>l</i> 위에서 움직여 보세요.`
+        : state.mode === "check"
+          ? `바닥 투영 <i>OH</i>가 결론으로 확정되는 과정을 확인합니다.`
+          : `직선 <i>l</i>과 <i>PH</i>, <i>OH</i>가 만든 평면 <i>PHO</i>의 관계를 관찰합니다.`;
       el("h-output").textContent = good ? "정확한 수선" : `${state.hOffset > 0 ? "+" : ""}${state.hOffset.toFixed(2)}`;
-      el("p-output").textContent = state.height.toFixed(1);
+      el("h-control").hidden = state.mode !== "make";
+      el("control-note").innerHTML = state.mode === "make"
+        ? `제1정리에서는 <i>H</i>를 움직여 바닥에서 수선의 발을 찾습니다.`
+        : state.mode === "check"
+          ? `제2정리에서는 <i>PH</i> ⊥ <i>l</i>을 주어진 전제로 두고, 필요할 때만 조건 깨기 비교로 확인합니다.`
+          : `제3정리에서는 <i>H</i>를 고정하고 기준선 <i>l</i>의 방향을 조건 깨기 비교에서만 바꿉니다.`;
       const checks = [];
       if (state.mode === "make") {
         checks.push([state.stage >= 1, "조건 1: PO ⟂ 평면 α", "PO는 바닥에 수직인 기준 기둥입니다."]);
@@ -561,25 +718,34 @@
         checks.push([state.stage >= 1 && good, "조건 1: PH ⟂ 기준선 l", good ? "공간 지지대의 수직 조건입니다." : "H를 움직여 PH와 l의 수직을 맞추세요."]);
         checks.push([state.stage >= 2 && good, "조건 2: OH ⟂ 기준선 l", good ? "바닥 투영에서도 같은 수직이 보입니다." : "현재 OH는 l에 수직이 아닙니다."]);
         checks.push([state.stage >= 3, "조건 3: PO ⟂ OH", "PO는 수직 방향, OH는 바닥 방향입니다."]);
-        checks.push([state.stage >= 3 && good, "결론: PO ⟂ 평면 α", state.stage >= 3 && good ? "제3정리로 기준 기둥의 평면 수직을 확인합니다." : "앞의 두 수직 조건을 확보한 뒤 평면 수직을 확인합니다."]);
+        checks.push([state.stage >= 4 && good, "중간 결론: l ⟂ 평면 PHO", state.stage >= 4 && good ? "PH와 OH를 포함하는 평면 PHO가 펼쳐졌습니다." : "PH와 OH가 만든 평면 PHO를 마지막 단계에서 확인합니다."]);
+        checks.push([state.stage >= 4 && good, "결론: PO ⟂ 평면 α", state.stage >= 4 && good ? "l과 OH를 포함하는 바닥 평면 α에 PO가 수직입니다." : "평면 PHO의 수직 관계를 거쳐 최종 결론을 확인합니다."]);
       }
       el("checks").innerHTML = checks.map(([ok, title, detail]) => `<div class="check ${ok ? "ok" : "warn"}"><span class="mark">${ok ? "✓" : "!"}</span><span><b>${title}</b><br>${detail}</span></div>`).join("");
-      const resultGood = state.stage >= 3 && good;
+      const resultGood = state.stage >= maxStage() && good;
       const result = el("result");
       result.className = `result ${resultGood ? "good" : "bad"}`;
-      result.textContent = state.stage < 3 ? "다음 단계 버튼으로 조건을 하나씩 확보해 보세요." : resultGood ? info.resultGood : info.resultBad;
+      result.textContent = state.stage < maxStage() ? "다음 단계 버튼으로 조건을 하나씩 확보해 보세요." : resultGood ? info.resultGood : info.resultBad;
       el("interpretation").innerHTML = state.mode === "make"
         ? `<strong>관찰 포인트:</strong> 공간의 마지막 지지대 PH를 직접 맞추지 않고, 먼저 바닥의 정사영 OH를 기준선 l에 수직으로 만들면 PH의 수직이 결정됩니다.`
         : `<strong>관찰 포인트:</strong> 세 정리는 순서대로 모두 적용하는 절차가 아니라, 조건에 따라 마지막으로 알아내는 수직 관계가 서로 다른 판정 정리입니다.`;
-      el("step-button").textContent = state.stage >= 3 ? "마지막 단계 완료" : `다음 단계 (${state.stage + 1}/3)`;
-      el("step-button").disabled = state.stage >= 3;
+      el("step-button").textContent = state.stage >= maxStage() ? "마지막 단계 완료" : `다음 단계 (${state.stage + 1}/${maxStage()})`;
+      el("step-button").disabled = state.stage >= maxStage() || state.breakActive;
+      el("replay-button").disabled = state.breakActive;
+      el("break-button").textContent = state.breakActive ? "조건 깨기 비교 멈춤" : "조건 깨기 비교 재생";
+      el("break-button").classList.toggle("is-running", state.breakActive);
       document.querySelectorAll(".mode-tab").forEach((button) => button.setAttribute("aria-selected", String(button.dataset.mode === state.mode)));
-      updateFormula();
+      el("legend").innerHTML = state.mode === "make"
+        ? `<span><i class="swatch purple"></i><i>PO</i>, <i>OH</i>: 주어진 조건</span><span><i class="swatch dashed"></i><i>PH</i>: 아직 증명되지 않은 결론 후보</span>`
+        : state.mode === "check"
+          ? `<span><i class="swatch purple"></i><i>PO</i>, <i>PH</i>: 주어진 조건</span><span><i class="swatch dashed"></i><i>OH</i>: 아직 증명되지 않은 결론 후보</span>`
+          : `<span><i class="swatch orange"></i><i>PH</i>, <i>OH</i>, <i>PO</i>: 주어진 조건</span><span><i class="swatch dashed"></i>마지막에 평면 <i>PHO</i>를 펼쳐 중간 결론을 확인</span>`;
+      if (typeset) updateFormula();
     }
 
     function goNext() {
       clearAnimation();
-      if (state.stage >= 3) return;
+      if (state.stage >= maxStage()) return;
       const segment = stageSegments[state.mode][state.stage];
       state.stage += 1;
       if (state.mode === "make" && segment === "PH" && !isPerpendicular()) {
@@ -589,25 +755,30 @@
         return;
       }
       updateInterface();
-      updateScene(true, segment);
+      if (segment === "PLANE") {
+        state.planeProgress = 0;
+        updateScene(false);
+        animatePlane();
+      } else updateScene(true, segment);
     }
     function replay() {
       clearAnimation();
       const segment = state.stage > 0 ? stageSegments[state.mode][state.stage - 1] : null;
       if (!segment) { updateScene(false); return; }
       updateScene(false);
-      updateScene(true, segment);
+      if (segment === "PLANE") { state.planeProgress = 0; updateScene(false); animatePlane(); }
+      else updateScene(true, segment);
     }
-    function reset() { clearAnimation(); state.stage = 0; state.hOffset = 0; state.height = 3.8; el("h-offset").value = "0"; el("p-height").value = "3.8"; updateScene(false); updateInterface(); }
-    function setMode(mode) { clearAnimation(); state.mode = mode; state.stage = 0; updateScene(false); updateInterface(); }
+    function reset() { clearAnimation(); state.stage = 0; state.hOffset = 0; state.planeProgress = 0; el("h-offset").value = "0"; updateScene(false); updateInterface(); }
+    function setMode(mode) { clearAnimation(); state.mode = mode; state.stage = 0; state.hOffset = 0; state.planeProgress = 0; el("h-offset").value = "0"; updateScene(false); updateInterface(); }
 
     el("step-button").addEventListener("click", goNext);
     el("replay-button").addEventListener("click", replay);
     el("reset-button").addEventListener("click", reset);
+    el("break-button").addEventListener("click", () => { if (state.breakActive) stopConditionBreak(); else startConditionBreak(); });
     const updateHOffset = (event) => { clearAnimation(); state.hOffset = Number(event.target.value); updateScene(false); updateInterface(); };
     el("h-offset").addEventListener("input", updateHOffset);
     el("h-offset").addEventListener("change", updateHOffset);
-    el("p-height").addEventListener("input", (event) => { state.height = Number(event.target.value); updateScene(false); updateInterface(); });
     document.querySelector(".mode-tabs").addEventListener("click", (event) => { const button = event.target.closest("[data-mode]"); if (button) setMode(button.dataset.mode); });
 
     initThree();
