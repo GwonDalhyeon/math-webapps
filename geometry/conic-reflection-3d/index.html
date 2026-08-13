@@ -827,14 +827,24 @@ function updatePlayBtnLabel() {
   const btn = document.getElementById('playBtn');
   if (btn) btn.textContent = state.playing ? '⏸ 일시정지' : '▶ 재생';
 }
+// 재생 루프는 항상 하나만 돈다. 예약된 프레임 번호를 들고 있다가, 재생을 끌 때 취소하고
+// 켤 때는 이미 예약된 것이 없을 때만 새로 예약한다. (이 장치가 없으면 재생↔일시정지를
+// 빠르게 연타할 때 이전 루프가 살아 있는 채로 새 루프가 겹쳐 재생 속도가 배로 빨라진다.)
+let tickHandle = null;
+function stopTick() {
+  if (tickHandle !== null) { cancelAnimationFrame(tickHandle); tickHandle = null; }
+  lastTickTime = null;
+}
 function togglePlay() {
   state.playing = !state.playing;
   if (state.playing && state.progress >= 100) state.progress = 0;
   updatePlayBtnLabel();
-  if (state.playing) requestAnimationFrame(playTick);
+  if (state.playing) { if (tickHandle === null) { lastTickTime = null; tickHandle = requestAnimationFrame(playTick); } }
+  else stopTick();
 }
 let lastTickTime = null;
 function playTick(ts) {
+  tickHandle = null;
   if (!state.playing) { lastTickTime = null; return; }
   if (lastTickTime === null) lastTickTime = ts;
   const dt = ts - lastTickTime; lastTickTime = ts;
@@ -845,10 +855,11 @@ function playTick(ts) {
   if (el) el.value = state.progress;
   setValText('progress', Math.round(state.progress) + '%');
   updateRays(computeParams());
-  requestAnimationFrame(playTick);
+  tickHandle = requestAnimationFrame(playTick);
 }
 function resetAll() {
   state.progress = 0; state.playing = false;
+  stopTick();
   state.launchPct = 55; state.sourceOffsetPct = 0;
   if (state.panel === 'standard') state.std = { circleR: 2.5, ellA: 3.2, ellB: 2.2, paraP: 1.3, hypA: 1.6, hypB: 2.2 };
   else state.contE = 0.6;
