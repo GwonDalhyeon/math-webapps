@@ -1,0 +1,597 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="바닥에 정사영하여 삼수선 정리의 세 가지 수직 조건을 탐구하는 3D 기하 웹앱입니다." />
+  <title>삼수선 정리 정사영 수선 탐구실</title>
+  <link rel="icon" href="../../favicon.ico" sizes="16x16 32x32 48x48" />
+  <link rel="icon" href="../../assets/favicon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="../../assets/common.css" />
+  <script>
+    window.MathJax = {
+      tex: { inlineMath: [['\\(', '\\)']], displayMath: [['\\[', '\\]']] },
+      options: { skipHtmlTags: ['script', 'noscript', 'style', 'textarea'] }
+    };
+  </script>
+  <!-- MathJax는 세 정리의 구조가 보이는 식을 교과서식으로 표시하기 위해 사용합니다. -->
+  <script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "../../assets/vendor/three/three.module.js",
+        "three/addons/": "../../assets/vendor/three/addons/"
+      }
+    }
+  </script>
+  <style>
+    :root {
+      --bg: #f4f7fb;
+      --panel: #ffffff;
+      --ink: #162235;
+      --muted: #5f6f82;
+      --line: #d6e0ea;
+      --blue: #2563eb;
+      --blue-soft: #eaf1ff;
+      --teal: #0f9f9a;
+      --orange: #f59e0b;
+      --purple: #7c3aed;
+      --danger: #dc2626;
+      --shadow: 0 8px 24px rgba(15, 31, 55, .08);
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--ink); font-family: "Malgun Gothic", "Apple SD Gothic Neo", system-ui, sans-serif; }
+    .wrap { width: min(1440px, calc(100% - 24px)); margin: 0 auto; padding: 18px 0 36px; }
+    .back-link { color: var(--blue); font-weight: 800; text-decoration: none; font-size: 14px; }
+    .hero { margin: 12px 0 14px; }
+    .hero h1 { margin: 0 0 6px; font-size: clamp(24px, 3vw, 36px); letter-spacing: -.03em; }
+    .hero p { max-width: 950px; margin: 0; color: var(--muted); line-height: 1.6; font-size: 15px; }
+    .goal { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin: 14px 0; padding: 12px 14px; border: 1px solid #bfdbfe; border-radius: 12px; background: linear-gradient(120deg, #eff6ff, #fff); }
+    .goal strong { color: #1d4ed8; }
+    .goal .goal-note { color: var(--muted); font-size: 13px; }
+    .mode-tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 12px; }
+    .mode-tab, button { font: inherit; }
+    .mode-tab { min-height: 46px; padding: 9px 10px; border: 2px solid var(--line); border-radius: 10px; background: var(--panel); color: var(--muted); font-weight: 800; cursor: pointer; }
+    .mode-tab[aria-selected="true"] { border-color: var(--blue); color: var(--blue); background: var(--blue-soft); }
+    .layout { display: grid; grid-template-columns: minmax(0, 1fr) 355px; gap: 14px; align-items: start; }
+    .card { overflow: hidden; background: var(--panel); border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--shadow); }
+    .card-head { padding: 10px 14px; border-bottom: 1px solid var(--line); background: #f8fafc; color: var(--muted); font-size: 13px; font-weight: 800; }
+    .visuals { display: grid; grid-template-columns: minmax(0, 1fr) 250px; min-height: 500px; }
+    .scene-wrap { position: relative; min-height: 500px; background: #0a1222; touch-action: none; }
+    #three-canvas { display: block; width: 100%; height: 100%; min-height: 500px; }
+    #label-layer { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+    .label3d { padding: 2px 6px; border-radius: 5px; background: rgba(8, 18, 34, .76); color: #fff; font-size: 13px; font-weight: 800; white-space: nowrap; }
+    .scene-hint { position: absolute; left: 12px; bottom: 10px; padding: 6px 9px; border-radius: 8px; background: rgba(255,255,255,.9); color: var(--muted); font-size: 12px; font-weight: 700; }
+    .projection { padding: 12px; border-left: 1px solid var(--line); background: #fbfdff; }
+    .projection h2 { margin: 0 0 4px; font-size: 16px; }
+    .projection p { margin: 0 0 8px; color: var(--muted); font-size: 12px; line-height: 1.5; }
+    #projection-svg { display: block; width: 100%; height: auto; aspect-ratio: 1 / .9; border: 1px solid #cbd5e1; border-radius: 10px; background: #f1f5f9; }
+    .angle-readout { margin-top: 9px; padding: 9px 10px; border-radius: 9px; background: #eef2ff; color: #3730a3; font-size: 13px; line-height: 1.45; }
+    .angle-readout.ok { background: #ecfdf5; color: #047857; }
+    .angle-readout.bad { background: #fff7ed; color: #b45309; }
+    .interp { padding: 11px 14px; border-top: 1px solid var(--line); background: #f8fafc; font-size: 14px; line-height: 1.6; }
+    .interp strong { color: #1d4ed8; }
+    .controls { padding: 13px 14px; }
+    .control-section + .control-section { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--line); }
+    .control-section h2 { margin: 0 0 8px; font-size: 16px; }
+    .control-section p { margin: 0 0 8px; color: var(--muted); font-size: 13px; line-height: 1.5; }
+    .button-row { display: grid; grid-template-columns: repeat(2, 1fr); gap: 7px; }
+    .button-row.three { grid-template-columns: repeat(3, 1fr); }
+    .action-btn { min-height: 40px; padding: 8px 7px; border: 1px solid var(--line); border-radius: 9px; background: #fff; color: var(--ink); font-weight: 800; cursor: pointer; }
+    .action-btn.primary { background: var(--blue); border-color: var(--blue); color: #fff; }
+    .action-btn:disabled { cursor: not-allowed; opacity: .48; }
+    .slider { margin: 11px 0; }
+    .slider-head { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 4px; font-size: 13px; font-weight: 800; }
+    .slider-head output { color: var(--blue); font-variant-numeric: tabular-nums; }
+    input[type="range"] { width: 100%; accent-color: var(--blue); }
+    .checks { display: grid; gap: 7px; margin: 8px 0 0; }
+    .check { display: grid; grid-template-columns: 24px 1fr; gap: 7px; align-items: center; min-height: 38px; padding: 7px 8px; border: 1px solid var(--line); border-radius: 8px; background: #fbfdff; font-size: 13px; line-height: 1.35; }
+    .check .mark { display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: #e2e8f0; color: #64748b; font-weight: 900; }
+    .check.ok { border-color: #a7f3d0; background: #ecfdf5; }
+    .check.ok .mark { background: #10b981; color: #fff; }
+    .check.warn { border-color: #fed7aa; background: #fff7ed; }
+    .check.warn .mark { background: #f59e0b; color: #fff; }
+    .formula { min-height: 54px; margin: 9px 0; padding: 8px 10px; border-radius: 9px; background: #0f172a; color: #f8fafc; text-align: center; overflow-x: auto; }
+    .formula mjx-container { margin: 0 !important; }
+    .result { padding: 10px 11px; border-radius: 9px; background: #f1f5f9; color: var(--muted); font-size: 14px; line-height: 1.5; }
+    .result.good { background: #ecfdf5; color: #065f46; }
+    .result.bad { background: #fff7ed; color: #9a3412; }
+    .legend { display: grid; gap: 6px; margin-top: 9px; color: var(--muted); font-size: 12px; }
+    .legend span { display: flex; align-items: center; gap: 7px; }
+    .swatch { display: inline-block; width: 19px; height: 4px; border-radius: 3px; }
+    .swatch.purple { background: var(--purple); }
+    .swatch.teal { background: var(--teal); }
+    .swatch.orange { background: var(--orange); }
+    @media (max-width: 1080px) {
+      .layout { grid-template-columns: 1fr; }
+      .controls { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+      .control-section + .control-section { margin-top: 0; padding-top: 0; border-top: 0; }
+    }
+    @media (min-width: 761px) and (max-height: 900px) {
+      .visuals, .scene-wrap, #three-canvas { min-height: 430px; height: 430px; }
+    }
+    @media (max-width: 760px) {
+      .wrap { width: min(100% - 16px, 680px); padding-top: 12px; }
+      .mode-tabs { grid-template-columns: 1fr; }
+      .visuals { grid-template-columns: 1fr; }
+      .scene-wrap, #three-canvas { min-height: 420px; }
+      .projection { border-left: 0; border-top: 1px solid var(--line); }
+      .controls { display: block; }
+      .control-section + .control-section { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--line); }
+    }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <a class="back-link" href="../">← 기하 웹앱</a>
+    <header class="hero">
+      <h1>삼수선 정리 정사영 수선 탐구실</h1>
+      <p>공간에서 바로 맞추기 어려운 수직을 바닥에 투영해 찾아봅니다. 기준 기둥과 바닥의 수선을 먼저 만든 뒤, 마지막 지지대가 언제 기준선에 수직이 되는지 관찰하세요.</p>
+    </header>
+
+    <section class="goal" aria-label="탐구 목표">
+      <strong>탐구 목표</strong>
+      <span>높은 점 <i>P</i>에서 바닥의 기준선 <i>l</i>에 수직인 지지대 <i>PH</i>를 설치하라.</span>
+      <span class="goal-note">여기서 <i>PH</i> ⊥ <i>l</i>이며, <i>PO</i>는 바닥 <i>α</i>에 수직인 기준 기둥입니다.</span>
+    </section>
+
+    <nav class="mode-tabs" aria-label="삼수선 정리 모드">
+      <button class="mode-tab" type="button" data-mode="make" aria-selected="true">제1정리 · 수선 만들기</button>
+      <button class="mode-tab" type="button" data-mode="check">제2정리 · 수선 확인</button>
+      <button class="mode-tab" type="button" data-mode="plane">제3정리 · 평면 수직 확인</button>
+    </nav>
+
+    <div class="layout">
+      <section class="card" aria-label="삼수선 정리 3D 시각화">
+        <div class="card-head" id="scene-title">제1정리: 바닥에서 만든 수선으로 공간의 수선을 완성합니다.</div>
+        <div class="visuals">
+          <div class="scene-wrap" id="scene-wrap">
+            <canvas id="three-canvas" aria-label="삼수선 정리 3차원 장면"></canvas>
+            <div id="label-layer" aria-hidden="true"></div>
+            <div class="scene-hint">장면을 드래그해 회전 · 휠 또는 두 손가락으로 확대/축소</div>
+          </div>
+          <aside class="projection" aria-label="바닥 투영 평면도">
+            <h2>바닥 투영</h2>
+            <p><i>PH</i>를 바닥에 내리면 <i>OH</i>가 됩니다. <i>H</i>를 기준선 <i>l</i> 위에서 움직여 보세요.</p>
+            <svg id="projection-svg" viewBox="-5 -4 10 8" role="img" aria-label="바닥의 기준선과 정사영"></svg>
+            <div id="angle-readout" class="angle-readout"></div>
+          </aside>
+        </div>
+        <div class="interp" id="interpretation"></div>
+      </section>
+
+      <aside class="card controls" aria-label="조작과 조건">
+        <section class="control-section">
+          <h2>조건을 하나씩 확보하기</h2>
+          <p id="mode-description"></p>
+          <div class="button-row three">
+            <button class="action-btn primary" type="button" id="step-button">다음 단계</button>
+            <button class="action-btn" type="button" id="replay-button">다시 보기</button>
+            <button class="action-btn" type="button" id="reset-button">초기화</button>
+          </div>
+          <div class="checks" id="checks"></div>
+        </section>
+
+        <section class="control-section">
+          <h2>점의 위치 조절</h2>
+          <div class="slider">
+            <div class="slider-head"><label for="h-offset"><i>H</i> 위치: 기준선 <i>l</i> 위 이동</label><output id="h-output" for="h-offset">정확한 수선</output></div>
+            <input id="h-offset" type="range" min="-2.2" max="2.2" step="0.01" value="0" />
+          </div>
+          <div class="slider">
+            <div class="slider-head"><label for="p-height"><i>P</i> 높이</label><output id="p-output" for="p-height">3.8</output></div>
+            <input id="p-height" type="range" min="2.6" max="5.4" step="0.1" value="3.8" />
+          </div>
+          <p>점은 자유롭게 떠다니지 않습니다. <i>H</i>는 <i>l</i> 위에서, <i>P</i>는 <i>O</i>를 지나는 수직선 위에서만 움직입니다.</p>
+        </section>
+
+        <section class="control-section">
+          <h2>현재 정리</h2>
+          <div class="formula" id="formula"></div>
+          <div class="result" id="result"></div>
+          <div class="legend" aria-label="선분 범례">
+            <span><i class="swatch purple"></i><i>PO</i>: 바닥에 수직인 기준 기둥</span>
+            <span><i class="swatch teal"></i><i>OH</i>: 바닥에서 찾는 정사영 수선</span>
+            <span><i class="swatch orange"></i><i>PH</i>: 마지막 후보 지지대</span>
+          </div>
+        </section>
+      </aside>
+    </div>
+  </main>
+
+  <script type="module">
+    import * as THREE from "three";
+    import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+    import { CSS2DRenderer, CSS2DObject } from "three/addons/renderers/CSS2DRenderer.js";
+
+    const COLORS = { ground: 0x94a3b8, line: 0x2563eb, p: 0x7c3aed, oh: 0x0f9f9a, ph: 0xf59e0b, point: 0xf8fafc, bad: 0x94a3b8, text: 0x0f172a };
+    const lineBase = new THREE.Vector3(0.8, 0, 0.6).normalize();
+    const lineAnchor = new THREE.Vector3(2.4, 0, 0.9);
+    const hFoot = lineAnchor.clone().addScaledVector(lineBase, -lineAnchor.dot(lineBase));
+    const lineStart = lineAnchor.clone().addScaledVector(lineBase, -4.5);
+    const lineEnd = lineAnchor.clone().addScaledVector(lineBase, 4.5);
+
+    const state = { mode: "make", stage: 0, hOffset: 0, height: 3.8, animationFrame: 0, animation: null };
+    const modeInfo = {
+      make: {
+        title: "제1정리: 바닥에서 만든 수선으로 공간의 수선을 완성합니다.",
+        description: "먼저 PO를 세우고, 바닥에서 OH를 맞춘 뒤, 마지막에 PH를 연결합니다.",
+        formula: "\\[PO\\perp\\alpha,\\quad OH\\perp l\\quad\\Longrightarrow\\quad PH\\perp l\\]",
+        resultGood: "두 조건이 모였습니다. 삼수선 정리 제1정리에 따라 PH를 기준선 l에 수직으로 세울 수 있습니다.",
+        resultBad: "아직 바닥의 OH가 기준선 l에 수직이 아닙니다. H를 움직여 90°를 찾아보세요."
+      },
+      check: {
+        title: "제2정리: 공간 지지대의 수선을 바닥 투영으로 확인합니다.",
+        description: "PO가 바닥에 수직이고 PH가 기준선에 수직이라면, 그 정사영 OH도 기준선에 수직입니다.",
+        formula: "\\[PO\\perp\\alpha,\\quad PH\\perp l\\quad\\Longrightarrow\\quad OH\\perp l\\]",
+        resultGood: "PH ⟂ l 조건이 확인되었습니다. 제2정리에 따라 바닥의 정사영 OH도 l에 수직입니다.",
+        resultBad: "PH ⟂ l 조건이 아직 확인되지 않았습니다. 바닥 투영에서 OH와 l의 각도를 확인하세요."
+      },
+      plane: {
+        title: "제3정리: 세 수직 조건으로 기준 기둥의 평면 수직을 확인합니다.",
+        description: "PH와 OH가 l에 수직이고 PO가 OH에 수직이면, PO가 바닥 평면 전체에 수직임을 확인합니다.",
+        formula: "\\[PH\\perp l,\\quad OH\\perp l,\\quad PO\\perp OH\\quad\\Longrightarrow\\quad PO\\perp\\alpha\\]",
+        resultGood: "세 조건이 모였습니다. 제3정리에 따라 PO는 바닥 평면 α에 수직입니다.",
+        resultBad: "PH와 OH가 l에 수직인 조건을 먼저 맞춰야 PO ⟂ α를 확인할 수 있습니다."
+      }
+    };
+
+    let renderer, labelRenderer, scene, camera, controls;
+    let ground, groundGrid, lineObject, poLine, ohLine, phLine, poRightAngle, ohRightAngle, phRightAngle;
+    let pointP, pointO, pointH;
+    const labelObjects = [];
+    const temp = new THREE.Vector3();
+
+    const el = (id) => document.getElementById(id);
+    const isPerpendicular = () => Math.abs(state.hOffset) < 0.055;
+    const getPoints = () => {
+      const O = new THREE.Vector3(0, 0, 0);
+      const P = new THREE.Vector3(0, state.height, 0);
+      const H = hFoot.clone().addScaledVector(lineBase, state.hOffset);
+      return { P, O, H };
+    };
+
+    function easeOut(t) { return 1 - Math.pow(1 - t, 3); }
+    function clearAnimation() {
+      if (state.animationFrame) cancelAnimationFrame(state.animationFrame);
+      state.animationFrame = 0;
+      state.animation = null;
+    }
+    function animateSegment(line, from, to, duration = 760, onDone = null) {
+      clearAnimation();
+      const started = performance.now();
+      state.animation = { line, from: from.clone(), to: to.clone(), duration, onDone };
+      const tick = (now) => {
+        if (!state.animation) return;
+        const t = Math.min(1, (now - started) / duration);
+        const q = from.clone().lerp(to, easeOut(t));
+        line.geometry.setFromPoints([from, q]);
+        if (t < 1) state.animationFrame = requestAnimationFrame(tick);
+        else { state.animationFrame = 0; const done = state.animation.onDone; state.animation = null; if (done) done(); }
+      };
+      state.animationFrame = requestAnimationFrame(tick);
+    }
+
+    function makeLine(color, dashed = false) {
+      const material = dashed
+        ? new THREE.LineDashedMaterial({ color, dashSize: 0.18, gapSize: 0.11, transparent: true, opacity: 0.8 })
+        : new THREE.LineBasicMaterial({ color, transparent: true, opacity: 0.96 });
+      const line = new THREE.Line(new THREE.BufferGeometry(), material);
+      if (dashed) line.userData.dashed = true;
+      scene.add(line);
+      return line;
+    }
+    function setLine(line, a, b, visible = true) {
+      line.visible = visible;
+      if (!visible) return;
+      line.geometry.dispose();
+      line.geometry = new THREE.BufferGeometry().setFromPoints([a, b]);
+      if (line.userData.dashed) line.computeLineDistances();
+    }
+    function addLabel(text, position, color = "#ffffff") {
+      const div = document.createElement("div");
+      div.className = "label3d";
+      div.textContent = text;
+      div.style.color = color;
+      const label = new CSS2DObject(div);
+      label.position.copy(position);
+      scene.add(label);
+      labelObjects.push(label);
+      return label;
+    }
+    function makePoint(color) {
+      const mesh = new THREE.Mesh(new THREE.SphereGeometry(0.14, 20, 16), new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 0.14, roughness: 0.42 }));
+      scene.add(mesh);
+      return mesh;
+    }
+    function makeRightAngle(color) {
+      const line = makeLine(color);
+      line.material.opacity = 0.95;
+      return line;
+    }
+    function updateRightAngle(line, center, aDir, bDir, size = 0.36, visible = true) {
+      const a = aDir.clone().setY(0).normalize().multiplyScalar(size);
+      const b = bDir.clone().setY(0).normalize().multiplyScalar(size);
+      line.visible = visible;
+      if (!visible) return;
+      line.geometry.dispose();
+      line.geometry = new THREE.BufferGeometry().setFromPoints([
+        center.clone().add(a),
+        center.clone().add(a).add(b),
+        center.clone().add(b)
+      ]);
+    }
+    function updateVerticalRightAngle(line, center, horizontalDir, size = 0.34, visible = true) {
+      line.visible = visible;
+      if (!visible) return;
+      const horizontal = horizontalDir.clone().setY(0).normalize().multiplyScalar(size);
+      const vertical = new THREE.Vector3(0, size, 0);
+      line.geometry.dispose();
+      line.geometry = new THREE.BufferGeometry().setFromPoints([
+        center.clone().add(vertical),
+        center.clone().add(vertical).add(horizontal),
+        center.clone().add(horizontal)
+      ]);
+    }
+    function disposeObject(object) {
+      if (!object) return;
+      scene.remove(object);
+      object.geometry?.dispose();
+      if (Array.isArray(object.material)) object.material.forEach((m) => m.dispose());
+      else object.material?.dispose();
+    }
+
+    function initThree() {
+      const wrap = el("scene-wrap");
+      const width = Math.max(1, wrap.clientWidth);
+      const height = Math.max(1, wrap.clientHeight);
+      renderer = new THREE.WebGLRenderer({ canvas: el("three-canvas"), antialias: true });
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+      renderer.setSize(width, height, false);
+      renderer.setClearColor(0x0a1222, 1);
+      labelRenderer = new CSS2DRenderer();
+      labelRenderer.setSize(width, height);
+      labelRenderer.domElement.style.position = "absolute";
+      labelRenderer.domElement.style.inset = "0";
+      el("label-layer").appendChild(labelRenderer.domElement);
+
+      scene = new THREE.Scene();
+      camera = new THREE.PerspectiveCamera(42, width / height, 0.1, 100);
+      camera.position.set(7.2, 6.4, 8.8);
+      controls = new OrbitControls(camera, renderer.domElement);
+      controls.enableDamping = true;
+      controls.dampingFactor = 0.08;
+      controls.minDistance = 5;
+      controls.maxDistance = 20;
+      controls.target.set(0, 1.1, 0);
+      scene.add(new THREE.HemisphereLight(0xbad7ff, 0x07101e, 1.9));
+      const key = new THREE.DirectionalLight(0xffffff, 1.25);
+      key.position.set(4, 8, 6);
+      scene.add(key);
+
+      ground = new THREE.Mesh(new THREE.PlaneGeometry(10, 10), new THREE.MeshBasicMaterial({ color: 0x1e3654, transparent: true, opacity: 0.45, side: THREE.DoubleSide, depthWrite: false }));
+      ground.rotation.x = -Math.PI / 2;
+      scene.add(ground);
+      groundGrid = new THREE.GridHelper(10, 10, 0x5a7da4, 0x29476a);
+      groundGrid.position.y = 0.012;
+      groundGrid.material.transparent = true;
+      groundGrid.material.opacity = 0.42;
+      scene.add(groundGrid);
+      const axes = new THREE.AxesHelper(1.5);
+      axes.position.set(-4.2, 0.03, -3.8);
+      scene.add(axes);
+      lineObject = makeLine(COLORS.line);
+      poLine = makeLine(COLORS.p);
+      ohLine = makeLine(COLORS.oh);
+      phLine = makeLine(COLORS.ph, true);
+      poRightAngle = makeRightAngle(COLORS.p);
+      ohRightAngle = makeRightAngle(COLORS.oh);
+      phRightAngle = makeRightAngle(COLORS.ph);
+      pointP = makePoint(COLORS.point);
+      pointO = makePoint(COLORS.point);
+      pointH = makePoint(COLORS.point);
+      addLabel("P", new THREE.Vector3(0, 3.8, 0.04), "#fde68a");
+      addLabel("O", new THREE.Vector3(0.06, 0.12, 0.06), "#bfdbfe");
+      addLabel("H", hFoot.clone().add(new THREE.Vector3(0.05, 0.12, 0.05)), "#bbf7d0");
+      addLabel("바닥 α", new THREE.Vector3(-4.2, 0.05, -3.7), "#cbd5e1");
+      addLabel("기준선 l", lineEnd.clone().add(new THREE.Vector3(0, 0.05, 0)), "#93c5fd");
+
+      new ResizeObserver(() => resizeThree()).observe(wrap);
+      window.addEventListener("resize", resizeThree);
+      resizeThree();
+    }
+    function resizeThree() {
+      if (!renderer) return;
+      const rect = el("scene-wrap").getBoundingClientRect();
+      const width = Math.max(1, rect.width), height = Math.max(1, rect.height);
+      camera.aspect = width / height;
+      camera.updateProjectionMatrix();
+      renderer.setSize(width, height, false);
+      labelRenderer.setSize(width, height);
+    }
+
+    function updateLabels(points) {
+      const positions = [points.P.clone().add(new THREE.Vector3(0.08, 0.16, 0)), points.O.clone().add(new THREE.Vector3(0.08, 0.14, 0)), points.H.clone().add(new THREE.Vector3(0.08, 0.14, 0)), new THREE.Vector3(-4.2, 0.05, -3.7), lineEnd.clone().add(new THREE.Vector3(0, 0.05, 0))];
+      labelObjects[0].position.copy(positions[0]);
+      labelObjects[1].position.copy(positions[1]);
+      labelObjects[2].position.copy(positions[2]);
+      labelObjects[3].position.copy(positions[3]);
+      labelObjects[4].position.copy(positions[4]);
+    }
+
+    function updateScene(animate = false, segment = null) {
+      const points = getPoints();
+      pointP.position.copy(points.P); pointO.position.copy(points.O); pointH.position.copy(points.H);
+      updateLabels(points);
+      setLine(lineObject, lineStart, lineEnd, true);
+      const showPO = state.stage >= 1;
+      const showOH = state.stage >= 2;
+      const showPH = state.stage >= 3;
+      const good = isPerpendicular();
+      setLine(poLine, points.O, points.P, showPO);
+      setLine(ohLine, points.O, points.H, showOH);
+      setLine(phLine, points.H, points.P, showPH || state.mode !== "make");
+      phLine.material.color.setHex(good ? COLORS.ph : COLORS.bad);
+      phLine.material.opacity = good ? 0.88 : 0.55;
+      updateVerticalRightAngle(poRightAngle, points.O, points.H.clone().sub(points.O), 0.34, showPO);
+      updateRightAngle(ohRightAngle, points.H, points.O.clone().sub(points.H), lineBase, 0.32, showOH && good);
+      updateRightAngle(phRightAngle, points.H, points.P.clone().sub(points.H), lineBase, 0.38, showPH && good);
+      if (animate && segment) {
+        const line = segment === "PO" ? poLine : segment === "OH" ? ohLine : phLine;
+        const from = segment === "PO" ? points.O : segment === "OH" ? points.O : points.H;
+        const to = segment === "PO" ? points.P : segment === "OH" ? points.H : points.P;
+        setLine(line, from, from, true);
+        animateSegment(line, from, to);
+      }
+      updateProjection(points);
+    }
+
+    function renderProjectionLine(svg, tag, attrs) {
+      const node = document.createElementNS("http://www.w3.org/2000/svg", tag);
+      Object.entries(attrs).forEach(([key, value]) => node.setAttribute(key, value));
+      svg.appendChild(node);
+      return node;
+    }
+    function mapGround(point) { return { x: point.x, y: -point.z }; }
+    function updateProjection(points) {
+      const svg = el("projection-svg");
+      while (svg.firstChild) svg.removeChild(svg.firstChild);
+      renderProjectionLine(svg, "rect", { x: -5, y: -4, width: 10, height: 8, fill: "#f1f5f9" });
+      for (let i = -4; i <= 4; i++) {
+        renderProjectionLine(svg, "line", { x1: i, y1: -4, x2: i, y2: 4, stroke: "#dbe5ef", "stroke-width": .025 });
+        renderProjectionLine(svg, "line", { x1: -5, y1: i, x2: 5, y2: i, stroke: "#dbe5ef", "stroke-width": .025 });
+      }
+      const a = mapGround(lineStart), b = mapGround(lineEnd), o = mapGround(points.O), h = mapGround(points.H);
+      renderProjectionLine(svg, "line", { x1: a.x, y1: a.y, x2: b.x, y2: b.y, stroke: "#2563eb", "stroke-width": .09 });
+      if (state.stage >= 2) renderProjectionLine(svg, "line", { x1: o.x, y1: o.y, x2: h.x, y2: h.y, stroke: "#0f9f9a", "stroke-width": .11 });
+      const foot = hFoot.clone().addScaledVector(lineBase, state.hOffset);
+      const oh = new THREE.Vector3(foot.x, 0, foot.z).sub(points.O);
+      const ohUnit = oh.normalize();
+      const lUnit = lineBase.clone();
+      const s = .34;
+      if (state.stage >= 2 && isPerpendicular()) {
+        const p1 = mapGround(points.H.clone().addScaledVector(ohUnit, -s));
+        const p2 = mapGround(points.H.clone().addScaledVector(ohUnit, -s).addScaledVector(lUnit, s));
+        const p3 = mapGround(points.H.clone().addScaledVector(lUnit, s));
+        renderProjectionLine(svg, "polyline", { points: `${p1.x},${p1.y} ${p2.x},${p2.y} ${p3.x},${p3.y}`, fill: "none", stroke: "#0f9f9a", "stroke-width": .075 });
+      }
+      renderProjectionLine(svg, "circle", { cx: o.x, cy: o.y, r: .13, fill: "#ffffff", stroke: "#1e293b", "stroke-width": .06 });
+      renderProjectionLine(svg, "circle", { cx: h.x, cy: h.y, r: .14, fill: isPerpendicular() ? "#10b981" : "#f59e0b", stroke: "#ffffff", "stroke-width": .06 });
+      renderProjectionLine(svg, "text", { x: o.x + .18, y: o.y - .18, fill: "#0f172a", "font-size": .34, "font-weight": 800 }).textContent = "O";
+      renderProjectionLine(svg, "text", { x: h.x + .18, y: h.y - .18, fill: "#0f172a", "font-size": .34, "font-weight": 800 }).textContent = "H";
+      renderProjectionLine(svg, "text", { x: b.x - .65, y: b.y - .18, fill: "#1d4ed8", "font-size": .34, "font-weight": 800 }).textContent = "l";
+      const angle = getAngleDegrees(points);
+      const readout = el("angle-readout");
+      readout.className = `angle-readout ${isPerpendicular() ? "ok" : "bad"}`;
+      readout.innerHTML = `<strong>바닥에서 읽는 각도</strong><br>∠(OH, l) = <b>${angle.toFixed(1)}°</b><br>${isPerpendicular() ? "✓ 정사영 수선 조건 만족" : "→ H를 움직여 90°를 찾아보세요"}`;
+    }
+    function getAngleDegrees(points = getPoints()) {
+      const u = points.H.clone().sub(points.O).normalize();
+      const v = lineBase.clone().normalize();
+      const dot = THREE.MathUtils.clamp(u.dot(v), -1, 1);
+      return Math.acos(Math.abs(dot)) * 180 / Math.PI;
+    }
+
+    function updateFormula() {
+      const formula = el("formula");
+      formula.innerHTML = modeInfo[state.mode].formula;
+      if (window.MathJax?.typesetPromise) window.MathJax.typesetPromise([formula]);
+    }
+    function typesetPageMath() {
+      if (window.MathJax?.typesetPromise) {
+        window.MathJax.typesetPromise([document.querySelector("main")]);
+      } else {
+        window.setTimeout(typesetPageMath, 180);
+      }
+    }
+    function updateInterface() {
+      const info = modeInfo[state.mode];
+      const good = isPerpendicular();
+      el("scene-title").textContent = info.title;
+      el("mode-description").textContent = info.description;
+      el("h-output").textContent = good ? "정확한 수선" : `${state.hOffset > 0 ? "+" : ""}${state.hOffset.toFixed(2)}`;
+      el("p-output").textContent = state.height.toFixed(1);
+      const checks = [];
+      if (state.mode === "make") {
+        checks.push([state.stage >= 1, "조건 1: PO ⟂ 평면 α", "PO는 바닥에 수직인 기준 기둥입니다."]);
+        checks.push([state.stage >= 2 && good, "조건 2: OH ⟂ 기준선 l", good ? "바닥 투영에서 직각을 확인했습니다." : "H를 기준선 위에서 움직여 90°를 찾아야 합니다."]);
+        checks.push([state.stage >= 3 && good, "결론: PH ⟂ l", state.stage >= 3 && good ? "마지막 지지대가 수선으로 완성되었습니다." : "두 조건이 모이면 PH를 완성할 수 있습니다."]);
+      } else if (state.mode === "check") {
+        checks.push([true, "조건 1: PO ⟂ 평면 α", "정사영의 기준이 되는 수직 기둥입니다."]);
+        checks.push([good, "조건 2: PH ⟂ 기준선 l", good ? "공간 지지대가 기준선에 수직입니다." : "현재 후보 지지대는 기준선과 직각이 아닙니다."]);
+        checks.push([good, "결론: OH ⟂ l", good ? "제2정리로 바닥 정사영의 수직을 확인합니다." : "PH ⟂ l 조건을 먼저 맞추세요."]);
+      } else {
+        checks.push([good, "조건 1: PH ⟂ 기준선 l", good ? "공간 지지대의 수직 조건입니다." : "H를 움직여 PH와 l의 수직을 맞추세요."]);
+        checks.push([good, "조건 2: OH ⟂ 기준선 l", good ? "바닥 투영에서도 같은 수직이 보입니다." : "현재 OH는 l에 수직이 아닙니다."]);
+        checks.push([true, "조건 3: PO ⟂ OH", "PO는 수직 방향, OH는 바닥 방향입니다."]);
+        checks.push([good, "결론: PO ⟂ 평면 α", good ? "제3정리로 기준 기둥의 평면 수직을 확인합니다." : "앞의 두 수직 조건이 필요합니다."]);
+      }
+      el("checks").innerHTML = checks.map(([ok, title, detail]) => `<div class="check ${ok ? "ok" : "warn"}"><span class="mark">${ok ? "✓" : "!"}</span><span><b>${title}</b><br>${detail}</span></div>`).join("");
+      const resultGood = state.mode === "make" ? state.stage >= 3 && good : good;
+      const result = el("result");
+      result.className = `result ${resultGood ? "good" : "bad"}`;
+      result.textContent = state.mode === "make" && state.stage < 3 ? "다음 단계 버튼으로 조건을 하나씩 확보해 보세요." : resultGood ? info.resultGood : info.resultBad;
+      el("interpretation").innerHTML = state.mode === "make"
+        ? `<strong>관찰 포인트:</strong> 공간의 마지막 지지대 PH를 직접 맞추지 않고, 먼저 바닥의 정사영 OH를 기준선 l에 수직으로 만들면 PH의 수직이 결정됩니다.`
+        : `<strong>관찰 포인트:</strong> 세 정리는 순서대로 모두 적용하는 절차가 아니라, 조건에 따라 마지막으로 알아내는 수직 관계가 서로 다른 판정 정리입니다.`;
+      el("step-button").textContent = state.mode === "make" ? (state.stage >= 3 ? "마지막 단계 완료" : `다음 단계 (${state.stage + 1}/3)`) : "조건 표시하기";
+      el("step-button").disabled = state.mode === "make" && state.stage >= 3;
+      document.querySelectorAll(".mode-tab").forEach((button) => button.setAttribute("aria-selected", String(button.dataset.mode === state.mode)));
+      updateFormula();
+    }
+
+    function goNext() {
+      clearAnimation();
+      if (state.mode !== "make") {
+        state.stage = 3;
+        updateScene(false);
+        updateInterface();
+        return;
+      }
+      if (state.stage >= 3) return;
+      state.stage += 1;
+      const segment = state.stage === 1 ? "PO" : state.stage === 2 ? "OH" : "PH";
+      updateScene(false);
+      updateInterface();
+      if (segment === "PH" && !isPerpendicular()) {
+        state.stage = 2;
+        updateScene(false);
+        updateInterface();
+        return;
+      }
+      updateScene(true, segment);
+    }
+    function replay() {
+      clearAnimation();
+      const segment = state.mode === "make" ? (state.stage === 1 ? "PO" : state.stage === 2 ? "OH" : state.stage >= 3 ? "PH" : null) : null;
+      if (!segment) { updateScene(false); return; }
+      updateScene(false);
+      updateScene(true, segment);
+    }
+    function reset() { clearAnimation(); state.stage = 0; state.hOffset = 0; state.height = 3.8; el("h-offset").value = "0"; el("p-height").value = "3.8"; updateScene(false); updateInterface(); }
+    function setMode(mode) { clearAnimation(); state.mode = mode; state.stage = mode === "make" ? 0 : 3; updateScene(false); updateInterface(); }
+
+    el("step-button").addEventListener("click", goNext);
+    el("replay-button").addEventListener("click", replay);
+    el("reset-button").addEventListener("click", reset);
+    const updateHOffset = (event) => { clearAnimation(); state.hOffset = Number(event.target.value); updateScene(false); updateInterface(); };
+    el("h-offset").addEventListener("input", updateHOffset);
+    el("h-offset").addEventListener("change", updateHOffset);
+    el("p-height").addEventListener("input", (event) => { state.height = Number(event.target.value); updateScene(false); updateInterface(); });
+    document.querySelector(".mode-tabs").addEventListener("click", (event) => { const button = event.target.closest("[data-mode]"); if (button) setMode(button.dataset.mode); });
+
+    initThree();
+    updateScene(false);
+    updateInterface();
+    window.setTimeout(typesetPageMath, 600);
+
+    function render(now) {
+      requestAnimationFrame(render);
+      controls.update();
+      renderer.render(scene, camera);
+      labelRenderer.render(scene, camera);
+    }
+    render(0);
+  </script>
+</body>
+</html>
