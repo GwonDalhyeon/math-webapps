@@ -61,6 +61,7 @@
     #three-canvas { display: block; width: 100%; height: 100%; min-height: 500px; }
     #label-layer { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
     .label3d { padding: 2px 6px; border-radius: 5px; background: rgba(8, 18, 34, .76); color: #fff; font-size: 13px; font-weight: 800; white-space: nowrap; }
+    .label3d.math-label { font-style: italic; font-family: Georgia, "Times New Roman", serif; font-size: 16px; }
     .scene-hint { position: absolute; left: 12px; bottom: 10px; padding: 6px 9px; border-radius: 8px; background: rgba(255,255,255,.9); color: var(--muted); font-size: 12px; font-weight: 700; }
     .projection { padding: 12px; border-left: 1px solid var(--line); background: #fbfdff; }
     .projection h2 { margin: 0 0 4px; font-size: 16px; }
@@ -206,10 +207,12 @@
 
     const COLORS = { ground: 0x94a3b8, line: 0x2563eb, p: 0x7c3aed, oh: 0x0f9f9a, ph: 0xf59e0b, point: 0xf8fafc, bad: 0x94a3b8, text: 0x0f172a };
     const lineBase = new THREE.Vector3(0.8, 0, 0.6).normalize();
-    const lineAnchor = new THREE.Vector3(2.4, 0, 0.9);
+    // O에서 기준선 l까지의 거리를 넓혀 바닥의 O-H-l 삼각형을 읽기 쉽게 한다.
+    const lineAnchor = new THREE.Vector3(3.6, 0, 1.2);
     const hFoot = lineAnchor.clone().addScaledVector(lineBase, -lineAnchor.dot(lineBase));
     const lineStart = lineAnchor.clone().addScaledVector(lineBase, -4.5);
     const lineEnd = lineAnchor.clone().addScaledVector(lineBase, 4.5);
+    const groundLabelAnchor = new THREE.Vector3(-4.2, 0.05, -3.7);
 
     const state = { mode: "make", stage: 0, hOffset: 0, height: 3.8, animationFrame: 0, animation: null };
     const modeInfo = {
@@ -235,12 +238,21 @@
         resultBad: "PH와 OH가 l에 수직인 조건을 먼저 맞춰야 PO ⟂ α를 확인할 수 있습니다."
       }
     };
+    const stageSegments = {
+      make: ["OP", "OH", "PH"],
+      check: ["OP", "PH", "OH"],
+      plane: ["PH", "OH", "OP"]
+    };
 
     let renderer, labelRenderer, scene, camera, controls;
     let ground, groundGrid, lineObject, poLine, ohLine, phLine, poRightAngle, ohRightAngle, phRightAngle;
     let pointP, pointO, pointH;
+    let currentPoints;
     const labelObjects = [];
     const temp = new THREE.Vector3();
+    const labelRight = new THREE.Vector3();
+    const labelUp = new THREE.Vector3();
+    const labelDirection = new THREE.Vector3();
 
     const el = (id) => document.getElementById(id);
     const isPerpendicular = () => Math.abs(state.hOffset) < 0.055;
@@ -288,9 +300,9 @@
       line.geometry = new THREE.BufferGeometry().setFromPoints([a, b]);
       if (line.userData.dashed) line.computeLineDistances();
     }
-    function addLabel(text, position, color = "#ffffff") {
+    function addLabel(text, position, color = "#ffffff", className = "") {
       const div = document.createElement("div");
-      div.className = "label3d";
+      div.className = `label3d ${className}`;
       div.textContent = text;
       div.style.color = color;
       const label = new CSS2DObject(div);
@@ -300,7 +312,7 @@
       return label;
     }
     function makePoint(color) {
-      const mesh = new THREE.Mesh(new THREE.SphereGeometry(0.14, 20, 16), new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 0.14, roughness: 0.42 }));
+      const mesh = new THREE.Mesh(new THREE.SphereGeometry(0.105, 20, 16), new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 0.14, roughness: 0.42 }));
       scene.add(mesh);
       return mesh;
     }
@@ -314,6 +326,18 @@
       const b = bDir.clone().setY(0).normalize().multiplyScalar(size);
       line.visible = visible;
       if (!visible) return;
+      line.geometry.dispose();
+      line.geometry = new THREE.BufferGeometry().setFromPoints([
+        center.clone().add(a),
+        center.clone().add(a).add(b),
+        center.clone().add(b)
+      ]);
+    }
+    function updateSpatialRightAngle(line, center, aDir, bDir, size = 0.36, visible = true) {
+      line.visible = visible;
+      if (!visible) return;
+      const a = aDir.clone().normalize().multiplyScalar(size);
+      const b = bDir.clone().normalize().multiplyScalar(size);
       line.geometry.dispose();
       line.geometry = new THREE.BufferGeometry().setFromPoints([
         center.clone().add(a),
@@ -394,7 +418,7 @@
       addLabel("O", new THREE.Vector3(0.06, 0.12, 0.06), "#bfdbfe");
       addLabel("H", hFoot.clone().add(new THREE.Vector3(0.05, 0.12, 0.05)), "#bbf7d0");
       addLabel("바닥 α", new THREE.Vector3(-4.2, 0.05, -3.7), "#cbd5e1");
-      addLabel("기준선 l", lineEnd.clone().add(new THREE.Vector3(0, 0.05, 0)), "#93c5fd");
+      addLabel("l", hFoot.clone().addScaledVector(lineBase, 1.05), "#93c5fd", "math-label");
 
       new ResizeObserver(() => resizeThree()).observe(wrap);
       window.addEventListener("resize", resizeThree);
@@ -410,36 +434,49 @@
       labelRenderer.setSize(width, height);
     }
 
+    function placeLabel(label, anchor, rightOffset, upOffset) {
+      label.position.copy(anchor)
+        .addScaledVector(labelRight, rightOffset)
+        .addScaledVector(labelUp, upOffset);
+    }
     function updateLabels(points) {
-      const positions = [points.P.clone().add(new THREE.Vector3(0.08, 0.16, 0)), points.O.clone().add(new THREE.Vector3(0.08, 0.14, 0)), points.H.clone().add(new THREE.Vector3(0.08, 0.14, 0)), new THREE.Vector3(-4.2, 0.05, -3.7), lineEnd.clone().add(new THREE.Vector3(0, 0.05, 0))];
-      labelObjects[0].position.copy(positions[0]);
-      labelObjects[1].position.copy(positions[1]);
-      labelObjects[2].position.copy(positions[2]);
-      labelObjects[3].position.copy(positions[3]);
-      labelObjects[4].position.copy(positions[4]);
+      // CSS2D 라벨은 도형의 기준점은 유지하되, 카메라의 오른쪽·위쪽으로 밀어 도형을 가리지 않게 한다.
+      camera.getWorldDirection(labelDirection);
+      labelRight.crossVectors(labelDirection, camera.up).normalize();
+      labelUp.crossVectors(labelRight, labelDirection).normalize();
+      placeLabel(labelObjects[0], points.P, 0.26, 0.34);
+      placeLabel(labelObjects[1], points.O, -0.34, 0.27);
+      placeLabel(labelObjects[2], points.H, 0.34, 0.27);
+      placeLabel(labelObjects[3], groundLabelAnchor, -0.05, 0.28);
+      temp.copy(points.H).addScaledVector(lineBase, 1.05);
+      placeLabel(labelObjects[4], temp, 0.22, 0.28);
     }
 
     function updateScene(animate = false, segment = null) {
       const points = getPoints();
+      currentPoints = points;
       pointP.position.copy(points.P); pointO.position.copy(points.O); pointH.position.copy(points.H);
       updateLabels(points);
       setLine(lineObject, lineStart, lineEnd, true);
-      const showPO = state.stage >= 1;
-      const showOH = state.stage >= 2;
-      const showPH = state.stage >= 3;
+      const shownSegments = stageSegments[state.mode].slice(0, state.stage);
+      const showPO = shownSegments.includes("OP");
+      const showOH = shownSegments.includes("OH");
+      const showPH = shownSegments.includes("PH");
       const good = isPerpendicular();
       setLine(poLine, points.O, points.P, showPO);
       setLine(ohLine, points.O, points.H, showOH);
-      setLine(phLine, points.H, points.P, showPH || state.mode !== "make");
+      setLine(phLine, points.H, points.P, showPH);
       phLine.material.color.setHex(good ? COLORS.ph : COLORS.bad);
       phLine.material.opacity = good ? 0.88 : 0.55;
       updateVerticalRightAngle(poRightAngle, points.O, points.H.clone().sub(points.O), 0.34, showPO);
       updateRightAngle(ohRightAngle, points.H, points.O.clone().sub(points.H), lineBase, 0.32, showOH && good);
-      updateRightAngle(phRightAngle, points.H, points.P.clone().sub(points.H), lineBase, 0.38, showPH && good);
+      // PH와 l의 직각은 바닥 투영이 아닌, 두 선분이 실제로 만나는 공간의 H에 표시한다.
+      updateSpatialRightAngle(phRightAngle, points.H, points.P.clone().sub(points.H), lineBase, 0.38, showPH && good);
       if (animate && segment) {
-        const line = segment === "PO" ? poLine : segment === "OH" ? ohLine : phLine;
-        const from = segment === "PO" ? points.O : segment === "OH" ? points.O : points.H;
-        const to = segment === "PO" ? points.P : segment === "OH" ? points.H : points.P;
+        const line = segment === "OP" ? poLine : segment === "OH" ? ohLine : phLine;
+        // OP와 PH는 꼭짓점 P에서 출발해 수선이 내려오는 방향으로 자란다.
+        const from = segment === "OP" || segment === "PH" ? points.P : points.O;
+        const to = segment === "OP" ? points.O : segment === "OH" ? points.H : points.H;
         setLine(line, from, from, true);
         animateSegment(line, from, to);
       }
@@ -517,59 +554,52 @@
         checks.push([state.stage >= 2 && good, "조건 2: OH ⟂ 기준선 l", good ? "바닥 투영에서 직각을 확인했습니다." : "H를 기준선 위에서 움직여 90°를 찾아야 합니다."]);
         checks.push([state.stage >= 3 && good, "결론: PH ⟂ l", state.stage >= 3 && good ? "마지막 지지대가 수선으로 완성되었습니다." : "두 조건이 모이면 PH를 완성할 수 있습니다."]);
       } else if (state.mode === "check") {
-        checks.push([true, "조건 1: PO ⟂ 평면 α", "정사영의 기준이 되는 수직 기둥입니다."]);
-        checks.push([good, "조건 2: PH ⟂ 기준선 l", good ? "공간 지지대가 기준선에 수직입니다." : "현재 후보 지지대는 기준선과 직각이 아닙니다."]);
-        checks.push([good, "결론: OH ⟂ l", good ? "제2정리로 바닥 정사영의 수직을 확인합니다." : "PH ⟂ l 조건을 먼저 맞추세요."]);
+        checks.push([state.stage >= 1, "조건 1: PO ⟂ 평면 α", "정사영의 기준이 되는 수직 기둥입니다."]);
+        checks.push([state.stage >= 2 && good, "조건 2: PH ⟂ 기준선 l", good ? "공간 지지대가 기준선에 수직입니다." : "현재 후보 지지대는 기준선과 직각이 아닙니다."]);
+        checks.push([state.stage >= 3 && good, "결론: OH ⟂ l", state.stage >= 3 && good ? "제2정리로 바닥 정사영의 수직을 확인합니다." : "앞의 두 조건을 확보한 뒤 정사영을 확인합니다."]);
       } else {
-        checks.push([good, "조건 1: PH ⟂ 기준선 l", good ? "공간 지지대의 수직 조건입니다." : "H를 움직여 PH와 l의 수직을 맞추세요."]);
-        checks.push([good, "조건 2: OH ⟂ 기준선 l", good ? "바닥 투영에서도 같은 수직이 보입니다." : "현재 OH는 l에 수직이 아닙니다."]);
-        checks.push([true, "조건 3: PO ⟂ OH", "PO는 수직 방향, OH는 바닥 방향입니다."]);
-        checks.push([good, "결론: PO ⟂ 평면 α", good ? "제3정리로 기준 기둥의 평면 수직을 확인합니다." : "앞의 두 수직 조건이 필요합니다."]);
+        checks.push([state.stage >= 1 && good, "조건 1: PH ⟂ 기준선 l", good ? "공간 지지대의 수직 조건입니다." : "H를 움직여 PH와 l의 수직을 맞추세요."]);
+        checks.push([state.stage >= 2 && good, "조건 2: OH ⟂ 기준선 l", good ? "바닥 투영에서도 같은 수직이 보입니다." : "현재 OH는 l에 수직이 아닙니다."]);
+        checks.push([state.stage >= 3, "조건 3: PO ⟂ OH", "PO는 수직 방향, OH는 바닥 방향입니다."]);
+        checks.push([state.stage >= 3 && good, "결론: PO ⟂ 평면 α", state.stage >= 3 && good ? "제3정리로 기준 기둥의 평면 수직을 확인합니다." : "앞의 두 수직 조건을 확보한 뒤 평면 수직을 확인합니다."]);
       }
       el("checks").innerHTML = checks.map(([ok, title, detail]) => `<div class="check ${ok ? "ok" : "warn"}"><span class="mark">${ok ? "✓" : "!"}</span><span><b>${title}</b><br>${detail}</span></div>`).join("");
-      const resultGood = state.mode === "make" ? state.stage >= 3 && good : good;
+      const resultGood = state.stage >= 3 && good;
       const result = el("result");
       result.className = `result ${resultGood ? "good" : "bad"}`;
-      result.textContent = state.mode === "make" && state.stage < 3 ? "다음 단계 버튼으로 조건을 하나씩 확보해 보세요." : resultGood ? info.resultGood : info.resultBad;
+      result.textContent = state.stage < 3 ? "다음 단계 버튼으로 조건을 하나씩 확보해 보세요." : resultGood ? info.resultGood : info.resultBad;
       el("interpretation").innerHTML = state.mode === "make"
         ? `<strong>관찰 포인트:</strong> 공간의 마지막 지지대 PH를 직접 맞추지 않고, 먼저 바닥의 정사영 OH를 기준선 l에 수직으로 만들면 PH의 수직이 결정됩니다.`
         : `<strong>관찰 포인트:</strong> 세 정리는 순서대로 모두 적용하는 절차가 아니라, 조건에 따라 마지막으로 알아내는 수직 관계가 서로 다른 판정 정리입니다.`;
-      el("step-button").textContent = state.mode === "make" ? (state.stage >= 3 ? "마지막 단계 완료" : `다음 단계 (${state.stage + 1}/3)`) : "조건 표시하기";
-      el("step-button").disabled = state.mode === "make" && state.stage >= 3;
+      el("step-button").textContent = state.stage >= 3 ? "마지막 단계 완료" : `다음 단계 (${state.stage + 1}/3)`;
+      el("step-button").disabled = state.stage >= 3;
       document.querySelectorAll(".mode-tab").forEach((button) => button.setAttribute("aria-selected", String(button.dataset.mode === state.mode)));
       updateFormula();
     }
 
     function goNext() {
       clearAnimation();
-      if (state.mode !== "make") {
-        state.stage = 3;
-        updateScene(false);
-        updateInterface();
-        return;
-      }
       if (state.stage >= 3) return;
+      const segment = stageSegments[state.mode][state.stage];
       state.stage += 1;
-      const segment = state.stage === 1 ? "PO" : state.stage === 2 ? "OH" : "PH";
-      updateScene(false);
-      updateInterface();
-      if (segment === "PH" && !isPerpendicular()) {
+      if (state.mode === "make" && segment === "PH" && !isPerpendicular()) {
         state.stage = 2;
         updateScene(false);
         updateInterface();
         return;
       }
+      updateInterface();
       updateScene(true, segment);
     }
     function replay() {
       clearAnimation();
-      const segment = state.mode === "make" ? (state.stage === 1 ? "PO" : state.stage === 2 ? "OH" : state.stage >= 3 ? "PH" : null) : null;
+      const segment = state.stage > 0 ? stageSegments[state.mode][state.stage - 1] : null;
       if (!segment) { updateScene(false); return; }
       updateScene(false);
       updateScene(true, segment);
     }
     function reset() { clearAnimation(); state.stage = 0; state.hOffset = 0; state.height = 3.8; el("h-offset").value = "0"; el("p-height").value = "3.8"; updateScene(false); updateInterface(); }
-    function setMode(mode) { clearAnimation(); state.mode = mode; state.stage = mode === "make" ? 0 : 3; updateScene(false); updateInterface(); }
+    function setMode(mode) { clearAnimation(); state.mode = mode; state.stage = 0; updateScene(false); updateInterface(); }
 
     el("step-button").addEventListener("click", goNext);
     el("replay-button").addEventListener("click", replay);
@@ -588,6 +618,7 @@
     function render(now) {
       requestAnimationFrame(render);
       controls.update();
+      updateLabels(currentPoints);
       renderer.render(scene, camera);
       labelRenderer.render(scene, camera);
     }
