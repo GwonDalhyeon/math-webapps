@@ -451,12 +451,9 @@
       }
       const m1 = new THREE.Vector3(1, -2.6, 1), m2 = new THREE.Vector3(1, 2.6, 1); addLine(m1, m2, COLORS.red, "직선 m (평면 밖)");
       const angle = THREE.MathUtils.degToRad(attemptAngle), v = new THREE.Vector3(0, Math.cos(angle), Math.sin(angle));
-      const normal = new THREE.Vector3(1, 0, 0).cross(v).normalize();
       makePlane(new THREE.Vector3(0, 0, 0), new THREE.Vector3(1, 0, 0), v, 9, 6, 0xc4b5fd, .27); addLabel("후보 평면 α", new THREE.Vector3(-3.2, 1.8 * Math.cos(angle), 1.8 * Math.sin(angle)), [0, -18]);
       const qY = Math.cos(angle) / Math.sin(angle);
       if (qY > -2.6 && qY < 2.6) { const Q = new THREE.Vector3(1, qY, 1); addPoint(Q, COLORS.green, "Q: m의 한 점만 α 위"); }
-      const mid = new THREE.Vector3(1, 0, 1), projection = mid.clone().sub(normal.multiplyScalar(mid.dot(normal)));
-      lineBetween(mid, projection, COLORS.red, true); addLabel("평면까지의 거리", mid.clone().lerp(projection, .45), [8, -18]);
     }
     function setLayerOpacity(layer, amount) {
       layer.traverse(object => {
