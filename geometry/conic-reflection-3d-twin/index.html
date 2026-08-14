@@ -387,7 +387,7 @@ function initThree() {
   const w = wrap.clientWidth, h = wrap.clientHeight;
 
   renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
-  renderer.setSize(w, h);
+  renderer.setSize(w, h, false); // updateStyle=false: 캔버스는 CSS(width/height:100%)를 그대로 따르게 둔다
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
   renderer.setClearColor(0x0e1523);
 
@@ -455,13 +455,16 @@ function initThree() {
   scene.add(hitPoints);
 
   window.addEventListener('resize', onResize);
+  // 스크롤바가 뒤늦게 생기거나 기기를 회전하면 컨테이너 폭만 바뀌고 resize 이벤트는 오지 않는다.
+  // 컨테이너를 직접 관찰해 그리기 버퍼 해상도까지 맞춘다.
+  new ResizeObserver(onResize).observe(document.getElementById('three-canvas').parentElement);
   requestAnimationFrame(animate);
 }
 
 function onResize() {
   const wrap = document.getElementById('three-canvas').parentElement;
   const w = wrap.clientWidth, h = wrap.clientHeight;
-  renderer.setSize(w, h);
+  renderer.setSize(w, h, false); // updateStyle=false: 캔버스는 CSS(width/height:100%)를 그대로 따르게 둔다
   labelRenderer.setSize(w, h);
   camera.aspect = w / h;
   camera.updateProjectionMatrix();
@@ -512,6 +515,8 @@ function updateMarkers(params) {
   const Cc = mirrorBAxis(params);
   f1AMarker.position.set(0, 0, 0);
   f1ALabel.position.set(0.25, 0.2, 0);
+  // 같은 F₁ 이 포물면에서는 광원, 쌍곡면에서는 도착점이다. 라벨에 역할을 함께 적어 혼동을 막는다.
+  f1ALabel.element.textContent = isPara ? 'F₁ (광원)' : 'F₁ (도착)';
 
   // 포물면: 거울 A·B가 각자 다른 초점을 갖는 진짜 "쌍둥이"라 F₁' 표시가 의미 있다.
   // 쌍곡면: 반대쪽 가지의 "자기 초점"이 항상 F₂와 같은 점이라 F₁' 표시가 F₂와 겹쳐 중복된다.
@@ -699,7 +704,11 @@ function fullRebuild() {
   buildSurfaces(params);
   updateMarkers(params);
   updateRaysVisual(params);
-  document.getElementById('canvasHead').textContent = typeLabel(params.type) + ' 쌍';
+  // 두 모드는 곡면 모양만 다른 게 아니라 실험 구성 자체가 다르다(광원 위치·반사 횟수).
+  // 탭만 보면 같은 실험처럼 읽히므로 헤더에 빛의 흐름을 함께 적는다.
+  document.getElementById('canvasHead').textContent = params.type === 'parabola'
+    ? '회전포물면 쌍 · F₁에서 출발 → 반대쪽 F₁′에 도착'
+    : '회전쌍곡면 두 가지 · 먼 곳에서 들어온 빛 → F₁에 도착';
   // 곡선 종류가 바뀔 때만 카메라 시점을 두 가지 사이 중앙으로 다시 맞춘다(슬라이더를
   // 드래그하는 동안에는 사용자가 직접 돌린 시점을 건드리지 않는다).
   const Cc = mirrorBAxis(params);

@@ -37,16 +37,16 @@
     * { box-sizing: border-box; }
     body { background: #f4f7fb; color: var(--ink); }
     button { font: inherit; }
-    .app { width: min(1380px, calc(100% - 28px)); margin: 0 auto; padding: 22px 0 40px; }
-    .back-link { margin-bottom: 16px; }
-    .hero { margin-bottom: 16px; }
-    .hero h1 { margin: 0 0 8px; font-size: clamp(28px, 4vw, 42px); letter-spacing: -.04em; }
-    .hero p { max-width: 930px; margin: 0; font-size: 17px; line-height: 1.65; }
-    .learning-note { display: flex; gap: 9px; align-items: flex-start; padding: 10px 13px; margin: 0 0 14px; border-radius: 12px; background: #edf5ff; border: 1px solid #cbdcf8; color: #284365; font-size: 14px; line-height: 1.55; }
+    .app { width: min(1380px, calc(100% - 28px)); margin: 0 auto; padding: 14px 0 40px; }
+    .back-link { margin-bottom: 9px; }
+    .hero { margin-bottom: 10px; }
+    .hero h1 { margin: 0 0 5px; font-size: clamp(24px, 3.2vw, 34px); letter-spacing: -.04em; }
+    .hero p { max-width: 930px; margin: 0; font-size: 15px; line-height: 1.55; }
+    .learning-note { display: flex; gap: 9px; align-items: flex-start; padding: 8px 12px; margin: 0 0 10px; border-radius: 12px; background: #edf5ff; border: 1px solid #cbdcf8; color: #284365; font-size: 13.5px; line-height: 1.5; }
     .learning-note strong { color: #17498d; white-space: nowrap; }
 
-    .mode-tabs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-bottom: 12px; }
-    .mode-tab { min-height: 58px; padding: 9px 12px; border: 2px solid var(--line); border-radius: 13px; background: var(--paper); color: var(--muted); cursor: pointer; text-align: left; font-weight: 800; transition: .16s ease; }
+    .mode-tabs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-bottom: 9px; }
+    .mode-tab { min-height: 50px; padding: 7px 12px; border: 2px solid var(--line); border-radius: 13px; background: var(--paper); color: var(--muted); cursor: pointer; text-align: left; font-weight: 800; transition: .16s ease; }
     .mode-tab span { display: block; margin-top: 2px; font-size: 12px; font-weight: 600; color: #718096; }
     .mode-tab:hover { border-color: #aabbd3; transform: translateY(-1px); }
     .mode-tab[aria-selected="true"] { color: #fff; background: var(--ink); border-color: var(--ink); box-shadow: var(--shadow); }
@@ -55,7 +55,7 @@
     .workbench { display: grid; grid-template-columns: minmax(0, 1fr) 330px; gap: 14px; align-items: start; }
     .side-stack { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
     .panel { background: var(--paper); border: 1px solid var(--line); border-radius: 16px; box-shadow: var(--shadow); overflow: hidden; }
-    .panel-title { padding: 11px 15px; border-bottom: 1px solid var(--line); color: #40516b; background: #fbfcfe; font-size: 13px; font-weight: 800; }
+    .panel-title { padding: 9px 15px; border-bottom: 1px solid var(--line); color: #40516b; background: #fbfcfe; font-size: 13px; font-weight: 800; }
     .viewport { position: relative; min-height: 420px; background: radial-gradient(circle at 48% 45%, #172b50 0%, #0b1730 67%, #091126 100%); touch-action: none; overflow: hidden; }
     #scene { display: block; width: 100%; height: 100%; }
     #labels { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
@@ -67,36 +67,36 @@
     .view-buttons button { min-height: 31px; padding: 4px 7px; border: 1px solid rgba(255,255,255,.36); border-radius: 8px; background: rgba(7,18,40,.86); color: white; cursor: pointer; font-size: 12px; font-weight: 800; }
     .view-buttons button:hover { background: #213a66; }
     .view-buttons button[aria-pressed="true"] { background: #dbeafe; color: #14345f; border-color: #dbeafe; }
-    .observation { padding: 12px 15px 13px; border-top: 1px solid var(--line); font-size: 15px; line-height: 1.62; color: #263953; }
+    .observation { padding: 10px 15px 11px; border-top: 1px solid var(--line); font-size: 14.5px; line-height: 1.55; color: #263953; }
     .observation strong { color: var(--ink); }
 
     .result-panel { display: flex; flex-direction: column; }
-    .result-body { padding: 14px; }
-    .result-badge { display: flex; align-items: center; min-height: 64px; padding: 10px 12px; margin-bottom: 12px; border: 1px solid; border-radius: 12px; }
+    .result-body { padding: 9px 12px; }
+    .result-badge { display: flex; align-items: center; min-height: 44px; padding: 7px 11px; margin-bottom: 8px; border: 1px solid; border-radius: 12px; }
     .result-badge .small { display: block; margin-bottom: 2px; font-size: 12px; font-weight: 750; }
     .result-badge .big { display: block; font-size: 20px; font-weight: 900; letter-spacing: -.03em; }
     .result-badge.unique { color: var(--green); background: var(--green-soft); border-color: #a9e3bf; }
     .result-badge.many { color: var(--amber); background: var(--amber-soft); border-color: #f2cf85; }
     .result-badge.none { color: var(--red); background: var(--red-soft); border-color: #f4b4ae; }
-    .condition-name { padding: 10px 11px; margin-bottom: 12px; border-left: 4px solid var(--blue); background: var(--blue-soft); color: #214a91; font-size: 13px; line-height: 1.5; }
+    .condition-name { padding: 7px 10px; margin-bottom: 8px; border-left: 4px solid var(--blue); background: var(--blue-soft); color: #214a91; font-size: 13px; line-height: 1.5; }
     .condition-name b { display: block; font-size: 12px; }
-    .check-list { display: grid; gap: 7px; margin: 0; padding: 0; list-style: none; }
-    .check-list li { display: grid; grid-template-columns: 18px 1fr; gap: 7px; align-items: start; padding: 8px 8px; border-radius: 9px; background: #f8fafc; color: #40516b; font-size: 13px; line-height: 1.42; }
+    .check-list { display: grid; gap: 4px; margin: 0; padding: 0; list-style: none; }
+    .check-list li { display: grid; grid-template-columns: 18px 1fr; gap: 7px; align-items: start; padding: 5px 8px; border-radius: 9px; background: #f8fafc; color: #40516b; font-size: 12.5px; line-height: 1.4; }
     .check-list .mark { font-weight: 900; text-align: center; }
     .check-list .yes .mark { color: var(--green); }
     .check-list .no .mark { color: var(--red); }
     .check-list .info .mark { color: var(--amber); }
-    .reason { margin: 13px 0 0; padding-top: 12px; border-top: 1px solid var(--line); color: #31425c; font-size: 13px; line-height: 1.62; }
+    .reason { margin: 10px 0 0; padding-top: 9px; border-top: 1px solid var(--line); color: #31425c; font-size: 13px; line-height: 1.62; }
     .reason b { color: var(--ink); }
 
     .control-panel { margin: 0; }
-    .controls { display: grid; grid-template-columns: 1fr; gap: 12px; padding: 13px; }
-    .controls h2 { margin: 0 0 9px; font-size: 16px; }
-    .scenario-buttons { display: flex; flex-wrap: wrap; gap: 7px; }
-    .scenario-button { min-height: 38px; padding: 8px 11px; border: 1.5px solid var(--line); border-radius: 10px; background: #fff; color: #43526a; cursor: pointer; font-size: 13px; font-weight: 800; transition: .14s ease; }
+    .controls { display: grid; grid-template-columns: 1fr; gap: 9px; padding: 11px; }
+    .controls h2 { margin: 0 0 7px; font-size: 15px; }
+    .scenario-buttons { display: flex; flex-wrap: wrap; gap: 6px; }
+    .scenario-button { min-height: 34px; padding: 6px 10px; border: 1.5px solid var(--line); border-radius: 10px; background: #fff; color: #43526a; cursor: pointer; font-size: 13px; font-weight: 800; transition: .14s ease; }
     .scenario-button:hover { border-color: #8ea5c8; background: #f6f9ff; }
     .scenario-button[aria-pressed="true"] { border-color: var(--blue); background: var(--blue); color: #fff; }
-    .prompt-box { padding: 12px; border-radius: 11px; background: #f8fafc; border: 1px solid var(--line); color: #40516b; font-size: 13px; line-height: 1.55; }
+    .prompt-box { padding: 10px 12px; border-radius: 11px; background: #f8fafc; border: 1px solid var(--line); color: #40516b; font-size: 13px; line-height: 1.55; }
     .prompt-box b { display: block; margin-bottom: 4px; color: var(--ink); font-size: 12px; }
     .slider-wrap { display: none; margin: 0 14px 14px; padding: 12px 14px; border-radius: 11px; background: #fff8f8; border: 1px solid #f2c8c4; }
     .slider-wrap.show { display: block; }
@@ -177,7 +177,7 @@
         title: "세 점의 위치 관계", control: "세 점의 배치", initial: "collinear",
         cases: {
           two: { label: "점이 두 개뿐임", result: "many", condition: "아직 평면을 결정하는 조건이 없습니다.", prompt: "점 두 개만으로는 두 점을 지나는 직선만 정해집니다.", observation: "두 점 A, B를 모두 지나는 평면은 직선 AB를 축으로 계속 돌릴 수 있습니다.", reason: "두 점은 직선 하나를 정할 뿐입니다. 그 직선을 포함하는 평면은 무수히 많습니다.", checks: [["yes", "점 A와 점 B는 주어짐"], ["info", "두 점을 지나는 직선 AB는 정해짐"], ["no", "직선 AB 밖의 세 번째 점이 없음"]] },
-          collinear: { label: "세 점이 한 직선 위에 있음", result: "many", condition: "세 점이 있어도 한 직선 위에 있으면 평면은 결정되지 않습니다.", prompt: "점 C가 직선 AB 위에 있습니다. 후보 평면이 왜 여러 개인지 보세요.", observation: "A, B, C가 모두 직선 AB 위에 있으므로, 평면은 여전히 직선 AB를 축으로 회전할 수 있습니다.", reason: "세 번째 점 C가 새로운 방향을 알려 주지 못합니다. 직선 AB를 포함하는 평면은 무수히 많습니다.", checks: [["yes", "세 점 A, B, C가 주어짐"], ["no", "세 점이 한 직선 위에 있지 않음"], ["info", "직선 AB를 포함하는 후보 평면은 계속 회전 가능"]] },
+          collinear: { label: "세 점이 한 직선 위에 있음", result: "many", condition: "세 점이 있어도 한 직선 위에 있으면 평면은 결정되지 않습니다.", prompt: "점 C가 직선 AB 위에 있습니다. 후보 평면이 왜 여러 개인지 보세요.", observation: "A, B, C가 모두 직선 AB 위에 있으므로, 평면은 여전히 직선 AB를 축으로 회전할 수 있습니다.", reason: "세 번째 점 C가 새로운 방향을 알려 주지 못합니다. 직선 AB를 포함하는 평면은 무수히 많습니다.", checks: [["yes", "세 점 A, B, C가 주어짐"], ["no", "점 C가 직선 AB 밖에 있음"], ["info", "직선 AB를 포함하는 후보 평면은 계속 회전 가능"]] },
           noncollinear: { label: "세 점이 한 직선 위에 있지 않음", result: "unique", condition: "적용된 조건 ① · 한 직선 위에 있지 않은 세 점", prompt: "점 C가 직선 AB 밖으로 나왔습니다. 후보 평면이 한 장으로 멈춥니다.", observation: "직선 AB 밖의 점 C가 생기자, A·B·C를 모두 지나는 평면은 한 장으로 고정됩니다.", reason: "직선 AB와 그 밖의 점 C가 함께 평면의 두 방향을 정하므로 평면이 하나로 결정됩니다.", checks: [["yes", "세 점 A, B, C가 주어짐"], ["yes", "점 C가 직선 AB 밖에 있음"], ["yes", "A, B, C를 지나는 평면은 1개"]] }
         }
       },

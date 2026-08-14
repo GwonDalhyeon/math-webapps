@@ -217,7 +217,7 @@ function normalize(v) {
   return { x: v.x / len, y: v.y / len };
 }
 
-// 국소좌표에서 центр/제2초점 (부호가 자동으로 타원(+)/쌍곡선(-)을 구분한다)
+// 국소좌표에서 중심/제2초점 (부호가 자동으로 타원(+)/쌍곡선(-)을 구분한다)
 function localCenterAndF2(l, e) {
   if (Math.abs(1 - e) < EPS_PARABOLA) return { center: null, f2: null };
   const denom = 1 - e * e;
@@ -319,8 +319,20 @@ function apertureFor(params) {
   return 4.4; // 포물선/쌍곡선: 화면에 보이는 만큼만 거울로 코팅(곡선 자체는 무한히 뻗음)
 }
 
+// 화면 세로 절반에 해당하는 월드 길이 — 캔버스가 아직 준비되기 전에는 기본값을 쓴다.
+function visibleHalfH() { return SCALE > 0 && CSS_H > 0 ? (CSS_H / SCALE) / 2 : 5.7; }
+
+// 광선을 쏘는 범위. e가 1에 가까운 타원은 b가 화면보다 훨씬 커져서, 그대로 두면 반사가
+// 화면 밖에서 일어나 "빛이 모이는 장면" 자체를 볼 수 없다. 그래서 광선만 화면 안으로
+// 제한한다(곡선 그리기는 apertureFor 를 그대로 써서 모양이 잘리지 않는다).
+function rayApertureFor(params) {
+  const ap = apertureFor(params);
+  if (!isClosedType(params.type)) return ap;
+  return Math.min(ap, visibleHalfH() * 0.92);
+}
+
 function computeRays(params) {
-  const AP = apertureFor(params);
+  const AP = rayApertureFor(params);
   const N = 6; // 위/아래 각 6개
   const rays = [];
 
@@ -387,8 +399,15 @@ function outgoingLength(ray, params) {
 }
 
 // 목표 지점(F2 또는 축 방향)에서 벗어난 정도 — "흐림" 정량화
+// "잘 모였다"의 기준은 곡선 크기에 비례해야 한다. 절대값(예: 0.05)으로 두면 a가 큰 곡선에서
+// 기준이 헐거워져, 같은 정도로 어긋나도 작은 곡선에서만 경고가 뜬다. 3D 앱과 같은 식을 쓴다.
+const BLUR_REL = 0.01;      // 퍼짐 허용치 = 곡선 크기 × 1%
+const BLUR_ANGLE_DEG = 0.5; // 포물선 평행 이탈 허용 각
+function blurScaleOf(params) { return Math.max(Math.abs(params.a || 0), params.l, 1); }
+
 function computeBlur(rays, params) {
   if (!rays.length) return { value: 0, label: '', good: true };
+  const tol = blurScaleOf(params) * BLUR_REL;
   if (params.type === 'hyperbola' && state.hypMode === 'converge') {
     const { center } = localCenterAndF2(params.l, params.e);
     const f2 = center ? { x: 2 * center.x, y: 0 } : { x: 0, y: 0 };
@@ -398,7 +417,7 @@ function computeBlur(rays, params) {
       const ex = r.hit.x + r.dirOut.x * dist, ey = r.hit.y + r.dirOut.y * dist;
       maxMiss = Math.max(maxMiss, Math.hypot(ex - f2.x, ey - f2.y)); // F2까지 남은 거리 — 0이어야 정확히 도착
     });
-    return { value: maxMiss, label: 'F₂ 도달 오차', unit: '', good: maxMiss < 0.05 };
+    return { value: maxMiss, label: 'F₂ 도달 오차', unit: '', good: maxMiss < tol };
   }
   if (params.type === 'parabola') {
     let maxDeg = 0;
@@ -406,7 +425,7 @@ function computeBlur(rays, params) {
       const deg = Math.abs(Math.atan2(r.dirOut.y, r.dirOut.x) * 180 / Math.PI);
       maxDeg = Math.max(maxDeg, deg);
     });
-    return { value: maxDeg, label: '평행에서 벗어난 각', unit: '°', good: maxDeg < 0.5 };
+    return { value: maxDeg, label: '평행에서 벗어난 각', unit: '°', good: maxDeg < BLUR_ANGLE_DEG };
   }
   const { center } = localCenterAndF2(params.l, params.e);
   if (!center) return { value: 0, label: '', good: true };
@@ -419,7 +438,7 @@ function computeBlur(rays, params) {
     const miss = Math.hypot(cx - f2.x, cy - f2.y);
     maxMiss = Math.max(maxMiss, miss);
   });
-  return { value: maxMiss, label: 'F₂ 근처 퍼짐', unit: '', good: maxMiss < 0.05 };
+  return { value: maxMiss, label: 'F₂ 근처 퍼짐', unit: '', good: maxMiss < tol };
 }
 
 // ════════════════════════════════════════════════════════════
@@ -470,11 +489,30 @@ function drawCurve(ctx, params) {
     ctx.closePath();
     ctx.stroke();
   } else {
-    const AP = Math.max(apertureFor(params), 5.2);
+    // 포물선·쌍곡선은 무한히 뻗는데 거울로 쓰는 구간은 유한하다. 두 가지를 한 그림에서
+    // 구분하기 위해, 반사가 일어나는 구간은 진한 실선으로, 그 바깥은 옅게 화면 끝까지 잇는다.
+    const MIRROR_AP = apertureFor(params);
+    const AP = Math.max(MIRROR_AP, visibleHalfH() * 1.25);
+    const strokeBranch = (sign, alpha, from, to) => {
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      ctx.beginPath();
+      let on = false;
+      for (let i = 0; i <= steps; i++) {
+        const y = sign * (from + (to - from) * (i / steps));
+        const pt = surfaceNearByY(y, params.l, params.e);
+        if (!pt) { on = false; continue; }
+        const s = w2s({ x: pt.x + params.F1world.x, y: pt.y });
+        if (!on) { ctx.moveTo(s.x, s.y); on = true; } else { ctx.lineTo(s.x, s.y); }
+      }
+      ctx.stroke();
+      ctx.restore();
+    };
+    // 거울 구간(진하게) — 위아래를 이어 한 번에
     ctx.beginPath();
     let started = false;
     for (let i = 0; i <= steps; i++) {
-      const y = -AP + (2 * AP) * (i / steps);
+      const y = -MIRROR_AP + (2 * MIRROR_AP) * (i / steps);
       const pt = surfaceNearByY(y, params.l, params.e);
       if (!pt) { started = false; continue; }
       const w = { x: pt.x + params.F1world.x, y: pt.y };
@@ -482,6 +520,11 @@ function drawCurve(ctx, params) {
       if (!started) { ctx.moveTo(s.x, s.y); started = true; } else { ctx.lineTo(s.x, s.y); }
     }
     ctx.stroke();
+    // 거울 바깥으로 계속 뻗는 부분(옅게) — 곡선이 여기서 끝나지 않음을 보여준다
+    if (AP > MIRROR_AP + 1e-6) {
+      strokeBranch(1, 0.3, MIRROR_AP, AP);
+      strokeBranch(-1, 0.3, MIRROR_AP, AP);
+    }
     // 쌍곡선: 반대쪽 가지(대칭)도 옅게 표시 — 표준형 모드에서만(교과서 그림과 대응)
     if (params.type === 'hyperbola' && state.panel === 'standard') {
       ctx.save();
@@ -734,7 +777,18 @@ function updateInterp(params) {
   } else if (params.type === 'circle') {
     msg = '중심(=초점)에서 나온 빛은 모든 점에서 수직으로 반사되어 <strong>그대로 중심으로 되돌아옵니다.</strong>';
   } else if (params.type === 'ellipse') {
-    msg = 'F₁에서 나온 모든 빛이 <strong>F₂ 한 점에 모입니다.</strong> 오른쪽 막대를 보면 F₁→반사점→F₂ 총 거리가 광선마다 <strong>모두 같습니다(=2a)</strong> — 그래서 동시에 도착합니다.';
+    // e가 1에 가까우면 F₂가 화면 밖 멀리 나가 "모이는 장면"을 볼 수 없다. 이때는 단정하지
+    // 않고, 화면에서 확인할 수 있는 근거(거리 막대)로 안내한다.
+    const halfW = WORLD_W / 2;
+    const f2Off = params.F2world && Math.abs(params.F2world.x) > halfW;
+    if (f2Off) {
+      const times = Math.abs(params.F2world.x) / halfW;
+      msg = 'F₂가 지금 <strong>화면 밖</strong>에 있습니다(화면 반폭의 약 ' + times.toFixed(1) + '배). '
+        + '모이는 장면을 직접 볼 수는 없지만, <strong>거리 막대</strong>를 켜면 F₁→반사점→F₂ 총 거리가 광선마다 '
+        + '<strong>모두 같다(=2a)</strong>는 것을 확인할 수 있습니다 — 그래서 결국 한 점에 모입니다.';
+    } else {
+      msg = 'F₁에서 나온 모든 빛이 <strong>F₂ 한 점에 모입니다.</strong> 오른쪽 막대를 보면 F₁→반사점→F₂ 총 거리가 광선마다 <strong>모두 같습니다(=2a)</strong> — 그래서 동시에 도착합니다.';
+    }
   } else if (params.type === 'parabola') {
     msg = 'F에서 나온 빛이 반사되어 <strong>축과 평행하게</strong> 나갑니다. 거꾸로, 축에 평행하게 들어온 빛은 모두 F로 모입니다.';
   } else if (params.type === 'hyperbola') {

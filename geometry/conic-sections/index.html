@@ -78,6 +78,15 @@
     box-shadow: var(--shadow); line-height:1.5;
   }
   .e-badge .val { font-variant-numeric: tabular-nums; }
+  /* 꼭짓점에 가까운 높이에서는 곡선이 원뿔에 비해 너무 작아 3D 화면에서는 점처럼 보인다.
+     "고장난 게 아니라 작은 것"임을 알리고 2D 미리보기로 유도한다. */
+  .tiny-note {
+    position:absolute; top:52px; left:10px; max-width:min(320px, 70%);
+    padding:7px 11px; border-radius:9px; background:rgba(255,251,235,0.95);
+    border:1px solid #fcd34d; color:#92400e; font-size:11.5px; font-weight:700; line-height:1.5;
+    box-shadow: var(--shadow);
+  }
+  .tiny-note[hidden] { display:none; }
   .mouse-hint {
     position:absolute; bottom:10px; right:12px; font-size:11px; color:#94a3b8;
     background:rgba(255,255,255,0.85); padding:4px 8px; border-radius:6px;
@@ -136,6 +145,7 @@
             <canvas id="stage3d"></canvas>
             <div id="labelLayer"></div>
             <div class="e-badge" id="eBadge">e ≈ 0.000</div>
+            <div class="tiny-note" id="tinyNote" hidden></div>
             <div class="mouse-hint">🖱️ 드래그: 회전 · 스크롤: 확대</div>
           </div>
           <div class="interp" id="interpText"></div>
@@ -605,7 +615,7 @@ function standardEquationTex(sf) {
   return `\\(\\dfrac{x^2}{${sf.A.toFixed(2)}^2}-\\dfrac{y^2}{${sf.B.toFixed(2)}^2}=1\\)`;
 }
 function paramCell(k, v) { return `<div class="param-cell"><div class="k">${k}</div><div class="v">${v}</div></div>`; }
-function toggleBtn(key, label) { return `<button class="toggle-btn ${state.toggles[key] ? 'on' : ''}" onclick="window.__toggle('${key}')">${label}</button>`; }
+function toggleBtn(key, label) { return `<button class="toggle-btn ${state.toggles[key] ? 'on' : ''}" data-toggle="${key}">${label}</button>`; }
 
 // 슬라이더 자체는 한 번만 그린다 — angle/height의 input 이벤트로 이 영역을 다시 그리면
 // 드래그 중간에 <input>이 파괴·재생성되어 네이티브 드래그 제스처가 끊긴다.
@@ -709,11 +719,16 @@ function wireSliderEvents() {
     update();
   });
 }
-window.__toggle = function (key) {
+// 토글 버튼은 renderRestZone 이 매번 다시 그리므로, 개별 버튼이 아니라 영역에 한 번만 위임한다.
+// (이전에는 인라인 onclick 을 쓰느라 window.__toggle 전역이 필요했다.)
+document.getElementById('restZone').addEventListener('click', (e) => {
+  const btn = e.target.closest('.toggle-btn');
+  if (!btn) return;
+  const key = btn.dataset.toggle;
   state.toggles[key] = !state.toggles[key];
   if (key === 'autorotate') controls.autoRotate = state.toggles.autorotate;
   update();
-};
+});
 
 function interpText(sf, ecc) {
   if (sf.type === 'degenerate') {
@@ -737,13 +752,23 @@ function interpText(sf, ecc) {
 function resizeStage() {
   const w = canvasWrap.clientWidth, h = 500;
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-  renderer.setSize(w, h);
+  renderer.setSize(w, h, false); // updateStyle=false: 캔버스는 CSS(width/height:100%)를 그대로 따르게 둔다
   labelRenderer.setSize(w, h);
   document.getElementById('labelLayer').style.height = h + 'px';
   camera.aspect = w / h; camera.updateProjectionMatrix();
 }
 
 let lastSF = null;
+
+// 곡선 크기가 원뿔 밑면 반지름(R)의 10% 미만이면 3D에서 사실상 보이지 않는다.
+function updateTinyNote(sf) {
+  const el = document.getElementById('tinyNote');
+  if (sf.type === 'degenerate') { el.hidden = true; return; }
+  const size = sf.type === 'circle' ? sf.r : (sf.type === 'parabola' ? 2 * sf.p : sf.A);
+  const tiny = size < R * 0.1;
+  el.hidden = !tiny;
+  if (tiny) el.innerHTML = '곡선이 원뿔에 비해 매우 작아 3D 화면에서는 거의 점으로 보입니다 — <b>오른쪽 2D 미리보기</b>로 모양을 확인하거나, 자르는 높이를 50%에서 더 멀리 옮겨 보세요.';
+}
 
 function update() {
   const thetaRad = state.angleDeg * Math.PI / 180;
@@ -762,6 +787,7 @@ function update() {
   drawDandelin(thetaRad, h, sf);
   document.getElementById('eBadge').innerHTML = 'e ≈ <span class="val">' + ecc.toFixed(3) + '</span> (β=' + state.angleDeg.toFixed(1) + '°)';
   document.getElementById('interpText').innerHTML = interpText(sf, ecc);
+  updateTinyNote(sf);
   renderControlPanel(sf, ecc);
   draw2DPreview(sf);
 }
@@ -801,6 +827,9 @@ splitDivider.addEventListener('pointercancel', endDividerDrag);
 applySplit();
 
 window.addEventListener('resize', onSplitResize);
+// 스크롤바가 뒤늦게 생기거나 분할선을 끌면 컨테이너 폭만 바뀌고 resize 이벤트는 오지 않는다.
+// 컨테이너를 직접 관찰해 그리기 버퍼 해상도까지 맞춘다.
+new ResizeObserver(onSplitResize).observe(canvasWrap);
 function animate() {
   requestAnimationFrame(animate);
   controls.update();

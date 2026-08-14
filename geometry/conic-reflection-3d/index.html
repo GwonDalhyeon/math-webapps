@@ -144,6 +144,13 @@
   details.deepen .body { margin-top:8px; font-size:12.5px; color:#374151; line-height:1.7; }
 
   .hint-text { font-size:11.5px; color:var(--muted); margin-top:-4px; margin-bottom:10px; line-height:1.5; }
+
+  /* 조작 열이 캔버스보다 길어져 재생 버튼이 첫 화면 밖으로 밀리지 않도록, 보조 설명은
+     접어 두고 힌트 줄 간격을 좁힌다(iPad 가로 1180×820 기준). */
+  details.note-fold { margin:-2px 0 8px; }
+  details.note-fold summary { cursor:pointer; font-size:11.5px; font-weight:700; color:var(--muted); }
+  details.note-fold .body { margin-top:5px; font-size:11.5px; color:var(--muted); line-height:1.55; }
+  .hint-text.tight { margin-top:-6px; margin-bottom:8px; }
 </style>
 </head>
 <body>
@@ -327,15 +334,22 @@ function outgoingLength(ray, params) {
   return Math.min(Math.max(Math.abs(t), 0.4), MAXOUT * 2.2);
 }
 
+// "잘 모였다"의 기준은 곡선 크기에 비례해야 한다. 절대값으로 두면 a가 큰 곡면에서 기준이
+// 헐거워져, 같은 정도로 어긋나도 작은 곡면에서만 경고가 뜬다. 2D 앱과 같은 식을 쓴다.
+const BLUR_REL = 0.01;      // 퍼짐 허용치 = 곡면 크기 × 1%
+const BLUR_ANGLE_DEG = 0.5; // 회전포물면 평행 이탈 허용 각
+function blurScaleOf(params) { return Math.max(Math.abs(params.a || 0), params.l, 1); }
+
 function computeBlur(rays, params) {
   if (!rays.length) return { value: 0, label: '', unit: '', good: true };
+  const tol = blurScaleOf(params) * BLUR_REL;
   if (params.type === 'parabola') {
     let maxDeg = 0;
     rays.forEach(r => {
       const cosA = Math.max(-1, Math.min(1, r.dirOut.y));
       maxDeg = Math.max(maxDeg, Math.acos(cosA) * 180 / Math.PI);
     });
-    return { value: maxDeg, label: '평행에서 벗어난 각', unit: '°', good: maxDeg < 0.6 };
+    return { value: maxDeg, label: '평행에서 벗어난 각', unit: '°', good: maxDeg < BLUR_ANGLE_DEG };
   }
   if (params.f2U === null) return { value: 0, label: '', unit: '', good: true };
   const f2 = { x: 0, y: params.f2U, z: 0 };
@@ -346,7 +360,7 @@ function computeBlur(rays, params) {
     const closest = V3.add(r.hit, V3.scl(r.dirOut, t));
     maxMiss = Math.max(maxMiss, V3.len(V3.sub(closest, f2)));
   });
-  return { value: maxMiss, label: 'F₂ 근처 퍼짐', unit: '', good: maxMiss < 0.06 };
+  return { value: maxMiss, label: 'F₂ 근처 퍼짐', unit: '', good: maxMiss < tol };
 }
 
 // ════════════════════════════════════════════════════════════
@@ -365,7 +379,7 @@ function initThree() {
   const w = wrap.clientWidth, h = wrap.clientHeight;
 
   renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
-  renderer.setSize(w, h);
+  renderer.setSize(w, h, false); // updateStyle=false: 캔버스는 CSS(width/height:100%)를 그대로 따르게 둔다
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
   renderer.setClearColor(0x0e1523);
 
@@ -446,13 +460,16 @@ function initThree() {
   localGroup.add(waveLoop);
 
   window.addEventListener('resize', onResize);
+  // 스크롤바가 뒤늦게 생기거나 기기를 회전하면 컨테이너 폭만 바뀌고 resize 이벤트는 오지 않는다.
+  // 컨테이너를 직접 관찰해 그리기 버퍼 해상도까지 맞춘다.
+  new ResizeObserver(onResize).observe(document.getElementById('three-canvas').parentElement);
   requestAnimationFrame(animate);
 }
 
 function onResize() {
   const wrap = document.getElementById('three-canvas').parentElement;
   const w = wrap.clientWidth, h = wrap.clientHeight;
-  renderer.setSize(w, h);
+  renderer.setSize(w, h, false); // updateStyle=false: 캔버스는 CSS(width/height:100%)를 그대로 따르게 둔다
   labelRenderer.setSize(w, h);
   camera.aspect = w / h;
   camera.updateProjectionMatrix();
@@ -655,18 +672,18 @@ function renderSliderZone() {
       html += sliderHTML('hypB', '허축 b', state.std.hypB, 0.6, 4, 0.1);
     }
     html += `<div class="eq-box">${standardEquationTex(state.curveType)}</div>`;
-    html += `<div class="eq-box small">중심(또는 꼭짓점) 기준 방정식입니다. 화면에서는 초점 F₁을 항상 원점(카메라 회전 중심)에 고정해서 보여줍니다.</div>`;
+    html += `<details class="note-fold"><summary>이 식의 기준은?</summary><div class="body">중심(또는 꼭짓점) 기준 방정식입니다. 화면에서는 초점 F₁을 항상 원점(카메라 회전 중심)에 고정해서 보여줍니다.</div></details>`;
   } else {
     html += `<div class="def-text">슬라이더 하나로 구 → 회전타원면 → 회전포물면 → 회전쌍곡면이 끊기지 않고 이어집니다. <b>c/a = 1</b>을 넘으면 제2초점 F₂가 화면 밖으로 사라졌다가 반대쪽에서 나타납니다.</div>`;
     html += sliderHTML('contE', 'c/a (=이심률 e)', state.contE, 0, 1.9, 0.01);
     html += `<div class="eq-box">\\(u^2+v^2=(l+eu)^2\\)</div>`;
-    html += `<div class="eq-box small">자오면(회전축을 포함하는 단면) 기준 통합 방정식입니다.</div>`;
+    html += `<details class="note-fold"><summary>이 식의 기준은?</summary><div class="body">자오면(회전축을 포함하는 단면) 기준 통합 방정식입니다.</div></details>`;
   }
 
   html += sliderHTML('launchPct', '자오각(발사각)', state.launchPct, 3, 100, 1, 'accent');
-  html += `<div class="hint-text">초점에서 광선이 나가는 고도각을 조절해, 곡면 어느 위도(고리)에서 반사가 일어나는지 관찰합니다.</div>`;
+  html += `<div class="hint-text tight">곡면의 어느 위도에서 반사가 일어나는지 정합니다.</div>`;
   html += sliderHTML('sourceOffsetPct', '광원 이탈 거리', state.sourceOffsetPct, 0, 100, 1, 'warn');
-  html += `<div class="hint-text">0이면 광원이 정확히 초점에 있습니다. 값을 올리면 광원이 회전축을 벗어나 skew 반사가 나타납니다.</div>`;
+  html += `<div class="hint-text tight">0이면 광원이 초점에 정확히 있습니다. 올리면 축을 벗어납니다.</div>`;
 
   html += '<div class="play-row" style="margin-top:6px;">';
   html += `<button class="primary" id="playBtn">${state.playing ? '⏸ 일시정지' : '▶ 재생'}</button>`;
