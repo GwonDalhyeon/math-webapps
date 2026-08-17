@@ -59,6 +59,27 @@
     .panel{padding:14px;background:#fff;border:1px solid var(--line);border-radius:16px}
     .result-note{background:var(--green-soft);border:1px solid #a7f3d0;border-radius:14px;padding:12px 14px}
     .result-note strong{color:var(--green)}
+    .toggle-label{display:flex;align-items:center;gap:8px;font-weight:700;cursor:pointer}
+    .toggle-label input{width:18px;height:18px}
+    .dot-view{display:none;gap:14px;flex-wrap:wrap;margin-top:6px}
+    .dot-view.on{display:flex}
+    .dot-view-item{display:flex;flex-direction:column;align-items:center;gap:6px}
+    .dot-view-item .dv-label{font-weight:800;font-size:.85rem;color:var(--muted)}
+    .dot-mini-grid{display:grid;grid-template-columns:repeat(2,22px);grid-template-rows:repeat(3,22px);gap:4px}
+    .dot-mini{width:22px;height:22px;border-radius:50%;border:2px solid #cbd5e1;background:#fff}
+    .dot-mini.on{background:var(--indigo);border-color:var(--indigo)}
+    .diff-note{margin-top:10px;padding:10px 12px;border-radius:12px;background:#fdf2f8;border:1px solid #fbcfe8;font-size:.92rem}
+    .diff-note strong{color:var(--pink)}
+    .section-title{margin:28px 0 6px}
+    .key-row{display:grid;grid-template-columns:70px 1fr;gap:12px;align-items:center;margin-bottom:10px}
+    .log-line{padding:8px 10px;border-radius:10px;background:#fff;border:1px solid var(--line);font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.88rem}
+    .log-list{display:flex;flex-direction:column;gap:6px;margin-top:10px;max-height:160px;overflow-y:auto}
+    .parity-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+    .parity-extra{width:54px;height:54px;border-radius:14px;border:3px dashed #f9a8d4;background:#fff;display:grid;place-items:center;font-weight:800;color:var(--pink)}
+    .parity-extra.on{background:#fbcfe8}
+    .parity-status{margin-top:12px;padding:12px 14px;border-radius:14px}
+    .parity-status.ok{background:var(--green-soft);border:1px solid #a7f3d0}
+    .parity-status.bad{background:#fff0f0;border:1px solid #fecaca}
     @media (max-width: 980px){
       .operator-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
     }
@@ -67,6 +88,7 @@
       .operator-grid{grid-template-columns:1fr}
       .bit-row{grid-template-columns:1fr}
       .operator-card p{min-height:unset}
+      .key-row{grid-template-columns:1fr}
     }
   </style>
 </head>
@@ -151,6 +173,7 @@
         </div>
         <button class="secondary-btn" onclick="randomizeBits()">예시 만들기</button>
         <button class="secondary-btn" onclick="resetBits()">초기화</button>
+        <label class="toggle-label"><input type="checkbox" id="showDots" onchange="toggleDotView()"> 점형으로 보기</label>
       </div>
 
       <div class="mini">A와 B의 각 칸을 눌러 0과 1을 바꿔 보세요. 선택한 연산 버튼의 규칙을 이용해 결과 R이 계산됩니다.</div>
@@ -170,8 +193,49 @@
         <div class="bits" id="bitsR"></div>
       </div>
 
+      <div class="dot-view" id="dotView">
+        <div class="dot-view-item"><span class="dv-label">A</span><div class="dot-mini-grid" id="dotA"></div></div>
+        <div class="dot-view-item"><span class="dv-label">B</span><div class="dot-mini-grid" id="dotB"></div></div>
+        <div class="dot-view-item"><span class="dv-label">R</span><div class="dot-mini-grid" id="dotR"></div></div>
+      </div>
+
       <div class="result-note"><strong id="opName">AND</strong> 규칙으로 각 자리의 A, B를 한 번씩 계산한 결과가 R에 나타납니다.</div>
+      <div class="diff-note" id="diffNote"></div>
     </div>
+  </section>
+
+  <section class="card section-title">
+    <h2>3. 열쇠로 암호화·복호화하기</h2>
+    <p class="lead" style="margin-bottom:14px">메시지와 열쇠(6비트)를 정하고, 같은 버튼을 눌러 XOR을 적용해 보세요. <strong>같은 열쇠로 한 번 더 누르면 원래 메시지로 돌아옵니다.</strong></p>
+    <div class="key-row">
+      <div class="label">메시지</div>
+      <div class="bits" id="bitsMsg"></div>
+    </div>
+    <div class="key-row">
+      <div class="label">열쇠</div>
+      <div class="bits" id="bitsKey"></div>
+    </div>
+    <div class="toolbar panel" style="margin-top:6px">
+      <button class="op-btn active" onclick="applyKeyXor()">열쇠와 XOR 적용하기</button>
+      <button class="secondary-btn" onclick="resetKeyDemo()">초기화</button>
+    </div>
+    <div class="log-list" id="keyLog"></div>
+  </section>
+
+  <section class="card section-title">
+    <h2>4. 패리티 점으로 오류 확인하기</h2>
+    <p class="lead" style="margin-bottom:14px">데이터 6점 옆에 <strong>패리티 점(7번째 점)</strong>을 하나 더 둡니다. 데이터가 바뀌면 패리티도 함께 바뀌므로, 전체 1의 개수가 항상 짝수가 되도록 맞추면 오류를 알아챌 수 있습니다.</p>
+    <div class="parity-row">
+      <div class="bits" id="bitsParity"></div>
+      <div class="parity-extra" id="parityDot">P</div>
+    </div>
+    <div class="mini" style="margin-top:8px" id="parityCountText">1의 개수(데이터+패리티): 0개 — 짝수</div>
+    <div class="toolbar panel" style="margin-top:12px">
+      <button class="op-btn active" onclick="flipRandomBit(1)">점 1개 무작위로 뒤집기</button>
+      <button class="secondary-btn" onclick="flipRandomBit(2)">점 2개 무작위로 뒤집기</button>
+      <button class="secondary-btn" onclick="resetParityDemo()">초기화</button>
+    </div>
+    <div class="parity-status" id="parityStatus" style="display:none"></div>
   </section>
 </div>
 
@@ -269,12 +333,21 @@
     const A = getBitArray('bitsA');
     const B = getBitArray('bitsB');
     const resultBits = document.querySelectorAll('#bitsR .bit');
+    const R = [];
 
     for(let i=0;i<6;i++){
       const r = applyTruth(currentOp, A[i], B[i]);
+      R.push(r);
       resultBits[i].textContent = r;
       resultBits[i].classList.toggle('on', r === 1);
     }
+
+    if(document.getElementById('showDots').checked){
+      renderMiniDots('dotA', A);
+      renderMiniDots('dotB', B);
+      renderMiniDots('dotR', R);
+    }
+    updateDiffNote(A, B, R);
   }
 
   function randomizeBits(){
@@ -298,7 +371,149 @@
     updateResult();
   }
 
+  /* ---------- 점형 표시 모드 ---------- */
+  const DOT_ORDER = [0,3,1,4,2,5]; // 1,4,2,5,3,6번 점 순서(시각 배치)
+
+  function renderMiniDots(containerId, bits){
+    const box = document.getElementById(containerId);
+    box.innerHTML = '';
+    DOT_ORDER.forEach(idx => {
+      const d = document.createElement('div');
+      d.className = 'dot-mini' + (bits[idx] ? ' on' : '');
+      box.appendChild(d);
+    });
+  }
+
+  function toggleDotView(){
+    const on = document.getElementById('showDots').checked;
+    document.getElementById('dotView').classList.toggle('on', on);
+    if(on) updateResult();
+  }
+
+  function updateDiffNote(A, B, R){
+    const note = document.getElementById('diffNote');
+    const diffCount = R.filter(v => v === 1).length;
+    if(currentOp === 'XOR'){
+      note.style.display = 'block';
+      note.innerHTML = `<strong>다른 점 개수: ${diffCount}개</strong> — XOR 결과에서 1의 개수는 A와 B가 서로 다른 자리의 개수와 같습니다.`;
+    } else {
+      note.style.display = 'none';
+    }
+  }
+
+  /* ---------- 3. 열쇠로 암호화·복호화하기 ---------- */
+  const msgBits = [1,0,1,1,0,0];
+  const keyBits = [0,0,0,0,0,0];
+
+  function renderKeyDemo(){
+    renderKeyBits('bitsMsg', msgBits, false);
+    renderKeyBits('bitsKey', keyBits, true);
+    if(document.getElementById('showDots') && document.getElementById('showDots').checked){}
+  }
+
+  function renderKeyBits(containerId, arr, clickable){
+    const box = document.getElementById(containerId);
+    box.innerHTML = '';
+    arr.forEach((v,i)=>{
+      const btn = document.createElement('button');
+      btn.className = 'bit' + (v ? ' on' : '');
+      btn.textContent = v;
+      if(clickable){
+        btn.addEventListener('click', () => {
+          arr[i] = arr[i] ? 0 : 1;
+          renderKeyDemo();
+        });
+      }
+      box.appendChild(btn);
+    });
+  }
+
+  function applyKeyXor(){
+    const before = msgBits.join('');
+    for(let i=0;i<6;i++) msgBits[i] = msgBits[i] ^ keyBits[i];
+    const after = msgBits.join('');
+    renderKeyDemo();
+    const log = document.getElementById('keyLog');
+    const line = document.createElement('div');
+    line.className = 'log-line';
+    line.textContent = `${before}  XOR  ${keyBits.join('')}(열쇠)  =  ${after}`;
+    log.prepend(line);
+  }
+
+  function resetKeyDemo(){
+    const initial = [1,0,1,1,0,0];
+    for(let i=0;i<6;i++){ msgBits[i]=initial[i]; keyBits[i]=0; }
+    renderKeyDemo();
+    document.getElementById('keyLog').innerHTML = '';
+  }
+
+  /* ---------- 4. 패리티 점으로 오류 확인하기 ---------- */
+  const parityData = [1,0,1,1,0,0];
+
+  function renderParityDemo(){
+    const box = document.getElementById('bitsParity');
+    box.innerHTML = '';
+    parityData.forEach((v,i)=>{
+      const btn = document.createElement('button');
+      btn.className = 'bit' + (v ? ' on' : '');
+      btn.textContent = v;
+      btn.addEventListener('click', () => {
+        parityData[i] = parityData[i] ? 0 : 1;
+        renderParityDemo();
+      });
+      box.appendChild(btn);
+    });
+    const parity = parityData.reduce((acc,v)=>acc^v, 0);
+    const dot = document.getElementById('parityDot');
+    dot.classList.toggle('on', parity === 1);
+    const totalOnes = parityData.filter(v=>v===1).length + parity;
+    document.getElementById('parityCountText').textContent =
+      `1의 개수(데이터+패리티): ${totalOnes}개 — ${totalOnes % 2 === 0 ? '짝수' : '홀수'}`;
+    document.getElementById('parityStatus').style.display = 'none';
+  }
+
+  function flipRandomBit(n){
+    // 데이터 6개 + 패리티 1개, 총 7자리 중 서로 다른 자리를 n개 무작위로 뒤집는다.
+    const positions = [0,1,2,3,4,5,6];
+    for(let i=positions.length-1;i>0;i--){
+      const j = Math.floor(Math.random()*(i+1));
+      [positions[i],positions[j]] = [positions[j],positions[i]];
+    }
+    const flipPositions = positions.slice(0, n);
+
+    const parityBefore = parityData.reduce((acc,v)=>acc^v, 0);
+    const sevenBits = parityData.concat([parityBefore]);
+    flipPositions.forEach(pos => { sevenBits[pos] = sevenBits[pos] ? 0 : 1; });
+
+    for(let i=0;i<6;i++) parityData[i] = sevenBits[i];
+    renderParityDemo();
+
+    const dot = document.getElementById('parityDot');
+    dot.classList.toggle('on', sevenBits[6] === 1);
+    const totalOnesAfter = sevenBits.reduce((a,v)=>a+v,0);
+    document.getElementById('parityCountText').textContent =
+      `1의 개수(데이터+패리티): ${totalOnesAfter}개 — ${totalOnesAfter % 2 === 0 ? '짝수' : '홀수'}`;
+
+    const status = document.getElementById('parityStatus');
+    status.style.display = 'block';
+    if(totalOnesAfter % 2 !== 0){
+      status.className = 'parity-status bad';
+      status.innerHTML = `<strong>오류를 발견했어요!</strong> 점 ${n}개를 뒤집었더니 1의 개수가 홀수가 되었습니다. 하지만 정확히 몇 번째 점이 바뀌었는지는 이 방법만으로 알 수 없습니다.`;
+    } else {
+      status.className = 'parity-status ok';
+      status.innerHTML = `<strong>패리티로는 오류를 찾지 못했어요.</strong> 점 ${n}개가 바뀌었지만 1의 개수는 여전히 짝수라서, 겉보기에는 정상처럼 보입니다. (점이 짝수 개만큼 바뀌면 패리티만으로는 알아채기 어렵습니다)`;
+    }
+  }
+
+  function resetParityDemo(){
+    const initial = [1,0,1,1,0,0];
+    for(let i=0;i<6;i++) parityData[i] = initial[i];
+    renderParityDemo();
+  }
+
   updateResult();
+  renderKeyDemo();
+  renderParityDemo();
 </script>
 </body>
 </html>

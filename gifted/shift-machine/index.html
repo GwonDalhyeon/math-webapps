@@ -21,6 +21,22 @@
     .panel{background:#fff;border:1px solid var(--line);border-radius:16px;padding:14px}.big{font-size:1.65rem;font-weight:800}
     .obs{display:grid;gap:10px;margin-top:12px}.item{padding:12px;border-radius:12px;background:#fff;border:1px solid var(--line)}
     .good{background:#f0fdf4;border-color:#bbf7d0}
+    .challenge-card{margin-top:20px}
+    .num-inputs{display:flex;gap:16px;flex-wrap:wrap;align-items:flex-end;margin:14px 0}
+    .num-inputs label{display:block;font-weight:700;margin-bottom:6px}
+    .num-inputs input{width:100px;padding:10px 12px;border:1px solid var(--line);border-radius:12px;font:inherit;font-size:1.1rem}
+    .power-row{display:flex;gap:10px;flex-wrap:wrap;margin:14px 0}
+    .power-btn{padding:12px 16px;border-radius:14px;border:2px solid var(--blue-soft);background:#fff;cursor:pointer;font-weight:800;font-size:1rem;color:#1d4ed8}
+    .power-btn.on{background:var(--blue);color:#fff;border-color:var(--blue)}
+    .sum-check{margin:10px 0;padding:10px 14px;border-radius:12px;font-weight:700}
+    .sum-check.ok{background:var(--green-soft);color:#047857}
+    .sum-check.bad{background:#fff7ed;color:#c2410c}
+    .breakdown{display:grid;gap:8px;margin:14px 0}
+    .breakdown-row{display:flex;justify-content:space-between;gap:10px;padding:10px 12px;background:#fff;border:1px solid var(--line);border-radius:12px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+    .total-row{display:flex;justify-content:space-between;padding:12px 14px;border-radius:12px;font-weight:800;font-size:1.1rem}
+    .total-row.ok{background:var(--green-soft)}
+    .total-row.bad{background:#fff0f0}
+    .side-note{margin-top:16px;padding:14px;border-radius:14px;background:#f8fafc;border:1px solid var(--line);font-size:.94rem;line-height:1.7;color:var(--muted)}
     @media(max-width:900px){.layout{grid-template-columns:1fr}}
   </style>
 </head>
@@ -75,6 +91,38 @@
       </div>
     </section>
   </div>
+
+  <section class="card challenge-card">
+    <h2>3. 곱셈 챌린지 — 밀기와 더하기만으로 곱하기</h2>
+    <p class="lead">더하기와 밀기(시프트)만 할 줄 아는 기계에게 곱셈을 시키려면 어떻게 명령해야 할까요? <strong id="challengeText">23 × 13</strong>을 예로 함께 풀어 봅시다.</p>
+
+    <div class="num-inputs">
+      <div>
+        <label for="multiplicand">곱해지는 수</label>
+        <input type="number" id="multiplicand" value="23" min="1" max="999">
+      </div>
+      <div>
+        <label for="multiplier">곱하는 수 (0~31)</label>
+        <input type="number" id="multiplier" value="13" min="0" max="31">
+      </div>
+      <button id="applyNumsBtn">이 수로 문제 만들기</button>
+    </div>
+
+    <p class="mini" style="margin:6px 0 4px">먼저 <strong id="multiplierLabel">13</strong>을 2의 거듭제곱의 합으로 나타내 보세요. 해당하는 거듭제곱을 모두 눌러 보세요.</p>
+    <div class="power-row" id="powerRow"></div>
+    <div class="sum-check" id="sumCheck"></div>
+
+    <div id="breakdownArea" style="display:none">
+      <p class="mini" style="margin:14px 0 4px">선택한 거듭제곱마다 <strong id="multiplicandLabel">23</strong>을 그만큼 왼쪽으로 밀면(=곱하면) 다음과 같습니다.</p>
+      <div class="breakdown" id="breakdown"></div>
+      <div class="total-row" id="totalRow"></div>
+    </div>
+
+    <div class="side-note">
+      <strong>같은 원리의 다른 이름</strong><br>
+      이렇게 곱하는 수를 2의 거듭제곱의 합으로 나누어, 밀기와 더하기만으로 곱셈을 하는 방법은 <strong>러시아 농부 곱셈법</strong>과 <strong>고대 이집트 곱셈법</strong>에서도 똑같이 쓰입니다. 두 방법 모두 한쪽 수를 계속 2로 나누거나 2배로 늘리면서, 필요한 줄만 골라 더하는 방식으로 큰 수의 곱셈을 나눗셈·곱셈 없이 계산합니다.
+    </div>
+  </section>
 </div>
 
 <script>
@@ -148,6 +196,89 @@ document.getElementById('resetBtn').addEventListener('click',()=>{
 });
 
 render();
+
+/* ---------- 3. 곱셈 챌린지 ---------- */
+const challenge = { multiplicand: 23, multiplier: 13, selected: new Set() };
+const POWER_LIST = [0,1,2,3,4]; // 2^0 ~ 2^4 (0~31 범위 커버)
+
+function renderPowerRow(){
+  const row = document.getElementById('powerRow');
+  row.innerHTML = '';
+  POWER_LIST.forEach(p => {
+    const val = Math.pow(2,p);
+    const btn = document.createElement('button');
+    btn.className = 'power-btn' + (challenge.selected.has(p) ? ' on' : '');
+    btn.textContent = val;
+    btn.addEventListener('click', () => {
+      if(challenge.selected.has(p)) challenge.selected.delete(p);
+      else challenge.selected.add(p);
+      renderPowerRow();
+      updateChallengeResult();
+    });
+    row.appendChild(btn);
+  });
+}
+
+function updateChallengeResult(){
+  const sum = [...challenge.selected].reduce((acc,p)=>acc+Math.pow(2,p),0);
+  const check = document.getElementById('sumCheck');
+  const breakdownArea = document.getElementById('breakdownArea');
+
+  if(challenge.selected.size === 0){
+    check.className = 'sum-check';
+    check.textContent = '거듭제곱을 하나 이상 눌러 보세요.';
+    breakdownArea.style.display = 'none';
+    return;
+  }
+
+  if(sum === challenge.multiplier){
+    check.className = 'sum-check ok';
+    const parts = [...challenge.selected].sort((a,b)=>b-a).map(p=>Math.pow(2,p));
+    check.textContent = `정답입니다! ${challenge.multiplier} = ${parts.join(' + ')}`;
+    renderBreakdown();
+    breakdownArea.style.display = 'block';
+  } else {
+    check.className = 'sum-check bad';
+    check.textContent = `지금까지 고른 합: ${sum} (목표: ${challenge.multiplier}). ${sum < challenge.multiplier ? '더 골라 보세요.' : '너무 많이 골랐어요. 다시 확인해 보세요.'}`;
+    breakdownArea.style.display = 'none';
+  }
+}
+
+function renderBreakdown(){
+  const box = document.getElementById('breakdown');
+  box.innerHTML = '';
+  let total = 0;
+  [...challenge.selected].sort((a,b)=>a-b).forEach(p => {
+    const shifted = challenge.multiplicand * Math.pow(2,p);
+    total += shifted;
+    const row = document.createElement('div');
+    row.className = 'breakdown-row';
+    row.innerHTML = `<span>${challenge.multiplicand} × 2<sup>${p}</sup> = ${challenge.multiplicand} &lt;&lt; ${p}</span><span>${shifted}</span>`;
+    box.appendChild(row);
+  });
+  const answer = challenge.multiplicand * challenge.multiplier;
+  const totalRow = document.getElementById('totalRow');
+  totalRow.className = 'total-row ' + (total === answer ? 'ok' : 'bad');
+  totalRow.innerHTML = `<span>모두 더하면</span><span>${total} ${total === answer ? `= ${challenge.multiplicand} × ${challenge.multiplier} 맞음` : `(실제 곱: ${answer})`}</span>`;
+}
+
+document.getElementById('applyNumsBtn').addEventListener('click', () => {
+  const a = Math.max(1, Math.min(999, Number(document.getElementById('multiplicand').value) || 23));
+  const b = Math.max(0, Math.min(31, Number(document.getElementById('multiplier').value) || 13));
+  challenge.multiplicand = a;
+  challenge.multiplier = b;
+  challenge.selected = new Set();
+  document.getElementById('multiplicand').value = a;
+  document.getElementById('multiplier').value = b;
+  document.getElementById('challengeText').textContent = `${a} × ${b}`;
+  document.getElementById('multiplierLabel').textContent = b;
+  document.getElementById('multiplicandLabel').textContent = a;
+  renderPowerRow();
+  updateChallengeResult();
+});
+
+renderPowerRow();
+updateChallengeResult();
 </script>
 </body>
 </html>

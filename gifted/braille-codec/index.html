@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="점자의 점형을 6비트 이진수와 십진수로, 다시 십진수를 점형과 한글로 바꾸어 보며 점자가 수로 저장되는 원리를 탐구하는 웹앱입니다." />
+  <title>점자 코덱</title>
+  <link rel="icon" href="../../favicon.ico" sizes="16x16 32x32 48x48" />
+  <link rel="icon" href="../../assets/favicon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="../../assets/apple-touch-icon.png" />
+  <style>
+    :root{
+      --bg:#ffffff;--card:#f8fafc;--line:#dbe4ee;--text:#1f2937;--muted:#6b7280;
+      --blue:#2563eb;--blue-soft:#dbeafe;--pink:#db2777;--green:#059669;--green-soft:#ecfdf5;
+      --indigo:#4f46e5;--red:#dc2626;--amber:#d97706;--amber-soft:#fff7ed;
+      --shadow:0 10px 25px rgba(15,23,42,.08)
+    }
+    *{box-sizing:border-box}
+    body{margin:0;background:var(--bg);font-family:"Pretendard","Noto Sans KR",system-ui,sans-serif;color:var(--text)}
+    .wrap{max-width:1180px;margin:0 auto;padding:24px}
+    .back-link{display:inline-block;margin-bottom:14px;color:#2563eb;font-weight:700;text-decoration:none}
+    .back-link:hover{text-decoration:underline}
+    h1{margin:0 0 8px}
+    h2{margin:0 0 12px;font-size:1.2rem}
+    h3{margin:0 0 8px;font-size:1rem}
+    .lead{color:var(--muted);margin:0 0 18px;line-height:1.6}
+    .card{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:20px;box-shadow:var(--shadow);margin-bottom:18px}
+    .mini{font-size:.93rem;color:var(--muted);line-height:1.6}
+    .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+    .layout{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+    .layout3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+    button{font:inherit}
+    .btn{padding:10px 14px;border:none;border-radius:12px;background:var(--blue);color:#fff;cursor:pointer}
+    .btn:hover{filter:brightness(.97)}
+    .btn.secondary{background:#fff;color:var(--text);border:1px solid var(--line)}
+    .btn.pink{background:var(--pink)}
+    .chips{display:flex;flex-wrap:wrap;gap:8px}
+    .chip{border:1px solid var(--line);background:#fff;border-radius:12px;padding:8px 12px;cursor:pointer;font-weight:700}
+    .chip.active{background:var(--blue-soft);border-color:#bcd4ff;color:var(--blue)}
+
+    .dot-grid{display:grid;grid-template-columns:repeat(2,40px);grid-template-rows:repeat(3,40px);gap:6px;justify-content:center}
+    .dot-grid.small{grid-template-columns:repeat(2,26px);grid-template-rows:repeat(3,26px);gap:5px}
+    .dot{border-radius:50%;border:2px solid #cbd5e1;background:#fff;display:grid;place-items:center;font-weight:800;color:#64748b;cursor:default}
+    .dot.small{width:26px;height:26px;font-size:.7rem}
+    .dot:not(.small){width:40px;height:40px;font-size:.85rem}
+    .dot.on{background:var(--indigo);border-color:var(--indigo);color:#fff}
+    .dot.clickable{cursor:pointer}
+    .dot.clickable:hover{border-color:var(--indigo)}
+
+    .panel{background:#fff;border:1px solid var(--line);border-radius:16px;padding:14px}
+    .num-line{display:flex;flex-wrap:wrap;gap:10px;align-items:center;font-size:1.05rem;margin-top:10px}
+    .num-line .val{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-weight:800;background:#f3f7fb;border-radius:10px;padding:6px 12px}
+    .num-line .arrow{color:var(--muted);font-weight:800}
+    .num-line .tag{font-size:.8rem;color:var(--muted);display:block;margin-bottom:2px}
+    .cell-box{display:flex;flex-direction:column;align-items:center;gap:6px}
+    .cell-strip{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-start;margin-top:10px}
+    .feedback{padding:12px 14px;border-radius:14px;margin-top:10px}
+    .good{background:var(--green-soft)}
+    .warnbox{background:#fff6d9}
+    .info{background:var(--amber-soft)}
+    .danger{background:#fff0f0}
+    input[type="text"], input[type="number"]{padding:11px 13px;border:1px solid #cbd5e1;border-radius:12px;font:inherit;background:#fff}
+    table{width:100%;border-collapse:collapse;background:#fff;border-radius:14px;overflow:hidden}
+    th,td{border:1px solid var(--line);padding:8px 6px;text-align:center;font-size:.92rem}
+    th{background:#f8fafc}
+    .big{font-size:1.5rem;font-weight:800}
+    .syllable-preview{font-size:2.2rem;font-weight:900;color:var(--indigo)}
+    details{border:1px solid var(--line);border-radius:14px;padding:12px 14px;background:#fff;margin-top:14px}
+    summary{cursor:pointer;font-weight:800}
+    @media (max-width:980px){
+      .layout,.layout3{grid-template-columns:1fr}
+    }
+    @media (max-width:640px){
+      .wrap{padding:16px}
+      .dot-grid{grid-template-columns:repeat(2,34px);grid-template-rows:repeat(3,34px)}
+      .dot:not(.small){width:34px;height:34px}
+    }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back-link" href="../">← 영재원 수업 목록</a>
+
+  <h1>점자 코덱</h1>
+  <p class="lead">점형을 6자리 이진수로, 다시 이진수를 십진수로 바꾸어 보세요. 반대로 숫자 하나를 넣으면 그 수가 어떤 점형과 자모에 해당하는지도 확인할 수 있습니다. 점자 · 수 · 한글 사이를 자유롭게 오가며 왜 점자를 수로 저장해야 하는지 생각해 보세요.</p>
+
+  <section class="card">
+    <h2>1. 자모 하나를 점형과 수로</h2>
+    <p class="mini">먼저 초성·중성·종성 중 하나를 고르고 자모를 선택하면, 실제 한글 점자 규칙에 따른 점형과 6비트 이진수, 십진수를 보여 줍니다. 점 번호는 <strong>1~6번</strong>이며, 이진수는 <strong>1번 점을 맨 앞자리</strong>로 하여 1번부터 6번까지 순서대로 읽습니다.</p>
+
+    <div class="layout">
+      <div class="panel">
+        <h3>자모 선택</h3>
+        <div class="chips" id="typeChips" style="margin-bottom:10px"></div>
+        <div class="chips" id="itemChips"></div>
+
+        <div style="margin-top:16px" class="cell-box">
+          <div class="dot-grid" id="lookupGrid"></div>
+          <div class="mini" id="lookupLabel">초성 ㄱ</div>
+        </div>
+
+        <div class="num-line">
+          <div><span class="tag">점형</span><span class="val" id="lookupDots">4번</span></div>
+          <span class="arrow">→</span>
+          <div><span class="tag">6비트</span><span class="val" id="lookupBin">000100</span></div>
+          <span class="arrow">→</span>
+          <div><span class="tag">십진수</span><span class="val" id="lookupDec">4</span></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h3>내가 직접 점형 만들기</h3>
+        <p class="mini">점을 눌러 원하는 점형을 만들어 보세요. 이 점형이 실제로 어떤 자모에 해당하는지 자동으로 찾아 줍니다.</p>
+        <div class="cell-box">
+          <div class="dot-grid" id="freeGrid"></div>
+        </div>
+        <div class="num-line">
+          <div><span class="tag">6비트</span><span class="val" id="freeBin">000000</span></div>
+          <span class="arrow">→</span>
+          <div><span class="tag">십진수</span><span class="val" id="freeDec">0</span></div>
+        </div>
+        <div class="feedback warnbox mini" id="freeMatch" style="margin-top:12px">아직 점을 누르지 않았어요.</div>
+        <div class="row" style="margin-top:10px">
+          <button class="btn secondary" onclick="clearFree()">지우기</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>2. 여러 칸을 이어 붙여 글자 만들기</h2>
+    <p class="mini">초성·중성·종성을 각각 골라 한 글자를 완성해 보세요. 초성이 'ㅇ'이거나 종성이 없으면 그 칸은 규칙에 따라 만들지 않습니다.</p>
+
+    <div class="layout3">
+      <div class="panel">
+        <h3>초성 (생략 가능)</h3>
+        <div class="chips" id="choChips"></div>
+      </div>
+      <div class="panel">
+        <h3>중성 (필수)</h3>
+        <div class="chips" id="jungChips"></div>
+      </div>
+      <div class="panel">
+        <h3>종성 (없어도 됨)</h3>
+        <div class="chips" id="jongChips"></div>
+      </div>
+    </div>
+
+    <div class="panel" style="margin-top:14px">
+      <div class="row" style="justify-content:space-between">
+        <h3 style="margin:0">완성된 글자</h3>
+        <button class="btn secondary" onclick="loadExample('수학')">교재 예제 '수학' 불러오기</button>
+      </div>
+      <div class="cell-strip" id="buildStrip"></div>
+      <div class="num-line" id="buildNumLine"></div>
+      <div class="row" style="margin-top:12px;align-items:center;gap:14px">
+        <span class="mini">완성된 한글:</span>
+        <span class="syllable-preview" id="builtSyllable">?</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>3. 거꾸로 — 수에서 점자로</h2>
+    <p class="mini">0부터 63까지의 정수를 넣으면 6비트 이진수와 점형을 보여 주고, 그 점형이 실제 어떤 자모에 해당하는지(초성·중성·종성 중 여러 자리에서 겹쳐 쓰일 수도 있습니다) 찾아 줍니다.</p>
+    <div class="row">
+      <input type="number" id="reverseInput" min="0" max="63" value="4" style="width:120px">
+      <button class="btn" onclick="runReverse()">변환하기</button>
+    </div>
+    <div class="layout" style="margin-top:14px">
+      <div class="panel cell-box">
+        <div class="dot-grid" id="reverseGrid"></div>
+        <div class="num-line">
+          <div><span class="tag">6비트</span><span class="val" id="reverseBin">000100</span></div>
+        </div>
+      </div>
+      <div class="panel">
+        <h3>이 수에 해당하는 자모</h3>
+        <div id="reverseMatch" class="mini">먼저 변환하기를 눌러 보세요.</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>4. 교재에서 다시 보기 — 점형이 12점이 되면?</h2>
+    <p class="mini">교재 4장에서 다룬 겹모음 <strong>'ㅙ'</strong>의 예시입니다. 이 실험실의 기본 자모표에는 겹모음이 포함되어 있지 않지만, 계산 원리는 똑같습니다. 한 칸이 아니라 <strong>두 칸(12점)</strong>을 이어 붙이면 그만큼 큰 수가 만들어집니다.</p>
+    <div class="feedback info">
+      <p style="margin:0 0 6px"><strong>ㅙ의 점형(2칸, 12점)을 이진수로 이어 쓰면</strong></p>
+      <p class="val" style="display:inline-block;margin:4px 0">111001111010<sub>(2)</sub></p>
+      <p style="margin:6px 0 0">이 이진수를 십진법의 전개식으로 풀면</p>
+      <p style="margin:4px 0 0">2<sup>11</sup> + 2<sup>10</sup> + 2<sup>9</sup> + 2<sup>6</sup> + 2<sup>5</sup> + 2<sup>4</sup> + 2<sup>3</sup> + 2<sup>1</sup> = <strong>3706</strong></p>
+    </div>
+    <div class="feedback warnbox" style="margin-top:12px">
+      <strong>생각해 보기</strong>
+      <ul style="margin:8px 0 0;padding-left:20px">
+        <li>점 1개짜리 칸이 나타낼 수 있는 정보는 몇 가지인가요? (2번 섹션에서 확인한 값들과 비교해 보세요)</li>
+        <li>칸이 하나 늘어날 때마다(점이 6개씩 늘어날 때마다) 나타낼 수 있는 정보의 가짓수는 어떻게 변하나요?</li>
+        <li>'수학'은 왜 십진수 하나가 아니라 4개의 수로 나누어 저장했을까요? 'ㅙ'처럼 한 번에 큰 수 하나로 저장하면 어떤 점이 불편할까요?</li>
+      </ul>
+    </div>
+  </section>
+
+  <details>
+    <summary>점 번호와 이진수 자리 대응 방식</summary>
+    <p class="mini" style="margin:8px 0 0">점자 한 칸은 <strong>1 4 / 2 5 / 3 6</strong>의 순서로 화면에 배치됩니다(왼쪽 위부터 아래로 1·2·3, 오른쪽 위부터 아래로 4·5·6). 하지만 이진수로 바꿀 때는 이 배치 순서가 아니라 <strong>1번 → 2번 → 3번 → 4번 → 5번 → 6번의 번호 순서</strong>대로 읽어서 그대로 6자리 이진수로 씁니다. 1번 점이 볼록하면 맨 앞자리(2<sup>5</sup>의 자리)가 1이 됩니다.</p>
+  </details>
+</div>
+
+<script>
+  /* 실제 한글 점자 규칙(braille-lab과 동일한 데이터). 기본 자음 14개·기본 모음 10개·받침 8개만 다룬다. */
+  const brailleMap = {
+    initial: {
+      'ㄱ': [4], 'ㄴ': [1,4], 'ㄷ': [2,4], 'ㄹ': [5], 'ㅁ': [1,5], 'ㅂ': [4,5],
+      'ㅅ': [6], 'ㅇ': [], 'ㅈ': [4,6], 'ㅊ': [5,6], 'ㅋ': [1,2,4], 'ㅌ': [1,2,5],
+      'ㅍ': [1,4,5], 'ㅎ': [2,4,5]
+    },
+    medial: {
+      'ㅏ': [1,2,6], 'ㅑ': [3,4,5], 'ㅓ': [2,3,4], 'ㅕ': [1,5,6], 'ㅗ': [1,3,6],
+      'ㅛ': [3,4,6], 'ㅜ': [1,3,4], 'ㅠ': [1,4,6], 'ㅡ': [2,4,6], 'ㅣ': [1,3,5]
+    },
+    final: {
+      '없음': [], 'ㄱ': [1], 'ㄴ': [3,4], 'ㄷ': [3,5], 'ㄹ': [2], 'ㅁ': [3,6],
+      'ㅂ': [3], 'ㅅ': [4], 'ㅇ': [3,4,6]
+    }
+  };
+  const TYPE_LABEL = { initial:'초성', medial:'중성', final:'종성' };
+  const ORDER = {
+    initial: ['ㄱ','ㄴ','ㄷ','ㄹ','ㅁ','ㅂ','ㅅ','ㅇ','ㅈ','ㅊ','ㅋ','ㅌ','ㅍ','ㅎ'],
+    medial: ['ㅏ','ㅑ','ㅓ','ㅕ','ㅗ','ㅛ','ㅜ','ㅠ','ㅡ','ㅣ'],
+    final: ['없음','ㄱ','ㄴ','ㄷ','ㄹ','ㅁ','ㅂ','ㅅ','ㅇ']
+  };
+  const CHOSEONG_FULL = ['ㄱ','ㄲ','ㄴ','ㄷ','ㄸ','ㄹ','ㅁ','ㅂ','ㅃ','ㅅ','ㅆ','ㅇ','ㅈ','ㅉ','ㅊ','ㅋ','ㅌ','ㅍ','ㅎ'];
+  const JUNGSEONG_FULL = ['ㅏ','ㅐ','ㅑ','ㅒ','ㅓ','ㅔ','ㅕ','ㅖ','ㅗ','ㅘ','ㅙ','ㅚ','ㅛ','ㅜ','ㅝ','ㅞ','ㅟ','ㅠ','ㅡ','ㅢ','ㅣ'];
+  const JONGSEONG_FULL = ['', 'ㄱ','ㄲ','ㄳ','ㄴ','ㄵ','ㄶ','ㄷ','ㄹ','ㄺ','ㄻ','ㄼ','ㄽ','ㄾ','ㄿ','ㅀ','ㅁ','ㅂ','ㅄ','ㅅ','ㅆ','ㅇ','ㅈ','ㅊ','ㅋ','ㅌ','ㅍ','ㅎ'];
+
+  function dotsToBits(dots){
+    const bits = [0,0,0,0,0,0];
+    dots.forEach(n => bits[n-1] = 1);
+    return bits;
+  }
+  function bitsToDecimal(bits){ return parseInt(bits.join(''),2); }
+  function decimalToBits(n){ return n.toString(2).padStart(6,'0').split('').map(Number); }
+
+  function renderDotGrid(container, bits, opts){
+    opts = opts || {};
+    container.innerHTML = '';
+    const visualOrder = [0,3,1,4,2,5]; // 1,4,2,5,3,6 (index0-based)
+    visualOrder.forEach(idx => {
+      const d = document.createElement('div');
+      d.className = 'dot' + (opts.small ? ' small' : '') + (bits[idx] ? ' on' : '') + (opts.clickable ? ' clickable' : '');
+      d.textContent = idx+1;
+      if(opts.clickable){
+        d.onclick = () => { opts.onToggle(idx); };
+      }
+      container.appendChild(d);
+    });
+  }
+
+  function findMatches(bits){
+    const dec = bitsToDecimal(bits);
+    const matches = [];
+    ['initial','medial','final'].forEach(type=>{
+      Object.entries(brailleMap[type]).forEach(([sym, dots])=>{
+        if(bitsToDecimal(dotsToBits(dots)) === dec){
+          matches.push({type, sym});
+        }
+      });
+    });
+    return matches;
+  }
+
+  /* ---------- 섹션 1: 자모 선택 lookup ---------- */
+  let lookupType = 'initial';
+  let lookupItem = 'ㄱ';
+
+  function renderTypeChips(){
+    const box = document.getElementById('typeChips');
+    box.innerHTML = '';
+    ['initial','medial','final'].forEach(type=>{
+      const btn = document.createElement('button');
+      btn.className = 'chip' + (lookupType===type ? ' active' : '');
+      btn.textContent = TYPE_LABEL[type];
+      btn.onclick = () => { lookupType = type; lookupItem = ORDER[type][0]; renderTypeChips(); renderItemChips(); updateLookup(); };
+      box.appendChild(btn);
+    });
+  }
+  function renderItemChips(){
+    const box = document.getElementById('itemChips');
+    box.innerHTML = '';
+    ORDER[lookupType].forEach(sym=>{
+      const btn = document.createElement('button');
+      btn.className = 'chip' + (lookupItem===sym ? ' active' : '');
+      btn.textContent = sym;
+      btn.onclick = () => { lookupItem = sym; renderItemChips(); updateLookup(); };
+      box.appendChild(btn);
+    });
+  }
+  function updateLookup(){
+    const dots = brailleMap[lookupType][lookupItem];
+    const bits = dotsToBits(dots);
+    renderDotGrid(document.getElementById('lookupGrid'), bits);
+    document.getElementById('lookupLabel').textContent = `${TYPE_LABEL[lookupType]} ${lookupItem}`;
+    document.getElementById('lookupDots').textContent = dots.length ? dots.join('-') + '번' : '점 없음';
+    document.getElementById('lookupBin').textContent = bits.join('');
+    document.getElementById('lookupDec').textContent = bitsToDecimal(bits);
+  }
+
+  /* ---------- 섹션 1: 직접 점형 만들기 ---------- */
+  let freeBits = [0,0,0,0,0,0];
+  function renderFree(){
+    renderDotGrid(document.getElementById('freeGrid'), freeBits, {
+      clickable:true,
+      onToggle:(idx)=>{ freeBits[idx] = freeBits[idx] ? 0 : 1; renderFree(); }
+    });
+    const dec = bitsToDecimal(freeBits);
+    document.getElementById('freeBin').textContent = freeBits.join('');
+    document.getElementById('freeDec').textContent = dec;
+    const box = document.getElementById('freeMatch');
+    if(freeBits.every(b=>b===0)){
+      box.className = 'feedback warnbox mini';
+      box.textContent = '아직 점을 누르지 않았어요.';
+      return;
+    }
+    const matches = findMatches(freeBits);
+    if(matches.length === 0){
+      box.className = 'feedback danger mini';
+      box.textContent = '이 점형에 해당하는 기본 자모가 없어요. (실제 점자에는 특수문자·약어 등 다른 규칙도 있습니다)';
+    } else {
+      box.className = 'feedback good mini';
+      box.textContent = '이 점형에 해당하는 자모: ' + matches.map(m=>`${TYPE_LABEL[m.type]} '${m.sym}'`).join(', ');
+    }
+  }
+  function clearFree(){ freeBits=[0,0,0,0,0,0]; renderFree(); }
+
+  /* ---------- 섹션 2: 글자 조립 ---------- */
+  const buildState = { cho:null, jung:'ㅏ', jong:'없음' };
+
+  function renderBuildChips(){
+    const choBox = document.getElementById('choChips');
+    choBox.innerHTML = '';
+    const noneBtn = document.createElement('button');
+    noneBtn.className = 'chip' + (buildState.cho===null ? ' active' : '');
+    noneBtn.textContent = 'ㅇ(생략)';
+    noneBtn.onclick = () => { buildState.cho = null; renderBuildChips(); updateBuild(); };
+    choBox.appendChild(noneBtn);
+    ORDER.initial.filter(s=>s!=='ㅇ').forEach(sym=>{
+      const btn = document.createElement('button');
+      btn.className = 'chip' + (buildState.cho===sym ? ' active' : '');
+      btn.textContent = sym;
+      btn.onclick = () => { buildState.cho = sym; renderBuildChips(); updateBuild(); };
+      choBox.appendChild(btn);
+    });
+
+    const jungBox = document.getElementById('jungChips');
+    jungBox.innerHTML = '';
+    ORDER.medial.forEach(sym=>{
+      const btn = document.createElement('button');
+      btn.className = 'chip' + (buildState.jung===sym ? ' active' : '');
+      btn.textContent = sym;
+      btn.onclick = () => { buildState.jung = sym; renderBuildChips(); updateBuild(); };
+      jungBox.appendChild(btn);
+    });
+
+    const jongBox = document.getElementById('jongChips');
+    jongBox.innerHTML = '';
+    ORDER.final.forEach(sym=>{
+      const btn = document.createElement('button');
+      btn.className = 'chip' + (buildState.jong===sym ? ' active' : '');
+      btn.textContent = sym;
+      btn.onclick = () => { buildState.jong = sym; renderBuildChips(); updateBuild(); };
+      jongBox.appendChild(btn);
+    });
+  }
+
+  function updateBuild(){
+    const strip = document.getElementById('buildStrip');
+    strip.innerHTML = '';
+    const parts = [];
+    if(buildState.cho !== null) parts.push({type:'initial', sym:buildState.cho, label:'초성 '+buildState.cho});
+    parts.push({type:'medial', sym:buildState.jung, label:'중성 '+buildState.jung});
+    if(buildState.jong !== '없음') parts.push({type:'final', sym:buildState.jong, label:'종성 '+buildState.jong});
+
+    const decList = [];
+    parts.forEach(p=>{
+      const bits = dotsToBits(brailleMap[p.type][p.sym]);
+      decList.push(bitsToDecimal(bits));
+      const box = document.createElement('div');
+      box.className = 'cell-box panel';
+      const grid = document.createElement('div');
+      grid.className = 'dot-grid small';
+      renderDotGrid(grid, bits, {small:true});
+      box.appendChild(grid);
+      const lab = document.createElement('div');
+      lab.className = 'mini';
+      lab.textContent = p.label + ` (${bitsToDecimal(bits)})`;
+      box.appendChild(lab);
+      strip.appendChild(box);
+    });
+
+    document.getElementById('buildNumLine').innerHTML =
+      `<div class="mini">칸별 십진수를 순서대로 나열하면: <span class="val">${decList.join(', ')}</span></div>`;
+
+    // 완성 한글
+    const choIdx = CHOSEONG_FULL.indexOf(buildState.cho === null ? 'ㅇ' : buildState.cho);
+    const jungIdx = JUNGSEONG_FULL.indexOf(buildState.jung);
+    const jongSym = buildState.jong === '없음' ? '' : buildState.jong;
+    const jongIdx = JONGSEONG_FULL.indexOf(jongSym);
+    const syllable = document.getElementById('builtSyllable');
+    if(choIdx>=0 && jungIdx>=0 && jongIdx>=0){
+      syllable.textContent = String.fromCharCode(0xAC00 + choIdx*588 + jungIdx*28 + jongIdx);
+    } else {
+      syllable.textContent = '?';
+    }
+  }
+
+  function loadExample(word){
+    if(word === '수학'){
+      // '수' + '학' 을 순서대로 2칸씩 보여주기 위해, 조립기는 마지막 글자(학) 상태로 맞추고
+      // 안내 텍스트로 전체 흐름을 설명한다.
+      buildState.cho = 'ㅎ';
+      buildState.jung = 'ㅏ';
+      buildState.jong = 'ㄱ';
+      renderBuildChips();
+      updateBuild();
+      alert("교재 예제 '수학'을 확인해 보세요.\n\n수 = 초성 ㅅ + 중성 ㅜ (2칸)\n학 = 초성 ㅎ + 중성 ㅏ(생략) + 종성 ㄱ (2칸)\n\n지금 조립기에는 '학'의 초성·중성·종성이 채워져 있습니다. 위 칩을 눌러 '수'(ㅅ, ㅜ)도 직접 만들어 비교해 보세요.");
+    }
+  }
+
+  /* ---------- 섹션 3: 역방향 ---------- */
+  function runReverse(){
+    let n = Number(document.getElementById('reverseInput').value);
+    if(Number.isNaN(n) || n < 0) n = 0;
+    if(n > 63) n = 63;
+    document.getElementById('reverseInput').value = n;
+    const bits = decimalToBits(n);
+    renderDotGrid(document.getElementById('reverseGrid'), bits);
+    document.getElementById('reverseBin').textContent = bits.join('');
+    const matches = findMatches(bits);
+    const box = document.getElementById('reverseMatch');
+    if(matches.length === 0){
+      box.innerHTML = `십진수 <strong>${n}</strong>에 해당하는 기본 자모가 없어요. 그래도 점형과 이진수는 정해집니다.`;
+    } else {
+      box.innerHTML = `십진수 <strong>${n}</strong>은(는) ` + matches.map(m=>`<strong>${TYPE_LABEL[m.type]} '${m.sym}'</strong>`).join(', ') + '에 해당합니다.' +
+        (matches.length>1 ? '<br><span class="mini">같은 점형이라도 초성·중성·종성 중 어느 자리에 있는지에 따라 다른 자모가 될 수 있어요.</span>' : '');
+    }
+  }
+
+  renderTypeChips();
+  renderItemChips();
+  updateLookup();
+  renderFree();
+  renderBuildChips();
+  updateBuild();
+  runReverse();
+</script>
+</body>
+</html>
