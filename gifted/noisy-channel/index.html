@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="비트가 10% 확률로 잘못 전달되는 통신에서 1회·3회·5회 반복 전송의 오류율을 시뮬레이션으로 비교하고, 패리티로 오류를 탐지·수정하는 원리를 탐구하는 웹앱입니다." />
+  <title>잡음 통신 실험실</title>
+  <link rel="icon" href="../../favicon.ico" sizes="16x16 32x32 48x48" />
+  <link rel="icon" href="../../assets/favicon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="../../assets/apple-touch-icon.png" />
+  <style>
+    :root{
+      --bg:#ffffff;--card:#f8fafc;--line:#dbe4ee;--text:#1f2937;--muted:#6b7280;
+      --blue:#2563eb;--blue-soft:#dbeafe;--pink:#db2777;--green:#059669;--green-soft:#ecfdf5;
+      --indigo:#4f46e5;--red:#dc2626;--amber:#d97706;--amber-soft:#fff7ed;
+      --shadow:0 10px 25px rgba(15,23,42,.08)
+    }
+    *{box-sizing:border-box}
+    body{margin:0;background:var(--bg);font-family:"Pretendard","Noto Sans KR",system-ui,sans-serif;color:var(--text)}
+    .wrap{max-width:1140px;margin:0 auto;padding:24px}
+    .back-link{display:inline-block;margin-bottom:14px;color:#2563eb;font-weight:700;text-decoration:none}
+    .back-link:hover{text-decoration:underline}
+    h1{margin:0 0 8px}
+    h2{margin:0 0 10px;font-size:1.2rem}
+    h3{margin:0 0 8px;font-size:1rem}
+    .lead{color:var(--muted);margin:0 0 18px;line-height:1.6}
+    .card{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:20px;box-shadow:var(--shadow);margin-bottom:18px}
+    .stepnum{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;background:var(--blue-soft);color:var(--blue);font-weight:800;font-size:.9rem;margin-right:8px}
+    .mini{font-size:.93rem;color:var(--muted);line-height:1.6}
+    .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+    button{font:inherit}
+    .btn{padding:10px 14px;border:none;border-radius:12px;background:var(--blue);color:#fff;cursor:pointer}
+    .btn:hover{filter:brightness(.97)}
+    .btn.secondary{background:#fff;color:var(--text);border:1px solid var(--line)}
+    .btn.pink{background:var(--pink)}
+    .btn.green{background:var(--green)}
+    .chips{display:flex;flex-wrap:wrap;gap:8px}
+    .chip{border:1px solid var(--line);background:#fff;border-radius:12px;padding:10px 14px;cursor:pointer;font-weight:700}
+    .chip.active{background:var(--blue-soft);border-color:#bcd4ff;color:var(--blue)}
+    textarea,input[type="text"]{width:100%;padding:11px 13px;border:1px solid #cbd5e1;border-radius:12px;font:inherit;background:#fff}
+    textarea{min-height:64px;resize:vertical}
+    table{width:100%;border-collapse:collapse;background:#fff;border-radius:14px;overflow:hidden}
+    th,td{border:1px solid var(--line);padding:9px 8px;text-align:center;font-size:.94rem}
+    th{background:#f8fafc}
+    .feedback{padding:12px 14px;border-radius:14px;margin-top:10px}
+    .good{background:var(--green-soft)}
+    .warnbox{background:#fff6d9}
+    .info{background:var(--amber-soft)}
+    .danger{background:#fff0f0}
+    .panel{background:#fff;border:1px solid var(--line);border-radius:16px;padding:14px}
+    .bitcell{display:inline-flex;align-items:center;justify-content:center;width:38px;height:38px;border-radius:10px;border:2px solid #93c5fd;font-weight:800;color:#1d4ed8;background:#fff;margin:2px}
+    .bitcell.on{background:#1d4ed8;color:#fff}
+    .bitcell.bad{background:#fecaca;border-color:#dc2626;color:#991b1b}
+    .group{display:inline-flex;gap:2px;padding:6px 8px;border:1px dashed #cbd5e1;border-radius:12px;margin:4px}
+    .big{font-size:1.6rem;font-weight:800}
+    .pct{font-size:2rem;font-weight:900;color:var(--blue)}
+    .stat-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+    .stat-card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px;text-align:center}
+    .stat-card .label{font-size:.85rem;color:var(--muted);margin-bottom:4px}
+    .flow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:10px 0}
+    .flow .arrow{color:var(--muted);font-weight:800}
+    details{border:1px solid var(--line);border-radius:14px;padding:12px 14px;background:#fff;margin-top:14px}
+    summary{cursor:pointer;font-weight:800}
+    .confirm-code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:1.3rem;font-weight:800;letter-spacing:2px;background:#111827;color:#fff;padding:10px 16px;border-radius:12px;display:inline-block}
+    .progress-row{display:flex;justify-content:flex-end;gap:10px;margin-bottom:8px}
+    @media (max-width:900px){
+      .stat-grid{grid-template-columns:1fr}
+    }
+    @media (max-width:640px){
+      .wrap{padding:16px}
+      .bitcell{width:32px;height:32px;font-size:.9rem}
+    }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back-link" href="../">← 영재원 수업 목록</a>
+
+  <div class="progress-row">
+    <button class="btn secondary" id="exportBtn">진행 코드 내보내기</button>
+    <button class="btn secondary" id="importBtn">코드로 불러오기</button>
+  </div>
+  <div id="exportBox" class="panel" style="display:none;margin-bottom:14px">
+    <p class="mini" style="margin:0 0 6px">아래 코드를 복사해 두면 다른 기기에서 이어서 할 수 있습니다.</p>
+    <input type="text" id="exportCode" readonly>
+  </div>
+  <div id="importBox" class="panel" style="display:none;margin-bottom:14px">
+    <div class="row">
+      <input type="text" id="importCode" placeholder="코드 붙여넣기" style="flex:1;min-width:200px">
+      <button class="btn" id="importApplyBtn">불러오기</button>
+    </div>
+  </div>
+
+  <h1>잡음 통신 실험실</h1>
+  <p class="lead">점자는 종이에 한 번 찍으면 끝입니다. 다시 보낼 수 없습니다. 하지만 우주 탐사선처럼 <b>여러 번 반복해서 보낼 수 있는</b> 통신도 있습니다. 비트가 10% 확률로 잘못 전달되는 상황에서, 반복 전송이 오류를 얼마나 줄이는지 직접 실험해 봅니다.</p>
+
+  <!-- 1. 예측 -->
+  <section class="card">
+    <h2><span class="stepnum">1</span>예측하기</h2>
+    <p class="mini">비트 하나가 잘못 전달될 확률이 10%인 통신선이 있습니다. 같은 비트를 1회·3회·5회 보내고, <b>다수결</b>(더 많이 나온 값)로 최종 값을 정한다고 합니다.</p>
+    <p><b>어느 방법이 가장 정확할 것 같나요?</b></p>
+    <div class="chips" id="predictionChips"></div>
+    <p style="margin-top:12px"><b>그렇게 예측한 이유는?</b></p>
+    <textarea id="predictionReason" placeholder="이유를 써 보세요."></textarea>
+  </section>
+
+  <!-- 2. 잡음 체감 -->
+  <section class="card">
+    <h2><span class="stepnum">2</span>잡음을 한 번 느껴보기</h2>
+    <p class="mini">버튼을 누르면 비트 1을 통신선으로 보냅니다. 10% 확률로 반대 값(0)이 도착합니다. 여러 번 눌러 잡음을 체감해 보세요.</p>
+    <div class="row">
+      <button class="btn" id="sendOneBtn">비트 1개 보내기</button>
+      <button class="btn secondary" id="resetOneBtn">기록 초기화</button>
+    </div>
+    <div class="stat-grid" style="margin-top:14px">
+      <div class="stat-card"><div class="label">보낸 횟수</div><div class="big" id="oneSent">0</div></div>
+      <div class="stat-card"><div class="label">잘못 도착한 횟수</div><div class="big" id="oneErrors">0</div></div>
+      <div class="stat-card"><div class="label">오류 상대도수</div><div class="big" id="oneRate">-</div></div>
+    </div>
+    <div class="mini" style="margin-top:10px">여러 번 누를수록 오류 상대도수가 10%(0.1)에 가까워지는지 확인해 보세요.</div>
+  </section>
+
+  <!-- 3. 반복 전송 시뮬레이션 -->
+  <section class="card">
+    <h2><span class="stepnum">3</span>반복 전송 실험 — 1000회 시뮬레이션</h2>
+    <p class="mini">비트 1개를 <b>1회·3회·5회</b> 각각 반복해서 보내고 다수결로 최종 값을 정하는 일을, 컴퓨터로 1000번씩 반복해 오류 상대도수를 구합니다.</p>
+    <div class="row">
+      <button class="btn" id="runSimBtn">1000회씩 시뮬레이션 실행</button>
+      <button class="btn secondary" id="resetSimBtn">결과 지우기</button>
+    </div>
+    <table style="margin-top:14px">
+      <thead><tr><th>방법</th><th>8비트 신호 보낼 때 전송 비트 수</th><th>오류 상대도수(실험값)</th></tr></thead>
+      <tbody id="simTableBody">
+        <tr><td>1회 전송</td><td>8</td><td id="rate1">-</td></tr>
+        <tr><td>3회 반복</td><td>24</td><td id="rate3">-</td></tr>
+        <tr><td>5회 반복</td><td>40</td><td id="rate5">-</td></tr>
+      </tbody>
+    </table>
+    <div class="feedback info" id="simSummary" style="display:none;margin-top:12px"></div>
+    <details style="margin-top:14px">
+      <summary>생각해 보기</summary>
+      <p class="mini" style="margin:8px 0 0">(1) 5회 반복이 3회 반복보다 좋은 점은 무엇인가요?</p>
+      <textarea id="q31" placeholder="답을 써 보세요." style="margin-top:6px"></textarea>
+      <p class="mini" style="margin:10px 0 0">(2) 5회 반복이 항상 최선이라고 할 수 없는 이유는 무엇인가요? (전송 비트 수 열을 다시 보세요)</p>
+      <textarea id="q32" placeholder="답을 써 보세요." style="margin-top:6px"></textarea>
+    </details>
+  </section>
+
+  <!-- 4. 다수결 해독 -->
+  <section class="card">
+    <h2><span class="stepnum">4</span>다수결로 신호 해독하기</h2>
+    <p class="mini">다음은 8개의 비트를 각각 <b>3회씩 반복</b>하여 보낸 뒤 수신한 결과입니다. 각 묶음에서 다수인 값을 골라 원래의 8비트 신호를 알아내세요.</p>
+    <div id="decodeGroups" style="margin:14px 0"></div>
+    <div class="row">
+      <input type="text" id="decodeAnswer" placeholder="예: 10101110 (0과 1로 8자리)" maxlength="8" style="max-width:260px">
+      <button class="btn" id="decodeCheckBtn">확인하기</button>
+    </div>
+    <div class="feedback warnbox" id="decodeFeedback" style="margin-top:10px">각 묶음에서 더 많이 나온 값을 세어 8자리 신호를 만들어 보세요.</div>
+  </section>
+
+  <!-- 5. 패리티 -->
+  <section class="card">
+    <h2><span class="stepnum">5</span>패리티로 오류 확인하기</h2>
+    <p class="mini">짝수 패리티 방식은 정보 뒤에 검사 비트 하나를 붙여 전체 1의 개수가 <b>짝수</b>가 되게 합니다.</p>
+    <div class="panel">
+      <p style="margin:0 0 6px">원래 정보 <span id="parityOrigData" class="mini"></span>는 1이 <span id="parityOnesCount"></span>개이므로, 검사 비트 <span id="parityBitVal"></span>을 붙여 다음과 같이 보냅니다.</p>
+      <div id="parityOrigBits" style="margin:10px 0"></div>
+    </div>
+    <p style="margin-top:14px">다음 두 신호가 수신되었습니다. <b>비교하기</b> 버튼을 눌러 원래 신호와 몇 자리가 다른지, 패리티 검사로 오류를 발견할 수 있는지 확인하세요.</p>
+    <div class="row" style="align-items:flex-start;gap:20px">
+      <div class="panel" style="flex:1;min-width:260px">
+        <b>가:</b> <span class="mini" id="parityLabelA"></span>
+        <div id="parityBitsA" style="margin:10px 0"></div>
+        <button class="btn secondary" data-parity="A">비교하기</button>
+        <div class="feedback" id="parityResultA" style="display:none;margin-top:10px"></div>
+      </div>
+      <div class="panel" style="flex:1;min-width:260px">
+        <b>나:</b> <span class="mini" id="parityLabelB"></span>
+        <div id="parityBitsB" style="margin:10px 0"></div>
+        <button class="btn secondary" data-parity="B">비교하기</button>
+        <div class="feedback" id="parityResultB" style="display:none;margin-top:10px"></div>
+      </div>
+    </div>
+    <div class="row" style="margin-top:14px">
+      <div class="panel" style="flex:1">
+        <p class="mini" style="margin:0 0 6px">(1) 한 비트가 잘못된 경우 패리티 검사가 오류를 발견할 수 있는 이유는?</p>
+        <textarea id="q51" placeholder="답을 써 보세요."></textarea>
+      </div>
+      <div class="panel" style="flex:1">
+        <p class="mini" style="margin:0 0 6px">(2) 두 비트가 잘못된 경우 오류를 발견하지 못할 수 있는 이유는?</p>
+        <textarea id="q52" placeholder="답을 써 보세요."></textarea>
+      </div>
+    </div>
+  </section>
+
+  <!-- 6. 탐지 vs 수정 -->
+  <section class="card">
+    <h2><span class="stepnum">6</span>탐지와 수정은 다르다</h2>
+    <p class="mini">패리티는 오류가 <b>있는지 없는지</b>는 알려주지만, <b>어디가</b> 잘못되었는지는 알려주지 않습니다. 아래 버튼으로 직접 확인해 보세요.</p>
+    <div class="row">
+      <button class="btn secondary" id="flip1Btn">비트 1개 무작위로 뒤집기</button>
+      <button class="btn secondary" id="flip2Btn">비트 2개 무작위로 뒤집기</button>
+      <button class="btn secondary" id="flipResetBtn">초기화</button>
+    </div>
+    <div id="flipBits" style="margin:14px 0"></div>
+    <div class="feedback" id="flipResult" style="display:none"></div>
+    <p style="margin-top:16px"><b>패리티 검사만으로 잘못된 비트의 위치를 찾아 원래대로 고칠 수 있을까요?</b> 가능하다 또는 불가능하다로 먼저 답하고, 이유를 쓰세요.</p>
+    <textarea id="q61" placeholder="답을 써 보세요."></textarea>
+    <div class="feedback info" style="margin-top:14px">
+      <b>더 생각해 보기</b> — 오류의 <b>위치</b>까지 찾으려면 검사 비트가 하나로는 부족합니다. 검사 비트를 몇 개, 어떤 자리에 두어야 위치까지 찾아낼 수 있을까요? (정답은 없습니다. 떠오르는 대로 적어 보세요)
+    </div>
+    <textarea id="q62" placeholder="답을 써 보세요." style="margin-top:10px"></textarea>
+    <div class="feedback warnbox" style="margin-top:14px">
+      <b>일상에서 찾아보기</b> — QR코드는 일부가 가려지거나 찢어져도 읽힙니다. CD에 흠집이 나도 음악이 끊기지 않는 경우가 많습니다. 이것도 패리티와 비슷한 원리(오류 정정 부호)를 씁니다.
+    </div>
+  </section>
+
+  <!-- 제출 -->
+  <section class="card">
+    <h2>제출용 결과 만들기</h2>
+    <p class="mini">이름을 입력하고 버튼을 누르면 오늘 활동 결과가 이미지로 저장됩니다. 이 이미지를 학습지에 붙여넣어 제출하세요.</p>
+    <div class="row">
+      <input type="text" id="submitName" placeholder="이름" style="max-width:200px">
+      <button class="btn green" id="makeSubmitBtn">제출용 결과 만들기</button>
+    </div>
+    <div id="submitStatus" class="feedback good" style="display:none;margin-top:12px"></div>
+    <div id="confirmCodeBox" style="margin-top:12px;display:none">
+      <p class="mini" style="margin:0 0 6px">확인 코드 (학습지에 적어 두세요)</p>
+      <span class="confirm-code" id="confirmCode"></span>
+    </div>
+  </section>
+</div>
+
+<canvas id="exportCanvas" width="900" height="1000" style="display:none"></canvas>
+
+<script>
+  const STORAGE_KEY = 'gifted26_noisy_channel_v1';
+  const ERROR_RATE = 0.10;
+
+  const state = {
+    prediction: { choice: null, reason: '' },
+    oneShot: { sent: 0, errors: 0 },
+    sim: { rate1: null, rate3: null, rate5: null },
+    decode: { answer: '', correct: false },
+    parity: { checkedA: false, checkedB: false },
+    reflect: { q31:'', q32:'', q51:'', q52:'', q61:'', q62:'' },
+    name: ''
+  };
+
+  function save(){
+    try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }catch(e){}
+  }
+  function load(){
+    try{
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if(raw){ Object.assign(state, JSON.parse(raw)); }
+    }catch(e){}
+  }
+
+  /* ---------- 1. 예측하기 ---------- */
+  const PREDICT_OPTIONS = ['1회 전송', '3회 반복', '5회 반복', '셋 다 비슷할 것'];
+  function renderPrediction(){
+    const box = document.getElementById('predictionChips');
+    box.innerHTML = '';
+    PREDICT_OPTIONS.forEach(opt=>{
+      const btn = document.createElement('button');
+      btn.className = 'chip' + (state.prediction.choice===opt ? ' active' : '');
+      btn.textContent = opt;
+      btn.onclick = ()=>{ state.prediction.choice = opt; renderPrediction(); save(); };
+      box.appendChild(btn);
+    });
+  }
+  document.getElementById('predictionReason').addEventListener('input', (e)=>{
+    state.prediction.reason = e.target.value; save();
+  });
+
+  /* ---------- 2. 잡음 체감 ---------- */
+  function updateOneShotView(){
+    document.getElementById('oneSent').textContent = state.oneShot.sent;
+    document.getElementById('oneErrors').textContent = state.oneShot.errors;
+    document.getElementById('oneRate').textContent = state.oneShot.sent
+      ? (state.oneShot.errors/state.oneShot.sent).toFixed(3)
+      : '-';
+  }
+  document.getElementById('sendOneBtn').onclick = ()=>{
+    state.oneShot.sent++;
+    if(Math.random() < ERROR_RATE) state.oneShot.errors++;
+    updateOneShotView(); save();
+  };
+  document.getElementById('resetOneBtn').onclick = ()=>{
+    state.oneShot = { sent:0, errors:0 };
+    updateOneShotView(); save();
+  };
+
+  /* ---------- 3. 반복 전송 시뮬레이션 ---------- */
+  function majorityBit(n){
+    let ones = 0;
+    for(let i=0;i<n;i++){
+      const received = Math.random() < ERROR_RATE ? 0 : 1; // 원래 비트는 1로 고정, 10%로 반전
+      if(received) ones++;
+    }
+    return ones > n/2 ? 1 : 0; // n=1,3,5는 홀수라 동률 없음
+  }
+  function simulateRate(n, trials){
+    let wrong = 0;
+    for(let t=0;t<trials;t++){
+      if(majorityBit(n) === 0) wrong++; // 원래 값 1과 다르면 오류
+    }
+    return wrong/trials;
+  }
+  document.getElementById('runSimBtn').onclick = ()=>{
+    const trials = 1000;
+    state.sim.rate1 = simulateRate(1, trials);
+    state.sim.rate3 = simulateRate(3, trials);
+    state.sim.rate5 = simulateRate(5, trials);
+    renderSim(); save();
+  };
+  document.getElementById('resetSimBtn').onclick = ()=>{
+    state.sim = { rate1:null, rate3:null, rate5:null };
+    renderSim(); save();
+  };
+  function renderSim(){
+    ['1','3','5'].forEach(n=>{
+      const v = state.sim['rate'+n];
+      document.getElementById('rate'+n).textContent = (v===null||v===undefined) ? '-' : v.toFixed(3);
+    });
+    const summary = document.getElementById('simSummary');
+    if(state.sim.rate1 !== null){
+      summary.style.display = 'block';
+      summary.innerHTML = `1회 전송 오류율(약 0.10)과 비교하면, 3회 반복은 약 ${(state.sim.rate3*100).toFixed(1)}%, 5회 반복은 약 ${(state.sim.rate5*100).toFixed(1)}%로 크게 줄어듭니다. 반복 횟수가 늘수록 오류는 줄지만, 전송 비트 수(8 → 24 → 40)는 늘어납니다.`;
+    } else {
+      summary.style.display = 'none';
+    }
+  }
+  ['q31','q32'].forEach(id=>{
+    document.getElementById(id).addEventListener('input',(e)=>{ state.reflect[id]=e.target.value; save(); });
+  });
+
+  /* ---------- 4. 다수결 해독 ---------- */
+  const DECODE_GROUPS = ['111','001','101','000','110','011','111','100'];
+  const DECODE_ANSWER = '10101110';
+  function renderDecodeGroups(){
+    const box = document.getElementById('decodeGroups');
+    box.innerHTML = '';
+    DECODE_GROUPS.forEach(g=>{
+      const grp = document.createElement('span');
+      grp.className = 'group';
+      [...g].forEach(b=>{
+        const c = document.createElement('span');
+        c.className = 'bitcell' + (b==='1' ? ' on' : '');
+        c.textContent = b;
+        grp.appendChild(c);
+      });
+      box.appendChild(grp);
+    });
+  }
+  document.getElementById('decodeAnswer').addEventListener('input',(e)=>{
+    state.decode.answer = e.target.value; save();
+  });
+  document.getElementById('decodeCheckBtn').onclick = ()=>{
+    const ans = document.getElementById('decodeAnswer').value.trim();
+    const fb = document.getElementById('decodeFeedback');
+    if(ans.length !== 8 || !/^[01]{8}$/.test(ans)){
+      fb.className = 'feedback warnbox';
+      fb.textContent = '0과 1로 이루어진 8자리를 입력해 주세요.';
+      return;
+    }
+    if(ans === DECODE_ANSWER){
+      fb.className = 'feedback good';
+      fb.textContent = '정답입니다! 각 묶음에서 다수인 값을 정확히 골랐습니다.';
+      state.decode.correct = true;
+    } else {
+      fb.className = 'feedback danger';
+      fb.textContent = '다시 확인해 보세요. 각 묶음에서 0과 1 중 더 많이 나온 값을 골랐는지 점검해 보세요.';
+      state.decode.correct = false;
+    }
+    save();
+  };
+
+  /* ---------- 5. 패리티 ---------- */
+  const PARITY_DATA = '10110010';
+  const PARITY_ONES = [...PARITY_DATA].filter(c=>c==='1').length;
+  const PARITY_BIT = (PARITY_ONES % 2 === 0) ? '0' : '1';
+  const PARITY_FULL = PARITY_DATA + PARITY_BIT;
+  const PARITY_RECEIVED = { A: '101000100', B: '100100110' };
+
+  function renderBitRow(containerId, bits, compareTo){
+    const box = document.getElementById(containerId);
+    box.innerHTML = '';
+    [...bits].forEach((b,i)=>{
+      const c = document.createElement('span');
+      const diff = compareTo && compareTo[i] !== b;
+      c.className = 'bitcell' + (b==='1' ? ' on' : '') + (diff ? ' bad' : '');
+      c.textContent = b;
+      box.appendChild(c);
+    });
+  }
+  function renderParitySection(){
+    document.getElementById('parityOrigData').textContent = PARITY_DATA;
+    document.getElementById('parityOnesCount').textContent = PARITY_ONES;
+    document.getElementById('parityBitVal').textContent = PARITY_BIT;
+    renderBitRow('parityOrigBits', PARITY_FULL);
+    document.getElementById('parityLabelA').textContent = PARITY_RECEIVED.A;
+    document.getElementById('parityLabelB').textContent = PARITY_RECEIVED.B;
+    renderBitRow('parityBitsA', PARITY_RECEIVED.A);
+    renderBitRow('parityBitsB', PARITY_RECEIVED.B);
+  }
+  document.querySelectorAll('[data-parity]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const key = btn.dataset.parity;
+      const recv = PARITY_RECEIVED[key];
+      const diffCount = [...recv].filter((b,i)=>b!==PARITY_FULL[i]).length;
+      const onesCount = [...recv].filter(b=>b==='1').length;
+      const parityOk = (onesCount % 2 === 0);
+      renderBitRow('parityBits'+key, recv, PARITY_FULL);
+      const result = document.getElementById('parityResult'+key);
+      result.style.display = 'block';
+      result.className = 'feedback ' + (parityOk ? 'danger' : 'good');
+      result.innerHTML = `원래 신호와 다른 비트 수: <b>${diffCount}개</b> · 1의 개수: <b>${onesCount}개</b> (${onesCount%2===0?'짝수':'홀수'})<br>` +
+        (parityOk
+          ? '1의 개수가 짝수라서 겉보기엔 정상입니다. <b>패리티 검사로 오류를 발견하지 못합니다.</b>'
+          : '1의 개수가 홀수입니다. <b>패리티 검사로 오류를 발견할 수 있습니다.</b>');
+      state.parity['checked'+key] = true; save();
+    });
+  });
+  ['q51','q52'].forEach(id=>{
+    document.getElementById(id).addEventListener('input',(e)=>{ state.reflect[id]=e.target.value; save(); });
+  });
+
+  /* ---------- 6. 탐지 vs 수정 ---------- */
+  const flipState = { bits: [...PARITY_FULL] };
+  function renderFlip(){
+    renderBitRow('flipBits', flipState.bits.join(''), PARITY_FULL);
+  }
+  function doFlip(n){
+    flipState.bits = [...PARITY_FULL];
+    const positions = [...Array(9).keys()];
+    for(let i=positions.length-1;i>0;i--){
+      const j = Math.floor(Math.random()*(i+1));
+      [positions[i],positions[j]]=[positions[j],positions[i]];
+    }
+    positions.slice(0,n).forEach(p=>{
+      flipState.bits[p] = flipState.bits[p]==='1' ? '0' : '1';
+    });
+    renderFlip();
+    const ones = flipState.bits.filter(b=>b==='1').length;
+    const ok = ones % 2 === 0;
+    const result = document.getElementById('flipResult');
+    result.style.display = 'block';
+    result.className = 'feedback ' + (ok ? 'danger' : 'good');
+    result.innerHTML = `비트 ${n}개를 뒤집었습니다. 1의 개수: <b>${ones}개</b> (${ok?'짝수':'홀수'}) → ` +
+      (ok ? '패리티로 오류를 <b>발견하지 못합니다.</b>' : '패리티로 오류를 <b>발견합니다.</b> 하지만 어느 자리인지는 알 수 없습니다.');
+  }
+  document.getElementById('flip1Btn').onclick = ()=>doFlip(1);
+  document.getElementById('flip2Btn').onclick = ()=>doFlip(2);
+  document.getElementById('flipResetBtn').onclick = ()=>{
+    flipState.bits = [...PARITY_FULL];
+    renderFlip();
+    document.getElementById('flipResult').style.display = 'none';
+  };
+  ['q61','q62'].forEach(id=>{
+    document.getElementById(id).addEventListener('input',(e)=>{ state.reflect[id]=e.target.value; save(); });
+  });
+
+  /* ---------- 진행 코드 내보내기/불러오기 ---------- */
+  function encodeState(){ return btoa(encodeURIComponent(JSON.stringify(state))).replace(/=+$/,''); }
+  function decodeState(code){
+    const obj = JSON.parse(decodeURIComponent(atob(code)));
+    if(!obj || typeof obj !== 'object') throw new Error('invalid');
+    return obj;
+  }
+  document.getElementById('exportBtn').onclick = ()=>{
+    const box = document.getElementById('exportBox');
+    document.getElementById('importBox').style.display = 'none';
+    box.style.display = box.style.display==='none' ? 'block' : 'none';
+    if(box.style.display==='block') document.getElementById('exportCode').value = encodeState();
+  };
+  document.getElementById('importBtn').onclick = ()=>{
+    const box = document.getElementById('importBox');
+    document.getElementById('exportBox').style.display = 'none';
+    box.style.display = box.style.display==='none' ? 'block' : 'none';
+  };
+  document.getElementById('importApplyBtn').onclick = ()=>{
+    const code = document.getElementById('importCode').value.trim();
+    if(!code) return;
+    try{
+      Object.assign(state, decodeState(code));
+      renderAll();
+      alert('불러왔습니다.');
+    }catch(e){
+      alert('코드를 다시 확인해 주세요.');
+    }
+  };
+
+  /* ---------- 확인 코드 ---------- */
+  function computeConfirmCode(){
+    let n = 0;
+    n += state.prediction.choice ? 1 : 0;
+    n += (state.sim.rate1!==null) ? 10 : 0;
+    n += state.decode.correct ? 100 : 0;
+    n += (state.parity.checkedA && state.parity.checkedB) ? 1000 : 0;
+    const seed = Math.round((state.sim.rate3||0)*1000) + Math.round((state.sim.rate5||0)*997);
+    const code = ((n + seed) % 9000 + 1000);
+    return 'NC-' + code;
+  }
+
+  /* ---------- 제출용 결과 만들기 ---------- */
+  document.getElementById('makeSubmitBtn').onclick = ()=>{
+    const name = document.getElementById('submitName').value.trim();
+    if(!name){ alert('이름을 먼저 입력해 주세요.'); return; }
+    state.name = name; save();
+
+    const canvas = document.getElementById('exportCanvas');
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#ffffff'; ctx.fillRect(0,0,canvas.width,canvas.height);
+    ctx.fillStyle = '#1f2937';
+    ctx.font = 'bold 30px sans-serif';
+    ctx.fillText('잡음 통신 실험실 — 결과', 30, 50);
+    ctx.font = '18px sans-serif';
+    ctx.fillText('이름: ' + name, 30, 90);
+    ctx.fillText('날짜: ' + new Date().toLocaleDateString('ko-KR'), 30, 118);
+
+    let y = 165;
+    ctx.font = 'bold 20px sans-serif'; ctx.fillText('1. 예측', 30, y); y += 30;
+    ctx.font = '17px sans-serif';
+    ctx.fillText('선택: ' + (state.prediction.choice || '(미입력)'), 50, y); y += 26;
+    wrapText(ctx, '이유: ' + (state.prediction.reason || '(미입력)'), 50, y, 800, 24);
+    y += lineCount(ctx, '이유: ' + (state.prediction.reason||''), 800) * 24 + 20;
+
+    ctx.font = 'bold 20px sans-serif'; ctx.fillText('2. 반복 전송 시뮬레이션 (1000회)', 30, y); y += 32;
+    ctx.font = '17px sans-serif';
+    const r1 = state.sim.rate1!==null ? state.sim.rate1.toFixed(3) : '(실행 안 함)';
+    const r3 = state.sim.rate3!==null ? state.sim.rate3.toFixed(3) : '(실행 안 함)';
+    const r5 = state.sim.rate5!==null ? state.sim.rate5.toFixed(3) : '(실행 안 함)';
+    ctx.fillText(`1회 전송 오류율: ${r1}   3회 반복: ${r3}   5회 반복: ${r5}`, 50, y); y += 40;
+
+    ctx.font = 'bold 20px sans-serif'; ctx.fillText('3. 다수결 해독', 30, y); y += 30;
+    ctx.font = '17px sans-serif';
+    ctx.fillText('내 답: ' + (state.decode.answer||'(미입력)') + (state.decode.correct ? '  (정답)' : ''), 50, y); y += 40;
+
+    ctx.font = 'bold 20px sans-serif'; ctx.fillText('4. 패리티 확인', 30, y); y += 30;
+    ctx.font = '17px sans-serif';
+    ctx.fillText('가 신호 확인: ' + (state.parity.checkedA?'완료':'미완료') + '   나 신호 확인: ' + (state.parity.checkedB?'완료':'미완료'), 50, y); y += 40;
+
+    const code = computeConfirmCode();
+    ctx.font = 'bold 22px sans-serif';
+    ctx.fillStyle = '#111827';
+    ctx.fillRect(30, y, 300, 50);
+    ctx.fillStyle = '#ffffff';
+    ctx.fillText('확인 코드: ' + code, 45, y+33);
+
+    canvas.toBlob((blob)=>{
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `잡음통신실험실_${name}.png`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(()=>URL.revokeObjectURL(url), 2000);
+    });
+
+    document.getElementById('submitStatus').style.display = 'block';
+    document.getElementById('submitStatus').textContent = '결과 이미지를 내려받았습니다. 학습지에 붙여넣어 제출하세요.';
+    document.getElementById('confirmCodeBox').style.display = 'block';
+    document.getElementById('confirmCode').textContent = code;
+  };
+
+  function wrapText(ctx, text, x, y, maxWidth, lineHeight){
+    const words = text.split('');
+    let line = '';
+    let curY = y;
+    for(const ch of words){
+      const test = line + ch;
+      if(ctx.measureText(test).width > maxWidth && line){
+        ctx.fillText(line, x, curY);
+        line = ch; curY += lineHeight;
+      } else { line = test; }
+    }
+    ctx.fillText(line, x, curY);
+  }
+  function lineCount(ctx, text, maxWidth){
+    const words = text.split('');
+    let line = '', lines = 1;
+    for(const ch of words){
+      const test = line + ch;
+      if(ctx.measureText(test).width > maxWidth && line){ lines++; line = ch; } else { line = test; }
+    }
+    return lines;
+  }
+
+  /* ---------- 초기화 ---------- */
+  function renderAll(){
+    renderPrediction();
+    document.getElementById('predictionReason').value = state.prediction.reason || '';
+    updateOneShotView();
+    renderSim();
+    renderDecodeGroups();
+    document.getElementById('decodeAnswer').value = state.decode.answer || '';
+    renderParitySection();
+    flipState.bits = [...PARITY_FULL];
+    renderFlip();
+    ['q31','q32','q51','q52','q61','q62'].forEach(id=>{
+      document.getElementById(id).value = state.reflect[id] || '';
+    });
+    if(state.name) document.getElementById('submitName').value = state.name;
+  }
+
+  load();
+  renderAll();
+</script>
+</body>
+</html>
