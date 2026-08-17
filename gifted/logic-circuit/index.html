@@ -1,0 +1,4177 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="AND, OR, NOT, XOR 논리 연산을 스위치와 회로로 직접 조작하고, 좌표평면 위에서 XOR을 직선 하나로 나눌 수 없다는 것을 발견하며 퍼셉트론의 아이디어에 다가가는 영재원 수업용 웹앱입니다.">
+<title>논리 연산 실험실</title>
+<link rel="icon" href="../../favicon.ico" sizes="16x16 32x32 48x48">
+<link rel="icon" href="../../assets/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="../../assets/apple-touch-icon.png">
+<style>
+/* ============================================================
+   디자인 토큰 (DESIGN-clay.md 상속 + 명세 6.1 시맨틱 색)
+   ============================================================ */
+:root{
+  --primary:#0a0a0a; --primary-active:#1f1f1f; --primary-disabled:#e5e5e5;
+  --ink:#0a0a0a; --body-c:#3a3a3a; --body-strong:#1a1a1a;
+  --muted:#6a6a6a; --muted-soft:#9a9a9a;
+  --hairline:#e5e5e5; --hairline-soft:#f0f0f0;
+  --canvas:#fffaf0; --surface-soft:#faf5e8; --surface-card:#f5f0e0; --surface-strong:#ebe6d6;
+  --on-primary:#ffffff;
+  --brand-pink:#ff4d8b; --brand-teal:#1a3a3a; --brand-lavender:#b8a4ed;
+  --brand-peach:#ffb084; --brand-ochre:#e8b94a; --brand-mint:#a4d4c5; --brand-coral:#ff6b5a;
+
+  --r-xs:6px; --r-sm:8px; --r-md:12px; --r-lg:16px; --r-xl:24px; --r-pill:9999px;
+
+  --sp-xxs:4px; --sp-xs:8px; --sp-sm:12px; --sp-md:16px; --sp-lg:24px; --sp-xl:32px; --sp-xxl:48px; --sp-section:96px;
+
+  /* 이 학습지 시맨틱 색 (명세 6.1) */
+  --sig-on:#f5a623; --sig-off:#98a2b1;
+  --val-true:#2ea043; --val-false:#e5484d;
+  --sel:#2f6df0;
+
+  --font-body:'Inter',-apple-system,BlinkMacSystemFont,'Apple SD Gothic Neo','Segoe UI','Malgun Gothic',Roboto,sans-serif;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;height:100%;overflow:hidden;}
+body{
+  background:var(--canvas); color:var(--body-c); font-family:var(--font-body);
+  font-size:16px; line-height:1.55; -webkit-text-size-adjust:100%;
+}
+h1,h2,h3{ color:var(--ink); font-weight:500; letter-spacing:-0.02em; margin:0 0 var(--sp-sm); }
+h1{font-size:28px; line-height:1.15;}
+h2{font-size:22px; line-height:1.2;}
+h3{font-size:17px; line-height:1.3;}
+p{margin:0 0 var(--sp-sm);}
+button{font-family:inherit;}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;}
+:focus-visible{outline:3px solid var(--sel); outline-offset:2px;}
+
+/* ---------- 앱 셸 (1뷰포트: header·screen-root·bottom-nav 3단 flex column, G2-A ai-thinking 이식) ---------- */
+.app-shell{max-width:920px;margin:0 auto;height:100vh;height:100dvh;display:flex;flex-direction:column;padding:0 var(--sp-md);}
+.app-header{flex:none;background:var(--canvas);z-index:20;padding:var(--sp-sm) 0;border-bottom:1px solid var(--hairline);}
+.header-top{display:flex;align-items:center;justify-content:space-between;gap:var(--sp-sm);}
+.app-title-btn{background:none;border:none;padding:2px 4px;cursor:pointer;text-align:left;font:inherit;}
+.app-title{font-size:16px;font-weight:600;color:var(--ink);letter-spacing:-0.01em;}
+.section-tag{font-size:12px;color:var(--muted);font-weight:600;letter-spacing:0.02em;}
+.mascot-mini{width:34px;height:34px;flex:none;}
+.progress-track{display:flex;gap:4px;margin-top:var(--sp-xs);}
+.progress-seg{flex:1;height:6px;border-radius:var(--r-pill);background:var(--hairline);overflow:hidden;position:relative;}
+.progress-seg .fill{position:absolute;inset:0;background:var(--ink);width:0%;transition:width .25s ease;}
+.progress-seg.section-done .fill{background:var(--val-true);}
+
+/* ---------- 화면 공통 ---------- */
+.screen-root{flex:1;min-height:0;position:relative;overflow:hidden;}
+.screen{animation:screenIn .28s ease both;}
+@keyframes screenIn{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:none;}}
+
+/* ---------- 서브 슬라이드 스테이지(G2-A, ai-thinking 이식): 화면·step 전환 pane ---------- */
+.view-pane{
+  position:absolute; inset:0; height:100%; padding:var(--sp-lg) 0;
+  overflow-y:auto; /* 안전밸브 — 4파일 공통 셸 설계: 내용이 넘칠 때 페이지 대신 패널 내부 스크롤로
+    받는다(A1 원칙의 문서화된 예외). 전 화면 1뷰포트 0px 라이브 실측 후 엄격화 여부 결정(검토보고 §5-④). */
+  transition:transform .28s cubic-bezier(.455,.03,.515,.955), opacity .28s cubic-bezier(.455,.03,.515,.955);
+}
+/* 정사각 보드+진리표 병치 레이아웃(L6·L7·L9, gameLayout:true)이 켜는 안전밸브 끄기 클래스.
+   ROUTER._rebuild가 SCREENS[id].gameLayout을 보고 이 클래스를 건다(:3559·3678·3702). */
+.view-pane.pane-game{overflow:hidden;}
+.view-pane.pane-game .screen{height:100%; display:flex; flex-direction:column; min-height:0;}
+.view-pane.pane-active{transform:translateX(0); opacity:1;}
+.view-pane.pane-enter-right{transform:translateX(48px); opacity:0;}
+.view-pane.pane-enter-left{transform:translateX(-48px); opacity:0;}
+.view-pane.pane-exit-left{transform:translateX(-48px); opacity:0;}
+.view-pane.pane-exit-right{transform:translateX(48px); opacity:0;}
+/* 진입/퇴장 애니메이션 중인 pane은 클릭 불가 — 전환 타이머 취소(ROUTER._rebuild)가 주 방어이고,
+   이건 그 사이 틈에서도 오조작을 한 번 더 막는 안전망이다. */
+.view-pane.pane-enter-right,.view-pane.pane-enter-left,.view-pane.pane-exit-left,.view-pane.pane-exit-right{pointer-events:none;}
+.step-dots{display:flex;gap:6px;justify-content:center;margin:0 0 var(--sp-sm);}
+.step-dot{width:7px;height:7px;border-radius:50%;background:var(--hairline);}
+.step-dot.active{background:var(--ink);width:18px;border-radius:var(--r-pill);}
+
+/* ---------- 게임 레이아웃 유틸(L6·L7·L9 gameLayout:true 적용: 정사각 회로 보드 + 우측 진리표 병치, 좁은 화면은 하단 축소 카드) ---------- */
+.game-layout{display:grid;grid-template-columns:minmax(0,1fr) clamp(280px,34vw,340px);gap:var(--sp-md);height:100%;min-height:0;}
+.game-board-area{min-width:0;min-height:0;display:flex;align-items:center;justify-content:center;}
+.game-panel-area{min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:var(--sp-sm);}
+@media (max-width:860px), (orientation:portrait){
+  .game-layout{display:flex;flex-direction:column;}
+  .game-board-area{flex:1;min-height:0;}
+  .game-panel-area{flex:none;max-height:42%;border-top:1px solid var(--hairline);padding-top:var(--sp-sm);}
+}
+
+.screen-eyebrow{font-size:13px;font-weight:600;color:var(--muted);letter-spacing:0.02em;margin-bottom:4px;}
+.screen-title{margin-bottom:var(--sp-sm);}
+.screen-prompt{font-size:17px;color:var(--body-strong);background:var(--surface-soft);border-radius:var(--r-lg);padding:var(--sp-md);margin-bottom:var(--sp-md);}
+.screen-block{margin-bottom:var(--sp-lg);}
+/* 게임 화면 집중 모드(G2-D, ai-thinking S5 이식): 실제 플레이 중엔 상단 헤더 블록(eyebrow·
+   MASCOT 등)을 JS가 아예 렌더하지 않는다(재렌더 기반 — display:none 아님). .screen--focus는
+   그 상태를 나타내는 마커 클래스(별도 규칙 없음). 헤더 전체를 접지 않는 화면(L7·L9 step1)은
+   제목만 .screen-title--compact로 축소한다. */
+.screen-title--compact{font-size:17px;margin-bottom:var(--sp-xxs);}
+.muted{color:var(--muted);font-size:14px;}
+
+/* ---------- 버튼 ---------- */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:44px;padding:10px 20px;border-radius:var(--r-md);font-size:14px;font-weight:600;border:1px solid transparent;cursor:pointer;touch-action:manipulation;}
+.btn-primary{background:var(--primary);color:var(--on-primary);}
+.btn-primary:hover{background:var(--primary-active);}
+.btn-primary:disabled{background:var(--primary-disabled);color:var(--muted);cursor:not-allowed;}
+.btn-secondary{background:var(--canvas);color:var(--ink);border-color:var(--hairline);}
+.btn-secondary:hover{border-color:var(--ink);}
+.btn-ghost{background:transparent;color:var(--ink);border-color:transparent;}
+.btn-sm{min-height:44px;padding:6px 14px;font-size:13px;}
+.btn-row{display:flex;flex-wrap:wrap;gap:var(--sp-xs);align-items:center;}
+
+/* ---------- 카드 (피처 카드: 정의·모드·클리어 강조 순간에만) ---------- */
+.card{border-radius:var(--r-xl);padding:var(--sp-lg);}
+.feature-card{margin-top:var(--sp-section);}
+.card-title{font-size:15px;font-weight:700;margin-bottom:6px;opacity:.85;}
+.card-body{font-size:16px;font-weight:600;}
+.card-cream{background:var(--surface-card);color:var(--ink);}
+.card-pink{background:var(--brand-pink);color:var(--on-primary);}
+.card-teal{background:var(--brand-teal);color:var(--on-primary);}
+.card-lavender{background:var(--brand-lavender);color:var(--ink);}
+.card-peach{background:var(--brand-peach);color:var(--ink);}
+.card-ochre{background:var(--brand-ochre);color:var(--ink);}
+.card-hairline{background:var(--canvas);border:1px solid var(--hairline);border-radius:var(--r-lg);padding:var(--sp-md);}
+
+/* ---------- 생각칸 ---------- */
+.thought-box{background:var(--surface-soft);border-radius:var(--r-lg);padding:var(--sp-md);margin:var(--sp-md) 0;}
+.thought-label{display:block;font-size:13px;font-weight:700;color:var(--body-strong);margin-bottom:6px;}
+.thought-input{width:100%;min-height:64px;border:1px solid var(--hairline);border-radius:var(--r-md);padding:10px 12px;font:inherit;font-size:15px;resize:vertical;background:var(--canvas);color:var(--ink);}
+.thought-input:focus{border-color:var(--sel);}
+
+/* ---------- 스위치 ---------- */
+.switch-row{display:flex;flex-wrap:wrap;gap:var(--sp-sm);margin:var(--sp-sm) 0;}
+
+/* ---------- 칩 / 세그토글 ---------- */
+.chips-row{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0;}
+.chip{min-height:44px;padding:8px 16px;border-radius:var(--r-pill);border:1px solid var(--hairline);background:var(--canvas);color:var(--body-c);font-size:14px;font-weight:600;cursor:pointer;}
+.chip.active{background:var(--ink);color:var(--on-primary);border-color:var(--ink);}
+.chip.tone-true.active{background:var(--val-true);border-color:var(--val-true);}
+.chip.tone-false.active{background:var(--val-false);border-color:var(--val-false);}
+.seg-toggle{display:inline-flex;background:var(--surface-strong);border-radius:var(--r-pill);padding:4px;gap:2px;}
+.seg-btn{min-height:44px;padding:6px 16px;border-radius:var(--r-pill);border:none;background:transparent;color:var(--muted);font-size:13px;font-weight:700;cursor:pointer;}
+.seg-btn.active{background:var(--ink);color:var(--on-primary);}
+
+/* ---------- 하이라이트 ---------- */
+.highlight-row{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0;}
+.highlight-chip{padding:6px 14px;border-radius:var(--r-sm);font-weight:800;font-size:14px;}
+.highlight-chip.tone-true{background:rgba(46,160,67,.14);color:#1e7a34;}
+.highlight-chip.tone-false{background:rgba(229,72,77,.14);color:#c22;}
+
+/* ---------- 마스코트 ---------- */
+.mascot-row{display:flex;align-items:flex-start;gap:10px;margin:var(--sp-sm) 0;}
+.mascot-avatar{width:48px;height:48px;border-radius:50%;overflow:hidden;flex:none;background:var(--brand-lavender);display:flex;align-items:center;justify-content:center;font-size:22px;color:var(--ink);}
+.mascot-avatar img{width:100%;height:100%;object-fit:cover;display:block;}
+.mascot-avatar.mascot-fallback::after{content:'✦';}
+.mascot-mini.mascot-fallback::after{content:'✦';font-size:16px;}
+.mascot-bubble{background:var(--canvas);border:1px solid var(--hairline);border-radius:var(--r-lg);border-top-left-radius:4px;padding:10px 14px;font-size:14px;color:var(--body-strong);max-width:520px;}
+.mascot-bubble.tone-cheer{background:#fff8ec;border-color:var(--sig-on);}
+
+/* ---------- 진리표 ---------- */
+.truth-wrap{overflow-x:auto;margin:var(--sp-sm) 0;}
+.truth-table{border-collapse:separate;border-spacing:0;font-size:14px;}
+.truth-table th,.truth-table td{border:1px solid var(--hairline);padding:4px 12px;text-align:center;}
+.truth-table td.out-cell{padding:2px 6px;} /* 출력 셀: 44px 버튼이 이미 터치 타깃 — 패딩을 줄여 행높이 압축(L5 8행 1뷰포트) */
+.truth-table th{background:var(--surface-soft);font-weight:700;color:var(--body-strong);}
+.truth-table td.in-cell{font-weight:700;color:var(--body-c);background:#fdfbf5;}
+.truth-cell{min-width:44px;min-height:44px;border:none;background:var(--canvas);font-size:16px;font-weight:800;cursor:pointer;border-radius:var(--r-sm);color:var(--ink);}
+.truth-cell.unset{color:var(--muted-soft);background:var(--surface-soft);}
+.truth-cell:disabled{cursor:default;}
+.truth-row-correct .truth-cell{background:rgba(46,160,67,.18);color:#1e7a34;}
+.truth-row-wrong .truth-cell{animation:shakeX .4s ease;}
+@keyframes shakeX{0%,100%{transform:translateX(0);}20%{transform:translateX(-4px);}40%{transform:translateX(4px);}60%{transform:translateX(-3px);}80%{transform:translateX(3px);}}
+.truth-cell.target-cell{background:var(--surface-strong);cursor:default;color:var(--body-strong);}
+.truth-cell.current-match{background:rgba(46,160,67,.18);color:#1e7a34;cursor:default;}
+.truth-cell.current-mismatch{background:rgba(229,72,77,.12);color:#c22;cursor:default;}
+
+/* ---------- 회로 보드 ---------- */
+.circuit-board{display:flex;gap:var(--sp-sm);align-items:stretch;background:var(--canvas);border:1px solid var(--hairline);border-radius:var(--r-lg);padding:var(--sp-sm);margin:var(--sp-sm) 0;flex-wrap:wrap;}
+.circuit-canvas-wrap{flex:1;min-width:220px;overflow-x:auto;}
+
+/* ---------- 스테이지 선택 ---------- */
+.stage-select{margin:var(--sp-sm) 0;}
+.stage-grid{display:flex;flex-wrap:wrap;gap:10px;}
+.stage-tile{min-width:84px;min-height:64px;border-radius:var(--r-md);border:2px solid var(--hairline);background:var(--canvas);cursor:pointer;padding:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;}
+.stage-tile .stage-id{font-weight:800;font-size:15px;color:var(--ink);}
+.stage-tile .stars{font-size:12px;color:var(--brand-ochre);letter-spacing:1px;}
+.stage-tile.cleared{border-color:var(--val-true);background:rgba(46,160,67,.08);}
+.stage-tile.locked{opacity:.45;cursor:not-allowed;}
+.stage-tile.current{border-color:var(--sel);box-shadow:0 0 0 3px rgba(47,109,240,.16);}
+
+/* ---------- 빌드 퍼즐 ---------- */
+.build-target{background:var(--surface-card);border-radius:var(--r-lg);padding:var(--sp-md);margin-bottom:var(--sp-sm);}
+.build-target-expr{font-family:ui-monospace,'Consolas',monospace;font-size:16px;font-weight:700;color:var(--body-strong);}
+
+/* ---------- 샌드박스 ---------- */
+.sandbox-wrap{display:flex;flex-direction:column;gap:var(--sp-sm);min-height:0;}
+.sandbox-canvas-wrap{border:1px solid var(--hairline);border-radius:var(--r-lg);overflow:auto;background:var(--canvas);}
+.sandbox-toolbar{display:flex;flex-wrap:wrap;gap:6px;}
+.expr-bar{background:var(--surface-strong);border-radius:var(--r-md);padding:12px 16px;font-family:ui-monospace,'Consolas',monospace;font-size:15px;color:var(--body-strong);}
+/* quick-connect(키보드 셀렉트 배선) CSS는 G2-B에서 L7 UI와 함께 제거됨(§D 예외 승인 2026-07-17) */
+
+/* ---------- L10 XOR 설명 슬라이드(F3): 실패 직선 회색 재등장 ---------- */
+.sep-fail-note{background:var(--surface-soft);border-radius:var(--r-lg);padding:var(--sp-md);margin-top:var(--sp-sm);font-size:14px;color:var(--body-strong);}
+
+/* ---------- 선형분리 ---------- */
+.sep-controls{display:flex;flex-wrap:wrap;gap:var(--sp-lg);align-items:center;margin-top:var(--sp-sm);}
+.stepper-group{display:flex;align-items:center;gap:6px;}
+.stepper-btn{width:44px;height:44px;border-radius:50%;border:1px solid var(--hairline);background:var(--canvas);font-size:18px;font-weight:800;cursor:pointer;}
+.stepper-label{font-size:13px;color:var(--muted);min-width:88px;text-align:center;}
+
+/* ---------- 넥스트 티저 / 토스트 ---------- */
+.next-tease{display:flex;align-items:center;gap:8px;background:var(--surface-card);border-radius:var(--r-pill);padding:10px 18px;font-weight:700;color:var(--body-strong);width:fit-content;margin-top:var(--sp-sm);}
+.toast{position:fixed;left:50%;bottom:88px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 18px;border-radius:var(--r-pill);font-size:14px;z-index:60;}
+.toast:empty{display:none;}
+
+/* ---------- 하단 내비 (G2-A: app-shell 내부 flex 아이템으로 전환 — 더 이상 fixed 오버레이 아님) ---------- */
+.bottom-nav{flex:none;background:var(--canvas);border-top:1px solid var(--hairline);padding:10px var(--sp-md);display:flex;align-items:center;justify-content:space-between;gap:var(--sp-sm);z-index:30;}
+.nav-status{font-size:12px;color:var(--muted);}
+
+/* ---------- 교사 패널 ---------- */
+.teacher-panel{display:none;position:fixed;inset:0;background:rgba(10,10,10,.5);z-index:80;align-items:center;justify-content:center;padding:var(--sp-md);}
+.teacher-panel.open{display:flex;}
+.teacher-card{background:var(--canvas);border-radius:var(--r-xl);padding:var(--sp-xl);max-width:420px;width:100%;}
+
+/* ---------- 게임필 ---------- */
+.fx-pop{animation:fxPop .32s cubic-bezier(.34,1.56,.64,1);}
+@keyframes fxPop{0%{transform:scale(1);}45%{transform:scale(1.14);}100%{transform:scale(1);}}
+.fx-shake{animation:shakeX .4s ease;}
+.confetti-piece{position:absolute;width:8px;height:8px;border-radius:2px;pointer-events:none;}
+
+@media (prefers-reduced-motion: reduce){
+  *{animation-duration:.001s !important; transition-duration:.001s !important;}
+}
+@media (max-width:600px){
+  .app-shell{padding:0 var(--sp-sm);}
+  h1{font-size:22px;}
+}
+</style>
+</head>
+<body>
+<div class="app-shell">
+  <header class="app-header">
+    <a class="back-link" href="../" style="display:inline-block;font-size:12px;font-weight:700;color:var(--sel);text-decoration:none;margin-bottom:4px;">← 영재원 수업 목록</a>
+    <div class="header-top">
+      <button type="button" class="app-title-btn" id="appTitleBtn" aria-label="논리 연산 학습지, 다섯 번 누르면 교사 패널">
+        <span class="app-title" id="appTitle">논리 연산 — 참과 거짓을 어떻게 판단할까?</span>
+      </button>
+      <span class="mascot-mini" id="mascotMini" aria-hidden="true"></span>
+    </div>
+    <div class="section-tag" id="sectionTag">섹션1 · 논리 연산이란?</div>
+    <div class="progress-track" id="progressTrack"></div>
+  </header>
+  <main class="screen-root" id="screenRoot" tabindex="-1"></main>
+  <nav class="bottom-nav">
+    <button type="button" class="btn btn-secondary" id="prevBtn">이전</button>
+    <span class="nav-status" id="navStatus" aria-live="off">1 / 11</span>
+    <button type="button" class="btn btn-primary" id="nextBtn">다음</button>
+  </nav>
+</div>
+
+<div class="teacher-panel" id="teacherPanel">
+  <div class="teacher-card" role="dialog" aria-modal="true" aria-labelledby="teacherTitle">
+    <h2 id="teacherTitle">교사 패널</h2>
+    <p class="muted">이 학습지의 저장 데이터(gifted26_logic_ 네임스페이스)만 초기화합니다. 다른 학습지에는 영향이 없습니다.</p>
+    <div id="teacherConfirmArea"></div>
+    <div class="btn-row" style="margin-top:var(--sp-md);">
+      <button type="button" class="btn btn-primary" id="teacherResetBtn">전체 초기화</button>
+      <button type="button" class="btn btn-secondary" id="teacherCloseBtn">닫기</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<div class="sr-only" id="liveRegion" aria-live="polite"></div>
+
+<script>
+(function(){
+'use strict';
+
+/* ============================================================
+   1) STATE — 전역 상태 + localStorage (네임스페이스 gifted26_logic_)
+   ============================================================ */
+var STORAGE_KEY = 'gifted26_logic_state';
+
+function mergeDefaults(def, saved){
+  if(Array.isArray(def)){
+    return Array.isArray(saved) ? saved : def.slice();
+  }
+  if(def && typeof def === 'object'){
+    var keys = Object.keys(def);
+    if(keys.length === 0){
+      /* 스키마 없는 동적 사전(예: 진리표 fill, PUZZLE boards) — 저장된 값을 통째로 신뢰해 복원한다.
+         (빈 객체 기본값은 재귀할 키가 없어 그냥 두면 저장된 내용이 항상 사라지는 문제 방지) */
+      return (saved && typeof saved === 'object' && !Array.isArray(saved)) ? saved : {};
+    }
+    var out = {};
+    for(var k in def){ out[k] = mergeDefaults(def[k], saved ? saved[k] : undefined); }
+    return out;
+  }
+  return saved !== undefined ? saved : def;
+}
+
+function DEFAULT_STATE(){
+  var stagesFor = function(list){
+    var o = {};
+    /* fill: L5(TRUTH.renderFillTable)만 쓴다 — L6는 개정 §3 G2-C부터 PUZZLE(채점 버튼) 모델이라
+       진리표를 직접 채우지 않지만, L5·L6가 이 헬퍼를 공유하므로 필드는 유지한다(L6에서는 미사용). */
+    list.forEach(function(s){ o[s.id] = {cleared:false, stars:0, fill:{}, attempts:0}; });
+    return o;
+  };
+  return {
+    version: 2,
+    teacherAllClear: false,
+    screenId: 'L1',
+    screens: {
+      L1: { step:0, judged:{c1:null,c4:null}, thought:'' },
+      L2: { step:0, a:0, b:0, fill:{}, done:false, attempts:0 },
+      L3: { step:0, a:0, b:0, fill:{}, done:false, attempts:0 },
+      L4: { step:0, a:0, fill:{}, done:false, attempts:0, termsConfirmed:false },
+      /* progress: L5 재입장 시 "첫 미클리어 판" 재개 등 G2-B/C 진행 로직이 쓸 자리(값 미사용 가능) */
+      L5: { step:0, activeStage:null, stages: stagesFor(L5_STAGES), progress:{} },
+      /* progress.boards[stageId]: PUZZLE 보드의 자유배치 노드 상태(§3 G2-C, 스테이지별). */
+      L6: { step:0, activeTrack:null, activeStage:null, table: stagesFor(L6_TABLE_STAGES), expr: stagesFor(L6_EXPR_STAGES), progress:{} },
+      L7: { step:0, nodes:null, nextNum:1, symbolic:false },
+      L8: { step:0, a:0, b:0, fill:{}, done:false, attempts:0 },
+      /* selfExplain: F4(L9 클리어 직후 자기설명, 칩 2빈칸) 게이팅 상태. progress.boards.L9: PUZZLE
+         보드의 자유배치 노드 상태(§3 G2-C). */
+      L9: { step:0, cleared:false, stars:0, attempts:0, selfExplain:{a:null,b:null,done:false}, progress:{} },
+      /* tries: F3(L10 XOR 실패 시도 기록, 연산별). C4 게이트·§F 실패 직선 재등장이 소비한다 */
+      L10:{ step:0, op:'AND', theta:20, offset:0.15, achieved:{AND:false,OR:false,XOR:false}, tries:{AND:[],OR:[],XOR:[]} },
+      L11:{ step:0, thought:'' }
+    }
+  };
+}
+
+var STATE = {
+  data: null,
+  load: function(){
+    var loaded = null;
+    try{
+      var raw = localStorage.getItem(STORAGE_KEY);
+      if(raw) loaded = JSON.parse(raw);
+    }catch(e){ loaded = null; }
+    /* 상태 v2 마이그레이션: 구버전(version!==2) 저장분은 폐기하고 기본값으로 시작한다(캠프 전·교사 리셋 존재). */
+    if(loaded && loaded.version !== 2){ loaded = null; }
+    this.data = mergeDefaults(DEFAULT_STATE(), loaded);
+    /* 변조·이종 저장분의 잘못된 screenId 새니타이즈(LG3-09) — ROUTER._rebuild의 index()가 -1을
+       그대로 SCREEN_DEFS에 인덱싱하면 TypeError로 부팅이 죽는다. */
+    if(ROUTER.index(this.data.screenId) < 0){ this.data.screenId = 'L1'; }
+    this.save(); /* 진입 즉시 영속 (resume 3겹 중 1겹) */
+  },
+  save: function(){
+    try{ var p = JSON.parse(localStorage.getItem(STORAGE_KEY)); if(p && p.teacherAllClear) this.data.teacherAllClear = true; }catch(e){}
+    try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(this.data)); }catch(e){}
+  },
+  reset: function(){
+    try{
+      var keys = Object.keys(localStorage);
+      for(var i=0;i<keys.length;i++){ if(keys[i].indexOf('gifted26_logic_') === 0) localStorage.removeItem(keys[i]); }
+    }catch(e){}
+    this.data = DEFAULT_STATE();
+    this.save();
+  },
+  screen: function(id){ return this.data.screens[id]; }
+};
+
+/* ============================================================
+   2) ROUTER — 화면 목록·이동·진행바
+   ============================================================ */
+var SCREEN_DEFS = [
+  {id:'L1', section:1, label:'참·거짓을 0/1로'},
+  {id:'L2', section:1, label:'AND(논리곱)'},
+  {id:'L3', section:1, label:'OR(논리합)'},
+  {id:'L4', section:1, label:'NOT(부정)'},
+  {id:'L5', section:2, label:'진리표 채우기 스테이지'},
+  {id:'L6', section:2, label:'회로 만들기 스테이지'},
+  {id:'L7', section:2, label:'자유 놀이터'},
+  {id:'L8', section:3, label:'XOR(배타적논리합)'},
+  {id:'L9', section:3, label:'XOR 조합 만들기'},
+  {id:'L10',section:3, label:'좌표평면 선형 분리'},
+  {id:'L11',section:3, label:'퍼셉트론 연결·정리'}
+];
+var SECTION_LABEL = {1:'섹션1 · 논리 연산이란?', 2:'섹션2 · 진리표·회로 스테이지', 3:'섹션3 · XOR와 인공지능'};
+
+/* ---- 수식 표시 헬퍼: [data-katex] 노드에 간단한 텍스트 기호로 수식을 표시한다. 이 학습지에서
+   쓰는 수식은 변수 한 글자(A, B, x1...)와 짧은 산술식뿐이라 KaTeX 없이 유니코드 기호 치환만으로
+   충분하다(외부 라이브러리 의존 제거). ---- */
+function renderMath(root){
+  if(!root || !root.querySelectorAll) return;
+  var nodes = root.querySelectorAll('[data-katex]');
+  for(var i=0;i<nodes.length;i++){
+    var node = nodes[i];
+    var tex = node.getAttribute('data-katex') || '';
+    node.textContent = tex
+      .replace(/\\times/g, '×')
+      .replace(/\\cdot/g, '·')
+      .replace(/\\leq/g, '≤')
+      .replace(/\\geq/g, '≥')
+      .replace(/\\neq/g, '≠')
+      .replace(/\\pm/g, '±')
+      .replace(/\\/g, '');
+  }
+}
+
+/* ---- 서브 슬라이드 엔진 헬퍼(G2-A, ai-thinking 이식): SCREENS[id].steps(선택 배열) 위에서 화면·step
+   이동을 통일 처리한다. steps 미정의 화면(현재 L1~L11 전부)은 기존과 동일하게 mod.mount(container)
+   한 번만 호출된다(하위호환 — 이번 단계에서 기존 11화면은 무변경 동작). ---- */
+function currentMod(){ return SCREENS[STATE.data.screenId]; }
+function stepCountOf(mod){ return (mod && mod.steps && mod.steps.length) ? mod.steps.length : 0; }
+function currentStepIdx(){
+  var mod = currentMod();
+  var n = stepCountOf(mod);
+  if(!n) return 0;
+  var st = STATE.screen(STATE.data.screenId);
+  var idx = (st && typeof st.step === 'number') ? st.step : 0;
+  if(idx < 0) idx = 0;
+  if(idx > n-1) idx = n-1;
+  return idx;
+}
+function mountCurrentView(pane){
+  var mod = currentMod();
+  if(!mod) return mod;
+  /* .pane-game(정사각 보드+진리표 병치, 페이지 스크롤 안전밸브 끄기)을 화면에 거는 배선은
+     ROUTER._rebuild에 있다(:612) — L6·L7·L9가 gameLayout:true로 재구성되어 있다. */
+  var n = stepCountOf(mod);
+  if(n){
+    var idx = currentStepIdx();
+    mod.steps[idx].mount(pane);
+    renderStepDots(pane, mod, idx);
+  } else {
+    mod.mount(pane);
+  }
+  renderMath(pane);
+  return mod;
+}
+function renderStepDots(pane, mod, idx){
+  if(!mod.steps || mod.steps.length<2) return;
+  var row = el('div', {class:'step-dots'});
+  for(var i=0;i<mod.steps.length;i++){
+    row.appendChild(el('span', {class:'step-dot'+(i===idx?' active':''), 'aria-hidden':'true'}));
+  }
+  row.appendChild(el('span', {class:'sr-only'}, (idx+1) + ' / ' + mod.steps.length + ' 단계'));
+  pane.insertBefore(row, pane.firstChild);
+}
+function focusView(pane){
+  var heading = pane.querySelector('h1, h2');
+  var target = heading || pane;
+  if(!target.hasAttribute('tabindex')) target.setAttribute('tabindex', '-1');
+  target.focus({preventScroll:true});
+}
+/* refresh()(같은 화면 내 재구성) 전용 포커스 착지: 제목으로 강탈하지 않고 호출부가 지정한
+   조작 원점(selector)이 있으면 그곳, 없으면 새로 그려진 영역의 첫 컨트롤로 되돌린다.
+   둘 다 못 찾으면(빈 목록 등) focusView로 안전 폴백한다. */
+function focusFirstControl(pane, selector){
+  var target = selector ? pane.querySelector(selector) : null;
+  if(!target){
+    target = pane.querySelector('button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])');
+  }
+  if(!target){ focusView(pane); return; }
+  target.focus({preventScroll:true});
+}
+function announceViewChange(def){
+  var mod = currentMod();
+  var n = stepCountOf(mod);
+  if(n){ announce(def.label + ' 화면, ' + (currentStepIdx()+1) + ' / ' + n + ' 단계'); }
+  else { announce(def.label + ' 화면'); }
+}
+
+var ROUTER = {
+  screenEl: null,
+  activePane: null,
+  _transitioning: false,
+  _transitionTimer: null,
+  index: function(id){ for(var i=0;i<SCREEN_DEFS.length;i++){ if(SCREEN_DEFS[i].id===id) return i; } return -1; },
+  stepCount: function(mod){ return stepCountOf(mod); },
+  go: function(id, opts){
+    opts = opts || {};
+    if(this.index(id) < 0 || this._transitioning) return;
+    var curMod = currentMod();
+    if(curMod && curMod.onStepExit && id !== STATE.data.screenId) curMod.onStepExit(currentStepIdx());
+    var mod = SCREENS[id];
+    var tgtState = STATE.data.screens[id];
+    var n = stepCountOf(mod);
+    if(n){
+      if(opts.enterStep === 'last') tgtState.step = n-1;
+      else if(opts.enterStep === 'first') tgtState.step = 0;
+      else if(typeof tgtState.step !== 'number' || tgtState.step<0 || tgtState.step>=n) tgtState.step = 0;
+    }
+    STATE.data.screenId = id;
+    STATE.save();
+    this.transitionTo(opts.dir || 'next', {silent: opts.silent});
+  },
+  canGoNext: function(){
+    if(STATE.data.teacherAllClear) return true;
+    var mod = currentMod();
+    if(!mod) return true;
+    var n = stepCountOf(mod);
+    if(n){
+      var step = mod.steps[currentStepIdx()];
+      return step && typeof step.isComplete === 'function' ? !!step.isComplete() : true;
+    }
+    return typeof mod.isComplete === 'function' ? !!mod.isComplete() : true;
+  },
+  next: function(){
+    if(this._transitioning) return;
+    var mod = currentMod();
+    var n = stepCountOf(mod);
+    if(n){
+      var stAll = STATE.screen(STATE.data.screenId);
+      var idx = (typeof stAll.step === 'number') ? stAll.step : 0;
+      if(idx < n-1){
+        if(!this.canGoNext()) return;
+        if(mod.onStepExit) mod.onStepExit(idx);
+        stAll.step = idx+1;
+        STATE.save();
+        this.transitionTo('next', {});
+        return;
+      }
+    }
+    if(!this.canGoNext()) return;
+    if(mod && mod.onStepExit) mod.onStepExit(currentStepIdx());
+    var i = this.index(STATE.data.screenId);
+    if(i < SCREEN_DEFS.length-1) this.go(SCREEN_DEFS[i+1].id, {dir:'next', enterStep:'first'});
+  },
+  prev: function(){
+    if(this._transitioning) return;
+    var mod = currentMod();
+    var n = stepCountOf(mod);
+    if(n){
+      var stAll = STATE.screen(STATE.data.screenId);
+      var idx = (typeof stAll.step === 'number') ? stAll.step : 0;
+      if(idx > 0){
+        if(mod.onStepExit) mod.onStepExit(idx);
+        stAll.step = idx-1;
+        STATE.save();
+        this.transitionTo('prev', {});
+        return;
+      }
+    }
+    var i = this.index(STATE.data.screenId);
+    if(i>0){
+      if(mod && mod.onStepExit) mod.onStepExit(currentStepIdx());
+      this.go(SCREEN_DEFS[i-1].id, {dir:'prev', enterStep:'last'});
+    }
+  },
+  refresh: function(focusSelector){
+    /* 화면·step을 새로 이동하지 않고 같은 위치를 다시 그려야 할 때(스테이지 진입 등) — 전환 애니메이션
+       없이 즉시 교체. render()와 달리 포커스를 화면 제목으로 강탈하지 않는다 — 호출부가 넘긴
+       focusSelector(조작 원점)가 있으면 그곳, 없으면 새로 그려진 영역의 첫 컨트롤로 포커스를 되돌린다. */
+    this._rebuild();
+    focusFirstControl(this.activePane, focusSelector);
+  },
+  render: function(){
+    /* 최초 부팅·교사 리셋 등: 전환 애니메이션 없이 현재 위치를 그대로 그리고 제목에 포커스한다 */
+    this._rebuild();
+    focusView(this.activePane);
+  },
+  _rebuild: function(){
+    /* render()·refresh() 공용 재그리기. 대기 중인 전환 타이머가 있으면 취소해 스테일 activePane
+       참조·pane 누수를 막는다 — transitionTo의 300ms 타이머가 나중에 발화하며 activePane을 이미
+       DOM에서 떨어져나간 newPane으로 덮어써, 다음 실제 전환이 지금 새로 그린 pane을 영영 못 지우는
+       문제를 막는다. */
+    if(this._transitionTimer){ clearTimeout(this._transitionTimer); this._transitionTimer = null; }
+    this._transitioning = false;
+    var i = this.index(STATE.data.screenId);
+    var def = SCREEN_DEFS[i];
+    this.screenEl.innerHTML = '';
+    /* mod.gameLayout(정사각 보드+진리표 병치, 페이지 스크롤 안전밸브 끄기)은 L6·L7·L9 모두
+       gameLayout:true로 적용되어 이 pane-game 클래스가 걸린다. */
+    var pane = el('div', {class:'view-pane pane-active' + (SCREENS[def.id] && SCREENS[def.id].gameLayout ? ' pane-game' : '')});
+    this.screenEl.appendChild(pane);
+    mountCurrentView(pane);
+    this.activePane = pane;
+    renderProgress(i, def);
+    renderNav(i);
+  },
+  transitionTo: function(dir, opts){
+    opts = opts || {};
+    var self = this;
+    var i = this.index(STATE.data.screenId);
+    var def = SCREEN_DEFS[i];
+    var oldPane = this.activePane;
+    var newPane = el('div', {class:'view-pane' + (SCREENS[def.id] && SCREENS[def.id].gameLayout ? ' pane-game' : '')});
+    this.screenEl.appendChild(newPane);
+    mountCurrentView(newPane);
+    renderProgress(i, def);
+    renderNav(i);
+    if(FX.reducedMotion){
+      if(oldPane) oldPane.remove();
+      newPane.classList.add('pane-active');
+      this.activePane = newPane;
+      focusView(newPane);
+      if(!opts.silent) announceViewChange(def);
+      return;
+    }
+    var enterCls = dir==='prev' ? 'pane-enter-left' : 'pane-enter-right';
+    var exitCls = dir==='prev' ? 'pane-exit-right' : 'pane-exit-left';
+    self._transitioning = true;
+    newPane.classList.add(enterCls);
+    void newPane.offsetWidth; /* 강제 리플로우로 진입 시작 상태를 확정한 뒤, 다음 프레임에 목표 상태로 전환한다(FLIP 기법) */
+    if(oldPane) oldPane.classList.add(exitCls);
+    requestAnimationFrame(function(){
+      newPane.classList.remove(enterCls);
+      newPane.classList.add('pane-active');
+    });
+    if(self._transitionTimer){ clearTimeout(self._transitionTimer); }
+    self._transitionTimer = setTimeout(function(){
+      self._transitionTimer = null;
+      if(oldPane) oldPane.remove();
+      self.activePane = newPane;
+      self._transitioning = false;
+      focusView(newPane);
+      if(!opts.silent) announceViewChange(def);
+    }, 300);
+  }
+};
+
+function renderProgress(i, def){
+  document.getElementById('sectionTag').textContent = SECTION_LABEL[def.section];
+  var track = document.getElementById('progressTrack');
+  track.innerHTML = '';
+  SCREEN_DEFS.forEach(function(s, idx){
+    var seg = document.createElement('span');
+    seg.className = 'progress-seg' + (idx < i ? ' section-done' : '');
+    var fill = document.createElement('span');
+    fill.className = 'fill';
+    fill.style.width = (idx <= i ? '100%' : '0%');
+    seg.appendChild(fill);
+    track.appendChild(seg);
+  });
+}
+
+function renderNav(i){
+  var prevBtn = document.getElementById('prevBtn');
+  var nextBtn = document.getElementById('nextBtn');
+  var status = document.getElementById('navStatus');
+  var mod = SCREENS[SCREEN_DEFS[i].id];
+  var n = stepCountOf(mod);
+  var stepIdx = n ? currentStepIdx() : 0;
+  var atFirstStep = !n || stepIdx===0;
+  var atLastStep = !n || stepIdx===n-1;
+  prevBtn.style.visibility = (i>0 || !atFirstStep) ? 'visible' : 'hidden';
+  var isLast = (i === SCREEN_DEFS.length-1) && atLastStep;
+  nextBtn.textContent = isLast ? '완료' : '다음';
+  var enabled = ROUTER.canGoNext();
+  /* 마지막 화면·마지막 step도 게이팅 규칙은 동일하게 적용한다(완료 버튼이 실제 완료 여부를 보여줘야 함).
+     ROUTER.next()가 마지막 위치에서는 어차피 이동하지 않으므로 활성화돼도 부작용은 없다. */
+  setDisabled(nextBtn, !enabled);
+  var stepTxt = n>1 ? (' · ' + (stepIdx+1) + '/' + n + '단계') : '';
+  status.textContent = (i+1) + ' / ' + SCREEN_DEFS.length + ' · ' + SCREEN_DEFS[i].label + stepTxt;
+}
+
+/* 화면 스스로 게이팅이 바뀌었을 때(생각칸 입력 등) 다음 버튼만 다시 평가 */
+function refreshNav(){
+  var i = ROUTER.index(STATE.data.screenId);
+  renderNav(i);
+}
+
+/* ============================================================
+   3) COMPONENTS — 상속 컴포넌트 팩토리
+   ============================================================ */
+function el(tag, attrs, children){
+  var e = document.createElement(tag);
+  if(attrs){
+    for(var k in attrs){
+      var v = attrs[k];
+      if(v == null) continue;
+      if(k === 'class') e.className = v;
+      else if(k === 'html') e.innerHTML = v;
+      else if(k.indexOf('on') === 0 && typeof v === 'function') e.addEventListener(k.slice(2), v);
+      else if(k === 'style' && typeof v === 'object'){ for(var sk in v) e.style[sk] = v[sk]; }
+      else e.setAttribute(k, v);
+    }
+  }
+  if(children){
+    (Array.isArray(children) ? children : [children]).forEach(function(c){
+      if(c == null) return;
+      e.appendChild(typeof c === 'string' ? document.createTextNode(c) : c);
+    });
+  }
+  return e;
+}
+
+function setDisabled(btn, disabled){
+  var hadFocus = document.activeElement === btn;
+  btn.disabled = disabled;
+  if(disabled && hadFocus){
+    var root = document.getElementById('screenRoot');
+    if(root) root.focus({preventScroll:true});
+  }
+}
+
+function announce(msg){
+  var lr = document.getElementById('liveRegion');
+  if(lr) lr.textContent = msg;
+}
+
+var toastTimer = null;
+function toast(msg){
+  var t = document.getElementById('toast');
+  if(!t) return;
+  t.textContent = msg;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(function(){ t.textContent = ''; }, 2200);
+}
+
+var Components = {
+  ThoughtBox: function(opts){
+    var st = STATE.screen(opts.screenId);
+    var wrap = el('div', {class:'thought-box'});
+    var idAttr = 'tb-' + opts.screenId + '-' + opts.key;
+    wrap.appendChild(el('label', {class:'thought-label', 'for':idAttr}, opts.labelText || '생각칸'));
+    var ta = el('textarea', {id:idAttr, class:'thought-input', placeholder: opts.placeholder || ''});
+    ta.value = st[opts.key] || '';
+    ta.addEventListener('input', function(){
+      st[opts.key] = ta.value;
+      STATE.save();
+      if(opts.onChange) opts.onChange(ta.value.trim().length > 0);
+      refreshNav();
+    });
+    wrap.appendChild(ta);
+    if(opts.onChange) opts.onChange(ta.value.trim().length > 0);
+    return wrap;
+  },
+  SummaryCard: function(opts){
+    var cls = 'card feature-card card-' + (opts.color || 'cream');
+    return el('div', {class:cls}, [
+      opts.title ? el('div', {class:'card-title'}, opts.title) : null,
+      el('div', {class:'card-body'}, opts.body)
+    ]);
+  },
+  Highlight: function(items){
+    var wrap = el('div', {class:'highlight-row'});
+    items.forEach(function(it){ wrap.appendChild(el('span', {class:'highlight-chip tone-' + it.tone}, it.label)); });
+    return wrap;
+  },
+  SegToggle: function(opts){
+    var wrap = el('div', {class:'seg-toggle', role:'radiogroup', 'aria-label': opts.ariaLabel || ''});
+    var current = opts.value;
+    var buttons = [];
+    opts.options.forEach(function(o){
+      var b = el('button', {
+        type:'button', class:'seg-btn' + (o.value===current?' active':''),
+        role:'radio', 'aria-checked': o.value===current?'true':'false'
+      }, o.label);
+      b.addEventListener('click', function(){
+        current = o.value;
+        buttons.forEach(function(bb){
+          var on = bb.dataset.val === String(current);
+          bb.classList.toggle('active', on);
+          bb.setAttribute('aria-checked', on?'true':'false');
+        });
+        opts.onChange(current);
+      });
+      b.dataset.val = String(o.value);
+      buttons.push(b);
+      wrap.appendChild(b);
+    });
+    return wrap;
+  },
+  Chips: function(opts){
+    var wrap = el('div', {class:'chips-row'});
+    opts.items.forEach(function(it){
+      var b = el('button', {
+        type:'button', class:'chip' + (it.tone?(' tone-'+it.tone):'') + (it.active?' active':''),
+        'aria-pressed': it.active?'true':'false'
+      }, it.label);
+      b.addEventListener('click', function(){ opts.onToggle(it.key); });
+      wrap.appendChild(b);
+    });
+    return wrap;
+  },
+  NextTease: function(text){
+    return el('div', {class:'next-tease'}, [
+      el('span', {'aria-hidden':'true'}, '➜'),
+      el('span', {}, text)
+    ]);
+  }
+};
+
+/* ============================================================
+   4) MASCOT — 루미 + 말풍선 (assets/lumi.png 없어도 graceful fallback)
+   ============================================================ */
+var MASCOT = {
+  mountMini: function(){
+    var host = document.getElementById('mascotMini');
+    if(!host || host.childNodes.length) return;
+    var img = el('img', {alt:'', class:'mascot-mini-img', style:{width:'100%',height:'100%',objectFit:'cover',display:'block',borderRadius:'50%'}, src:'assets/lumi.png'});
+    img.addEventListener('error', function(){
+      host.classList.add('mascot-fallback');
+      img.remove();
+    });
+    host.appendChild(img);
+  },
+  bubble: function(container, text, opts){
+    opts = opts || {};
+    var wrap = el('div', {class:'mascot-row'});
+    var avatar = el('span', {class:'mascot-avatar'});
+    var img = el('img', {alt:'루미'});
+    img.src = 'assets/lumi.png';
+    img.addEventListener('error', function(){
+      avatar.classList.add('mascot-fallback');
+      img.remove();
+    });
+    avatar.appendChild(img);
+    var bubble = el('div', {class:'mascot-bubble' + (opts.tone?(' tone-'+opts.tone):'')}, text);
+    wrap.appendChild(avatar);
+    wrap.appendChild(bubble);
+    container.appendChild(wrap);
+    return wrap;
+  }
+};
+
+/* ============================================================
+   5) FX — tween/파티클/신호전파 (자체 구현, 라이브러리 금지)
+   ============================================================ */
+var FX = {
+  reducedMotion: (function(){
+    try{ return window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(e){ return false; }
+  })(),
+  easeOutCubic: function(t){ return 1 - Math.pow(1-t, 3); },
+  easeOutBack: function(t){ var c1=1.70158, c3=c1+1; return 1 + c3*Math.pow(t-1,3) + c1*Math.pow(t-1,2); },
+  easeInOutQuad: function(t){ return t<0.5 ? 2*t*t : 1-Math.pow(-2*t+2,2)/2; },
+  tween: function(opts){
+    var duration = FX.reducedMotion ? 1 : (opts.duration || 300);
+    var start = null;
+    var easing = opts.easing || FX.easeOutCubic;
+    function frame(ts){
+      if(start === null) start = ts;
+      var t = Math.min(1, (ts-start)/duration);
+      opts.onUpdate(easing(t));
+      if(t < 1) requestAnimationFrame(frame);
+      else if(opts.onDone) opts.onDone();
+    }
+    requestAnimationFrame(frame);
+  },
+  pop: function(node){
+    if(!node) return;
+    node.classList.remove('fx-pop'); void node.offsetWidth;
+    node.classList.add('fx-pop');
+  },
+  shake: function(node){
+    if(!node) return;
+    node.classList.remove('fx-shake'); void node.offsetWidth;
+    node.classList.add('fx-shake');
+  },
+  confetti: function(container){
+    if(FX.reducedMotion) return;
+    var colors = ['#ff4d8b','#1a3a3a','#b8a4ed','#ffb084','#e8b94a'];
+    var n = 18;
+    for(var i=0;i<n;i++){
+      (function(i){
+        var piece = el('span', {class:'confetti-piece'});
+        piece.style.background = colors[i % colors.length];
+        piece.style.left = '50%';
+        piece.style.top = '50%';
+        container.style.position = container.style.position || 'relative';
+        container.appendChild(piece);
+        var angle = Math.random()*Math.PI*2;
+        var dist = 40 + Math.random()*70;
+        var dx = Math.cos(angle)*dist, dy = Math.sin(angle)*dist - 20;
+        FX.tween({
+          duration: 500 + Math.random()*200,
+          easing: FX.easeOutCubic,
+          onUpdate: function(t){
+            piece.style.transform = 'translate('+(dx*t)+'px,'+(dy*t)+'px) rotate('+(t*280)+'deg)';
+            piece.style.opacity = String(1-t);
+          },
+          onDone: function(){ piece.remove(); }
+        });
+      })(i);
+    }
+  }
+};
+
+/* ============================================================
+   6) GATES — 게이트 정의·평가 (순수)
+   ============================================================ */
+var GATE_FN = {
+  NOT: function(ins){ return ins[0] === 1 ? 0 : 1; },
+  AND: function(ins){ return ins.every(function(v){ return v===1; }) ? 1 : 0; },
+  OR:  function(ins){ return ins.some(function(v){ return v===1; }) ? 1 : 0; },
+  XOR: function(ins){ return (ins[0] !== ins[1]) ? 1 : 0; },
+  NAND:function(ins){ return GATE_FN.AND(ins) === 1 ? 0 : 1; },
+  NOR: function(ins){ return GATE_FN.OR(ins) === 1 ? 0 : 1; }
+};
+var GATE_ARITY = {NOT:1, AND:2, OR:2, XOR:2, NAND:2, NOR:2, IN:0, OUT:1};
+var GATE_KOREAN = {AND:'논리곱', OR:'논리합', NOT:'부정', XOR:'배타적논리합', NAND:'낸드', NOR:'노어'};
+var GATE_SYMBOL = {AND:'AND', OR:'OR', NOT:'NOT', XOR:'XOR', NAND:'NAND', NOR:'NOR'};
+
+/* ============================================================
+   7) CIRCUIT — 회로 그래프·평가(위상정렬 전파)·자동배치·렌더(Canvas)
+   ============================================================ */
+function mkCircuit(inputIds, gateNodes, output){
+  var nodes = inputIds.map(function(id){ return {id:id, type:'IN', inputs:[]}; })
+    .concat(gateNodes)
+    .concat([{id:'OUT', type:'OUT', inputs:[output]}]);
+  return {nodes: nodes, inputs: inputIds.slice(), output:'OUT'};
+}
+
+var CIRCUIT = {
+  evaluate: function(circuit, switchVals){
+    var byId = {}; circuit.nodes.forEach(function(n){ byId[n.id]=n; });
+    var indeg = {}, dependents = {};
+    circuit.nodes.forEach(function(n){
+      indeg[n.id] = n.inputs.filter(function(x){ return x!=null; }).length;
+      dependents[n.id] = [];
+    });
+    circuit.nodes.forEach(function(n){
+      n.inputs.forEach(function(src){ if(src!=null) dependents[src].push(n.id); });
+    });
+    var ready = circuit.nodes.filter(function(n){ return indeg[n.id]===0; }).map(function(n){ return n.id; });
+    var values = {}, processed = 0;
+    while(ready.length){
+      var id = ready.pop();
+      var n = byId[id];
+      if(n.type === 'IN') values[id] = (switchVals && switchVals[id]!=null) ? switchVals[id] : 0;
+      else if(n.type === 'OUT') values[id] = n.inputs[0]!=null ? values[n.inputs[0]] : 0;
+      else {
+        var args = n.inputs.map(function(x){ return x!=null ? values[x] : 0; });
+        values[id] = GATE_FN[n.type](args);
+      }
+      processed++;
+      dependents[id].forEach(function(dep){
+        indeg[dep]--;
+        if(indeg[dep]===0) ready.push(dep);
+      });
+    }
+    if(processed !== circuit.nodes.length) throw new Error('circuit has a cycle');
+    return values;
+  },
+  truthTable: function(circuit){
+    var k = circuit.inputs.length;
+    var rows = [];
+    for(var i=0;i<(1<<k);i++){
+      var bits = [];
+      for(var j=0;j<k;j++) bits.push((i>>(k-1-j)) & 1);
+      var sw = {};
+      circuit.inputs.forEach(function(id,idx){ sw[id]=bits[idx]; });
+      var values = CIRCUIT.evaluate(circuit, sw);
+      rows.push({bits:bits, out:values[circuit.output]});
+    }
+    return rows;
+  },
+  layout: function(circuit){
+    var byId = {}; circuit.nodes.forEach(function(n){ byId[n.id]=n; });
+    var layer = {};
+    function layerOf(id){
+      if(layer[id]!=null) return layer[id];
+      var n = byId[id];
+      if(n.type === 'IN'){ layer[id]=0; return 0; }
+      var ins = n.inputs.filter(function(x){ return x!=null; });
+      var l = ins.length ? 1+Math.max.apply(null, ins.map(layerOf)) : 0;
+      layer[id]=l; return l;
+    }
+    circuit.nodes.forEach(function(n){ layerOf(n.id); });
+    var inputIndex = {}; circuit.inputs.forEach(function(id,i){ inputIndex[id]=i; });
+    var byLayer = {};
+    circuit.nodes.forEach(function(n){ (byLayer[layer[n.id]] = byLayer[layer[n.id]] || []).push(n.id); });
+    var pos = {};
+    Object.keys(byLayer).sort(function(a,b){ return a-b; }).forEach(function(lstr){
+      var ids = byLayer[lstr];
+      ids.forEach(function(id){
+        var n = byId[id];
+        var row;
+        if(n.type === 'IN') row = inputIndex[id];
+        else {
+          var ins = n.inputs.filter(function(x){ return x!=null; }).map(function(x){ return pos[x] ? pos[x].row : 0; });
+          row = ins.length ? ins.reduce(function(a,b){return a+b;},0)/ins.length : 0;
+        }
+        pos[id] = {layer:+lstr, row:row};
+      });
+      /* 좌표 겹침 방지(L9 v1 결함 근본 해소, C2 게이트 대상): 같은 층(layer)에서 두 노드의 row가
+         우연히 같아지면(예: 둘 다 같은 입력 쌍의 평균 — S1=OR(A,B)·S2=AND(A,B)처럼) 화면 좌표가
+         완전히 겹쳐 탭·클릭 판정도 하나만 걸린다. 위상(layer)·평가(evaluate)에는 영향 없는
+         표시 전용 보정 — row가 같은 노드들을 발견 순서대로 살짝 벌린다. */
+      var seen = {};
+      ids.forEach(function(id){
+        var key = pos[id].row.toFixed(6);
+        (seen[key] = seen[key] || []).push(id);
+      });
+      Object.keys(seen).forEach(function(key){
+        var group = seen[key];
+        if(group.length < 2) return;
+        var base = pos[group[0]].row;
+        group.forEach(function(id, i){ pos[id].row = base + (i - (group.length-1)/2); });
+      });
+    });
+    return pos;
+  }
+};
+
+/* wouldCreateCycle (전역, L7 SANDBOX·L6/L9 PUZZLE 공용 재사용 — C3-④ 노출 대상):
+   circuit={nodes:[{id,type,inputs}...]}, edge={from,to}. edge.from이 이미 edge.to에 의존하면
+   (즉 edge.to의 값이 직접·간접으로 edge.from을 거쳐 만들어지면) edge.to의 입력에 edge.from의
+   출력을 연결하는 순간 순환이 생긴다. */
+function wouldCreateCycle(circuit, edge){
+  var byId = {}; circuit.nodes.forEach(function(n){ byId[n.id]=n; });
+  var visited = {};
+  function dependsOn(nodeId, targetId){
+    if(nodeId === targetId) return true;
+    if(visited[nodeId]) return false;
+    visited[nodeId] = true;
+    var n = byId[nodeId];
+    if(!n) return false;
+    return (n.inputs || []).some(function(x){ return x!=null && dependsOn(x, targetId); });
+  }
+  return dependsOn(edge.from, edge.to);
+}
+
+/* gradeCircuit (전역, C3-③ 노출 대상): 게이트·출력 노드의 입력 포트 중 하나라도 비어 있으면
+   (null/undefined) 채점 불가('아직 연결 안 된 곳이 있어요', 개정 §B L6). 완전하면 진리표를
+   계산해 반환한다 — 판정 기준(진리표 동치) 자체는 호출부가 9.3을 그대로 재사용한다. */
+function gradeCircuit(circuit){
+  var incomplete = circuit.nodes.some(function(n){
+    if(n.type === 'IN') return false;
+    var arity = GATE_ARITY[n.type];
+    for(var i=0;i<arity;i++){ if(n.inputs[i] == null) return true; }
+    return false;
+  });
+  if(incomplete) return {ok:false, reason:'incomplete'};
+  return {ok:true, table: CIRCUIT.truthTable(circuit)};
+}
+
+/* initPuzzleNodes: L6·L9 PUZZLE 보드의 초기 배치(입력 스위치 세로 정렬 + 출력 램프) — 게이트는
+   학생이 팔레트로 추가하기 전까지 없다. C2 "L6·L9 초기" 케이스가 이 좌표를 그대로 쓴다. */
+function initPuzzleNodes(inputIds){
+  var nodes = inputIds.map(function(id, i){ return {id:id, type:'IN', inputs:[], value:0, x:56, y:56+i*84}; });
+  var lastY = 56 + Math.max(0, inputIds.length-1)*84;
+  nodes.push({id:'OUT', type:'OUT', inputs:[null], x:360, y: Math.round((56+lastY)/2)});
+  return nodes;
+}
+
+/* halfAdderTable (C5 선적 대조 대상, F2): 합=XOR(a,b)·올림=AND(a,b) 2비트 전수 4행. */
+function halfAdderTable(){
+  var rows = [];
+  [0,1].forEach(function(a){
+    [0,1].forEach(function(b){
+      var s = GATE_FN.XOR([a,b]), c = GATE_FN.AND([a,b]);
+      rows.push({a:a, b:b, sum:s, carry:c, binary: String(c)+String(s)});
+    });
+  });
+  return rows;
+}
+
+/* layoutCaseFromCircuit (C2 케이스 헬퍼): CIRCUIT.layout()으로 계산한 자동배치를 renderCircuitBoard와
+   동일한 변환식(PAD/COL_W/ROW_H)으로 픽셀 좌표로 바꾼다. */
+function layoutCaseFromCircuit(name, circuit, nodeSize){
+  var pos = CIRCUIT.layout(circuit);
+  var nodes = circuit.nodes.map(function(n){
+    var p = pos[n.id];
+    return {id:n.id, x: PAD + p.layer*COL_W, y: p.row*ROW_H + ROW_H/2};
+  });
+  return {name:name, nodeSize: nodeSize || NODE_H, nodes:nodes};
+}
+
+function roundRectPath(ctx,x,y,w,h,r){
+  ctx.beginPath();
+  ctx.moveTo(x+r,y);
+  ctx.arcTo(x+w,y,x+w,y+h,r);
+  ctx.arcTo(x+w,y+h,x,y+h,r);
+  ctx.arcTo(x,y+h,x,y,r);
+  ctx.arcTo(x,y,x+w,y,r);
+  ctx.closePath();
+}
+
+function setupCanvasHiDPI(canvas, cssW, cssH){
+  var dpr = window.devicePixelRatio || 1;
+  canvas.width = Math.round(cssW*dpr);
+  canvas.height = Math.round(cssH*dpr);
+  canvas.style.width = cssW + 'px';
+  canvas.style.height = cssH + 'px';
+  var ctx = canvas.getContext('2d');
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  return ctx;
+}
+
+/* LIVE-1: PUZZLE·SANDBOX의 정사각 보드(cssW=420/460 고정)가 저높이 뷰포트(예 1280×720)에서
+   game-board-area보다 커, .sandbox-canvas-wrap의 overflow:auto 안에 갇혀 대부분이 안 보이는
+   문제. 내부 논리 좌표(cssW/cssH, drawCanvas가 그리는 기준)는 그대로 두고 canvas의 CSS 표시
+   크기만 가용 공간에 맞춰 줄인다 — localPos가 rect 스케일로 좌표를 되돌리므로 히트테스트도
+   그대로 맞는다. reserveH는 boardArea 안에서 canvas 위에 오는 툴바 등의 높이(가용 공간에서
+   빼야 함). 레이아웃 전이라 실측이 0이면(아직 붙지 않음) 손대지 않는다. */
+function fitSquareBoardCss(canvas, boardArea, cssW, reserveH){
+  var w = boardArea ? boardArea.clientWidth : 0;
+  var h = (boardArea ? boardArea.clientHeight : 0) - (reserveH || 0);
+  var avail = Math.min(w || 0, h || 0);
+  if(avail > 0 && avail < cssW){
+    var shown = Math.max(200, Math.floor(avail));
+    canvas.style.width = shown + 'px';
+    canvas.style.height = shown + 'px';
+  }
+}
+
+/* fitBoardCssWidth (renderCircuitBoard 전용): 회로가 깊어질수록(L5 3층·L9 반가산기 보너스 등)
+   cssW가 커져 .circuit-canvas-wrap 가용 폭을 넘을 수 있다 — fitSquareBoardCss와 목적은 같지만
+   이 보드는 정사각이 아니므로(cssW≠cssH) 폭 기준으로 줄이고 높이는 cssH/cssW 비율로 맞춘다.
+   내부 논리 좌표(cssW/cssH)는 그대로 두므로 attachBoardNodeDrag의 localPos rect 스케일
+   보정이 히트테스트를 그대로 맞춘다(LIVE-1과 동일 패턴). */
+function fitBoardCssWidth(canvas, wrapEl, cssW, cssH){
+  var availW = wrapEl ? wrapEl.clientWidth : 0;
+  if(availW > 0 && availW < cssW){
+    var shown = Math.max(240, Math.floor(availW));
+    canvas.style.width = shown + 'px';
+    canvas.style.height = (shown * cssH / cssW) + 'px';
+  }
+}
+
+var ROW_H = 84, COL_W = 124, NODE_W = 82, NODE_H = 44, PAD = 52;
+var CB_IN_W = 96, CB_IN_H = 56; /* IN 노드 박스(L7형 통일) — PAD는 이 반폭(48)을 수용한다 */
+
+/* LG3-05: 연결선 기본값은 번개(지그재그)형(§1-5·G2-C L6 항) — SANDBOX·PLUG_render의 배선
+   프리뷰도 같은 산식을 쓴다. Canvas 2D 경로(moveTo/lineTo)로 그린다(중복 4줄, 리팩터보다
+   안전). */
+function drawWire(ctx, x1,y1,x2,y2, on){
+  ctx.save();
+  ctx.strokeStyle = on ? '#f5a623' : '#b9c0c9';
+  ctx.lineWidth = on ? 3 : 2;
+  var dx = x2-x1, dy = y2-y1;
+  var len = Math.sqrt(dx*dx+dy*dy) || 1;
+  var nx = -dy/len, ny = dx/len;
+  var amp = Math.min(10, len*0.18);
+  var m1x = x1+dx*0.35+nx*amp, m1y = y1+dy*0.35+ny*amp;
+  var m2x = x1+dx*0.65-nx*amp, m2y = y1+dy*0.65-ny*amp;
+  ctx.beginPath();
+  ctx.moveTo(x1,y1);
+  ctx.lineTo(m1x,m1y);
+  ctx.lineTo(m2x,m2y);
+  ctx.lineTo(x2,y2);
+  ctx.stroke();
+  ctx.restore();
+}
+
+/* opts.empty·opts.selected 분기는 구 슬롯 모델(탭하면 채우는 빈 슬롯) 전용이었다 — 유일
+   호출부(renderCircuitBoard)는 {type, lit}만 넘기므로(LG3-15) 도달 불가 분기를 정리했다. */
+function drawNodeBox(ctx, x, y, opts){
+  var w = NODE_W, h = NODE_H, r = 10;
+  ctx.save();
+  roundRectPath(ctx, x-w/2, y-h/2, w, h, r);
+  ctx.fillStyle = opts.lit ? 'rgba(245,166,35,.16)' : '#ffffff';
+  ctx.fill();
+  ctx.lineWidth = 2;
+  ctx.strokeStyle = opts.lit ? '#f5a623' : '#0a0a0a';
+  ctx.stroke();
+  ctx.fillStyle = '#0a0a0a';
+  ctx.font = "700 13px 'Inter','Malgun Gothic',sans-serif";
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText(GATE_SYMBOL[opts.type] || opts.type, x, y-7);
+  ctx.font = "500 10px 'Inter','Malgun Gothic',sans-serif";
+  ctx.fillStyle = '#3a3a3a';
+  ctx.fillText(GATE_KOREAN[opts.type] || '', x, y+9);
+  ctx.restore();
+}
+
+function drawLamp(ctx, x, y, lit){
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(x,y,16,0,Math.PI*2);
+  ctx.fillStyle = lit ? '#f5a623' : '#e8e4d8';
+  ctx.fill();
+  ctx.lineWidth = 2;
+  ctx.strokeStyle = lit ? '#c97f0b' : '#98a2b1';
+  ctx.stroke();
+  ctx.fillStyle = lit ? '#5a3c05' : '#5c6570';
+  ctx.font = "800 12px 'Inter','Malgun Gothic',sans-serif";
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText(lit ? '1' : '0', x, y+1);
+  ctx.restore();
+}
+
+/* drawCbInput (AC-1, L7형 통일): renderCircuitBoard·PLUG_render이 공유하는 IN 노드 박스 —
+   DOM 스위치 카드(옛 Components.SwitchInput)를 캔버스 노드로 흡수해, 카드 실높이가 슬롯
+   높이를 넘어 다음 행과 겹치던 결함을 없앤다. opts:{id,value,desc,lit}. */
+function drawCbInput(ctx, x, y, opts){
+  ctx.save();
+  roundRectPath(ctx, x-CB_IN_W/2, y-CB_IN_H/2, CB_IN_W, CB_IN_H, 10);
+  ctx.fillStyle = opts.lit ? 'rgba(245,166,35,.18)' : '#ffffff';
+  ctx.strokeStyle = opts.lit ? '#f5a623' : '#0a0a0a'; ctx.lineWidth = 2; ctx.fill(); ctx.stroke();
+  ctx.fillStyle = '#0a0a0a'; ctx.font = "800 13px 'Inter','Malgun Gothic',sans-serif";
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText(opts.id + ' = ' + opts.value, x, y-9);
+  var descText = opts.desc || '탭해서 토글';
+  ctx.font = "500 10px 'Inter','Malgun Gothic',sans-serif";
+  if(ctx.measureText(descText).width > CB_IN_W-12) ctx.font = "500 9px 'Inter','Malgun Gothic',sans-serif";
+  ctx.fillStyle = '#6a6a6a';
+  ctx.fillText(descText, x, y+12);
+  drawPortDot(ctx, x+CB_IN_W/2, y, !!opts.lit);
+  ctx.restore();
+}
+function cbOutPortPos(n){ return {x: n.x + CB_IN_W/2, y: n.y}; }
+
+/* attachBoardNodeDrag(canvas, opts) — F2-B(2026-07-19) 함수명 고정(verify 정적 앵커):
+   renderCircuitBoard 캔버스의 IN/게이트/OUT 노드를 pointerdown 드래그로 옮긴다. opts:
+   {nodes, nodePos, cssW, cssH, redraw, onInputTap(id)}. 히트테스트는 nodes 역순(나중에 그린
+   노드가 topmost)으로 진행하고, 게이트는 NODE_W×NODE_H 박스, IN은 CB_IN_W×CB_IN_H 박스(L7형
+   통일로 DOM 스위치 카드를 캔버스 박스 노드로 흡수), OUT 램프는 반경 16을 쓴다. 이동이 6px
+   미만으로 끝난 IN 탭은 드래그가 아니라 스위치 토글로 보고 onInputTap(id)을 호출한다(배선
+   생성·삭제는 여전히 이 함수 밖 — 이동+토글만). 좌표는 canvas의 CSS 표시 크기가 내부 논리
+   크기(cssW/cssH)와 다를 수 있어 rect 스케일로 보정한다(SANDBOX localPos와 같은 패턴). 이동은
+   캔버스 내부로 clamp(드래그 시에만 계산 — resize 리스너는 추가하지 않는다). */
+function attachBoardNodeDrag(canvas, opts){
+  var nodePos = opts.nodePos, cssW = opts.cssW, cssH = opts.cssH, redraw = opts.redraw;
+  var halfOf = {}, typeOf = {};
+  opts.nodes.forEach(function(n){
+    typeOf[n.id] = n.type;
+    if(n.type === 'IN') halfOf[n.id] = {w:CB_IN_W/2, h:CB_IN_H/2};
+    else if(n.type === 'OUT') halfOf[n.id] = {w:16, h:16};
+    else halfOf[n.id] = {w: NODE_W/2, h: NODE_H/2};
+  });
+  function localPos(e){
+    var rect = canvas.getBoundingClientRect();
+    var scaleX = rect.width ? cssW/rect.width : 1, scaleY = rect.height ? cssH/rect.height : 1;
+    return {x:(e.clientX-rect.left)*scaleX, y:(e.clientY-rect.top)*scaleY};
+  }
+  function hitTest(x,y){
+    for(var i=opts.nodes.length-1;i>=0;i--){
+      var n = opts.nodes[i];
+      var p = nodePos[n.id], half = halfOf[n.id];
+      if(n.type==='OUT'){ if(Math.hypot(x-p.x,y-p.y) <= half.w) return n.id; }
+      else if(Math.abs(x-p.x)<=half.w && Math.abs(y-p.y)<=half.h) return n.id;
+    }
+    return null;
+  }
+  var drag = null;
+  canvas.style.touchAction = 'none';
+  canvas.addEventListener('pointerdown', function(e){
+    var pos = localPos(e);
+    var id = hitTest(pos.x, pos.y);
+    if(!id) return;
+    try{ canvas.setPointerCapture(e.pointerId); }catch(err){}
+    var p = nodePos[id];
+    drag = {id:id, offX:pos.x-p.x, offY:pos.y-p.y, startX:pos.x, startY:pos.y};
+  });
+  canvas.addEventListener('pointermove', function(e){
+    if(!drag) return;
+    var pos = localPos(e);
+    var p = nodePos[drag.id], half = halfOf[drag.id];
+    p.x = Math.max(half.w, Math.min(cssW-half.w, pos.x-drag.offX));
+    p.y = Math.max(half.h, Math.min(cssH-half.h, pos.y-drag.offY));
+    redraw();
+  });
+  canvas.addEventListener('pointerup', function(e){
+    if(!drag) return;
+    var pos = localPos(e);
+    var moveDist = Math.hypot(pos.x-drag.startX, pos.y-drag.startY);
+    var id = drag.id;
+    drag = null;
+    if(moveDist < 6 && typeOf[id] === 'IN' && opts.onInputTap) opts.onInputTap(id);
+  });
+}
+
+/* CircuitBoard: 회로 캔버스 렌더(L7형 통일 — IN 스위치는 DOM 카드가 아니라 drawCbInput 박스
+   노드다. 탭 토글은 attachBoardNodeDrag의 onInputTap, 키보드 토글은 attachSwitchCursor). */
+function renderCircuitBoard(container, circuit, opts){
+  opts = opts || {};
+  var board = el('div', {class:'circuit-board'});
+  var switchVals = opts.switchVals || {};
+  circuit.inputs.forEach(function(id){ if(switchVals[id] == null) switchVals[id] = 0; });
+  var canvasWrap = el('div', {class:'circuit-canvas-wrap'});
+  var pos = CIRCUIT.layout(circuit);
+  var maxLayer = 0, maxRow = circuit.inputs.length-1;
+  circuit.nodes.forEach(function(n){ if(pos[n.id].layer>maxLayer) maxLayer=pos[n.id].layer; if(pos[n.id].row>maxRow) maxRow=pos[n.id].row; });
+  var cssW = PAD*2 + maxLayer*COL_W + 20;
+  var cssH = Math.max((maxRow+1)*ROW_H, ROW_H);
+  var canvas = el('canvas', {tabindex:'0', 'aria-label':'회로판. 화살표 키로 스위치를 고르고 Enter나 Space로 켜고 끌 수 있어요. 마우스나 손가락으로 노드를 옮길 수도 있어요.'});
+  canvasWrap.appendChild(canvas);
+  var ctx = setupCanvasHiDPI(canvas, cssW, cssH);
+
+  /* F2-B(2026-07-19): nodePos는 CIRCUIT.layout() 결과(pos)를 초기값으로 하는 인스턴스 가변
+     맵 — attachBoardNodeDrag가 드래그로 갱신한다. xyOf는 이 맵만 읽는다(레이아웃 직접 참조
+     없음). 자동배치 초기값·cssW/cssH 산정식(위 pos·maxLayer/maxRow 계산)은 무변경. */
+  var nodePos = {};
+  circuit.nodes.forEach(function(n){
+    var p = pos[n.id];
+    nodePos[n.id] = {x: PAD + p.layer*COL_W, y: p.row*ROW_H + ROW_H/2};
+  });
+  function xyOf(id){ return nodePos[id]; }
+  function byIdType(id){ for(var i=0;i<circuit.nodes.length;i++){ if(circuit.nodes[i].id===id) return circuit.nodes[i].type; } return null; }
+  function toggleSwitch(id){
+    switchVals[id] = switchVals[id] ? 0 : 1;
+    if(opts.onSwitchChange) opts.onSwitchChange(id, switchVals[id], switchVals);
+    redraw();
+    announce('스위치 ' + id + ' = ' + switchVals[id]);
+  }
+  var canvasFocused = false;
+  canvas.addEventListener('focus', function(){ canvasFocused = true; redraw(); });
+  canvas.addEventListener('blur', function(){ canvasFocused = false; redraw(); });
+  var switchCursor = attachSwitchCursor(canvas, {
+    isActive: function(){ return true; },
+    listIds: function(){ return circuit.inputs; },
+    onSelect: function(id){ redraw(); announce('스위치 커서: ' + id + '. Enter나 Space로 토글, 화살표로 이동.'); },
+    onToggle: function(id){ toggleSwitch(id); }
+  });
+  function redraw(){
+    var values;
+    try{ values = CIRCUIT.evaluate(circuit, switchVals); }catch(e){ values = {}; }
+    ctx.clearRect(0,0,cssW,cssH);
+    circuit.nodes.forEach(function(n){
+      n.inputs.forEach(function(srcId){
+        if(srcId==null) return;
+        var a = xyOf(srcId), b = xyOf(n.id);
+        var lit = values[srcId] === 1;
+        drawWire(ctx, a.x+ (byIdType(srcId)==='IN'?CB_IN_W/2:NODE_W/2), a.y, b.x-(n.type==='OUT'?16:NODE_W/2), b.y, lit);
+      });
+    });
+    circuit.nodes.forEach(function(n){
+      var p = xyOf(n.id);
+      if(n.type === 'IN'){
+        drawCbInput(ctx, p.x, p.y, {id:n.id, value: switchVals[n.id], desc: opts.switchDesc ? opts.switchDesc[n.id] : null, lit: values[n.id]===1});
+      }
+      else if(n.type === 'OUT'){ drawLamp(ctx, p.x, p.y, values[n.id]===1); }
+      else { drawNodeBox(ctx, p.x, p.y, {type:n.type, lit: values[n.id]===1}); }
+    });
+    if(canvasFocused) drawSwitchCursorRing(ctx, xyOf(switchCursor.getCursorId()), CB_IN_W, CB_IN_H);
+    if(opts.onValues) opts.onValues(values);
+  }
+
+  board.appendChild(canvasWrap);
+  container.appendChild(board);
+  redraw();
+  attachBoardNodeDrag(canvas, {nodes: circuit.nodes, nodePos: nodePos, cssW: cssW, cssH: cssH, redraw: redraw, onInputTap: toggleSwitch});
+  setTimeout(function(){ fitBoardCssWidth(canvas, canvasWrap, cssW, cssH); }, 0);
+  return {redraw: redraw, getValues: function(){ try{ return CIRCUIT.evaluate(circuit, switchVals); }catch(e){ return {}; } }, switchVals: switchVals};
+}
+
+/* ============================================================
+   8) TRUTH — 진리표 위젯 (채우기 / 비교 / 표시)
+   ============================================================ */
+var TRUTH = {
+  rows: function(k){
+    var rows = [];
+    for(var i=0;i<(1<<k);i++){
+      var bits = []; for(var j=0;j<k;j++) bits.push((i>>(k-1-j))&1);
+      rows.push(bits);
+    }
+    return rows;
+  },
+  renderFillTable: function(container, inputIds, fillStore, answerFn){
+    var rows = TRUTH.rows(inputIds.length);
+    var wrap = el('div', {class:'truth-wrap'});
+    var table = el('table', {class:'truth-table'});
+    var thead = el('tr', {});
+    /* LG3-04: 진리표 헤더의 변수(A·B·C)는 KaTeX 적용 대상(§A3) — DOM 텍스트만. */
+    inputIds.forEach(function(id){ thead.appendChild(el('th', {'data-katex': id})); });
+    thead.appendChild(el('th', {}, '출력'));
+    table.appendChild(thead);
+    var cellApis = [];
+    rows.forEach(function(bits, idx){
+      var tr = el('tr', {});
+      bits.forEach(function(b){ tr.appendChild(el('td', {class:'in-cell'}, String(b))); });
+      var saved = fillStore[idx];
+      var v = (saved===0||saved===1) ? saved : null;
+      var td = el('td', {class:'out-cell'});
+      var btn = el('button', {type:'button', class:'truth-cell' + (v==null?' unset':''), 'aria-label':'출력 값 입력, 현재 ' + (v==null?'미입력':v)}, v==null?'?':String(v));
+      (function(idx, btn){
+        function setVal(nv){
+          v = nv;
+          fillStore[idx] = nv;
+          btn.textContent = nv==null?'?':String(nv);
+          btn.classList.toggle('unset', nv==null);
+          btn.setAttribute('aria-label','출력 값 입력, 현재 ' + (nv==null?'미입력':nv));
+          STATE.save();
+        }
+        btn.addEventListener('click', function(){ setVal(v==null?0:(v===0?1:0)); });
+        btn.addEventListener('keydown', function(e){
+          if(e.key==='0'){ e.preventDefault(); setVal(0); }
+          else if(e.key==='1'){ e.preventDefault(); setVal(1); }
+        });
+        cellApis.push({idx:idx, tr:tr, getVal:function(){return v;}, setVal:setVal, btn:btn});
+      })(idx, btn);
+      td.appendChild(btn);
+      tr.appendChild(td);
+      table.appendChild(tr);
+    });
+    wrap.appendChild(table);
+    container.appendChild(wrap);
+    renderMath(wrap); /* LG3-04: 헤더 data-katex 렌더 */
+    return {
+      /* onWrongRow(bits, idx) — 오답 행마다 호출(값을 null로 비우기 직전). 기존 호출부(인자 없이
+         check())는 그대로 동작(§9.3 재사용). F1(L3 OR 오개념 피드백)이 이 훅으로 (1,1)행 오답
+         여부를 판별한다 — 그 외 채점 판정 자체(득/오답 기준)는 그대로다. */
+      check: function(onWrongRow){
+        var allCorrect = true;
+        cellApis.forEach(function(c){
+          var bits = rows[c.idx];
+          var ans = answerFn(bits);
+          var got = c.getVal();
+          if(got === ans){
+            c.tr.classList.add('truth-row-correct');
+            c.tr.classList.remove('truth-row-wrong');
+            FX.pop(c.btn);
+          } else {
+            allCorrect = false;
+            c.tr.classList.remove('truth-row-correct');
+            c.tr.classList.add('truth-row-wrong');
+            FX.shake(c.tr);
+            if(onWrongRow) onWrongRow(bits, c.idx);
+            c.setVal(null);
+          }
+        });
+        return allCorrect;
+      }
+    };
+  },
+  renderCompareTable: function(container, inputIds, targetFn, currentFn){
+    var rows = TRUTH.rows(inputIds.length);
+    var wrap = el('div', {class:'truth-wrap'});
+    var table = el('table', {class:'truth-table'});
+    var thead = el('tr', {});
+    /* LG3-04: 진리표 헤더의 변수(A·B·C)는 KaTeX 적용 대상(§A3) — DOM 텍스트만. */
+    inputIds.forEach(function(id){ thead.appendChild(el('th', {'data-katex': id})); });
+    thead.appendChild(el('th', {}, '목표'));
+    thead.appendChild(el('th', {}, '현재'));
+    thead.appendChild(el('th', {}, '결과'));
+    table.appendChild(thead);
+    var allMatch = true;
+    rows.forEach(function(bits){
+      var tr = el('tr', {});
+      bits.forEach(function(b){ tr.appendChild(el('td', {class:'in-cell'}, String(b))); });
+      var t = targetFn(bits);
+      var c = currentFn(bits);
+      tr.appendChild(el('td', {}, el('span', {class:'truth-cell target-cell'}, String(t))));
+      var match = (t===c);
+      if(!match) allMatch = false;
+      tr.appendChild(el('td', {}, el('span', {class:'truth-cell ' + (match?'current-match':'current-mismatch')}, String(c))));
+      /* 색만으로 O/X를 구분하지 않도록(a11y) 기호도 함께 표시한다(개정 §B L6 "행별 O/X"). */
+      tr.appendChild(el('td', {}, el('span', {class:'truth-cell ' + (match?'current-match':'current-mismatch')}, match?'O':'X')));
+      table.appendChild(tr);
+    });
+    wrap.appendChild(table);
+    container.appendChild(wrap);
+    renderMath(wrap); /* LG3-04: 헤더 data-katex 렌더 */
+    return {allMatch: allMatch};
+  },
+  renderDisplayTable: function(container, inputIds, currentFn){
+    var rows = TRUTH.rows(inputIds.length);
+    var wrap = el('div', {class:'truth-wrap'});
+    var table = el('table', {class:'truth-table'});
+    var thead = el('tr', {});
+    /* LG3-04: 진리표 헤더의 변수(A·B·C)는 KaTeX 적용 대상(§A3) — DOM 텍스트만. */
+    inputIds.forEach(function(id){ thead.appendChild(el('th', {'data-katex': id})); });
+    thead.appendChild(el('th', {}, '출력'));
+    table.appendChild(thead);
+    /* rowEls(LG3-06): 호출부가 원하면 행 엘리먼트를 받아 자체 상호작용(행↔점 하이라이트 등)을
+       걸 수 있다 — 기존 호출부(반환값 미사용)는 그대로 무변경 동작. */
+    var rowEls = [];
+    rows.forEach(function(bits){
+      var tr = el('tr', {});
+      bits.forEach(function(b){ tr.appendChild(el('td', {class:'in-cell'}, String(b))); });
+      tr.appendChild(el('td', {}, el('span', {class:'truth-cell target-cell'}, String(currentFn(bits)))));
+      table.appendChild(tr);
+      rowEls.push(tr);
+    });
+    wrap.appendChild(table);
+    container.appendChild(wrap);
+    renderMath(wrap); /* LG3-04: 헤더 data-katex 렌더 */
+    return {rows: rows, rowEls: rowEls};
+  }
+};
+
+/* ============================================================
+   9) SANDBOX — 자유 놀이터 (자유 배치·배선 + 실시간 진리표·논리식)
+   (구 BUILD — 고정 배선+슬롯 게이트 종류 순환+즉시 자동채점 모델은 개정 §B L6/L9에서
+   제거됐다. 대체 = 아래 PLUG[개념 화면]·PUZZLE[L6·L9, SANDBOX 아래 정의]가 맡는다.)
+   ============================================================ */
+/* attachDeleteCursor (개정 §0-3 준수, ai-thinking 보드 커서 패턴 반영): 삭제 모드에서 배선이
+   아닌 조작(노드 삭제)은 키보드로도 가능해야 한다. 삭제 모드가 켜진 상태로 캔버스에 포커스가
+   있으면 화살표로 "삭제 커서"를 옮기고 Enter/Delete/Backspace로 커서가 가리키는 노드를 지운다.
+   L7 SANDBOX·L6/L9 PUZZLE이 공용으로 쓴다(호출부가 삭제 가능한 id 목록을 정의). */
+function attachDeleteCursor(canvas, opts){
+  var cursorIdx = 0;
+  canvas.addEventListener('keydown', function(e){
+    if(!opts.isActive()) return;
+    var ids = opts.listIds();
+    if(!ids.length) return;
+    if(cursorIdx >= ids.length) cursorIdx = 0;
+    if(e.key === 'ArrowRight' || e.key === 'ArrowDown'){
+      e.preventDefault(); cursorIdx = (cursorIdx+1) % ids.length; opts.onSelect(ids[cursorIdx]);
+    } else if(e.key === 'ArrowLeft' || e.key === 'ArrowUp'){
+      e.preventDefault(); cursorIdx = (cursorIdx-1+ids.length) % ids.length; opts.onSelect(ids[cursorIdx]);
+    } else if(e.key === 'Enter' || e.key === 'Delete' || e.key === 'Backspace'){
+      e.preventDefault();
+      var id = ids[cursorIdx];
+      cursorIdx = 0;
+      opts.onDelete(id);
+    }
+  });
+  return {
+    getCursorId: function(){ var ids = opts.listIds(); if(!ids.length) return null; if(cursorIdx>=ids.length) cursorIdx=0; return ids[cursorIdx]; },
+    reset: function(){ cursorIdx = 0; }
+  };
+}
+
+/* attachSwitchCursor (LG3-01 수정 — §0-3 예외는 "배선(포트 연결)"에만 적용되고 스위치 토글은
+   키보드 유지 대상인데, PUZZLE·SANDBOX 캔버스는 포인터(탭)로만 IN 노드를 토글할 수 있었다.
+   attachDeleteCursor와 같은 화살표+Enter 커서 패턴을, 삭제 모드가 꺼져 있을 때 켜서 IN
+   노드(스위치)만 순회·토글한다. 배선 자체(포트 드래그/탭-탭)는 그대로 포인터 전용. */
+function attachSwitchCursor(canvas, opts){
+  var cursorIdx = 0;
+  canvas.addEventListener('keydown', function(e){
+    if(!opts.isActive()) return;
+    var ids = opts.listIds();
+    if(!ids.length) return;
+    if(cursorIdx >= ids.length) cursorIdx = 0;
+    if(e.key === 'ArrowRight' || e.key === 'ArrowDown'){
+      e.preventDefault(); cursorIdx = (cursorIdx+1) % ids.length; opts.onSelect(ids[cursorIdx]);
+    } else if(e.key === 'ArrowLeft' || e.key === 'ArrowUp'){
+      e.preventDefault(); cursorIdx = (cursorIdx-1+ids.length) % ids.length; opts.onSelect(ids[cursorIdx]);
+    } else if(e.key === 'Enter' || e.key === ' '){
+      e.preventDefault();
+      opts.onToggle(ids[cursorIdx]);
+    }
+  });
+  return {
+    getCursorId: function(){ var ids = opts.listIds(); if(!ids.length) return null; if(cursorIdx>=ids.length) cursorIdx=0; return ids[cursorIdx]; },
+    reset: function(){ cursorIdx = 0; }
+  };
+}
+
+var SANDBOX_LABELS = ['A','B','C','D','E','F'];
+var SANDBOX_MAX_NODES = 12;
+var SBOX_W = 92, SBOX_H = 46;
+
+function initSandboxNodes(){
+  /* 좌표는 정사각 보드(G2-B, cssW=cssH=460) 기준으로 배치 */
+  return [
+    {id:'A', type:'IN', inputs:[], value:0, x:56, y:56},
+    {id:'B', type:'IN', inputs:[], value:0, x:56, y:140},
+    {id:'OUT', type:'OUT', inputs:[null], x:380, y:230}
+  ];
+}
+function sbDist(x1,y1,x2,y2){ return Math.sqrt((x1-x2)*(x1-x2)+(y1-y2)*(y1-y2)); }
+function sbInPortPos(node, idx){
+  var arity = GATE_ARITY[node.type];
+  var spacing = SBOX_H / (arity+1);
+  return {x: node.x - SBOX_W/2, y: node.y - SBOX_H/2 + spacing*(idx+1)};
+}
+function sbOutPortPos(node){
+  if(node.type === 'OUT') return null;
+  return {x: node.x + SBOX_W/2, y: node.y};
+}
+function drawPortDot(ctx,x,y,active){
+  ctx.beginPath(); ctx.arc(x,y,5,0,Math.PI*2);
+  ctx.fillStyle = active ? '#f5a623' : '#ffffff';
+  ctx.strokeStyle = '#0a0a0a'; ctx.lineWidth = 1.5;
+  ctx.fill(); ctx.stroke();
+}
+/* 삭제 모드 키보드 커서 강조(attachDeleteCursor와 짝) — 기존 노드 draw 함수 서명은 건드리지
+   않고, 그린 뒤 위에 점선 링만 덧그린다. */
+function drawDeleteCursorRing(ctx, n){
+  if(!n) return;
+  ctx.save();
+  ctx.strokeStyle = '#e5484d'; ctx.lineWidth = 3; ctx.setLineDash([5,3]);
+  if(n.type === 'OUT'){ ctx.beginPath(); ctx.arc(n.x, n.y, 24, 0, Math.PI*2); ctx.stroke(); }
+  else { roundRectPath(ctx, n.x-SBOX_W/2-4, n.y-SBOX_H/2-4, SBOX_W+8, SBOX_H+8, 12); ctx.stroke(); }
+  ctx.restore();
+}
+/* 스위치(IN 노드) 키보드 커서 강조(attachSwitchCursor와 짝, LG3-01) — 파란 점선 링으로
+   삭제 커서(빨강)와 색을 구분한다. w/h 생략 시 SANDBOX·PUZZLE의 SBOX_W/SBOX_H(기존 호출부
+   무변경) — renderCircuitBoard·PLUG_render는 CB_IN_W/CB_IN_H를 넘겨 IN 박스 크기에 맞춘다. */
+function drawSwitchCursorRing(ctx, n, w, h){
+  if(!n) return;
+  w = w || SBOX_W; h = h || SBOX_H;
+  ctx.save();
+  ctx.strokeStyle = '#2f6df0'; ctx.lineWidth = 3; ctx.setLineDash([5,3]);
+  roundRectPath(ctx, n.x-w/2-4, n.y-h/2-4, w+8, h+8, 12); ctx.stroke();
+  ctx.restore();
+}
+function drawSbInput(ctx, n, lit){
+  ctx.save();
+  roundRectPath(ctx, n.x-SBOX_W/2, n.y-SBOX_H/2, SBOX_W, SBOX_H, 10);
+  ctx.fillStyle = lit ? 'rgba(245,166,35,.18)' : '#ffffff';
+  ctx.strokeStyle = lit ? '#f5a623' : '#0a0a0a'; ctx.lineWidth = 2; ctx.fill(); ctx.stroke();
+  ctx.fillStyle = '#0a0a0a'; ctx.font = "800 13px 'Inter','Malgun Gothic',sans-serif";
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText(n.id + ' = ' + n.value, n.x, n.y-6);
+  ctx.font = "500 10px 'Inter','Malgun Gothic',sans-serif"; ctx.fillStyle = '#6a6a6a';
+  ctx.fillText('탭해서 토글', n.x, n.y+10);
+  var op = sbOutPortPos(n);
+  drawPortDot(ctx, op.x, op.y, lit);
+  ctx.restore();
+}
+function drawSbGate(ctx, n, lit, isArmed){
+  ctx.save();
+  roundRectPath(ctx, n.x-SBOX_W/2, n.y-SBOX_H/2, SBOX_W, SBOX_H, 10);
+  ctx.fillStyle = lit ? 'rgba(245,166,35,.18)' : '#ffffff';
+  ctx.lineWidth = isArmed ? 3 : 2;
+  ctx.strokeStyle = isArmed ? '#2f6df0' : (lit ? '#f5a623' : '#0a0a0a');
+  ctx.fill(); ctx.stroke();
+  ctx.fillStyle = '#0a0a0a'; ctx.font = "800 13px 'Inter','Malgun Gothic',sans-serif";
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText(GATE_SYMBOL[n.type], n.x, n.y-6);
+  ctx.font = "500 10px 'Inter','Malgun Gothic',sans-serif"; ctx.fillStyle = '#6a6a6a';
+  ctx.fillText(GATE_KOREAN[n.type] || '', n.x, n.y+10);
+  var arity = GATE_ARITY[n.type];
+  for(var k=0;k<arity;k++){ var ip = sbInPortPos(n,k); drawPortDot(ctx, ip.x, ip.y, n.inputs[k]!=null); }
+  var op = sbOutPortPos(n);
+  drawPortDot(ctx, op.x, op.y, lit);
+  ctx.restore();
+}
+function drawSbOutput(ctx, n, lit){
+  ctx.save();
+  ctx.beginPath(); ctx.arc(n.x, n.y, 20, 0, Math.PI*2);
+  ctx.fillStyle = lit ? '#f5a623' : '#e8e4d8'; ctx.fill();
+  ctx.lineWidth = 2; ctx.strokeStyle = lit ? '#c97f0b' : '#98a2b1'; ctx.stroke();
+  ctx.fillStyle = lit ? '#5a3c05' : '#5c6570'; ctx.font = "800 13px 'Inter','Malgun Gothic',sans-serif";
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText(lit ? '1' : '0', n.x, n.y);
+  ctx.font = "600 10px 'Inter','Malgun Gothic',sans-serif"; ctx.fillStyle = '#3a3a3a';
+  ctx.fillText('출력', n.x, n.y+32);
+  var ip = sbInPortPos(n,0);
+  drawPortDot(ctx, ip.x, ip.y, n.inputs[0]!=null);
+  ctx.restore();
+}
+function deriveExprSubstituted(circuit, values){
+  var byId = {}; circuit.nodes.forEach(function(n){ byId[n.id]=n; });
+  function go(nodeId){
+    if(nodeId==null) return '?';
+    var n = byId[nodeId];
+    if(n.type==='IN') return String(values[n.id]);
+    if(n.type==='OUT') return n.inputs[0]!=null ? go(n.inputs[0]) : '?';
+    var ins = n.inputs;
+    if(n.type==='NOT'){ var x = ins[0]!=null?go(ins[0]):'?'; return 'NOT ' + x; }
+    var l = ins[0]!=null?go(ins[0]):'?';
+    var r = ins.length>1 && ins[1]!=null?go(ins[1]):'?';
+    if(n.type==='AND') return '(' + l + ' AND ' + r + ')';
+    if(n.type==='OR') return '(' + l + ' OR ' + r + ')';
+    if(n.type==='XOR') return '(' + l + ' XOR ' + r + ')';
+    if(n.type==='NAND') return 'NOT (' + l + ' AND ' + r + ')';
+    if(n.type==='NOR') return 'NOT (' + l + ' OR ' + r + ')';
+    return '?';
+  }
+  return rootStrip(go(circuit.output));
+}
+
+var SANDBOX = {
+  render: function(container){
+    var st = STATE.screen('L7');
+    if(!st.nodes){ st.nodes = initSandboxNodes(); st.nextNum = 1; STATE.save(); }
+    var nodes = st.nodes;
+    var deleteMode = false;
+
+    /* 1뷰포트(개정 §B L7): 정사각 보드(왼쪽)+실시간 진리표(오른쪽) 병치, 논리식 바는 하단 전체폭.
+       game-layout은 부모 .screen이 .pane-game으로 flex-column화될 때 남는 공간을 채운다
+       (mod.gameLayout=true, ROUTER가 배선). */
+    var wrap = el('div', {class:'sandbox-wrap', style:{flex:'1', minHeight:'0'}});
+    var layout = el('div', {class:'game-layout'});
+    var boardArea = el('div', {class:'game-board-area', style:{flexDirection:'column', gap:'8px'}});
+    var panelArea = el('div', {class:'game-panel-area'});
+
+    var toolbar = el('div', {class:'sandbox-toolbar'});
+    ['AND','OR','NOT','XOR','NAND','NOR'].forEach(function(t){
+      var b = el('button', {type:'button', class:'btn btn-secondary btn-sm'}, '+ ' + t);
+      b.addEventListener('click', function(){ addGate(t); });
+      toolbar.appendChild(b);
+    });
+    var addInBtn = el('button', {type:'button', class:'btn btn-secondary btn-sm'}, '+ 입력');
+    addInBtn.addEventListener('click', function(){ addInput(); });
+    toolbar.appendChild(addInBtn);
+    /* 노드 삭제(개정 §B L7): 보드 밖 별도 목록 대신 툴바의 삭제 모드 토글 + 보드 위에서 직접 탭 */
+    var delBtn = el('button', {type:'button', class:'btn btn-secondary btn-sm', 'aria-pressed':'false'}, '🗑 삭제');
+    delBtn.addEventListener('click', function(){
+      deleteMode = !deleteMode;
+      delBtn.setAttribute('aria-pressed', deleteMode ? 'true' : 'false');
+      delBtn.classList.toggle('btn-primary', deleteMode);
+      delBtn.classList.toggle('btn-secondary', !deleteMode);
+      delBtn.textContent = deleteMode ? '🗑 삭제 모드 (다시 눌러 종료)' : '🗑 삭제';
+      /* 키보드 경로(§0-3): 삭제 모드를 켜면 커서를 처음으로 돌리고 캔버스에 포커스해
+         화살표+Enter로 바로 노드를 지울 수 있게 한다(ai-thinking 보드 커서 패턴). */
+      delCursor.reset();
+      if(deleteMode){ canvas.focus(); toast('지울 노드를 보드에서 탭하거나, 화살표로 고르고 Enter를 누르세요.'); }
+      else toast('삭제 모드를 종료했어요.');
+      drawCanvas();
+    });
+    toolbar.appendChild(delBtn);
+    var resetBtn = el('button', {type:'button', class:'btn btn-ghost btn-sm'}, '보드 초기화');
+    resetBtn.addEventListener('click', function(){
+      st.nodes = initSandboxNodes(); st.nextNum = 1; nodes = st.nodes; STATE.save(); renderAll();
+    });
+    toolbar.appendChild(resetBtn);
+    boardArea.appendChild(toolbar);
+
+    var canvasWrapEl = el('div', {class:'sandbox-canvas-wrap'});
+    var canvas = el('canvas', {tabindex:'0', 'aria-label':'자유 회로판. 마우스나 손가락으로 게이트를 옮기고 연결하세요. 삭제 모드가 아니면 화살표로 스위치를 고르고 Enter나 Space로 토글할 수 있습니다. 삭제 모드에서는 탭한 노드가 제거되고, 화살표로 노드를 고른 뒤 Enter로도 지울 수 있습니다.'});
+    canvasWrapEl.appendChild(canvas);
+    boardArea.appendChild(canvasWrapEl);
+    var cssW = 460, cssH = 460; /* 정사각 보드(A1 원칙) */
+    var ctx = setupCanvasHiDPI(canvas, cssW, cssH);
+
+    var symBtn = el('button', {type:'button', class:'btn btn-ghost btn-sm'}, st.symbolic ? '기호 끄기 (∧∨¬⊕ → 이름)' : '기호로 보기 (AND∨OR → ∧∨¬⊕)');
+    symBtn.addEventListener('click', function(){
+      st.symbolic = !st.symbolic; STATE.save();
+      symBtn.textContent = st.symbolic ? '기호 끄기 (∧∨¬⊕ → 이름)' : '기호로 보기 (AND∨OR → ∧∨¬⊕)';
+      refreshExpr();
+    });
+    panelArea.appendChild(el('div', {class:'btn-row', style:{margin:'0 0 4px'}}, symBtn));
+    var truthHost = el('div', {class:'screen-block', style:{margin:'0'}});
+    panelArea.appendChild(truthHost);
+
+    layout.appendChild(boardArea);
+    layout.appendChild(panelArea);
+    wrap.appendChild(layout);
+
+    var exprBar = el('div', {class:'expr-bar'});
+    var exprValueLine = el('div', {class:'muted', style:{marginTop:'4px', fontSize:'13px'}});
+    wrap.appendChild(exprBar);
+    wrap.appendChild(exprValueLine);
+
+    container.appendChild(wrap);
+    /* LIVE-1: 이 시점엔 root(=이 컨테이너)가 아직 문서에 붙지 않은 경우가 있다(L6/L7가
+       showStage/SANDBOX.render를 부모의 root.appendChild(s) 전에 호출) — clientHeight가 0으로
+       측정돼 축소가 스킵된다. setTimeout(0)으로 현재 동기 호출 스택(부모의 appendChild 포함)이
+       끝난 뒤로 미루면 실측이 정확하다 — 백그라운드 탭에서도 rAF처럼 억제되지 않는다. */
+    setTimeout(function(){ fitSquareBoardCss(canvas, boardArea, cssW, toolbar.offsetHeight + 8); }, 0);
+
+    var armed = null;
+    var dragging = null;
+    var pdStart = null;
+
+    function byId(id){ for(var i=0;i<nodes.length;i++){ if(nodes[i].id===id) return nodes[i]; } return null; }
+    function currentInputIds(){ return nodes.filter(function(n){ return n.type==='IN'; }).map(function(n){ return n.id; }); }
+    function toCircuit(){
+      return {
+        nodes: nodes.map(function(n){ return {id:n.id, type:n.type, inputs:n.inputs.slice()}; }),
+        inputs: currentInputIds(),
+        output: 'OUT'
+      };
+    }
+    function switchValsFromNodes(){
+      var sw = {}; nodes.forEach(function(n){ if(n.type==='IN') sw[n.id]=n.value; }); return sw;
+    }
+    function addInput(){
+      var used = {}; nodes.forEach(function(n){ if(n.type==='IN') used[n.id]=true; });
+      var label = null;
+      for(var i=0;i<SANDBOX_LABELS.length;i++){ if(!used[SANDBOX_LABELS[i]]){ label = SANDBOX_LABELS[i]; break; } }
+      if(!label){ toast('입력은 최대 ' + SANDBOX_LABELS.length + '개까지예요.'); return; }
+      if(nodes.length >= SANDBOX_MAX_NODES){ toast('노드는 최대 ' + SANDBOX_MAX_NODES + '개까지예요.'); return; }
+      nodes.push({id:label, type:'IN', inputs:[], value:0, x:56, y:56 + currentInputIds().length*74});
+      saveAndRebuild();
+    }
+    function addGate(type){
+      if(nodes.length >= SANDBOX_MAX_NODES){ toast('노드는 최대 ' + SANDBOX_MAX_NODES + '개까지예요.'); return; }
+      var arity = GATE_ARITY[type];
+      var id = 'N' + (st.nextNum++);
+      var gateCount = nodes.filter(function(n){ return n.type!=='IN' && n.type!=='OUT'; }).length;
+      var gx = 190 + (gateCount % 3) * 86;
+      var gy = 56 + Math.floor(gateCount / 3) * 74;
+      var ins = []; for(var i=0;i<arity;i++) ins.push(null);
+      nodes.push({id:id, type:type, inputs:ins, x:gx, y:gy});
+      saveAndRebuild();
+    }
+    function removeNode(id){
+      if(id === 'OUT') return;
+      nodes = nodes.filter(function(n){ return n.id !== id; });
+      nodes.forEach(function(n){ n.inputs = n.inputs.map(function(x){ return x===id ? null : x; }); });
+      st.nodes = nodes;
+      saveAndRebuild();
+    }
+    function toggleInput(id){
+      var n = byId(id);
+      n.value = n.value ? 0 : 1;
+      saveAndRebuild();
+    }
+    function connect(fromId, toId, portIdx){
+      if(fromId === toId) return false;
+      var toNode = byId(toId);
+      if(!toNode) return false;
+      var arity = GATE_ARITY[toNode.type];
+      if(portIdx == null || portIdx >= arity) return false;
+      if(wouldCreateCycle(toCircuit(), {from:fromId, to:toId})){ toast('연결하면 회로가 순환해요. 다른 곳에 연결해 보세요.'); return false; }
+      toNode.inputs[portIdx] = fromId;
+      saveAndRebuild();
+      FX.pop(canvasWrapEl); /* LG3-05: 확정 통통 모션(§1-5) */
+      return true;
+    }
+    function saveAndRebuild(){ st.nodes = nodes; STATE.save(); renderAll(); }
+    /* 삭제 모드 키보드 커서(§0-3 준수) — OUT을 제외한 전 노드가 삭제 대상(v1부터 IN도 삭제 가능). */
+    var delCursor = attachDeleteCursor(canvas, {
+      isActive: function(){ return deleteMode; },
+      listIds: function(){ return nodes.filter(function(n){ return n.type!=='OUT'; }).map(function(n){ return n.id; }); },
+      onSelect: function(id){ drawCanvas(); announce('삭제 커서: ' + id + '. Enter로 삭제, 화살표로 이동.'); },
+      onDelete: function(id){ announce(id + ' 삭제됨.'); removeNode(id); }
+    });
+    /* 스위치 토글 키보드 커서(§0-3 준수, LG3-01) — 삭제 모드가 아닐 때만 활성. */
+    var switchCursor = attachSwitchCursor(canvas, {
+      isActive: function(){ return !deleteMode; },
+      listIds: currentInputIds,
+      onSelect: function(id){ drawCanvas(); announce('스위치 커서: ' + id + '. Enter나 Space로 토글, 화살표로 이동.'); },
+      onToggle: function(id){ toggleInput(id); }
+    });
+    var canvasFocused = false;
+    canvas.addEventListener('focus', function(){ canvasFocused = true; drawCanvas(); });
+    canvas.addEventListener('blur', function(){ canvasFocused = false; drawCanvas(); });
+
+    function hitPort(x,y){
+      for(var i=0;i<nodes.length;i++){
+        var n = nodes[i];
+        if(n.type !== 'OUT'){
+          var op = sbOutPortPos(n);
+          if(op && sbDist(x,y,op.x,op.y) <= 11) return {nodeId:n.id, kind:'out'};
+        }
+        var arity = GATE_ARITY[n.type];
+        for(var k=0;k<arity;k++){
+          var ip = sbInPortPos(n,k);
+          if(sbDist(x,y,ip.x,ip.y) <= 11) return {nodeId:n.id, kind:'in', portIdx:k};
+        }
+      }
+      return null;
+    }
+    function hitBody(x,y){
+      for(var i=nodes.length-1;i>=0;i--){
+        var n = nodes[i];
+        if(Math.abs(x-n.x) <= SBOX_W/2 && Math.abs(y-n.y) <= SBOX_H/2) return n.id;
+      }
+      return null;
+    }
+    function localPos(e){
+      var rect = canvas.getBoundingClientRect();
+      /* LIVE-1: 저높이 뷰포트에서 fitSquareBoardCss가 canvas CSS 표시 크기를 줄이므로
+         (내부 논리 좌표 cssW/cssH는 그대로), rect가 그보다 작으면 그 비율만큼 되돌린다. */
+      var scaleX = rect.width ? cssW/rect.width : 1, scaleY = rect.height ? cssH/rect.height : 1;
+      return {x: (e.clientX-rect.left)*scaleX, y: (e.clientY-rect.top)*scaleY};
+    }
+
+    function drawCanvas(){
+      var circuit = toCircuit();
+      var values = {};
+      try{ values = CIRCUIT.evaluate(circuit, switchValsFromNodes()); }catch(e){ values = {}; }
+      ctx.clearRect(0,0,cssW,cssH);
+      nodes.forEach(function(n){
+        n.inputs.forEach(function(srcId, idx){
+          if(srcId==null) return;
+          var src = byId(srcId);
+          if(!src) return;
+          var op = sbOutPortPos(src);
+          var ip = sbInPortPos(n, idx);
+          drawWire(ctx, op.x, op.y, ip.x, ip.y, values[srcId]===1);
+        });
+      });
+      if(dragging && dragging.kind === 'wire'){
+        var src = byId(dragging.fromId);
+        var op = sbOutPortPos(src);
+        /* LG3-05: 드래그 중 프리뷰도 확정 배선과 같은 지그재그 산식(직선 → 번개형 점선). */
+        var pdx = dragging.curX-op.x, pdy = dragging.curY-op.y;
+        var plen = Math.sqrt(pdx*pdx+pdy*pdy) || 1;
+        var pnx = -pdy/plen, pny = pdx/plen, pamp = Math.min(10, plen*0.18);
+        var pm1x = op.x+pdx*0.35+pnx*pamp, pm1y = op.y+pdy*0.35+pny*pamp;
+        var pm2x = op.x+pdx*0.65-pnx*pamp, pm2y = op.y+pdy*0.65-pny*pamp;
+        ctx.save(); ctx.setLineDash([4,4]); ctx.strokeStyle = '#2f6df0'; ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(op.x, op.y); ctx.lineTo(pm1x,pm1y); ctx.lineTo(pm2x,pm2y); ctx.lineTo(dragging.curX, dragging.curY);
+        ctx.stroke();
+        ctx.restore();
+      }
+      nodes.forEach(function(n){
+        if(n.type === 'IN') drawSbInput(ctx, n, values[n.id]===1);
+        else if(n.type === 'OUT') drawSbOutput(ctx, n, values.OUT===1);
+        else drawSbGate(ctx, n, values[n.id]===1, !!(armed && armed.nodeId===n.id));
+      });
+      if(deleteMode) drawDeleteCursorRing(ctx, byId(delCursor.getCursorId()));
+      else if(canvasFocused) drawSwitchCursorRing(ctx, byId(switchCursor.getCursorId()));
+    }
+    function refreshExpr(){
+      var circuit = toCircuit();
+      var raw = deriveExpr(circuit);
+      exprBar.textContent = '출력 = ' + renderExprDisplay(raw, st.symbolic);
+      if(!exprHasHole(raw) && circuit.inputs.length){
+        var sw = switchValsFromNodes();
+        var vals = {};
+        try{ vals = CIRCUIT.evaluate(circuit, sw); }catch(e){}
+        var substituted = deriveExprSubstituted(circuit, sw);
+        exprValueLine.textContent = '= ' + renderExprDisplay(substituted, st.symbolic) + ' = ' + (vals.OUT!=null ? vals.OUT : '?');
+      } else {
+        exprValueLine.textContent = '';
+      }
+    }
+    function refreshTruth(){
+      truthHost.innerHTML = '';
+      var ids = currentInputIds();
+      if(ids.length === 0){
+        truthHost.appendChild(el('p', {class:'muted'}, '입력을 추가하면 진리표가 나타나요.'));
+        return;
+      }
+      var circuit = toCircuit();
+      TRUTH.renderDisplayTable(truthHost, ids, function(bits){
+        var sw = {}; ids.forEach(function(id,i){ sw[id]=bits[i]; });
+        try{ return CIRCUIT.evaluate(circuit, sw).OUT; }catch(e){ return 0; }
+      });
+    }
+    /* 노드 목록 칩+키보드 연결 셀렉트는 삭제됨(개정 §B L7 — 예외 승인 2026-07-17,
+       revision_logic_v1.md §D "키보드 배선 대체 없음". 노드 삭제는 위 툴바의 삭제 모드로
+       대체했고, 배선은 드래그/탭-탭만 남는다. 그 외 조작(팔레트 선택·초기화·기호 토글 등)은
+       전부 네이티브 버튼이라 키보드 그대로 가능 — §0-3 예외는 배선 행위에만 적용된다. */
+    function renderAll(){
+      drawCanvas();
+      refreshExpr();
+      refreshTruth();
+    }
+
+    canvas.addEventListener('pointerdown', function(e){
+      /* LIVE-2: PLUG(:~2291)와 동일하게 try/catch로 감싼다 — 비활성 pointerId(합성 이벤트·일부
+         펜/터치 엣지)에서 예외가 나면 캡처 실패만 무시하고 핸들러는 계속 진행해야 한다. */
+      try{ canvas.setPointerCapture(e.pointerId); }catch(err){}
+      var pos = localPos(e);
+      if(deleteMode){
+        var delId = hitBody(pos.x, pos.y);
+        if(delId && delId !== 'OUT') removeNode(delId);
+        return;
+      }
+      var pr = hitPort(pos.x, pos.y);
+      if(armed && pr && pr.kind==='in'){
+        connect(armed.nodeId, pr.nodeId, pr.portIdx);
+        armed = null; pdStart = null;
+        return;
+      }
+      if(pr && pr.kind==='out'){
+        dragging = {kind:'wire', fromId:pr.nodeId, curX:pos.x, curY:pos.y};
+        pdStart = {x:pos.x, y:pos.y};
+        armed = null;
+        drawCanvas();
+        return;
+      }
+      if(armed){ armed = null; drawCanvas(); }
+      var bodyId = hitBody(pos.x, pos.y);
+      if(bodyId){
+        var n = byId(bodyId);
+        dragging = {kind:'node', nodeId:bodyId, offX:pos.x-n.x, offY:pos.y-n.y, moved:false};
+        pdStart = {x:pos.x, y:pos.y};
+      }
+    });
+    canvas.addEventListener('pointermove', function(e){
+      if(!dragging) return;
+      var pos = localPos(e);
+      if(dragging.kind === 'wire'){ dragging.curX = pos.x; dragging.curY = pos.y; drawCanvas(); }
+      else if(dragging.kind === 'node'){
+        var n = byId(dragging.nodeId);
+        var nx = pos.x-dragging.offX, ny = pos.y-dragging.offY;
+        if(Math.abs(nx-n.x) > 2 || Math.abs(ny-n.y) > 2) dragging.moved = true;
+        n.x = Math.max(SBOX_W/2+4, Math.min(cssW-SBOX_W/2-4, nx));
+        n.y = Math.max(SBOX_H/2+4, Math.min(cssH-SBOX_H/2-4, ny));
+        drawCanvas();
+      }
+    });
+    canvas.addEventListener('pointerup', function(e){
+      var pos = localPos(e);
+      if(dragging && dragging.kind === 'wire'){
+        var target = hitPort(pos.x, pos.y);
+        var moveDist = pdStart ? sbDist(pos.x,pos.y,pdStart.x,pdStart.y) : 999;
+        if(target && target.kind === 'in'){
+          connect(dragging.fromId, target.nodeId, target.portIdx);
+        } else if(moveDist < 6){
+          armed = {nodeId: dragging.fromId};
+          toast('연결할 입력 포트를 탭하세요.');
+        }
+        dragging = null;
+        drawCanvas();
+        return;
+      }
+      if(dragging && dragging.kind === 'node'){
+        var moveDist2 = pdStart ? sbDist(pos.x,pos.y,pdStart.x,pdStart.y) : 999;
+        if(!dragging.moved && moveDist2 < 6){
+          var n = byId(dragging.nodeId);
+          if(n.type === 'IN') toggleInput(n.id);
+        } else {
+          saveAndRebuild();
+        }
+        dragging = null;
+        drawCanvas();
+      }
+    });
+
+    renderAll();
+  }
+};
+
+/* ============================================================
+   9.5) PUZZLE — L6·L9 회로 만들기 스테이지 공용 보드 (개정 §B L6/L9): 팔레트에서 게이트를
+   꺼내 자유 배치 + 커스텀 배선(SANDBOX와 같은 드래그/탭-탭 상호작용·wouldCreateCycle 재사용)
+   + "채점하기" 버튼. 구 BUILD(고정 배선+슬롯 순환+즉시 자동채점)를 대체한다. 채점 전에는
+   목표(진리표/식)만 보이고 현재 회로와의 비교표는 숨겨진다 — 채점 버튼을 눌러야
+   gradeCircuit()으로 완전성(미연결 포트 없음)을 먼저 확인하고, 통과하면 행별 O/X
+   비교표(TRUTH.renderCompareTable, 9.3 그대로 재사용)를 보여준다.
+   ============================================================ */
+var PUZZLE = {
+  /* cfg: {board(영속 {nodes,nextNum}), inputIds, palette, nodeCap, targetKind:'table'|'expr',
+           targetCircuit, exprDisplay, progress({cleared,stars,attempts}), onCleared} */
+  render: function(container, cfg){
+    var board = cfg.board;
+    if(!board.nodes){ board.nodes = initPuzzleNodes(cfg.inputIds); board.nextNum = 1; STATE.save(); }
+    var nodes = board.nodes;
+    var deleteMode = false;
+
+    var wrap = el('div', {class:'sandbox-wrap', style:{flex:'1', minHeight:'0'}});
+    var layout = el('div', {class:'game-layout'});
+    var boardArea = el('div', {class:'game-board-area', style:{flexDirection:'column', gap:'8px'}});
+    var panelArea = el('div', {class:'game-panel-area'});
+
+    var toolbar = el('div', {class:'sandbox-toolbar'});
+    cfg.palette.forEach(function(t){
+      var b = el('button', {type:'button', class:'btn btn-secondary btn-sm'}, '+ ' + GATE_KOREAN[t] + '(' + t + ')');
+      b.addEventListener('click', function(){ addGate(t); });
+      toolbar.appendChild(b);
+    });
+    var delBtn = el('button', {type:'button', class:'btn btn-secondary btn-sm', 'aria-pressed':'false'}, '🗑 삭제');
+    delBtn.addEventListener('click', function(){
+      deleteMode = !deleteMode;
+      delBtn.setAttribute('aria-pressed', deleteMode ? 'true' : 'false');
+      delBtn.classList.toggle('btn-primary', deleteMode);
+      delBtn.classList.toggle('btn-secondary', !deleteMode);
+      delBtn.textContent = deleteMode ? '🗑 삭제 모드 (다시 눌러 종료)' : '🗑 삭제';
+      delCursor.reset();
+      if(deleteMode){ canvas.focus(); toast('지울 게이트를 보드에서 탭하거나, 화살표로 고르고 Enter를 누르세요.'); }
+      else toast('삭제 모드를 종료했어요.');
+      drawCanvas();
+    });
+    toolbar.appendChild(delBtn);
+    boardArea.appendChild(toolbar);
+
+    var canvasWrapEl = el('div', {class:'sandbox-canvas-wrap'});
+    var canvas = el('canvas', {tabindex:'0', 'aria-label':'회로 조립판. 팔레트에서 게이트를 꺼내 옮기고 포트를 드래그하거나 탭-탭으로 연결하세요. 삭제 모드가 아니면 화살표로 스위치를 고르고 Enter나 Space로 토글할 수 있습니다. 입력·출력은 이미 놓여 있고 지울 수 없습니다.'});
+    canvasWrapEl.appendChild(canvas);
+    boardArea.appendChild(canvasWrapEl);
+    var cssW = 420, cssH = 420; /* 정사각 보드(A1 원칙) */
+    var ctx = setupCanvasHiDPI(canvas, cssW, cssH);
+
+    var targetHost = el('div', {class:'build-target'});
+    panelArea.appendChild(targetHost);
+    var resultHost = el('div', {});
+    panelArea.appendChild(resultHost);
+    var gradeBtn = el('button', {type:'button', class:'btn btn-primary'}, '채점하기');
+    var gradeMsg = el('p', {class:'muted', style:{minHeight:'20px'}, 'aria-live':'polite'}, '');
+    panelArea.appendChild(gradeBtn);
+    panelArea.appendChild(gradeMsg);
+
+    layout.appendChild(boardArea);
+    layout.appendChild(panelArea);
+    wrap.appendChild(layout);
+    container.appendChild(wrap);
+    /* LIVE-1: 이 시점엔 root(=이 컨테이너)가 아직 문서에 붙지 않은 경우가 있다(L6/L7가
+       showStage/SANDBOX.render를 부모의 root.appendChild(s) 전에 호출) — clientHeight가 0으로
+       측정돼 축소가 스킵된다. setTimeout(0)으로 현재 동기 호출 스택(부모의 appendChild 포함)이
+       끝난 뒤로 미루면 실측이 정확하다 — 백그라운드 탭에서도 rAF처럼 억제되지 않는다. */
+    setTimeout(function(){ fitSquareBoardCss(canvas, boardArea, cssW, toolbar.offsetHeight + 8); }, 0);
+
+    var armed = null;
+    var dragging = null;
+    var pdStart = null;
+
+    function byId(id){ for(var i=0;i<nodes.length;i++){ if(nodes[i].id===id) return nodes[i]; } return null; }
+    function toCircuit(){
+      return {
+        nodes: nodes.map(function(n){ return {id:n.id, type:n.type, inputs:n.inputs.slice()}; }),
+        inputs: cfg.inputIds.slice(),
+        output: 'OUT'
+      };
+    }
+    function switchValsFromNodes(){ var sw={}; nodes.forEach(function(n){ if(n.type==='IN') sw[n.id]=n.value; }); return sw; }
+    function gateNodeCount(){ return nodes.filter(function(n){ return n.type!=='IN' && n.type!=='OUT'; }).length; }
+    function isFixedNode(id){ return id==='OUT' || cfg.inputIds.indexOf(id) >= 0; }
+
+    function targetOut(bits){
+      var sw = {}; cfg.inputIds.forEach(function(id,i){ sw[id]=bits[i]; });
+      return CIRCUIT.evaluate(cfg.targetCircuit, sw)[cfg.targetCircuit.output];
+    }
+    function renderTargetHost(){
+      targetHost.innerHTML = '';
+      if(cfg.targetKind === 'expr'){
+        targetHost.appendChild(el('div', {class:'card-title'}, '목표 식 — 이 식과 똑같아지도록 배선해 보세요'));
+        targetHost.appendChild(el('div', {class:'build-target-expr'}, cfg.exprDisplay));
+      } else {
+        targetHost.appendChild(el('div', {class:'card-title'}, '목표 — 이런 출력이 나오게 만들어 보세요'));
+        TRUTH.renderDisplayTable(targetHost, cfg.inputIds, targetOut);
+      }
+    }
+    renderTargetHost();
+
+    function addGate(type){
+      if(gateNodeCount() >= cfg.nodeCap){ toast('게이트는 최대 ' + cfg.nodeCap + '개까지예요.'); return; }
+      var arity = GATE_ARITY[type];
+      var id = 'N' + (board.nextNum++);
+      var gc = gateNodeCount();
+      var gx = 180 + (gc % 2) * 100;
+      var gy = 40 + Math.floor(gc / 2) * 90;
+      var ins = []; for(var i=0;i<arity;i++) ins.push(null);
+      nodes.push({id:id, type:type, inputs:ins, x:gx, y:gy});
+      saveAndRebuild();
+    }
+    function removeNode(id){
+      if(isFixedNode(id)) return; /* 입력·출력은 고정 — 삭제 대상은 학생이 꺼낸 게이트뿐 */
+      nodes = nodes.filter(function(n){ return n.id !== id; });
+      nodes.forEach(function(n){ n.inputs = n.inputs.map(function(x){ return x===id ? null : x; }); });
+      board.nodes = nodes;
+      saveAndRebuild();
+    }
+    function toggleInput(id){ var n = byId(id); n.value = n.value ? 0 : 1; saveAndRebuild(); }
+    function connect(fromId, toId, portIdx){
+      if(fromId === toId) return false;
+      var toNode = byId(toId);
+      if(!toNode) return false;
+      var arity = GATE_ARITY[toNode.type];
+      if(portIdx == null || portIdx >= arity) return false;
+      if(wouldCreateCycle(toCircuit(), {from:fromId, to:toId})){ toast('연결하면 회로가 순환해요. 다른 곳에 연결해 보세요.'); return false; }
+      toNode.inputs[portIdx] = fromId;
+      saveAndRebuild();
+      FX.pop(canvasWrapEl); /* LG3-05: 확정 통통 모션(§1-5) */
+      return true;
+    }
+    function saveAndRebuild(){ board.nodes = nodes; STATE.save(); renderAll(); }
+    /* 삭제 모드 키보드 커서(§0-3 준수) — 입력·출력은 고정이라 게이트 노드만 순회 대상. */
+    var delCursor = attachDeleteCursor(canvas, {
+      isActive: function(){ return deleteMode; },
+      listIds: function(){ return nodes.filter(function(n){ return !isFixedNode(n.id); }).map(function(n){ return n.id; }); },
+      onSelect: function(id){ drawCanvas(); announce('삭제 커서: ' + id + '. Enter로 삭제, 화살표로 이동.'); },
+      onDelete: function(id){ announce(id + ' 삭제됨.'); removeNode(id); }
+    });
+    /* 스위치 토글 키보드 커서(§0-3 준수, LG3-01) — 삭제 모드가 아닐 때만 활성. */
+    var switchCursor = attachSwitchCursor(canvas, {
+      isActive: function(){ return !deleteMode; },
+      listIds: function(){ return cfg.inputIds.slice(); },
+      onSelect: function(id){ drawCanvas(); announce('스위치 커서: ' + id + '. Enter나 Space로 토글, 화살표로 이동.'); },
+      onToggle: function(id){ toggleInput(id); }
+    });
+    var canvasFocused = false;
+    canvas.addEventListener('focus', function(){ canvasFocused = true; drawCanvas(); });
+    canvas.addEventListener('blur', function(){ canvasFocused = false; drawCanvas(); });
+
+    function hitPort(x,y){
+      for(var i=0;i<nodes.length;i++){
+        var n = nodes[i];
+        if(n.type !== 'OUT'){
+          var op = sbOutPortPos(n);
+          if(op && sbDist(x,y,op.x,op.y) <= 11) return {nodeId:n.id, kind:'out'};
+        }
+        var arity = GATE_ARITY[n.type];
+        for(var k=0;k<arity;k++){
+          var ip = sbInPortPos(n,k);
+          if(sbDist(x,y,ip.x,ip.y) <= 11) return {nodeId:n.id, kind:'in', portIdx:k};
+        }
+      }
+      return null;
+    }
+    function hitBody(x,y){
+      for(var i=nodes.length-1;i>=0;i--){
+        var n = nodes[i];
+        if(Math.abs(x-n.x) <= SBOX_W/2 && Math.abs(y-n.y) <= SBOX_H/2) return n.id;
+      }
+      return null;
+    }
+    function localPos(e){
+      var rect = canvas.getBoundingClientRect();
+      /* LIVE-1: 저높이 뷰포트에서 fitSquareBoardCss가 canvas CSS 표시 크기를 줄이므로
+         (내부 논리 좌표 cssW/cssH는 그대로), rect가 그보다 작으면 그 비율만큼 되돌린다. */
+      var scaleX = rect.width ? cssW/rect.width : 1, scaleY = rect.height ? cssH/rect.height : 1;
+      return {x: (e.clientX-rect.left)*scaleX, y: (e.clientY-rect.top)*scaleY};
+    }
+
+    function drawCanvas(){
+      var circuit = toCircuit();
+      var values = {};
+      try{ values = CIRCUIT.evaluate(circuit, switchValsFromNodes()); }catch(e){ values = {}; }
+      ctx.clearRect(0,0,cssW,cssH);
+      nodes.forEach(function(n){
+        n.inputs.forEach(function(srcId, idx){
+          if(srcId==null) return;
+          var src = byId(srcId);
+          if(!src) return;
+          var op = sbOutPortPos(src);
+          var ip = sbInPortPos(n, idx);
+          drawWire(ctx, op.x, op.y, ip.x, ip.y, values[srcId]===1);
+        });
+      });
+      if(dragging && dragging.kind === 'wire'){
+        var src = byId(dragging.fromId);
+        var op = sbOutPortPos(src);
+        /* LG3-05: 드래그 중 프리뷰도 확정 배선과 같은 지그재그 산식(직선 → 번개형 점선). */
+        var pdx = dragging.curX-op.x, pdy = dragging.curY-op.y;
+        var plen = Math.sqrt(pdx*pdx+pdy*pdy) || 1;
+        var pnx = -pdy/plen, pny = pdx/plen, pamp = Math.min(10, plen*0.18);
+        var pm1x = op.x+pdx*0.35+pnx*pamp, pm1y = op.y+pdy*0.35+pny*pamp;
+        var pm2x = op.x+pdx*0.65-pnx*pamp, pm2y = op.y+pdy*0.65-pny*pamp;
+        ctx.save(); ctx.setLineDash([4,4]); ctx.strokeStyle = '#2f6df0'; ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(op.x, op.y); ctx.lineTo(pm1x,pm1y); ctx.lineTo(pm2x,pm2y); ctx.lineTo(dragging.curX, dragging.curY);
+        ctx.stroke();
+        ctx.restore();
+      }
+      nodes.forEach(function(n){
+        if(n.type === 'IN') drawSbInput(ctx, n, values[n.id]===1);
+        else if(n.type === 'OUT') drawSbOutput(ctx, n, values.OUT===1);
+        else drawSbGate(ctx, n, values[n.id]===1, !!(armed && armed.nodeId===n.id));
+      });
+      if(deleteMode) drawDeleteCursorRing(ctx, byId(delCursor.getCursorId()));
+      else if(canvasFocused) drawSwitchCursorRing(ctx, byId(switchCursor.getCursorId()));
+    }
+    function renderAll(){ drawCanvas(); }
+
+    function runGrade(){
+      var circuit = toCircuit();
+      var res = gradeCircuit(circuit);
+      resultHost.innerHTML = '';
+      if(!res.ok){
+        gradeMsg.textContent = '아직 연결 안 된 곳이 있어요. 모든 포트를 이어 주세요.';
+        return;
+      }
+      var compareRes = TRUTH.renderCompareTable(resultHost, cfg.inputIds, targetOut, function(bits){
+        var sw = {}; cfg.inputIds.forEach(function(id,i){ sw[id]=bits[i]; });
+        return CIRCUIT.evaluate(circuit, sw).OUT;
+      });
+      cfg.progress.attempts = (cfg.progress.attempts||0) + 1;
+      STATE.save();
+      if(compareRes.allMatch){
+        gradeMsg.textContent = '정확해요! 목표와 똑같아요.';
+        if(!cfg.progress.cleared){
+          cfg.progress.cleared = true;
+          cfg.progress.stars = cfg.progress.attempts<=1 ? 3 : (cfg.progress.attempts<=2 ? 2 : 1);
+          STATE.save();
+          FX.pop(canvasWrapEl);
+          FX.confetti(wrap);
+          if(cfg.onCleared) cfg.onCleared();
+        }
+      } else {
+        gradeMsg.textContent = '아직 목표와 달라요(빨간 줄). 배선을 다시 살펴보세요.';
+      }
+    }
+    gradeBtn.addEventListener('click', runGrade);
+
+    canvas.addEventListener('pointerdown', function(e){
+      /* LIVE-2: PLUG(:~2291)와 동일하게 try/catch로 감싼다 — 비활성 pointerId(합성 이벤트·일부
+         펜/터치 엣지)에서 예외가 나면 캡처 실패만 무시하고 핸들러는 계속 진행해야 한다. */
+      try{ canvas.setPointerCapture(e.pointerId); }catch(err){}
+      var pos = localPos(e);
+      if(deleteMode){
+        var delId = hitBody(pos.x, pos.y);
+        if(delId && !isFixedNode(delId)) removeNode(delId);
+        return;
+      }
+      var pr = hitPort(pos.x, pos.y);
+      if(armed && pr && pr.kind==='in'){
+        connect(armed.nodeId, pr.nodeId, pr.portIdx);
+        armed = null; pdStart = null;
+        return;
+      }
+      if(pr && pr.kind==='out'){
+        dragging = {kind:'wire', fromId:pr.nodeId, curX:pos.x, curY:pos.y};
+        pdStart = {x:pos.x, y:pos.y};
+        armed = null;
+        drawCanvas();
+        return;
+      }
+      if(armed){ armed = null; drawCanvas(); }
+      var bodyId = hitBody(pos.x, pos.y);
+      if(bodyId){
+        var n = byId(bodyId);
+        dragging = {kind:'node', nodeId:bodyId, offX:pos.x-n.x, offY:pos.y-n.y, moved:false};
+        pdStart = {x:pos.x, y:pos.y};
+      }
+    });
+    canvas.addEventListener('pointermove', function(e){
+      if(!dragging) return;
+      var pos = localPos(e);
+      if(dragging.kind === 'wire'){ dragging.curX = pos.x; dragging.curY = pos.y; drawCanvas(); }
+      else if(dragging.kind === 'node'){
+        var n = byId(dragging.nodeId);
+        var nx = pos.x-dragging.offX, ny = pos.y-dragging.offY;
+        if(Math.abs(nx-n.x) > 2 || Math.abs(ny-n.y) > 2) dragging.moved = true;
+        n.x = Math.max(SBOX_W/2+4, Math.min(cssW-SBOX_W/2-4, nx));
+        n.y = Math.max(SBOX_H/2+4, Math.min(cssH-SBOX_H/2-4, ny));
+        drawCanvas();
+      }
+    });
+    canvas.addEventListener('pointerup', function(e){
+      var pos = localPos(e);
+      if(dragging && dragging.kind === 'wire'){
+        var target = hitPort(pos.x, pos.y);
+        var moveDist = pdStart ? sbDist(pos.x,pos.y,pdStart.x,pdStart.y) : 999;
+        if(target && target.kind === 'in'){
+          connect(dragging.fromId, target.nodeId, target.portIdx);
+        } else if(moveDist < 6){
+          armed = {nodeId: dragging.fromId};
+          toast('연결할 입력 포트를 탭하세요.');
+        }
+        dragging = null;
+        drawCanvas();
+        return;
+      }
+      if(dragging && dragging.kind === 'node'){
+        var moveDist2 = pdStart ? sbDist(pos.x,pos.y,pdStart.x,pdStart.y) : 999;
+        if(!dragging.moved && moveDist2 < 6){
+          var n = byId(dragging.nodeId);
+          if(n.type === 'IN') toggleInput(n.id);
+        } else {
+          saveAndRebuild();
+        }
+        dragging = null;
+        drawCanvas();
+      }
+    });
+
+    renderAll();
+  }
+};
+
+/* ============================================================
+   10.5) PLUG — A4 공용 끼우기 컴포넌트 (개정 §A4, L7형 통일): L2~L4·L8의 "좌측 DOM 스위치 +
+   이미 연결된 회로"를 대체. 미리 놓인 게이트(자유 배치 아님) + 스위치 1~2개를 학생이
+   드래그 또는 탭-탭으로 끼운 뒤 토글한다. 게이트→출력 램프는 이미 고정 배선되어 있어
+   (개념 도입 단계는 조작 부담을 낮춘다 — §A4 이유) 학생 과제는 "스위치→게이트 입력"
+   연결뿐이다. SANDBOX·PUZZLE과 같은 캔버스 노드 모델이라 스위치 토글·배선 모두 포인터로
+   조작하고, 키보드는 attachSwitchCursor(화살표+Enter/Space)로 토글을 지원한다(배선 자체는
+   §0-3 예외 대상 그대로 포인터 전용). 연결 상태는 이 화면을 벗어나면 초기화되는 비영속
+   상태(각 게이트가 어느 스위치와 연결되든 AND/OR/XOR는 대칭이라 정오답이 없으므로 저장할
+   필요가 없다).
+   ============================================================ */
+function PLUG_render(container, opts){
+  /* opts: {inputs:[{id,tag,desc}], gateType, values:{id:0/1}, onToggle(id,v), onConnected()} */
+  var arity = GATE_ARITY[opts.gateType];
+  var ins = opts.inputs.slice(0, arity);
+  var values = {};
+  ins.forEach(function(inp){ values[inp.id] = (opts.values && opts.values[inp.id]) || 0; });
+  var connections = new Array(arity).fill(null); /* idx -> switchId */
+
+  /* 노드(내부 배열, STATE 비영속 — AND/OR/XOR는 어느 스위치가 어느 포트든 대칭이라 정오답이
+     없으므로 저장하지 않는다, 기존과 동일). IN×arity·게이트 1개·OUT은 좌표 고정 초기값이고
+     드래그로 옮길 수 있다(전 노드 공통). */
+  var inNodes = ins.map(function(inp, i){
+    var y = arity === 1 ? 125 : (i===0 ? 74 : 176);
+    return {id: inp.id, tag: inp.tag, desc: inp.desc, type:'IN', x: 64, y: y};
+  });
+  var gateNode = {type: opts.gateType, x: 230, y: 125, inputs: connections};
+  var outNode = {x: 352, y: 125};
+
+  var canvasWrap = el('div', {class:'sandbox-canvas-wrap', style:{maxWidth:'440px', margin:'0 auto'}});
+  var canvas = el('canvas', {tabindex:'0', 'aria-label':'끼우기 보드. 화살표 키로 스위치를 고르고 Enter나 Space로 켜고 끌 수 있어요. 스위치의 동그라미를 게이트 입력까지 드래그하거나 탭-탭으로 연결하고, 블록은 손가락이나 마우스로 옮길 수 있어요.'});
+  canvas.style.touchAction = 'none'; /* 배선·블록 드래그가 터치 팬 제스처에 끊기지 않게(attachBoardNodeDrag와 동일) */
+  canvasWrap.appendChild(canvas);
+  container.appendChild(canvasWrap);
+  var cssW = 420, cssH = 250; /* 1뷰포트 여유: 병합 화면(보드+진리표)이 노트북 높이에 들어오게 압축 */
+  var ctx = setupCanvasHiDPI(canvas, cssW, cssH);
+  container.appendChild(el('p', {class:'muted', style:{fontSize:'13px'}}, '스위치 오른쪽 동그라미(출력)를 게이트 왼쪽 동그라미(입력)까지 드래그하거나, 동그라미를 탭한 뒤 게이트 입력을 탭해서 연결하세요. 스위치를 탭하면 0/1이 바뀌고, 블록은 끌어서 옮길 수 있어요.'));
+
+  function inById(id){ for(var i=0;i<inNodes.length;i++){ if(inNodes[i].id===id) return inNodes[i]; } return null; }
+  function computeOut(){
+    if(connections.some(function(c){ return c==null; })) return null;
+    var args = connections.map(function(id){ return values[id]; });
+    return GATE_FN[opts.gateType](args);
+  }
+  function announceOut(){
+    var out = computeOut();
+    announce('출력 ' + (out==null ? '아직 정해지지 않음' : out));
+  }
+  function toggleSwitch(id){
+    values[id] = values[id] ? 0 : 1;
+    if(opts.onToggle) opts.onToggle(id, values[id]);
+    drawCanvas();
+    announceOut();
+  }
+  function connect(switchId, portIdx){
+    for(var i=0;i<connections.length;i++){ if(connections[i]===switchId) connections[i]=null; }
+    var wasFull = connections.every(function(c){ return c!=null; });
+    connections[portIdx] = switchId;
+    var nowFull = connections.every(function(c){ return c!=null; });
+    drawCanvas();
+    /* 연결 사실+출력을 한 문장으로 — 전역 라이브 리전이라 연속 announce는 뒤 것만 낭독된다 */
+    var out = computeOut();
+    announce('스위치 ' + switchId + ' 연결. 출력 ' + (out==null ? '아직 정해지지 않음' : out));
+    if(!wasFull && nowFull){
+      FX.pop(canvasWrap);
+      if(opts.onConnected) opts.onConnected();
+    }
+  }
+
+  var armed = null; /* armed = 탭-탭 대기 중인 switchId, 없으면 null */
+  var dragging = null; /* {kind:'wire', fromId, curX, curY} | {kind:'node', node, offX, offY, moved} */
+  var pdStart = null;
+
+  function hitInOutPort(x,y){
+    for(var i=0;i<inNodes.length;i++){
+      var n = inNodes[i];
+      var op = cbOutPortPos(n);
+      if(sbDist(x,y,op.x,op.y) <= 11) return n.id;
+    }
+    return null;
+  }
+  function hitGateInPort(x,y){
+    for(var k=0;k<arity;k++){
+      var ip = sbInPortPos(gateNode,k);
+      if(sbDist(x,y,ip.x,ip.y) <= 11) return k;
+    }
+    return null;
+  }
+  function hitBody(x,y){
+    if(Math.abs(x-gateNode.x)<=SBOX_W/2 && Math.abs(y-gateNode.y)<=SBOX_H/2) return gateNode;
+    if(Math.abs(x-outNode.x)<=SBOX_W/2 && Math.abs(y-outNode.y)<=SBOX_H/2) return outNode;
+    for(var i=0;i<inNodes.length;i++){
+      var n = inNodes[i];
+      if(Math.abs(x-n.x)<=CB_IN_W/2 && Math.abs(y-n.y)<=CB_IN_H/2) return n;
+    }
+    return null;
+  }
+  function localPos(e){
+    var rect = canvas.getBoundingClientRect();
+    var scaleX = rect.width ? cssW/rect.width : 1, scaleY = rect.height ? cssH/rect.height : 1;
+    return {x:(e.clientX-rect.left)*scaleX, y:(e.clientY-rect.top)*scaleY};
+  }
+
+  var canvasFocused = false;
+  canvas.addEventListener('focus', function(){ canvasFocused = true; drawCanvas(); });
+  canvas.addEventListener('blur', function(){ canvasFocused = false; drawCanvas(); });
+  var switchCursor = attachSwitchCursor(canvas, {
+    isActive: function(){ return true; },
+    listIds: function(){ return ins.map(function(inp){ return inp.id; }); },
+    onSelect: function(id){ drawCanvas(); announce('스위치 커서: ' + id + '. Enter나 Space로 토글, 화살표로 이동.'); },
+    onToggle: function(id){ toggleSwitch(id); }
+  });
+
+  /* drawOutLamp: drawSbOutput(SANDBOX·PUZZLE 공용)과 같은 스타일이되, 미연결(out==null) 상태를
+     '?'로 표시하는 3상 버전 — 게이트 입력이 다 안 채워졌을 때가 있는 PLUG 전용이라 공용 헬퍼는
+     그대로 두고 여기서만 확장한다(AC-7). */
+  function drawOutLamp(x, y, out){
+    ctx.save();
+    ctx.beginPath(); ctx.arc(x, y, 20, 0, Math.PI*2);
+    ctx.fillStyle = out===1 ? '#f5a623' : '#e8e4d8'; ctx.fill();
+    ctx.lineWidth = 2; ctx.strokeStyle = out===1 ? '#c97f0b' : '#98a2b1'; ctx.stroke();
+    ctx.fillStyle = out===1 ? '#5a3c05' : '#5c6570'; ctx.font = "800 13px 'Inter','Malgun Gothic',sans-serif";
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(out==null ? '?' : String(out), x, y);
+    ctx.font = "600 10px 'Inter','Malgun Gothic',sans-serif"; ctx.fillStyle = '#3a3a3a';
+    ctx.fillText('출력', x, y+32);
+    ctx.restore();
+  }
+  function drawCanvas(){
+    var out = computeOut();
+    ctx.clearRect(0,0,cssW,cssH);
+    connections.forEach(function(switchId, idx){
+      if(switchId == null) return;
+      var srcN = inById(switchId);
+      if(!srcN) return;
+      var a = cbOutPortPos(srcN), b = sbInPortPos(gateNode, idx);
+      drawWire(ctx, a.x, a.y, b.x, b.y, values[switchId]===1);
+    });
+    var gOut = sbOutPortPos(gateNode);
+    drawWire(ctx, gOut.x, gOut.y, outNode.x-20, outNode.y, out===1); /* 게이트→OUT 상시 고정 연결(학생 조작 불가) */
+    if(dragging && dragging.kind === 'wire'){
+      var srcN2 = inById(dragging.fromId);
+      var op = cbOutPortPos(srcN2);
+      var pdx = dragging.curX-op.x, pdy = dragging.curY-op.y;
+      var plen = Math.sqrt(pdx*pdx+pdy*pdy) || 1;
+      var pnx = -pdy/plen, pny = pdx/plen, pamp = Math.min(10, plen*0.18);
+      var pm1x = op.x+pdx*0.35+pnx*pamp, pm1y = op.y+pdy*0.35+pny*pamp;
+      var pm2x = op.x+pdx*0.65-pnx*pamp, pm2y = op.y+pdy*0.65-pny*pamp;
+      ctx.save(); ctx.setLineDash([4,4]); ctx.strokeStyle = '#2f6df0'; ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(op.x, op.y); ctx.lineTo(pm1x,pm1y); ctx.lineTo(pm2x,pm2y); ctx.lineTo(dragging.curX, dragging.curY);
+      ctx.stroke();
+      ctx.restore();
+    }
+    inNodes.forEach(function(n){
+      drawCbInput(ctx, n.x, n.y, {id:n.tag, value: values[n.id], desc: n.desc, lit: values[n.id]===1});
+    });
+    drawSbGate(ctx, gateNode, out===1, armed!=null);
+    drawOutLamp(outNode.x, outNode.y, out);
+    if(canvasFocused) drawSwitchCursorRing(ctx, inById(switchCursor.getCursorId()), CB_IN_W, CB_IN_H);
+  }
+
+  canvas.addEventListener('pointerdown', function(e){
+    try{ canvas.setPointerCapture(e.pointerId); }catch(err){}
+    var pos = localPos(e);
+    var gp = hitGateInPort(pos.x, pos.y);
+    if(armed && gp != null){
+      connect(armed, gp);
+      armed = null; pdStart = null;
+      return;
+    }
+    var swId = hitInOutPort(pos.x, pos.y);
+    if(swId != null){
+      dragging = {kind:'wire', fromId:swId, curX:pos.x, curY:pos.y};
+      pdStart = {x:pos.x, y:pos.y};
+      armed = null;
+      drawCanvas();
+      return;
+    }
+    if(armed){ armed = null; drawCanvas(); }
+    var n = hitBody(pos.x, pos.y);
+    if(n){
+      dragging = {kind:'node', node:n, offX:pos.x-n.x, offY:pos.y-n.y, moved:false};
+      pdStart = {x:pos.x, y:pos.y};
+    }
+  });
+  canvas.addEventListener('pointermove', function(e){
+    if(!dragging) return;
+    var pos = localPos(e);
+    if(dragging.kind === 'wire'){ dragging.curX = pos.x; dragging.curY = pos.y; drawCanvas(); }
+    else if(dragging.kind === 'node'){
+      var n = dragging.node;
+      var nx = pos.x-dragging.offX, ny = pos.y-dragging.offY;
+      if(Math.abs(nx-n.x) > 2 || Math.abs(ny-n.y) > 2) dragging.moved = true;
+      var halfW = n.type==='IN' ? CB_IN_W/2 : SBOX_W/2, halfH = n.type==='IN' ? CB_IN_H/2 : SBOX_H/2;
+      n.x = Math.max(halfW, Math.min(cssW-halfW, nx));
+      n.y = Math.max(halfH, Math.min(cssH-halfH, ny));
+      drawCanvas();
+    }
+  });
+  canvas.addEventListener('pointerup', function(e){
+    var pos = localPos(e);
+    if(dragging && dragging.kind === 'wire'){
+      var targetIdx = hitGateInPort(pos.x, pos.y);
+      var moveDist = pdStart ? sbDist(pos.x,pos.y,pdStart.x,pdStart.y) : 999;
+      if(targetIdx != null){
+        connect(dragging.fromId, targetIdx);
+      } else if(moveDist < 6){
+        armed = dragging.fromId;
+        toast('연결할 게이트 입력 포트를 탭하세요.');
+      }
+      dragging = null;
+      drawCanvas();
+      return;
+    }
+    if(dragging && dragging.kind === 'node'){
+      var moveDist2 = pdStart ? sbDist(pos.x,pos.y,pdStart.x,pdStart.y) : 999;
+      if(!dragging.moved && moveDist2 < 6 && dragging.node.type === 'IN'){
+        toggleSwitch(dragging.node.id);
+      }
+      dragging = null;
+      drawCanvas();
+    }
+  });
+
+  drawCanvas();
+  return {isConnected: function(){ return connections.every(function(c){ return c!=null; }); }};
+}
+
+/* ============================================================
+   11) SEP — 좌표평면 선형분리 뷰 (AND/OR/XOR 4점 + 학생 직선)
+   ============================================================ */
+/* G2-B 개정 §B L10: 자유 SegToggle(AND/OR/XOR 임의 선택) 대신 op이 step별로 고정된다
+   (step2=AND, step3=OR, step4=XOR). 직선 조절(스테퍼+캔버스 키보드)·판정 로직(lineParams·
+   checkSeparation, 무변경)은 그대로 유지. */
+var SEP = {
+  render: function(container, opts){
+    var st = opts.progress;
+    var op = opts.op;
+    st.op = op;
+    var wrap = el('div', {class:'sep-wrap'});
+
+    var statusHost = el('div', {class:'chips-row', style:{margin:'4px 0 8px'}});
+    wrap.appendChild(statusHost);
+
+    var layout = el('div', {class:'game-layout', style:{minHeight:'300px'}});
+    var boardArea = el('div', {class:'game-board-area'});
+    var panelArea = el('div', {class:'game-panel-area'});
+
+    var canvasWrap = el('div', {class:'sandbox-canvas-wrap', style:{maxWidth:'300px'}});
+    var canvas = el('canvas', {tabindex:'0', 'aria-label':'좌표평면. 화살표 키로 직선의 각도와 위치를 조절하세요.'});
+    canvasWrap.appendChild(canvas);
+    boardArea.appendChild(canvasWrap);
+    var cssW = 300, cssH = 300;
+    var ctx = setupCanvasHiDPI(canvas, cssW, cssH);
+
+    var controls = el('div', {class:'sep-controls'});
+    function stepperGroup(labelText, onDec, onInc){
+      var g = el('div', {class:'stepper-group'});
+      var dec = el('button', {type:'button', class:'stepper-btn', 'aria-label':labelText + ' 줄이기'}, '−');
+      dec.addEventListener('click', onDec);
+      /* LG3-13: 각도·위치 값이 버튼이든 캔버스 화살표든 바뀔 때(refreshStatus가 textContent만
+         교체) 낭독되지 않았다 — 라벨 자체를 live region으로 만들면 두 입력 경로 모두 자동 커버. */
+      var lab = el('span', {class:'stepper-label', 'aria-live':'polite', 'aria-atomic':'true'}, labelText);
+      var inc = el('button', {type:'button', class:'stepper-btn', 'aria-label':labelText + ' 늘리기'}, '+');
+      inc.addEventListener('click', onInc);
+      g.appendChild(dec); g.appendChild(lab); g.appendChild(inc);
+      return g;
+    }
+    var angleStepper = stepperGroup('각도', function(){ st.theta = (st.theta - 5 + 180) % 180; STATE.save(); refreshAll(); }, function(){ st.theta = (st.theta + 5) % 180; STATE.save(); refreshAll(); });
+    var offsetStepper = stepperGroup('위치', function(){ st.offset = Math.max(-0.95, +(st.offset - 0.05).toFixed(2)); STATE.save(); refreshAll(); }, function(){ st.offset = Math.min(0.95, +(st.offset + 0.05).toFixed(2)); STATE.save(); refreshAll(); });
+    controls.appendChild(angleStepper);
+    controls.appendChild(offsetStepper);
+    panelArea.appendChild(controls);
+    panelArea.appendChild(el('p', {class:'muted', style:{fontSize:'13px'}}, '캔버스에 포커스한 뒤 ← →로 각도, ↑ ↓로 위치를 조절할 수도 있어요.'));
+
+    var checkBtn = el('button', {type:'button', class:'btn btn-primary', style:{marginTop:'6px'}}, '분리 확인');
+    panelArea.appendChild(checkBtn);
+    var feedback = el('div', {class:'mascot-bubble', style:{marginTop:'10px'}, 'aria-live':'polite'}, '직선을 움직여서 파란 점과 빨간 점을 나눠 보세요.');
+    panelArea.appendChild(feedback);
+
+    layout.appendChild(boardArea);
+    layout.appendChild(panelArea);
+    wrap.appendChild(layout);
+    container.appendChild(wrap);
+
+    function labelsFor(){ return SEP_POINTS.map(function(p){ return GATE_FN[op]([p[0], p[1]]); }); }
+    function toPixel(x,y){
+      var margin = 40, scale = cssW - margin*2;
+      return {x: margin + x*scale, y: cssH - margin - y*scale};
+    }
+    function drawPlane(){
+      ctx.clearRect(0,0,cssW,cssH);
+      ctx.save();
+      ctx.strokeStyle = '#c9c2ac'; ctx.lineWidth = 1.5;
+      var o = toPixel(-0.15,0), xEnd = toPixel(1.2,0), yStart = toPixel(0,-0.15), yEnd = toPixel(0,1.2);
+      ctx.beginPath(); ctx.moveTo(o.x,o.y); ctx.lineTo(xEnd.x,xEnd.y); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(yStart.x,yStart.y); ctx.lineTo(yEnd.x,yEnd.y); ctx.stroke();
+      ctx.fillStyle = '#6a6a6a'; ctx.font = "600 12px 'Inter','Malgun Gothic',sans-serif";
+      ctx.fillText('A', xEnd.x-8, xEnd.y+16);
+      ctx.fillText('B', yEnd.x-16, yEnd.y+6);
+      ctx.restore();
+
+      var theta = st.theta * Math.PI/180;
+      var nx = -Math.sin(theta), ny = Math.cos(theta);
+      var px0 = 0.5 + st.offset*nx, py0 = 0.5 + st.offset*ny;
+      var dx = Math.cos(theta), dy = Math.sin(theta);
+      var p1 = toPixel(px0-dx*1.5, py0-dy*1.5);
+      var p2 = toPixel(px0+dx*1.5, py0+dy*1.5);
+      ctx.save();
+      ctx.strokeStyle = '#2f6df0'; ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.moveTo(p1.x,p1.y); ctx.lineTo(p2.x,p2.y); ctx.stroke();
+      ctx.restore();
+
+      var labels = labelsFor();
+      SEP_POINTS.forEach(function(p, i){
+        var px = toPixel(p[0], p[1]);
+        var lab = labels[i];
+        ctx.save();
+        ctx.beginPath(); ctx.arc(px.x, px.y, 15, 0, Math.PI*2);
+        ctx.fillStyle = lab===1 ? '#2f6df0' : '#e5484d';
+        ctx.fill();
+        ctx.lineWidth = 2; ctx.strokeStyle = '#ffffff'; ctx.stroke();
+        ctx.fillStyle = '#ffffff'; ctx.font = "800 13px 'Inter',sans-serif"; ctx.textAlign='center'; ctx.textBaseline='middle';
+        ctx.fillText(String(lab), px.x, px.y+1);
+        ctx.restore();
+        ctx.save();
+        ctx.fillStyle = '#3a3a3a'; ctx.font = "500 11px 'Inter','Malgun Gothic',sans-serif"; ctx.textAlign='center';
+        ctx.fillText('(' + p[0] + ',' + p[1] + ')', px.x, px.y-22);
+        ctx.restore();
+      });
+    }
+    function refreshStatus(){
+      statusHost.innerHTML = '';
+      var done = st.achieved[op];
+      var opLabel = op + (op==='XOR' ? ' 시도' : ' 분리');
+      statusHost.appendChild(el('span', {class:'chip' + (done?' active':'')}, opLabel + (done?' ✓':'')));
+      if(op==='XOR' && st.tries.XOR.length){
+        statusHost.appendChild(el('span', {class:'chip'}, '실패 ' + st.tries.XOR.length + '/3'));
+      }
+      angleStepper.querySelector('.stepper-label').textContent = '각도 ' + st.theta + '°';
+      offsetStepper.querySelector('.stepper-label').textContent = '위치 ' + st.offset.toFixed(2);
+    }
+    function refreshAll(){ drawPlane(); refreshStatus(); if(opts.onChange) opts.onChange(); }
+
+    checkBtn.addEventListener('click', function(){
+      var lp = lineParams(st.theta, st.offset);
+      var labels = labelsFor();
+      var ok = checkSeparation(lp.a, lp.b, lp.c, SEP_POINTS, labels);
+      if(op === 'XOR'){
+        /* F3: XOR은 수학적으로 항상 분리 실패 — 매 클릭이 "실패 시도"다. {theta,offset} 기록
+           (연산별 최근 8개, 중복 제거) → C4 게이트(시도 N=3 미만이면 달성 플래그 안 섬). */
+        var wasAchieved = st.achieved.XOR;
+        recordSepFail(st, 'XOR', st.theta, st.offset);
+        var n = st.tries.XOR.length;
+        if(!wasAchieved && xorSepDone(n, 3)) st.achieved.XOR = true;
+        STATE.save();
+        FX.shake(canvasWrap);
+        feedback.textContent = st.achieved.XOR
+          ? '어? 안 나뉘네... 이제 왜 그런지 살펴볼게요.'
+          : ('어? 안 나뉘네요 (' + n + '/3번째 시도). 다른 각도·위치로 더 시도해 보세요.');
+        feedback.className = 'mascot-bubble';
+        refreshAll();
+        if(!wasAchieved && st.achieved.XOR && opts.onAchieved) opts.onAchieved();
+        return;
+      }
+      if(ok){
+        var already = st.achieved[op];
+        st.achieved[op] = true; STATE.save();
+        FX.pop(canvasWrap);
+        feedback.textContent = op + ' 분리 성공! 직선 하나로 잘 나뉘었어요.';
+        feedback.className = 'mascot-bubble tone-cheer';
+        refreshAll();
+        if(!already && opts.onAchieved) opts.onAchieved();
+      } else {
+        /* LG3-08: F3 기록 스키마(tries={AND:[],OR:[],XOR:[]})는 연산별인데 XOR 분기만 기록해
+           AND/OR가 죽은 필드였다. 소비처는 여전히 XOR뿐이지만 명세 문면(연산별 최근 8개)과
+           맞춘다 — 상한·중복 제거는 recordSepFail이 그대로 처리. */
+        recordSepFail(st, op, st.theta, st.offset);
+        STATE.save();
+        FX.shake(canvasWrap);
+        feedback.textContent = '아직이에요. 각도와 위치를 조절해서 다시 시도해 보세요.';
+        feedback.className = 'mascot-bubble';
+        refreshAll();
+      }
+    });
+    canvas.addEventListener('keydown', function(e){
+      if(e.key === 'ArrowRight'){ e.preventDefault(); st.theta = (st.theta+5)%180; STATE.save(); refreshAll(); }
+      else if(e.key === 'ArrowLeft'){ e.preventDefault(); st.theta = (st.theta-5+180)%180; STATE.save(); refreshAll(); }
+      else if(e.key === 'ArrowUp'){ e.preventDefault(); st.offset = Math.min(0.95, +(st.offset+0.05).toFixed(2)); STATE.save(); refreshAll(); }
+      else if(e.key === 'ArrowDown'){ e.preventDefault(); st.offset = Math.max(-0.95, +(st.offset-0.05).toFixed(2)); STATE.save(); refreshAll(); }
+    });
+
+    refreshAll();
+    if(opts.popOnMount) FX.pop(canvasWrap); /* step3(OR) 진입 시 점 색 전환을 짧은 모션으로 강조 */
+  },
+  /* F3 XOR 설명 슬라이드: 실패한 시도들을 회색 반투명으로 재등장 + 마지막 시도 직선의
+     위반 점(색이 틀린 쪽에 남은 점, separationReport 기반) 하이라이트. 정적(조작 없음). */
+  renderExplanation: function(container, st){
+    var wrap = el('div', {class:'sep-wrap'});
+    var canvasWrap = el('div', {class:'sandbox-canvas-wrap', style:{maxWidth:'300px'}});
+    var canvas = el('canvas', {'aria-label':'학생이 시도한 직선들과 XOR 네 점'});
+    canvasWrap.appendChild(canvas);
+    wrap.appendChild(canvasWrap);
+    var cssW = 300, cssH = 300;
+    var ctx = setupCanvasHiDPI(canvas, cssW, cssH);
+    function toPixel(x,y){ var margin=40, scale=cssW-margin*2; return {x:margin+x*scale, y:cssH-margin-y*scale}; }
+    function segFor(theta, offset){
+      var t = theta*Math.PI/180;
+      var nx=-Math.sin(t), ny=Math.cos(t);
+      var px0=0.5+offset*nx, py0=0.5+offset*ny;
+      var dx=Math.cos(t), dy=Math.sin(t);
+      return [toPixel(px0-dx*1.5, py0-dy*1.5), toPixel(px0+dx*1.5, py0+dy*1.5)];
+    }
+    var labels = SEP_POINTS.map(function(p){ return GATE_FN.XOR([p[0], p[1]]); });
+    var lastLp = lineParams(st.theta, st.offset);
+    var report = separationReport(lastLp.a, lastLp.b, lastLp.c, labels);
+
+    ctx.clearRect(0,0,cssW,cssH);
+    ctx.save(); ctx.strokeStyle='#c9c2ac'; ctx.lineWidth=1.5;
+    var o=toPixel(-0.15,0), xEnd=toPixel(1.2,0), yStart=toPixel(0,-0.15), yEnd=toPixel(0,1.2);
+    ctx.beginPath(); ctx.moveTo(o.x,o.y); ctx.lineTo(xEnd.x,xEnd.y); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(yStart.x,yStart.y); ctx.lineTo(yEnd.x,yEnd.y); ctx.stroke();
+    ctx.restore();
+
+    st.tries.XOR.forEach(function(t){
+      var seg = segFor(t.theta, t.offset);
+      ctx.save(); ctx.strokeStyle='rgba(10,10,10,.18)'; ctx.lineWidth=2;
+      ctx.beginPath(); ctx.moveTo(seg[0].x,seg[0].y); ctx.lineTo(seg[1].x,seg[1].y); ctx.stroke();
+      ctx.restore();
+    });
+    var lastSeg = segFor(st.theta, st.offset);
+    ctx.save(); ctx.strokeStyle='#2f6df0'; ctx.lineWidth=3;
+    ctx.beginPath(); ctx.moveTo(lastSeg[0].x,lastSeg[0].y); ctx.lineTo(lastSeg[1].x,lastSeg[1].y); ctx.stroke();
+    ctx.restore();
+
+    SEP_POINTS.forEach(function(p, i){
+      var px = toPixel(p[0], p[1]);
+      var lab = labels[i];
+      var isViolation = report.violations.indexOf(i) >= 0;
+      if(isViolation){
+        ctx.save();
+        ctx.beginPath(); ctx.arc(px.x,px.y,21,0,Math.PI*2);
+        ctx.strokeStyle='#0a0a0a'; ctx.lineWidth=2; ctx.setLineDash([3,3]); ctx.stroke(); ctx.setLineDash([]);
+        ctx.restore();
+      }
+      ctx.save();
+      ctx.beginPath(); ctx.arc(px.x,px.y,15,0,Math.PI*2);
+      ctx.fillStyle = lab===1?'#2f6df0':'#e5484d'; ctx.fill();
+      ctx.lineWidth=2; ctx.strokeStyle='#ffffff'; ctx.stroke();
+      ctx.fillStyle='#ffffff'; ctx.font="800 13px 'Inter',sans-serif"; ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText(String(lab), px.x, px.y+1);
+      ctx.restore();
+    });
+
+    var noteText;
+    if(report.violations.length){
+      var ptStrs = report.violations.map(function(i){ return '(' + SEP_POINTS[i][0] + ',' + SEP_POINTS[i][1] + ')'; });
+      noteText = '이 직선은 ' + ptStrs.join(', ') + '이(가) 잘못된 색 쪽에 남았어요. 어떤 직선을 그어도 네 점을 색대로 가를 수 없어요.';
+    } else {
+      noteText = '어떤 직선을 그어도 네 점을 색대로 가를 수 없어요.';
+    }
+    wrap.appendChild(el('div', {class:'sep-fail-note', 'aria-live':'polite'}, noteText));
+    container.appendChild(wrap);
+  }
+};
+
+/* step1(설명) 미리보기용: 조작 없는 정적 좌표평면(점 색만 표시). LG3-06: L10 step1이 진리표
+   행과 대응 점을 하이라이트로 잇도록 setHighlight(idx|null)를 반환한다 — SEP_POINTS와
+   TRUTH.rows(2)는 같은 순서([0,0],[0,1],[1,0],[1,1])라 인덱스가 그대로 대응한다. */
+function renderStaticLabeledPlane(container, gateFn){
+  var wrap = el('div', {class:'sandbox-canvas-wrap', style:{maxWidth:'260px'}});
+  var canvas = el('canvas', {'aria-label':'좌표평면에 표시된 네 점'});
+  wrap.appendChild(canvas);
+  container.appendChild(wrap);
+  var cssW = 260, cssH = 260;
+  var ctx = setupCanvasHiDPI(canvas, cssW, cssH);
+  function toPixel(x,y){ var margin=36, scale=cssW-margin*2; return {x:margin+x*scale, y:cssH-margin-y*scale}; }
+  var highlightIdx = null;
+  function draw(){
+    ctx.clearRect(0,0,cssW,cssH);
+    ctx.save(); ctx.strokeStyle='#c9c2ac'; ctx.lineWidth=1.5;
+    var o=toPixel(-0.15,0), xEnd=toPixel(1.2,0), yStart=toPixel(0,-0.15), yEnd=toPixel(0,1.2);
+    ctx.beginPath(); ctx.moveTo(o.x,o.y); ctx.lineTo(xEnd.x,xEnd.y); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(yStart.x,yStart.y); ctx.lineTo(yEnd.x,yEnd.y); ctx.stroke();
+    ctx.fillStyle='#6a6a6a'; ctx.font="600 11px 'Inter','Malgun Gothic',sans-serif";
+    ctx.fillText('A', xEnd.x-8, xEnd.y+14);
+    ctx.fillText('B', yEnd.x-14, yEnd.y+6);
+    ctx.restore();
+    SEP_POINTS.forEach(function(p, i){
+      var lab = gateFn([p[0], p[1]]);
+      var px = toPixel(p[0], p[1]);
+      if(i === highlightIdx){
+        ctx.save();
+        ctx.beginPath(); ctx.arc(px.x,px.y,20,0,Math.PI*2);
+        ctx.strokeStyle='#0a0a0a'; ctx.lineWidth=2.5; ctx.setLineDash([4,3]); ctx.stroke(); ctx.setLineDash([]);
+        ctx.restore();
+      }
+      ctx.save();
+      ctx.beginPath(); ctx.arc(px.x,px.y,14,0,Math.PI*2);
+      ctx.fillStyle = lab===1?'#2f6df0':'#e5484d'; ctx.fill();
+      ctx.lineWidth=2; ctx.strokeStyle='#ffffff'; ctx.stroke();
+      ctx.fillStyle='#ffffff'; ctx.font="800 12px 'Inter',sans-serif"; ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText(String(lab), px.x, px.y+1);
+      ctx.restore();
+      ctx.save();
+      ctx.fillStyle='#3a3a3a'; ctx.font="500 10px 'Inter','Malgun Gothic',sans-serif"; ctx.textAlign='center';
+      ctx.fillText('(' + p[0] + ',' + p[1] + ')', px.x, px.y-20);
+      ctx.restore();
+    });
+  }
+  draw();
+  return {setHighlight: function(idx){ highlightIdx = idx; draw(); }};
+}
+
+/* ============================================================
+   12) LOGIC — 순수 함수 (검증 대상), window.__LOGIC 노출
+   ============================================================ */
+var SEP_POINTS = [[0,0],[0,1],[1,0],[1,1]];
+
+function lineParams(thetaDeg, offset){
+  var theta = thetaDeg * Math.PI/180;
+  var a = -Math.sin(theta);
+  var b = Math.cos(theta);
+  var c = Math.sin(theta)*0.5 - Math.cos(theta)*0.5 - offset;
+  return {a:a, b:b, c:c};
+}
+
+function checkSeparation(a,b,c,points,labels){
+  var eps = 1e-9;
+  var posLabel = null, negLabel = null;
+  for(var i=0;i<points.length;i++){
+    var x = points[i][0], y = points[i][1];
+    var s = a*x + b*y + c;
+    if(Math.abs(s) < eps) return false;
+    var lab = labels[i];
+    if(s > 0){ if(posLabel===null) posLabel=lab; else if(posLabel!==lab) return false; }
+    else { if(negLabel===null) negLabel=lab; else if(negLabel!==lab) return false; }
+  }
+  return posLabel!=null && negLabel!=null && posLabel!==negLabel;
+}
+
+function isSeparable(labels){
+  for(var ti=0; ti<180; ti+=1){
+    for(var oi=-100; oi<=100; oi+=2){
+      var off = oi/100;
+      var lp = lineParams(ti, off);
+      if(checkSeparation(lp.a, lp.b, lp.c, SEP_POINTS, labels)) return {a:lp.a,b:lp.b,c:lp.c,theta:ti,offset:off};
+    }
+  }
+  return null;
+}
+
+/* separationReport (9.8, F3 SSOT): verify_halfadder_sepreport.py의 separation_report와 동일 구현
+   — 두 방향 배정(양수 쪽=라벨1 / 양수 쪽=라벨0) 중 위반이 적은 쪽을 채택. 위반 = 배정과 다른
+   쪽의 점 + 직선 위(경계)의 점. checkSeparation(불리언 판정)은 그대로 두고, 이 함수는 그 위에
+   "왜 실패했는지"(위반 점 목록)를 얹은 리포트를 만든다 — lineParams·checkSeparation 무변경. */
+function separationReport(a,b,c,labels){
+  var eps = 1e-9;
+  var sides = [];
+  for(var i=0;i<SEP_POINTS.length;i++){
+    var x = SEP_POINTS[i][0], y = SEP_POINTS[i][1];
+    var s = a*x + b*y + c;
+    sides.push(Math.abs(s) < eps ? 0 : (s > 0 ? 1 : -1));
+  }
+  var best = null;
+  [1,-1].forEach(function(oneSide){
+    var vio = [];
+    for(var i=0;i<sides.length;i++){
+      var sd = sides[i], lab = labels[i];
+      if(sd === 0 || sd !== (lab === 1 ? oneSide : -oneSide)) vio.push(i);
+    }
+    if(best === null || vio.length < best.length) best = vio;
+  });
+  return {separated: best.length === 0, sides: sides, violations: best};
+}
+
+/* xorSepDone (C4): XOR "달성"(=설명 슬라이드 해금) 플래그는 실패 시도가 N회(기본 3) 미만이면
+   서지 않는다 — 순수 함수라 시도 배열 없이도 게이트 조건만 검사할 수 있다. */
+function xorSepDone(failCount, N){ return failCount >= (N==null ? 3 : N); }
+
+/* F3: 실패 시도 {theta,offset} 기록 — 연산별 최근 8개 상한, 동일 (theta,offset) 중복 저장 안 함. */
+function recordSepFail(st, op, theta, offset){
+  var arr = st.tries[op];
+  var exists = arr.some(function(t){ return t.theta===theta && t.offset===offset; });
+  if(!exists){
+    arr.push({theta:theta, offset:offset});
+    if(arr.length > 8) arr.shift();
+  }
+}
+
+/* 회로 → 식 유도 (9.5): IN→라벨, OUT→자식, NOT(x)→'NOT x', AND/OR/XOR(x,y)→'(x OP y)', NAND/NOR→'NOT (x OP y)' */
+function deriveExpr(circuit){
+  var byId = {}; circuit.nodes.forEach(function(n){ byId[n.id]=n; });
+  function go(nodeId){
+    if(nodeId == null) return '?';
+    var n = byId[nodeId];
+    if(n.type === 'IN') return n.id;
+    if(n.type === 'OUT') return n.inputs[0]!=null ? go(n.inputs[0]) : '?';
+    var ins = n.inputs;
+    if(n.type === 'NOT'){
+      var x = ins[0]!=null ? go(ins[0]) : '?';
+      return 'NOT ' + x;
+    }
+    var l = ins[0]!=null ? go(ins[0]) : '?';
+    var r = ins.length>1 && ins[1]!=null ? go(ins[1]) : '?';
+    if(n.type === 'AND') return '(' + l + ' AND ' + r + ')';
+    if(n.type === 'OR')  return '(' + l + ' OR ' + r + ')';
+    if(n.type === 'XOR') return '(' + l + ' XOR ' + r + ')';
+    if(n.type === 'NAND') return 'NOT (' + l + ' AND ' + r + ')';
+    if(n.type === 'NOR')  return 'NOT (' + l + ' OR ' + r + ')';
+    return '?';
+  }
+  var raw = go(circuit.output);
+  return rootStrip(raw);
+}
+function rootStrip(expr){
+  if(expr.charAt(0) === '(' && expr.charAt(expr.length-1) === ')'){
+    var depth = 0;
+    for(var i=0;i<expr.length;i++){
+      if(expr[i] === '(') depth++;
+      else if(expr[i] === ')'){ depth--; if(depth===0 && i !== expr.length-1) return expr; }
+    }
+    return expr.slice(1,-1);
+  }
+  return expr;
+}
+function exprHasHole(expr){ return expr.indexOf('?') >= 0; }
+
+/* 식 → 진리표 컴파일 (9.5): 재귀하강 파서 (괄호로 우선순위 명시, 정의역: AND/OR/XOR/NOT/라벨) */
+function tokenize(str){
+  return str.replace(/\(/g,' ( ').replace(/\)/g,' ) ').trim().split(/\s+/).filter(Boolean);
+}
+function parseExprAST(str){
+  var toks = tokenize(str);
+  var pos = 0;
+  function peek(){ return toks[pos]; }
+  function next(){ return toks[pos++]; }
+  function parseExprLv(){
+    var left = parseNot();
+    var p = peek();
+    if(p==='AND' || p==='OR' || p==='XOR'){
+      var op = next();
+      var right = parseNot();
+      return {op:op, l:left, r:right};
+    }
+    return left;
+  }
+  function parseNot(){
+    if(peek() === 'NOT'){ next(); var x = parsePrimary(); return {op:'NOT', x:x}; }
+    return parsePrimary();
+  }
+  function parsePrimary(){
+    var t = next();
+    if(t === '('){
+      var e = parseExprLv();
+      next(); /* ')' */
+      return e;
+    }
+    return {op:'VAR', name:t};
+  }
+  return parseExprLv();
+}
+function evalAST(ast, env){
+  if(ast.op === 'VAR') return env[ast.name];
+  if(ast.op === 'NOT') return GATE_FN.NOT([evalAST(ast.x, env)]);
+  if(ast.op === 'AND') return GATE_FN.AND([evalAST(ast.l, env), evalAST(ast.r, env)]);
+  if(ast.op === 'OR')  return GATE_FN.OR([evalAST(ast.l, env), evalAST(ast.r, env)]);
+  if(ast.op === 'XOR') return GATE_FN.XOR([evalAST(ast.l, env), evalAST(ast.r, env)]);
+  throw new Error('bad ast');
+}
+function compileExprToTable(exprStr, inputIds){
+  var ast = parseExprAST(exprStr);
+  var rows = TRUTH.rows(inputIds.length);
+  return rows.map(function(bits){
+    var env = {}; inputIds.forEach(function(id,i){ env[id]=bits[i]; });
+    return {bits:bits, out: evalAST(ast, env)};
+  });
+}
+function tablesEqual(t1, t2){
+  if(t1.length !== t2.length) return false;
+  for(var i=0;i<t1.length;i++){ if(t1[i].out !== t2[i].out) return false; }
+  return true;
+}
+
+/* 화면 표시용: 단어(AND/OR/NOT/XOR) ↔ 기호(∧∨¬⊕) 토글 (표시 전용, 내부 캐노니컬 문자열은 항상 단어형) */
+function renderExprDisplay(exprStr, symbolic){
+  if(!symbolic) return exprStr;
+  return exprStr
+    .replace(/\bAND\b/g, '∧').replace(/\bOR\b/g, '∨').replace(/\bXOR\b/g, '⊕')
+    .replace(/NOT\s+/g, '¬');
+}
+
+var LOGIC = {
+  evaluate: CIRCUIT.evaluate,
+  truthTable: CIRCUIT.truthTable,
+  enumerateRows: TRUTH.rows,
+  tablesEqual: tablesEqual,
+  matchTable: tablesEqual,
+  checkSeparation: checkSeparation,
+  lineParams: lineParams,
+  isSeparable: isSeparable,
+  deriveExpr: deriveExpr,
+  compileExpr: compileExprToTable,
+  mkCircuit: mkCircuit,
+  gates: GATE_FN
+};
+
+window.__LOGIC = {
+  gateEvaluate: function(type, inputs){ return GATE_FN[type](inputs); },
+  circuitEvaluate: function(circuit, switchVals){ return CIRCUIT.evaluate(circuit, switchVals); },
+  truthTable: function(circuit){ return CIRCUIT.truthTable(circuit); },
+  enumerateRows: function(k){ return TRUTH.rows(k); },
+  matchTruthTable: function(t1, t2){ return tablesEqual(t1, t2); },
+  isSeparable: function(labels){ return isSeparable(labels); },
+  checkSeparation: function(a,b,c,labels){ return checkSeparation(a,b,c,SEP_POINTS,labels); },
+  separationReport: function(a,b,c,labels){ return separationReport(a,b,c,labels); },
+  xorSepDone: function(failCount, N){ return xorSepDone(failCount, N); },
+  deriveExpr: function(circuit){ return deriveExpr(circuit); },
+  compileExpr: function(exprStr, inputIds){ return compileExprToTable(exprStr, inputIds); },
+  mkCircuit: mkCircuit,
+  GATE_FN: GATE_FN,
+  /* G2-C 노출(개정 §3 G2-C, verify_logic.py C2~C5 기대 인터페이스 그대로) */
+  layoutCases: function(){ return layoutCases(); },
+  stageDefs: function(){ return stageDefs(); },
+  gradeCircuit: function(circuit){ return gradeCircuit(circuit); },
+  wouldCreateCycle: function(circuit, edge){ return wouldCreateCycle(circuit, edge); },
+  halfAdderTable: function(){ return halfAdderTable(); }
+};
+
+/* ============================================================
+   13) SCREENS — 화면 정의(빌더) + 문구 상수
+   ============================================================ */
+/* L1 문항: 개정 §B/§1-1 확정값(초안, 선생님 교체 대상). 일상 문장 4개 → 간단한 수학
+   방정식·부등식으로 교체(고1 수준 즉답 가능, 계산 훈련이 목적이 아니라 참/거짓→0/1 변환이 목적). */
+var L1_CONDITIONS = [
+  {id:'c1', tex:'3 + 4 = 7'},
+  {id:'c4', tex:'5 - 2 < 1'}
+];
+
+var L5_STAGES = [
+  { id:'1-1', inputs:['A','B'], circuit: mkCircuit(['A','B'], [{id:'G1',type:'AND',inputs:['A','B']}], 'G1') },
+  { id:'1-2', inputs:['A','B'], circuit: mkCircuit(['A','B'], [{id:'G1',type:'OR',inputs:['A','B']}], 'G1') },
+  { id:'1-3', inputs:['A','B','C'], circuit: mkCircuit(['A','B','C'], [
+      {id:'G1',type:'AND',inputs:['A','B']},
+      {id:'G2',type:'OR',inputs:['G1','C']}
+    ], 'G2') },
+  { id:'1-4', inputs:['A','B'], circuit: mkCircuit(['A','B'], [
+      {id:'N1',type:'NOT',inputs:['A']},
+      {id:'G1',type:'AND',inputs:['N1','B']}
+    ], 'G1') },
+  { id:'1-5', inputs:['A','B','C'], circuit: mkCircuit(['A','B','C'], [
+      {id:'N1',type:'NOT',inputs:['B']},
+      {id:'G1',type:'OR',inputs:['A','N1']},
+      {id:'G2',type:'AND',inputs:['G1','C']}
+    ], 'G2') }
+];
+
+/* L6 (가) 목표 진리표 스테이지 — palette/nodeCap은 개정 §1-3 확정값(진리표 판: AND·OR).
+   targetCircuit이 곧 팔레트 게이트만으로 이뤄진 정답 예시 회로라 answerCircuit도 겸한다(C3). */
+var L6_TABLE_STAGES = [
+  { id:'2-1', inputs:['A','B'], palette:['AND','OR'], nodeCap:3,
+    targetCircuit: mkCircuit(['A','B'], [{id:'T1',type:'AND',inputs:['A','B']}], 'T1') },
+  { id:'2-2', inputs:['A','B'], palette:['AND','OR'], nodeCap:3,
+    targetCircuit: mkCircuit(['A','B'], [{id:'T1',type:'OR',inputs:['A','B']}], 'T1') },
+  { id:'2-3', inputs:['A','B','C'], palette:['AND','OR'], nodeCap:4,
+    targetCircuit: mkCircuit(['A','B','C'], [
+      {id:'T1',type:'OR',inputs:['A','B']},
+      {id:'T2',type:'AND',inputs:['T1','C']}
+    ], 'T2') }
+];
+
+/* L6 (나) 목표 식 스테이지 — palette(식 판): AND·OR·NOT(개정 §1-3 확정값). */
+var L6_EXPR_STAGES = [
+  { id:'3-1', inputs:['A','B'], palette:['AND','OR','NOT'], nodeCap:4, exprDisplay:'A AND (NOT B)',
+    targetCircuit: mkCircuit(['A','B'], [
+      {id:'T1',type:'NOT',inputs:['B']},
+      {id:'T2',type:'AND',inputs:['A','T1']}
+    ], 'T2') },
+  { id:'3-2', inputs:['A','B','C'], palette:['AND','OR','NOT'], nodeCap:5, exprDisplay:'(A AND B) OR NOT C',
+    targetCircuit: mkCircuit(['A','B','C'], [
+      {id:'T1',type:'AND',inputs:['A','B']},
+      {id:'T2',type:'NOT',inputs:['C']},
+      {id:'T3',type:'OR',inputs:['T1','T2']}
+    ], 'T3') }
+];
+
+/* L11_XOR_SOLVED: L9의 "정답 예시" 다층 회로(OR·AND·NOT·AND, XOR과 진리표 동치) — L9 stageDefs()의
+   answerCircuit(팔레트=AND/OR/NOT만 써야 하므로 targetCircuit의 단일 XOR 게이트는 쓸 수 없다)과
+   L11 step2(다층 회로 재등장) 양쪽이 공유하는 단일 정의(SSOT). L11_MINI_AND는 L11 step1·F2
+   보너스 슬라이드가 공유하는 AND(A,B) 미니 회로. */
+var L11_MINI_AND = mkCircuit(['A','B'], [{id:'G1', type:'AND', inputs:['A','B']}], 'G1');
+var L11_XOR_SOLVED = mkCircuit(['A','B'], [
+  {id:'S1', type:'OR', inputs:['A','B']},
+  {id:'S2', type:'AND', inputs:['A','B']},
+  {id:'S3', type:'NOT', inputs:['S2']},
+  {id:'S4', type:'AND', inputs:['S1','S3']}
+], 'S4');
+
+var L9_STAGE = {
+  id:'xor-1', inputs:['A','B'], palette:['AND','OR','NOT'], nodeCap:6,
+  targetCircuit: mkCircuit(['A','B'], [{id:'TX', type:'XOR', inputs:['A','B']}], 'TX'),
+  answerCircuit: L11_XOR_SOLVED
+};
+
+/* stageDefs (C3 노출 대상): L6·L9 새 조작 모델 게이트가 검사하는 스테이지 메타데이터.
+   answerCircuit은 팔레트 게이트만으로 목표 진리표를 만드는 정답 예시 회로 — 2-1~3-2는
+   targetCircuit이 이미 그 조건(팔레트 안 게이트만 사용)을 만족해 그대로 겸용하고, L9만
+   targetCircuit이 팔레트 밖 XOR 게이트라 별도 answerCircuit(L11_XOR_SOLVED)을 쓴다. */
+function stageDefs(){
+  return L6_TABLE_STAGES.concat(L6_EXPR_STAGES).map(function(s){
+    return {id:s.id, palette:s.palette.slice(), nodeCap:s.nodeCap, answerCircuit:s.targetCircuit};
+  }).concat([{id:'L9', palette:L9_STAGE.palette.slice(), nodeCap:L9_STAGE.nodeCap, answerCircuit:L9_STAGE.answerCircuit}]);
+}
+
+/* layoutCases (C2 노출 대상): L9 v1의 "동일 좌표 완전 겹침" 결함 재발 방지 게이트가 검사하는
+   배치 사례 전수. "목표" = 그 회로가 (혹시 자동배치로 그려지더라도) CIRCUIT.layout() 결과가
+   겹치지 않는지, "초기" = L6·L9 PUZZLE 보드가 학생에게 처음 보여주는 배치(게이트 없음, 입력·
+   출력만)가 겹치지 않는지. */
+function layoutCases(){
+  var cases = [];
+  [
+    {name:'L2 미니회로', inputs:['A','B'], type:'AND'},
+    {name:'L3 미니회로', inputs:['A','B'], type:'OR'},
+    {name:'L4 미니회로', inputs:['A'], type:'NOT'},
+    {name:'L8 미니회로', inputs:['A','B'], type:'XOR'}
+  ].forEach(function(d){
+    var c = mkCircuit(d.inputs, [{id:'G1', type:d.type, inputs:d.inputs.slice()}], 'G1');
+    cases.push(layoutCaseFromCircuit(d.name, c, CB_IN_H));
+  });
+  L5_STAGES.forEach(function(s){ cases.push(layoutCaseFromCircuit('L5 ' + s.id, s.circuit, CB_IN_H)); });
+  L6_TABLE_STAGES.concat(L6_EXPR_STAGES).forEach(function(s){
+    cases.push(layoutCaseFromCircuit('L6 ' + s.id + ' 목표', s.targetCircuit, CB_IN_H));
+    cases.push({name:'L6 ' + s.id + ' 초기', nodeSize:SBOX_H,
+      nodes: initPuzzleNodes(s.inputs).map(function(n){ return {id:n.id, x:n.x, y:n.y}; })});
+  });
+  cases.push(layoutCaseFromCircuit('L9 목표', L9_STAGE.targetCircuit, CB_IN_H));
+  cases.push({name:'L9 초기', nodeSize:SBOX_H,
+    nodes: initPuzzleNodes(L9_STAGE.inputs).map(function(n){ return {id:n.id, x:n.x, y:n.y}; })});
+  cases.push(layoutCaseFromCircuit('L11 예시1', L11_MINI_AND, CB_IN_H));
+  cases.push(layoutCaseFromCircuit('L11 예시2', L11_XOR_SOLVED, CB_IN_H));
+  return cases;
+}
+
+function renderStageSelect(container, stageList, progressMap, onSelect){
+  var box = el('div', {class:'stage-select'});
+  var grid = el('div', {class:'stage-grid'});
+  stageList.forEach(function(s, idx){
+    var prog = progressMap[s.id];
+    var locked = idx > 0 && !progressMap[stageList[idx-1].id].cleared && !STATE.data.teacherAllClear;
+    var tile = el('button', {
+      type:'button',
+      class:'stage-tile' + (prog.cleared ? ' cleared' : '') + (locked ? ' locked' : ''),
+      disabled: locked ? true : undefined,
+      'aria-label':'스테이지 ' + s.id + (locked ? ' 잠김' : (prog.cleared ? ' 완료' : ' 도전 가능'))
+    });
+    tile.appendChild(el('span', {class:'stage-id'}, s.id));
+    var starsText = locked ? '잠김' : (prog.cleared ? ('★'.repeat(prog.stars||1) + '☆'.repeat(3-(prog.stars||1))) : '도전');
+    tile.appendChild(el('span', {class:'stars'}, starsText));
+    if(!locked){ tile.addEventListener('click', function(){ onSelect(s.id); }); }
+    grid.appendChild(tile);
+  });
+  box.appendChild(grid);
+  container.appendChild(box);
+}
+
+/* L2·L3·L4·L8 공용 진리표 채우기+채점 패널(AC-9 병합 step2 우측): 구 buildSwitchGateBody에서
+   관찰용 renderCircuitBoard 보드를 뗀 것 — 그 자리는 같은 화면 왼쪽의 PLUG_render 끼우기
+   캔버스가 대신한다(보드는 하나만, 학생이 배선·토글로 관찰하며 바로 옆 표를 채운다). */
+function renderTruthFillPanel(host, cfg){
+  var inputIds = cfg.switches.map(function(s){ return s.id; });
+  var circuit = mkCircuit(inputIds, [{id:'G1', type:cfg.gateType, inputs:inputIds.slice()}], 'G1');
+  host.appendChild(el('h3', {}, '진리표를 채워 보세요'));
+  var answerFn = function(bits){
+    var sw = {}; inputIds.forEach(function(id,i){ sw[id]=bits[i]; });
+    return CIRCUIT.evaluate(circuit, sw).G1;
+  };
+  var fillApi = TRUTH.renderFillTable(host, inputIds, cfg.st.fill, answerFn);
+  var checkBtn = el('button', {type:'button', class:'btn btn-primary'}, '채점하기');
+  var resultMsg = el('p', {class:'muted', style:{minHeight:'20px'}, 'aria-live':'polite'}, cfg.st.done ? '정확해요! 모두 맞혔어요.' : '');
+  host.appendChild(checkBtn);
+  host.appendChild(resultMsg);
+  checkBtn.addEventListener('click', function(){
+    cfg.st.attempts = (cfg.st.attempts||0) + 1;
+    /* F1(L3 OR 오개념): (1,1)행이 오답이면 전용 피드백. cfg.orMisconception이 true인 화면만 대상. */
+    var sawWrong11 = false;
+    var ok = fillApi.check(cfg.orMisconception ? function(bits){
+      if(bits.length===2 && bits[0]===1 && bits[1]===1) sawWrong11 = true;
+    } : undefined);
+    STATE.save();
+    if(ok){
+      cfg.st.done = true;
+      STATE.save();
+      resultMsg.textContent = '정확해요! 모두 맞혔어요.';
+      if(cfg.onPass) cfg.onPass();
+      refreshNav();
+    } else if(sawWrong11){
+      resultMsg.textContent = '둘 다 있어도 간식은 먹죠! 수학의 OR은 하나 이상이면 1이에요.';
+    } else {
+      resultMsg.textContent = '틀린 칸이 있어요(빨간 줄). 다시 채워 보세요.';
+    }
+  });
+}
+
+function buildL1(){
+  /* 1뷰포트 실측(2026-07-19, 검토_공통심사_v1/1뷰포트_실측_2026-07-19.md)에서 pane 내부 스크롤
+     388px 확인 — 문항 4개+생각칸 세로 스택이 원인. 문항별 서브 슬라이드(step1~4=문항 1개,
+     step5=정리)로 분해해 해소한다. eyebrow·제목은 모든 step에서 동일(콘텐츠 무변경, 구조만 분해). */
+  var EYEBROW = '섹션1 · 논리 연산이란?';
+  var TITLE = 'L1. 참·거짓을 0/1로';
+  function headerBlock(s){
+    s.appendChild(el('div', {class:'screen-eyebrow'}, EYEBROW));
+    s.appendChild(el('h2', {class:'screen-title'}, TITLE));
+  }
+  function renderConditionCard(host, c, st){
+    host.innerHTML = '';
+    var row = el('div', {class:'card-hairline', style:{marginBottom:'10px'}});
+    row.appendChild(el('p', {style:{margin:'0 0 8px', fontWeight:'600', fontSize:'18px'}}, el('span', {'data-katex':c.tex})));
+    row.appendChild(Components.Chips({
+      items: [
+        {key:'t', label:'참 (1)', tone:'true', active: st.judged[c.id] === true},
+        {key:'f', label:'거짓 (0)', tone:'false', active: st.judged[c.id] === false}
+      ],
+      onToggle: function(key){
+        st.judged[c.id] = (key === 't');
+        STATE.save();
+        renderConditionCard(host, c, st);
+        renderMath(host); /* 재렌더 후 새 data-katex 노드에 다시 그리기(초기 마운트분은 mountCurrentView가 처리) */
+        refreshNav();
+      }
+    }));
+    host.appendChild(row);
+  }
+  function conditionStep(i){
+    var c = L1_CONDITIONS[i];
+    return {
+      mount: function(root){
+        var st = STATE.screen('L1');
+        var s = el('section', {class:'screen'});
+        headerBlock(s);
+        if(i === 0){
+          s.appendChild(el('div', {class:'screen-prompt'}, [
+            el('span', {'data-katex':'3 + 4 = 7'}),
+            '은 참일까요, 거짓일까요?'
+          ]));
+          MASCOT.bubble(s, '아래 수학 문장들을 하나씩 읽고 참인지 거짓인지 골라보세요.');
+        }
+        var host = el('div', {class:'screen-block'});
+        s.appendChild(host);
+        renderConditionCard(host, c, st);
+        root.appendChild(s);
+      },
+      isComplete: function(){ return STATE.screen('L1').judged[c.id] !== null; }
+    };
+  }
+  return {
+    steps: [
+      conditionStep(0), conditionStep(1),
+      { /* step5: 정리 */
+        mount: function(root){
+          var s = el('section', {class:'screen'});
+          headerBlock(s);
+          var summaryHost = el('div', {class:'screen-block'});
+          s.appendChild(summaryHost);
+          summaryHost.appendChild(el('p', {}, '컴퓨터는 참을 1, 거짓을 0으로 다뤄요.'));
+          summaryHost.appendChild(Components.Highlight([
+            {label:'참 = 1', tone:'true'},
+            {label:'거짓 = 0', tone:'false'}
+          ]));
+          s.appendChild(Components.ThoughtBox({
+            screenId:'L1', key:'thought', labelText:'참 또는 거짓인 수학 문장 하나 적기',
+            placeholder:'예: 10 - 3 = 7 → 참',
+            onChange: function(){ refreshNav(); }
+          }));
+          root.appendChild(s);
+        },
+        isComplete: function(){ return (STATE.screen('L1').thought||'').trim().length > 0; }
+      }
+    ]
+  };
+}
+
+/* L2·L3·L4·L8 공용 3step 골격(AC-9 병합): ①설명 ②체험+진리표(PLUG 끼우기 캔버스로 배선·토글을
+   관찰하며 같은 화면에서 진리표 채우기·채점까지) ③정리. cfg: {screenId,eyebrow,title,step1Body(s),
+   mascot1,mascot2,gateType,switches,orMisconception,step4Before(s,st),step4After(s,st),
+   step4IsComplete,summary} */
+function buildConceptScreen(cfg){
+  var switchIds = cfg.switches.map(function(sw){ return sw.id; });
+  function headerBlock(s, suffix){
+    s.appendChild(el('div', {class:'screen-eyebrow'}, cfg.eyebrow));
+    s.appendChild(el('h2', {class:'screen-title'}, cfg.title + (suffix ? (' — ' + suffix) : '')));
+  }
+  return {
+    steps: [
+      { /* step1: 설명 */
+        mount: function(root){
+          var s = el('section', {class:'screen'});
+          headerBlock(s, '소개');
+          cfg.step1Body(s);
+          if(cfg.mascot1) MASCOT.bubble(s, cfg.mascot1);
+          root.appendChild(s);
+        }
+      },
+      { /* step2(AC-9 병합): 체험(왼쪽 — 미리 놓인 게이트에 스위치 끼우고 토글) + 진리표
+           채우기·채점(오른쪽, renderTruthFillPanel 이식). 보드는 끼우기 캔버스 하나뿐 —
+           구 buildSwitchGateBody의 관찰용 renderCircuitBoard는 이 화면에서 쓰지 않는다. */
+        mount: function(root){
+          var st = STATE.screen(cfg.screenId);
+          var s = el('section', {class:'screen'});
+          headerBlock(s, '체험');
+          if(cfg.mascot2) MASCOT.bubble(s, cfg.mascot2);
+          var layout = el('div', {class:'game-layout', style:{minHeight:'300px'}});
+          var boardArea = el('div', {class:'game-board-area'});
+          var panelArea = el('div', {class:'game-panel-area'});
+          var boardCard = el('div', {class:'card-hairline', style:{width:'100%'}});
+          boardArea.appendChild(boardCard);
+          var initVals = {};
+          switchIds.forEach(function(id, i){ initVals[id] = i===0 ? (st.a||0) : (st.b||0); });
+          PLUG_render(boardCard, {
+            inputs: cfg.switches, gateType: cfg.gateType, values: initVals,
+            onToggle: function(id, v){
+              var idx = switchIds.indexOf(id);
+              if(idx===0) st.a = v; else st.b = v;
+              STATE.save();
+            }
+          });
+          var truthHost = el('div', {class:'screen-block'});
+          panelArea.appendChild(truthHost);
+          renderTruthFillPanel(truthHost, {
+            st: st, gateType: cfg.gateType, switches: cfg.switches,
+            orMisconception: !!cfg.orMisconception
+          });
+          layout.appendChild(boardArea); layout.appendChild(panelArea);
+          s.appendChild(layout);
+          root.appendChild(s);
+        },
+        isComplete: function(){ return !!STATE.screen(cfg.screenId).done; }
+      },
+      { /* step3: 정리 */
+        mount: function(root){
+          var st = STATE.screen(cfg.screenId);
+          var s = el('section', {class:'screen'});
+          headerBlock(s, '정리');
+          if(cfg.step4Before) cfg.step4Before(s, st);
+          s.appendChild(Components.SummaryCard(cfg.summary));
+          if(cfg.step4After) cfg.step4After(s, st);
+          root.appendChild(s);
+        },
+        isComplete: cfg.step4IsComplete || function(){ return true; }
+      }
+    ]
+  };
+}
+
+function buildL2(){
+  return buildConceptScreen({
+    screenId:'L2', eyebrow:'섹션1 · 논리 연산이란?', title:'L2. AND (논리곱)',
+    step1Body: function(s){
+      s.appendChild(el('div', {class:'screen-prompt'}, '우산을 챙긴다 = 비가 온다 그리고(AND) 외출한다. 둘 다 참일 때만?'));
+      s.appendChild(el('p', {}, '스위치를 게이트에 끼우고(연결), 켜고 끄면(0/1) 출력이 정해져요. 모든 켜고 끄는 경우를 표로 적은 것이 진리표예요.'));
+    },
+    mascot1: '다음 단계에서 스위치를 직접 끼워볼게요.',
+    mascot2: '스위치 두 개를 끼우고 켜고 꺼 보면서 언제 출력이 켜지는지 살펴보세요.',
+    gateType:'AND',
+    switches: [{id:'A', tag:'A', desc:'비가 온다'}, {id:'B', tag:'B', desc:'외출한다'}],
+    summary: {color:'peach', title:'정리', body:'논리곱 AND: 둘 다 1이면 1'},
+    step4After: function(s){
+      /* 기본값 문구(선생님 교체 가능) */
+      s.appendChild(Components.NextTease('다음: OR 게이트 — 둘 중 하나만 1이면 어떻게 될까요?'));
+    }
+  });
+}
+
+function buildL3(){
+  return buildConceptScreen({
+    screenId:'L3', eyebrow:'섹션1 · 논리 연산이란?', title:'L3. OR (논리합)',
+    step1Body: function(s){
+      s.appendChild(el('div', {class:'screen-prompt'}, '간식을 먹는다 = 초콜릿이 있다 또는(OR) 사탕이 있다. 하나만 있어도?'));
+    },
+    mascot1: '스위치를 게이트에 끼우고 토글해 보세요.',
+    mascot2: '하나만 켜도 출력이 켜지는지 확인해 보세요.',
+    gateType:'OR',
+    switches: [{id:'A', tag:'A', desc:'초콜릿이 있다'}, {id:'B', tag:'B', desc:'사탕이 있다'}],
+    orMisconception: true,
+    step4Before: function(s){
+      /* F1(§B L3): 일상어 '또는'(배타적)과 수학 OR(포함적) 대비 카드 */
+      s.appendChild(el('div', {class:'card card-hairline', style:{marginBottom:'var(--sp-sm)'}}, [
+        el('div', {class:'card-title'}, '일상어 vs 수학의 OR'),
+        el('div', {class:'card-body', style:{fontSize:'14px', fontWeight:'500'}}, "일상어 '또는': '둘 중 하나만'이라는 뜻일 때가 많아요 ↔ 수학의 OR(논리합): 하나 이상이면 1 — 둘 다여도 1!")
+      ]));
+    },
+    summary: {color:'lavender', title:'정리', body:'논리합 OR: 하나 이상 1이면 1'}
+  });
+}
+
+function buildL4(){
+  return buildConceptScreen({
+    screenId:'L4', eyebrow:'섹션1 · 논리 연산이란?', title:'L4. NOT (부정)',
+    step1Body: function(s){
+      s.appendChild(el('div', {class:'screen-prompt'}, "'문이 열려 있다'의 반대는? NOT은 참↔거짓을 뒤집어요."));
+    },
+    mascot1: '스위치를 게이트에 끼우고 토글해 보세요.',
+    mascot2: '스위치를 눌러 값을 뒤집어 보세요.',
+    gateType:'NOT',
+    switches: [{id:'A', tag:'A', desc:'문이 열려 있다'}],
+    summary: {color:'pink', title:'정리', body:'부정 NOT: 참이면 거짓, 거짓이면 참'},
+    step4After: function(s, st){
+      var termsHost = el('div', {class:'card card-ochre', style:{marginTop:'var(--sp-md)'}});
+      termsHost.appendChild(el('div', {class:'card-title'}, '교과서 용어 정리'));
+      var termGrid = el('div', {class:'chips-row'});
+      var terms = [
+        ['논리곱(AND)', '둘 다 참이면 참'],
+        ['논리합(OR)', '하나라도 참이면 참'],
+        ['부정(NOT)', '참과 거짓을 뒤집음'],
+        ['진리표', '입력에 따른 출력을 모두 적은 표']
+      ];
+      terms.forEach(function(t){
+        var chip = el('div', {class:'card-hairline', style:{minWidth:'150px', background:'var(--canvas)'}});
+        chip.appendChild(el('div', {style:{fontWeight:'700', marginBottom:'4px'}}, t[0]));
+        chip.appendChild(el('div', {class:'muted'}, t[1]));
+        termGrid.appendChild(chip);
+      });
+      termsHost.appendChild(termGrid);
+      var confirmBtn = el('button', {type:'button', class:'btn btn-secondary', style:{marginTop:'10px'}}, st.termsConfirmed ? '확인했어요 ✓' : '확인했어요');
+      confirmBtn.addEventListener('click', function(){
+        st.termsConfirmed = true; STATE.save();
+        confirmBtn.textContent = '확인했어요 ✓';
+        refreshNav();
+      });
+      termsHost.appendChild(confirmBtn);
+      s.appendChild(termsHost);
+      s.appendChild(Components.NextTease('이제 이걸로 스테이지에 도전!'));
+    },
+    step4IsComplete: function(){ return !!STATE.screen('L4').termsConfirmed; }
+  });
+}
+
+function buildL8(){
+  return buildConceptScreen({
+    screenId:'L8', eyebrow:'섹션3 · XOR와 인공지능', title:'L8. XOR (배타적논리합)',
+    step1Body: function(s){
+      /* F1(§B L8): 도입 문구 교체(요청서 초안 그대로) */
+      s.appendChild(el('div', {class:'screen-prompt'}, "'짜장 또는 짬뽕'이라고 할 때, 둘 다 시키는 건 아니죠? 그 '또는'이 바로 오늘 배울 XOR이에요."));
+      s.appendChild(el('p', {}, '두 입력이 서로 다를 때만 1이 되는 연산 = 배타적논리합(XOR).'));
+    },
+    mascot1: '스위치를 게이트에 끼우고 토글해 보세요.',
+    mascot2: '두 동전이 같은 면이면 0, 다른 면이면 1이에요.',
+    gateType:'XOR',
+    switches: [{id:'A', tag:'A', desc:'동전1이 앞면'}, {id:'B', tag:'B', desc:'동전2가 앞면'}],
+    step4Before: function(s){
+      /* 동전 예시는 step4(정리)로 이동(G2-B 지시) */
+      s.appendChild(el('p', {class:'muted'}, '예: 동전 두 개가 서로 다른 면일 때만.'));
+    },
+    summary: {color:'teal', title:'정리', body:'배타적논리합 XOR: 두 입력이 다르면 1'}
+  });
+}
+
+function buildL5(){
+  /* 선형 자동 진행(개정 §B L5): "목록으로" 왕복 제거, 1-1부터 순서대로. 클리어 → 별+컨피티 →
+     2초 후 자동 다음(+ "바로 다음" 버튼 병행) → 1-5 클리어는 "섹션 완료"(자동 전환 없음).
+     재입장 시 첫 미클리어 판부터 재개. activeTimer는 buildL5() 스코프 공유 — 화면을 벗어나면
+     onStepExit가, 같은 화면 안에서 재마운트되면 mount() 첫 줄이 정리한다(중복 전환 방지). */
+  var activeTimer = null;
+  function clearActiveTimer(){ if(activeTimer){ clearTimeout(activeTimer); activeTimer = null; } }
+
+  return {
+    gameLayout: true, /* L5도 L6과 같은 pane-game 1뷰포트(진리표는 패널 내부 스크롤) — 사용자 지시 2026-07-19 "한 눈에" */
+    mount: function(root){
+      clearActiveTimer();
+      var st = STATE.screen('L5');
+      /* 집중 모드(L6 동형): L5는 진입 즉시 스테이지 진행이므로 상시 집중형 — prompt·MASCOT 미렌더,
+         제목은 compact. 탐구 안내는 채점 버튼·표가 자체 설명적이고 mascot 문구는 L5 도입부(L4 정리
+         NextTease)가 대신한다. */
+      var s = el('section', {class:'screen screen--focus'});
+      s.appendChild(el('div', {class:'screen-eyebrow'}, '섹션2 · 진리표·회로 스테이지'));
+      s.appendChild(el('h2', {class:'screen-title screen-title--compact'}, 'L5. 진리표 채우기 스테이지'));
+
+      var body = el('div', {class:'screen-block', style:{flex:'1', minHeight:'0', display:'flex', flexDirection:'column', marginBottom:'0'}});
+      s.appendChild(body);
+
+      function firstUnclearedId(){
+        for(var i=0;i<L5_STAGES.length;i++){ if(!st.stages[L5_STAGES[i].id].cleared) return L5_STAGES[i].id; }
+        return L5_STAGES[L5_STAGES.length-1].id;
+      }
+      function renderProgressChips(container, curId){
+        var row = el('div', {class:'chips-row', style:{margin:'0'}});
+        L5_STAGES.forEach(function(s2){
+          var prog = st.stages[s2.id];
+          row.appendChild(el('span', {class:'chip' + (s2.id===curId ? ' active' : '')}, s2.id + (prog.cleared ? ' ✓' : '')));
+        });
+        container.appendChild(row);
+      }
+
+      function showStage(id){
+        clearActiveTimer();
+        body.innerHTML = '';
+        var idx = -1;
+        var stageDef = null;
+        for(var i=0;i<L5_STAGES.length;i++){ if(L5_STAGES[i].id===id){ stageDef = L5_STAGES[i]; idx = i; break; } }
+        var prog = st.stages[id];
+        /* 칩 행과 "스테이지 N" 제목을 한 줄로 — 세로 압축(1뷰포트), 정보는 동일 */
+        var headRow = el('div', {style:{display:'flex', alignItems:'center', gap:'10px', flexWrap:'wrap', margin:'2px 0 8px'}});
+        headRow.appendChild(el('h3', {style:{margin:'0', fontSize:'16px'}}, '스테이지 ' + id));
+        renderProgressChips(headRow, id);
+        body.appendChild(headRow);
+
+        /* LG3-03: 보드+진리표 세로 스택 → A1(보드+진리표 우측 병치)로. 3입력 판(8행 진리표)은
+           game-panel-area 자체가 overflow-y:auto라 넘치면 패널 내부 스크롤로 받는다(A1 원칙).
+           flex:1(고정 minHeight 아님)로 pane-game 체인에서 남는 공간을 전부 받는다. */
+        var layout = el('div', {class:'game-layout', style:{flex:'1', minHeight:'0'}});
+        var boardArea = el('div', {class:'game-board-area'});
+        var panelArea = el('div', {class:'game-panel-area'});
+        body.appendChild(layout);
+        layout.appendChild(boardArea); layout.appendChild(panelArea);
+
+        var switchVals = {};
+        stageDef.inputs.forEach(function(inId){ switchVals[inId] = 0; });
+        var boardHost = el('div', {class:'card-hairline', style:{width:'100%'}});
+        boardArea.appendChild(boardHost);
+        renderCircuitBoard(boardHost, stageDef.circuit, {switchVals: switchVals});
+
+        /* 진리표만 스크롤 영역, 채점하기·메시지는 패널 하단 고정(스크롤에 가려지지 않게).
+           panelArea 자체 overflow는 hidden으로 덮어 이중 스크롤을 막는다(L5 인라인 한정). */
+        panelArea.style.overflow = 'hidden';
+        var truthHost = el('div', {class:'screen-block', style:{flex:'1', minHeight:'0', overflowY:'auto', marginBottom:'0'}});
+        panelArea.appendChild(truthHost);
+        var answerFn = function(bits){
+          var sw = {}; stageDef.inputs.forEach(function(id2,i){ sw[id2]=bits[i]; });
+          return CIRCUIT.evaluate(stageDef.circuit, sw)[stageDef.circuit.output];
+        };
+        var fillApi = TRUTH.renderFillTable(truthHost, stageDef.inputs, prog.fill, answerFn);
+        var checkBtn = el('button', {type:'button', class:'btn btn-primary'}, '채점하기');
+        var msg = el('p', {class:'muted', 'aria-live':'polite', style:{margin:'4px 0 0'}}, prog.cleared ? ('스테이지 클리어! 별 ' + prog.stars + '개.') : '');
+        var nextRow = el('div', {class:'btn-row', style:{marginTop:'4px'}});
+        panelArea.appendChild(checkBtn);
+        panelArea.appendChild(msg);
+        panelArea.appendChild(nextRow);
+        checkBtn.addEventListener('click', function(){
+          prog.attempts = (prog.attempts||0) + 1;
+          var ok = fillApi.check();
+          if(ok && !prog.cleared){
+            prog.cleared = true;
+            prog.stars = prog.attempts<=1 ? 3 : (prog.attempts<=2 ? 2 : 1);
+            STATE.save();
+            FX.confetti(body);
+            refreshNav();
+            var isLast = idx === L5_STAGES.length-1;
+            if(isLast){
+              msg.textContent = '섹션 완료! 진리표 스테이지를 모두 통과했어요. 별 ' + prog.stars + '개.';
+            } else {
+              var nextId = L5_STAGES[idx+1].id;
+              msg.textContent = '스테이지 클리어! 별 ' + prog.stars + '개. 2초 후 다음 스테이지로 넘어가요.';
+              var goNextBtn = el('button', {type:'button', class:'btn btn-primary btn-sm'}, '바로 다음');
+              goNextBtn.addEventListener('click', function(){
+                clearActiveTimer(); st.activeStage = nextId; STATE.save(); showStage(nextId);
+              });
+              nextRow.appendChild(goNextBtn);
+              activeTimer = setTimeout(function(){
+                activeTimer = null;
+                st.activeStage = nextId; STATE.save(); showStage(nextId);
+              }, 2000);
+            }
+          } else if(ok){
+            STATE.save();
+            msg.textContent = '이미 클리어한 스테이지예요. 잘했어요!';
+          } else {
+            STATE.save();
+            msg.textContent = '틀린 칸이 있어요(빨간 줄). 다시 채워 보세요.';
+          }
+        });
+      }
+
+      var currentId = firstUnclearedId();
+      st.activeStage = currentId; STATE.save();
+      showStage(currentId);
+      root.appendChild(s);
+    },
+    onStepExit: function(){ clearActiveTimer(); },
+    isComplete: function(){
+      var st = STATE.screen('L5');
+      return L5_STAGES.some(function(s2){ return st.stages[s2.id].cleared; });
+    }
+  };
+}
+
+function buildL6(){
+  /* 개정 §3 G2-C: 팔레트·드래그·커스텀 배선·채점 버튼(PUZZLE) 모델로 교체. 트랙 구조((가)/(나))·
+     스테이지 데이터·게이팅은 v1 유지. L5식 자동 진행(클리어 2초 후 다음 스테이지 + "바로 다음")을
+     같은 트랙 안에서 적용한다. activeTimer는 L5와 동일 패턴(mount·onStepExit에서 정리). */
+  var activeTimer = null;
+  function clearActiveTimer(){ if(activeTimer){ clearTimeout(activeTimer); activeTimer = null; } }
+
+  return {
+    gameLayout: true,
+    mount: function(root){
+      clearActiveTimer();
+      var st = STATE.screen('L6');
+      if(!st.progress.boards) st.progress.boards = {};
+      var s = el('section', {class:'screen'});
+      /* 집중 모드(G2-D, ai-thinking S5 이식): 스테이지 진행 중(activeTrack && activeStage)엔
+         상단 헤더 4블록(eyebrow·title·prompt·MASCOT)을 아예 렌더하지 않는다 — 트랙/스테이지
+         선택 화면에서는 유지. L6는 ROUTER.refresh 없이 body.innerHTML만 직접 바꿔 내부 화면을
+         전환하므로(showTrackMenu/showSelect/showStage), 헤더도 같은 방식으로 각 전환 시점마다
+         다시 계산해 그린다 — 그래야 스테이지 진입/이탈에 맞춰 자동으로 접히고 펼쳐진다. */
+      var headerHost = el('div', {});
+      s.appendChild(headerHost);
+      function renderHeader(){
+        var playFocus = !!(st.activeTrack && st.activeStage);
+        s.classList.toggle('screen--focus', playFocus);
+        headerHost.innerHTML = '';
+        if(playFocus) return;
+        headerHost.appendChild(el('div', {class:'screen-eyebrow'}, '섹션2 · 진리표·회로 스테이지'));
+        headerHost.appendChild(el('h2', {class:'screen-title'}, 'L6. 회로 만들기 스테이지'));
+        headerHost.appendChild(el('div', {class:'screen-prompt'}, '게이트 팔레트에서 골라 보드에 놓고 배선하세요. (가) 목표 진리표, (나) 목표 식 — 두 가지 방식으로 도전해요.'));
+        MASCOT.bubble(headerHost, '게이트를 꺼내 옮기고 연결한 뒤 채점하기를 눌러요. 목표와 똑같아지면 클리어!');
+      }
+
+      var body = el('div', {class:'screen-block', style:{flex:'1', minHeight:'0', display:'flex', flexDirection:'column', overflowY:'auto'}});
+      s.appendChild(body);
+
+      function showTrackMenu(){
+        clearActiveTimer();
+        renderHeader();
+        body.innerHTML = '';
+        var tableClearedCount = L6_TABLE_STAGES.filter(function(x){ return st.table[x.id].cleared; }).length;
+        var exprClearedCount = L6_EXPR_STAGES.filter(function(x){ return st.expr[x.id].cleared; }).length;
+
+        var trackA = el('div', {class:'card-hairline', style:{marginBottom:'12px'}});
+        trackA.appendChild(el('h3', {}, '(가) 목표 진리표 — "이런 출력이 나오게 만들어 보세요."'));
+        trackA.appendChild(el('p', {class:'muted'}, '완료 ' + tableClearedCount + ' / ' + L6_TABLE_STAGES.length));
+        var goA = el('button', {type:'button', class:'btn btn-secondary'}, '도전하기');
+        goA.addEventListener('click', function(){ st.activeTrack='table'; STATE.save(); showSelect(); });
+        trackA.appendChild(goA);
+        body.appendChild(trackA);
+
+        var trackB = el('div', {class:'card-hairline'});
+        trackB.appendChild(el('h3', {}, '(나) 목표 식 — "이 식에 해당하는 배선을 만들어 보세요."'));
+        trackB.appendChild(el('p', {class:'muted'}, '완료 ' + exprClearedCount + ' / ' + L6_EXPR_STAGES.length));
+        var goB = el('button', {type:'button', class:'btn btn-secondary'}, '도전하기');
+        goB.addEventListener('click', function(){ st.activeTrack='expr'; STATE.save(); showSelect(); });
+        trackB.appendChild(goB);
+        body.appendChild(trackB);
+      }
+      function trackList(){ return st.activeTrack==='table' ? L6_TABLE_STAGES : L6_EXPR_STAGES; }
+      function trackProgress(){ return st.activeTrack==='table' ? st.table : st.expr; }
+
+      function showSelect(){
+        clearActiveTimer();
+        renderHeader();
+        body.innerHTML = '';
+        var back = el('button', {type:'button', class:'btn btn-secondary btn-sm'}, '← 종류 선택으로');
+        back.addEventListener('click', function(){ st.activeTrack=null; STATE.save(); showTrackMenu(); });
+        body.appendChild(back);
+        renderStageSelect(body, trackList(), trackProgress(), function(id){
+          st.activeStage = id; STATE.save(); showStage(id);
+        });
+      }
+
+      function showStage(id){
+        clearActiveTimer();
+        renderHeader();
+        body.innerHTML = '';
+        var back = el('button', {type:'button', class:'btn btn-secondary btn-sm'}, '← 목록으로');
+        back.addEventListener('click', function(){ clearActiveTimer(); st.activeStage=null; STATE.save(); showSelect(); });
+        body.appendChild(back);
+        var list = trackList();
+        var idx = -1;
+        var stageDef = null;
+        for(var i=0;i<list.length;i++){ if(list[i].id===id){ stageDef=list[i]; idx=i; break; } }
+        /* activeTrack·activeStage 불일치 저장분(변조·개명) 방어(LG3-10) — stageDef가 없으면
+           PUZZLE.render가 undefined.inputs로 TypeError를 던지기 전에 목록으로 되돌린다. */
+        if(!stageDef){ st.activeStage=null; STATE.save(); showSelect(); return; }
+        var prog = trackProgress()[id];
+        body.appendChild(el('h3', {style:{marginTop:'10px'}}, '스테이지 ' + id));
+        var msg = el('p', {class:'muted', 'aria-live':'polite'}, prog.cleared ? '스테이지 클리어!' : '');
+        var nextRow = el('div', {class:'btn-row', style:{marginTop:'6px'}});
+        if(!st.progress.boards[id]) st.progress.boards[id] = {};
+        PUZZLE.render(body, {
+          board: st.progress.boards[id],
+          inputIds: stageDef.inputs, palette: stageDef.palette, nodeCap: stageDef.nodeCap,
+          targetKind: st.activeTrack==='expr' ? 'expr' : 'table',
+          targetCircuit: stageDef.targetCircuit,
+          exprDisplay: stageDef.exprDisplay,
+          progress: prog,
+          onCleared: function(){
+            refreshNav();
+            var isLast = idx === list.length-1;
+            if(isLast){
+              msg.textContent = '스테이지 클리어! 이 트랙을 모두 통과했어요.';
+            } else {
+              var nextId = list[idx+1].id;
+              msg.textContent = '스테이지 클리어! 2초 후 다음 스테이지로 넘어가요.';
+              var goNextBtn = el('button', {type:'button', class:'btn btn-primary btn-sm'}, '바로 다음');
+              goNextBtn.addEventListener('click', function(){
+                clearActiveTimer(); st.activeStage = nextId; STATE.save(); showStage(nextId);
+              });
+              nextRow.innerHTML = '';
+              nextRow.appendChild(goNextBtn);
+              activeTimer = setTimeout(function(){
+                activeTimer = null;
+                st.activeStage = nextId; STATE.save(); showStage(nextId);
+              }, 2000);
+            }
+          }
+        });
+        body.appendChild(msg);
+        body.appendChild(nextRow);
+      }
+
+      if(st.activeTrack && st.activeStage){ showStage(st.activeStage); }
+      else if(st.activeTrack){ showSelect(); }
+      else { showTrackMenu(); }
+      root.appendChild(s);
+    },
+    onStepExit: function(){ clearActiveTimer(); },
+    isComplete: function(){
+      var st = STATE.screen('L6');
+      var tableOk = L6_TABLE_STAGES.some(function(x){ return st.table[x.id].cleared; });
+      var exprOk = L6_EXPR_STAGES.some(function(x){ return st.expr[x.id].cleared; });
+      return tableOk && exprOk;
+    }
+  };
+}
+
+function buildL7(){
+  return {
+    /* gameLayout(G2-B): ROUTER가 이 화면의 pane에 .pane-game을 걸어 1뷰포트(페이지 스크롤 0)로
+       만든다 — 정사각 보드+우측 진리표는 SANDBOX.render 내부의 .game-layout이 담당. */
+    gameLayout: true,
+    mount: function(root){
+      /* 집중 모드(G2-D, ai-thinking S5 이식): L7은 진입 즉시가 곧 플레이(선택 단계 없음)라
+         eyebrow·MASCOT는 아예 렌더하지 않고 제목만 compact로 줄인다. 과제 지시(prompt)
+         1줄은 맥락 보존을 위해 유지한다. */
+      var s = el('section', {class:'screen screen--focus'});
+      s.appendChild(el('h2', {class:'screen-title screen-title--compact'}, 'L7. 자유 놀이터'));
+      s.appendChild(el('div', {class:'screen-prompt'}, '배운 게이트로 마음껏 회로를 만들어 보세요. 오른쪽에 실시간 진리표, 아래에 논리식이 함께 나타나요.'));
+      SANDBOX.render(s);
+      root.appendChild(s);
+    },
+    isComplete: function(){ return true; }
+  };
+}
+
+function buildL9(){
+  /* 개정 §3 G2-C: L6과 같은 PUZZLE 모델(팔레트 AND·OR·NOT, XOR 금지) + F4(클리어 직후 구조화
+     자기설명, 필수 게이팅) + F2(자기설명 후 반가산기 보너스 슬라이드 2장, 게이팅 없음)를 4step
+     서브 슬라이드로 엮는다. activeTimer는 L6·L10과 동일 패턴 — step1의 자동 진행(2초+바로 다음)만
+     쓰고, 모듈 onStepExit이 step 전환·화면 이탈 양쪽에서 정리한다. */
+  var EYEBROW = '섹션3 · XOR와 인공지능';
+  var activeTimer = null;
+  function clearActiveTimer(){ if(activeTimer){ clearTimeout(activeTimer); activeTimer = null; } }
+
+  return {
+    gameLayout: true,
+    steps: [
+      { /* step1: XOR 조합 만들기 퍼즐(PUZZLE) */
+        mount: function(root){
+          clearActiveTimer();
+          var st = STATE.screen('L9');
+          if(!st.progress.boards) st.progress.boards = {};
+          if(!st.progress.boards.L9) st.progress.boards.L9 = {};
+          /* 집중 모드(G2-D, ai-thinking S5 이식): step1은 선택 단계 없이 진입 즉시가 플레이라
+             eyebrow·MASCOT는 아예 렌더하지 않고 제목만 compact로 줄인다. 과제 지시(prompt)
+             1줄은 맥락 보존을 위해 유지한다. */
+          var s = el('section', {class:'screen screen--focus'});
+          s.appendChild(el('h2', {class:'screen-title screen-title--compact'}, 'L9. XOR를 조합으로 만들기'));
+          s.appendChild(el('div', {class:'screen-prompt'}, 'XOR을 우리가 배운 AND·OR·NOT만으로 만들 수 있을까요?'));
+          var msg = el('p', {class:'muted', 'aria-live':'polite'}, st.cleared ? '한 개로는 안 되고, 여러 개를 층층이 연결했네요! 이게 다층이에요.' : '');
+          var nextRow = el('div', {class:'btn-row', style:{marginTop:'6px'}});
+          PUZZLE.render(s, {
+            board: st.progress.boards.L9,
+            inputIds: L9_STAGE.inputs, palette: L9_STAGE.palette, nodeCap: L9_STAGE.nodeCap,
+            targetKind:'table', targetCircuit: L9_STAGE.targetCircuit,
+            progress: st,
+            onCleared: function(){
+              refreshNav();
+              msg.textContent = '한 개로는 안 되고, 여러 개를 층층이 연결했네요! 이게 다층이에요. 2초 후 다음으로 넘어가요.';
+              var goNextBtn = el('button', {type:'button', class:'btn btn-primary btn-sm'}, '바로 다음');
+              goNextBtn.addEventListener('click', function(){ clearActiveTimer(); ROUTER.next(); });
+              nextRow.innerHTML = '';
+              nextRow.appendChild(goNextBtn);
+              activeTimer = setTimeout(function(){ activeTimer = null; ROUTER.next(); }, 2000);
+            }
+          });
+          s.appendChild(msg);
+          s.appendChild(nextRow);
+          root.appendChild(s);
+        },
+        isComplete: function(){ return !!STATE.screen('L9').cleared; }
+      },
+      { /* step2: F4 구조화 자기설명(필수 게이팅, 칩 2빈칸) */
+        mount: function(root){
+          clearActiveTimer();
+          var st = STATE.screen('L9');
+          var se = st.selfExplain;
+          var OPTIONS = ['둘 중 하나 이상이 1', '둘 다 1', '둘 다 0'];
+          var ANSWER = {a:'둘 중 하나 이상이 1', b:'둘 다 1'};
+          var s = el('section', {class:'screen'});
+          s.appendChild(el('div', {class:'screen-eyebrow'}, EYEBROW));
+          s.appendChild(el('h2', {class:'screen-title'}, 'L9. 방금 만든 회로, 말로 설명해보기'));
+          s.appendChild(el('div', {class:'screen-prompt'}, '빈칸에 알맞은 말을 골라 문장을 완성하세요.'));
+          MASCOT.bubble(s, '방금 만든 회로 구조(OR과 AND, NOT)를 떠올리면서 골라보세요.');
+
+          var sentence = el('div', {class:'card-hairline', style:{fontSize:'16px', fontWeight:'700', margin:'10px 0'}});
+          sentence.appendChild(document.createTextNode('XOR은 '));
+          sentence.appendChild(el('span', {class:'chip' + (se.a?' active':'')}, se.a || '(____)'));
+          sentence.appendChild(document.createTextNode(' 이면서 '));
+          sentence.appendChild(el('span', {class:'chip' + (se.b?' active':'')}, se.b || '(____)'));
+          sentence.appendChild(document.createTextNode('는 아닐 때 1이다.'));
+          s.appendChild(sentence);
+
+          /* LG3-07: F4는 필수 게이팅 단계인데 오답 피드백이 FX.shake 단일(모션) 채널뿐이었다 —
+             reduced-motion·SR 사용자에게 무피드백. 문구를 announce + 하단 muted p에 병기한다. */
+          var feedbackMsg = el('p', {class:'muted', style:{minHeight:'20px'}, 'aria-live':'polite'}, se.done ? '정확해요! 다음으로 넘어갈 수 있어요.' : '');
+          ['a','b'].forEach(function(key){
+            var locked = se[key] === ANSWER[key];
+            s.appendChild(el('p', {class:'muted', style:{margin:'10px 0 4px'}}, (key==='a'?'첫 번째':'두 번째') + ' 빈칸' + (locked?' (정답 선택됨)':'')));
+            var row = el('div', {class:'chips-row'});
+            OPTIONS.forEach(function(opt){
+              var chip = el('button', {type:'button', class:'chip' + (se[key]===opt?' active':''), disabled: locked ? true : undefined}, opt);
+              chip.addEventListener('click', function(){
+                if(locked) return;
+                if(opt === ANSWER[key]){
+                  se[key] = opt;
+                  STATE.save();
+                  if(se.a===ANSWER.a && se.b===ANSWER.b){ se.done = true; STATE.save(); refreshNav(); }
+                  ROUTER.refresh();
+                } else {
+                  FX.shake(chip);
+                  feedbackMsg.textContent = '아직 아니에요. 다시 골라보세요.';
+                  announce('아직 아니에요. 다시 골라보세요.');
+                }
+              });
+              row.appendChild(chip);
+            });
+            s.appendChild(row);
+          });
+
+          s.appendChild(feedbackMsg);
+          root.appendChild(s);
+        },
+        isComplete: function(){ return !!STATE.screen('L9').selfExplain.done; }
+      },
+      { /* step3: F2 보너스1 — "방금 만든 회로가 덧셈 기계?" (표시 전용, 게이팅 없음) */
+        mount: function(root){
+          var s = el('section', {class:'screen'});
+          s.appendChild(el('div', {class:'screen-eyebrow'}, EYEBROW));
+          s.appendChild(el('h2', {class:'screen-title'}, 'L9. 보너스 — 방금 만든 회로가 덧셈 기계?'));
+          s.appendChild(el('div', {class:'screen-prompt'}, '1+1은 이진수로 10(일, 영). 방금 만든 XOR이 \'합\', 이미 아는 AND가 \'올림\'이에요. 이 두 개면 컴퓨터의 덧셈이 완성!'));
+          MASCOT.bubble(s, '이런 회로를 반가산기(half adder)라고 불러요. 다음 화면에서 표로 확인해볼까요?');
+          root.appendChild(s);
+        }
+      },
+      { /* step4: F2 보너스2 — 2출력 진리표 관찰 + XOR/AND 미니 뷰 병치(표시 전용) */
+        mount: function(root){
+          var s = el('section', {class:'screen'});
+          s.appendChild(el('div', {class:'screen-eyebrow'}, EYEBROW));
+          s.appendChild(el('h2', {class:'screen-title'}, 'L9. 보너스 — 반가산기 진리표'));
+          s.appendChild(el('div', {class:'screen-prompt'}, '표를 보면서 A, B가 바뀔 때 올림(AND)과 합(XOR)이 어떻게 바뀌는지 관찰해 보세요(채점은 없어요).'));
+          var row = el('div', {style:{display:'flex', flexWrap:'wrap', gap:'16px', flex:'1', minHeight:'0', overflowY:'auto'}});
+          var tableHost = el('div', {class:'card-hairline', style:{flex:'1', minWidth:'220px'}});
+          tableHost.appendChild(el('h3', {style:{marginTop:'0'}}, '반가산기 진리표'));
+          var wrapT = el('div', {class:'truth-wrap'});
+          var table = el('table', {class:'truth-table'});
+          var thead = el('tr', {});
+          ['A','B','올림(AND)','합(XOR)','이진 결과'].forEach(function(h){ thead.appendChild(el('th', {}, h)); });
+          table.appendChild(thead);
+          halfAdderTable().forEach(function(r){
+            var tr = el('tr', {});
+            [r.a, r.b, r.carry, r.sum, r.binary].forEach(function(v){ tr.appendChild(el('td', {}, String(v))); });
+            table.appendChild(tr);
+          });
+          wrapT.appendChild(table);
+          tableHost.appendChild(wrapT);
+          row.appendChild(tableHost);
+
+          var miniHost = el('div', {class:'card-hairline', style:{flex:'1', minWidth:'220px'}});
+          miniHost.appendChild(el('h3', {style:{marginTop:'0'}}, '합(XOR) · 올림(AND) 미니 회로'));
+          renderCircuitBoard(miniHost, L11_XOR_SOLVED, {switchVals:{A:1,B:0}});
+          renderCircuitBoard(miniHost, L11_MINI_AND, {switchVals:{A:1,B:0}});
+          row.appendChild(miniHost);
+          s.appendChild(row);
+          root.appendChild(s);
+        }
+      }
+    ],
+    onStepExit: function(){ clearActiveTimer(); }
+  };
+}
+
+function buildL10(){
+  /* 개정 §B L10: 슬라이드 안내형(①설명 ②AND ③OR ④XOR). op은 step마다 고정, 자동 진행은
+     2초+"바로 다음"(§1 확정값 #6). activeTimer는 L5와 같은 패턴 — onStepExit·재마운트에서 정리. */
+  var activeTimer = null;
+  function clearActiveTimer(){ if(activeTimer){ clearTimeout(activeTimer); activeTimer = null; } }
+  var EYEBROW = '섹션3 · XOR와 인공지능';
+
+  function opStep(op, promptText, mascotText, popOnMount){
+    return {
+      mount: function(root){
+        clearActiveTimer();
+        var st = STATE.screen('L10');
+        var s = el('section', {class:'screen'});
+        s.appendChild(el('div', {class:'screen-eyebrow'}, EYEBROW));
+        s.appendChild(el('h2', {class:'screen-title'}, 'L10. 좌표평면 선형 분리 — ' + op));
+        s.appendChild(el('div', {class:'screen-prompt'}, promptText));
+        if(mascotText) MASCOT.bubble(s, mascotText);
+        var nextRow = el('div', {class:'btn-row', style:{marginTop:'8px'}});
+        SEP.render(s, {
+          op: op, progress: st, popOnMount: !!popOnMount,
+          onAchieved: function(){
+            refreshNav();
+            if(op === 'XOR'){
+              /* XOR은 "다음 화면"이 아니라 같은 step 안에서 설명 모드로 전환된다 — ROUTER.refresh()가
+                 step4.mount()를 다시 불러 st.achieved.XOR===true 분기(설명 슬라이드)를 그린다. */
+              ROUTER.refresh();
+              return;
+            }
+            var nextLabel = op === 'AND' ? 'OR' : 'XOR';
+            toast(op + ' 분리 성공! 2초 후 ' + nextLabel + '로 넘어가요.');
+            var goBtn = el('button', {type:'button', class:'btn btn-primary btn-sm'}, '바로 다음');
+            goBtn.addEventListener('click', function(){ clearActiveTimer(); ROUTER.next(); });
+            nextRow.innerHTML = '';
+            nextRow.appendChild(goBtn);
+            activeTimer = setTimeout(function(){ activeTimer = null; ROUTER.next(); }, 2000);
+          }
+        });
+        s.appendChild(nextRow);
+        root.appendChild(s);
+      },
+      isComplete: function(){ return !!STATE.screen('L10').achieved[op]; }
+    };
+  }
+
+  return {
+    steps: [
+      { /* step1: 설명 — AND 진리표와 좌표평면을 나란히, 행↔점 대응 */
+        mount: function(root){
+          var s = el('section', {class:'screen'});
+          s.appendChild(el('div', {class:'screen-eyebrow'}, EYEBROW));
+          s.appendChild(el('h2', {class:'screen-title'}, 'L10. 좌표평면 선형 분리 — 설명'));
+          s.appendChild(el('div', {class:'screen-prompt'}, '입력 (A,B) 네 조합이 좌표평면의 네 점이 돼요. 그 점의 색은 출력: 1이면 파랑, 0이면 빨강.'));
+          MASCOT.bubble(s, 'AND 진리표의 행을 탭하거나 키보드로 골라보면 좌표평면의 대응하는 점이 표시돼요. 같은 순서로 놓여 있어요.');
+          var row = el('div', {style:{display:'flex', flexWrap:'wrap', gap:'16px'}});
+          var tableHost = el('div', {class:'card-hairline', style:{flex:'1', minWidth:'220px'}});
+          tableHost.appendChild(el('h3', {style:{marginTop:'0'}}, 'AND 진리표'));
+          var tableApi = TRUTH.renderDisplayTable(tableHost, ['A','B'], function(bits){ return GATE_FN.AND(bits); });
+          row.appendChild(tableHost);
+          var planeHost = el('div', {class:'card-hairline', style:{flex:'1', minWidth:'220px'}});
+          planeHost.appendChild(el('h3', {style:{marginTop:'0'}}, '좌표평면'));
+          var planeApi = renderStaticLabeledPlane(planeHost, GATE_FN.AND);
+          row.appendChild(planeHost);
+          s.appendChild(row);
+          root.appendChild(s);
+
+          /* LG3-06: 행↔점 하이라이트 대응(§B L10-1) — 탭·호버·키보드 포커스 둘 다로 동작해야
+             한다(SFC 규약: 터치+키보드 혼용). tr에 tabindex를 주고 aria-label로 대응 관계도
+             텍스트로 병기(LG3-02와 연계 — 시각 강조만으로 끝내지 않는다). */
+          tableApi.rowEls.forEach(function(tr, idx){
+            var bits = tableApi.rows[idx];
+            tr.tabIndex = 0;
+            tr.style.cursor = 'pointer';
+            tr.setAttribute('aria-label', '입력 (' + bits[0] + ',' + bits[1] + ') 행 — 좌표평면의 (' + bits[0] + ',' + bits[1] + ') 점과 대응');
+            tr.addEventListener('pointerenter', function(){ planeApi.setHighlight(idx); });
+            tr.addEventListener('focus', function(){ planeApi.setHighlight(idx); });
+            tr.addEventListener('click', function(){ planeApi.setHighlight(idx); });
+            tr.addEventListener('pointerleave', function(){ if(document.activeElement!==tr) planeApi.setHighlight(null); });
+            tr.addEventListener('blur', function(){ planeApi.setHighlight(null); });
+          });
+        }
+      },
+      opStep('AND', '직선을 움직여서 파란 점(1)과 빨간 점(0)을 나눠 보세요.', null, false),
+      opStep('OR', '진리표가 바뀌면서 점 색도 바뀌었어요. 다시 직선으로 나눠 보세요.', '하나만 1이어도 파란 점이 돼요.', true),
+      { /* step4: XOR — N=3 실패 게이트(C4). 달성 전=시도, 달성 후=설명(F3 실패 직선 재등장) */
+        mount: function(root){
+          clearActiveTimer();
+          var st = STATE.screen('L10');
+          var s = el('section', {class:'screen'});
+          s.appendChild(el('div', {class:'screen-eyebrow'}, EYEBROW));
+          s.appendChild(el('h2', {class:'screen-title'}, 'L10. 좌표평면 선형 분리 — XOR'));
+          if(st.achieved.XOR){
+            s.appendChild(el('div', {class:'screen-prompt'}, '아무리 직선을 움직여도 XOR의 네 점은 갈라지지 않았죠? 왜 그런지 살펴볼게요.'));
+            MASCOT.bubble(s, 'XOR은 직선 하나로는 절대 나눌 수 없어요 — AND·OR과 다르죠?');
+            SEP.renderExplanation(s, st);
+          } else {
+            s.appendChild(el('div', {class:'screen-prompt'}, 'AND와 OR처럼 직선으로 나눠 보세요. 3번 시도해도 안 되면 이유를 알려줄게요.'));
+            MASCOT.bubble(s, 'AND와 OR은 됐으니, XOR도 한번 시도해 보세요!');
+            SEP.render(s, {
+              op:'XOR', progress: st,
+              onAchieved: function(){ refreshNav(); ROUTER.refresh(); }
+            });
+          }
+          root.appendChild(s);
+        },
+        isComplete: function(){ return !!STATE.screen('L10').achieved.XOR; }
+      }
+    ],
+    onStepExit: function(){ clearActiveTimer(); }
+  };
+}
+
+/* 개정 §B L11: 정적 페이지 → 4슬라이드(내용·문구는 v1 유지, 구조만 슬라이드화).
+   ①단층=직선 하나(AND 회고) ②XOR 불가→층 쌓기(L9 다층 회로 재등장) ③캠프 정리 카드
+   ④소감 생각칸+루미 축하. */
+function buildL11(){
+  var EYEBROW = '섹션3 · XOR와 인공지능';
+  return {
+    steps: [
+      { /* step1: 단층 퍼셉트론 = 직선 하나 (L10 회고, AND 미니 회로) */
+        mount: function(root){
+          var s = el('section', {class:'screen'});
+          s.appendChild(el('div', {class:'screen-eyebrow'}, EYEBROW));
+          s.appendChild(el('h2', {class:'screen-title'}, 'L11. 퍼셉트론 연결 — 단층'));
+          s.appendChild(el('div', {class:'screen-prompt'}, '직선 하나로 나누는 게 바로 단층 퍼셉트론이에요. 다음 활동에서 인공지능과 연결해 다시 만나게 될 개념이에요.'));
+          var leftCol = el('div', {class:'card-hairline'});
+          leftCol.appendChild(el('h3', {style:{marginTop:'0'}}, '단층 퍼셉트론 = 직선 하나'));
+          leftCol.appendChild(el('p', {class:'muted'}, 'AND처럼 직선 하나로 나뉘는 규칙은 한 층으로 충분해요.'));
+          renderCircuitBoard(leftCol, L11_MINI_AND, {switchVals:{A:1,B:1}});
+          s.appendChild(leftCol);
+          root.appendChild(s);
+        }
+      },
+      { /* step2: XOR은 직선 하나로 불가 → 층을 쌓는다 (L9에서 만든 다층 회로 재등장) */
+        mount: function(root){
+          var s = el('section', {class:'screen'});
+          s.appendChild(el('div', {class:'screen-eyebrow'}, EYEBROW));
+          s.appendChild(el('h2', {class:'screen-title'}, 'L11. 퍼셉트론 연결 — 다층'));
+          s.appendChild(el('div', {class:'screen-prompt'}, 'XOR은 직선 하나로 못 나누니, 여러 층(다층 퍼셉트론)이 필요해요.'));
+          var rightCol = el('div', {class:'card-hairline'});
+          rightCol.appendChild(el('h3', {style:{marginTop:'0'}}, '다층 퍼셉트론 = XOR처럼 층층이'));
+          rightCol.appendChild(el('p', {class:'muted'}, '직선 하나로 안 나뉘는 XOR은 층을 쌓아야 해요. (L9에서 만든 회로)'));
+          renderCircuitBoard(rightCol, L11_XOR_SOLVED, {switchVals:{A:1,B:0}});
+          s.appendChild(rightCol);
+          root.appendChild(s);
+        }
+      },
+      { /* step3: 캠프 전체 정리 카드 */
+        mount: function(root){
+          var s = el('section', {class:'screen'});
+          s.appendChild(el('div', {class:'screen-eyebrow'}, EYEBROW));
+          s.appendChild(el('h2', {class:'screen-title'}, 'L11. 정리'));
+          s.appendChild(Components.SummaryCard({
+            color:'lavender', title:'정리',
+            body:'논리도, 인공지능도 입력→출력 규칙(함수)을 다룬다. 어떤 규칙은 한 층으론 부족하다.'
+          }));
+          s.appendChild(Components.SummaryCard({
+            color:'ochre', title:'오늘까지의 여정',
+            body:'점자를 수로 바꾸고(6비트) → 그 수를 믿을 수 있게 보내고(반복 전송·패리티) → 이제 그 수로 판단하는 법(논리 연산·퍼셉트론)까지 왔어요. 다음에는 사진과 단어도 수가 될 수 있는지 살펴봐요.'
+          }));
+          root.appendChild(s);
+        }
+      },
+      { /* step4: 소감 생각칸 + 루미 축하 */
+        mount: function(root){
+          var s = el('section', {class:'screen'});
+          s.appendChild(el('div', {class:'screen-eyebrow'}, EYEBROW));
+          s.appendChild(el('h2', {class:'screen-title'}, 'L11. 소감'));
+          MASCOT.bubble(s, '수고했어요! 오늘 배운 걸 함께 정리해봐요.', {tone:'cheer'});
+          s.appendChild(Components.ThoughtBox({
+            screenId:'L11', key:'thought', labelText:'오늘 배운 것 중 기억하고 싶은 것 한 가지',
+            placeholder:'예: XOR은 한 층으로 안 되고 다층이 필요하다는 게 신기했다.',
+            onChange: function(){ refreshNav(); }
+          }));
+          root.appendChild(s);
+        },
+        isComplete: function(){ return (STATE.screen('L11').thought||'').trim().length > 0; }
+      }
+    ]
+  };
+}
+
+var SCREENS = {
+  L1: buildL1(), L2: buildL2(), L3: buildL3(), L4: buildL4(),
+  L5: buildL5(), L6: buildL6(), L7: buildL7(),
+  L8: buildL8(), L9: buildL9(), L10: buildL10(), L11: buildL11()
+};
+
+/* ============================================================
+   14) TEACHER — 교사 패널
+   ============================================================ */
+var TEACHER = {
+  tapCount: 0,
+  tapTimer: null,
+  init: function(){
+    var titleBtn = document.getElementById('appTitleBtn');
+    titleBtn.addEventListener('click', function(){
+      TEACHER.tapCount++;
+      clearTimeout(TEACHER.tapTimer);
+      TEACHER.tapTimer = setTimeout(function(){ TEACHER.tapCount = 0; }, 2500);
+      if(TEACHER.tapCount >= 5){ TEACHER.tapCount = 0; TEACHER.open(); }
+    });
+    document.addEventListener('keydown', function(e){
+      if(e.altKey && (e.key==='r' || e.key==='R')){ TEACHER.open(); }
+      if(e.key === 'Escape'){ TEACHER.close(); }
+    });
+    document.getElementById('teacherCloseBtn').addEventListener('click', TEACHER.close);
+    document.getElementById('teacherResetBtn').addEventListener('click', function(){
+      var area = document.getElementById('teacherConfirmArea');
+      area.textContent = '';
+      var box = el('div', {class:'card-hairline', style:{marginTop:'10px'}});
+      box.appendChild(el('p', {style:{margin:'0 0 10px'}}, '정말 초기화할까요? 이 학습지의 진행 상황이 모두 사라집니다.'));
+      var row = el('div', {class:'btn-row'});
+      var yes = el('button', {type:'button', class:'btn btn-primary'}, '예, 초기화');
+      yes.addEventListener('click', function(){
+        STATE.reset();
+        /* 전환 중 리셋 300ms 창(새니티 minor②) 해소: ROUTER.go()는 _transitioning이면 그냥
+           반환해 화면이 갱신되지 않는다. render()는 _rebuild()를 직접 불러(_transitioning을
+           false로 되돌리고 대기 타이머도 취소) 전환 애니메이션 없이 즉시 다시 그린다 — go()를
+           거칠 필요가 없다(screenId는 STATE.reset()이 이미 DEFAULT_STATE()의 'L1'로 설정). */
+        ROUTER.render();
+        TEACHER.close();
+        toast('초기화되었습니다.');
+      });
+      var no = el('button', {type:'button', class:'btn btn-secondary'}, '아니오');
+      no.addEventListener('click', function(){ area.textContent = ''; });
+      row.appendChild(yes); row.appendChild(no);
+      box.appendChild(row);
+      area.appendChild(box);
+    });
+  },
+  open: function(){
+    document.getElementById('teacherPanel').classList.add('open');
+    document.getElementById('teacherConfirmArea').textContent = '';
+  },
+  close: function(){
+    document.getElementById('teacherPanel').classList.remove('open');
+  }
+};
+
+/* ============================================================
+   15) BOOT
+   ============================================================ */
+function boot(){
+  STATE.load();
+  ROUTER.screenEl = document.getElementById('screenRoot');
+  MASCOT.mountMini();
+  TEACHER.init();
+  document.getElementById('prevBtn').addEventListener('click', function(){ ROUTER.prev(); });
+  document.getElementById('nextBtn').addEventListener('click', function(){ ROUTER.next(); });
+  /* ←→ 화면·step 내비(image-data.html 4278~4289 이식). 입력 요소(입력칸·선택상자 등)에
+     포커스가 있거나 IME 조합 중이면 무시하고, 이미 다른 위젯(삭제·스위치 커서, SEP 각도·위치
+     조작 등, 요소 레벨에서 먼저 반응)이 이 키를 처리했다면(e.defaultPrevented)도 무시한다 —
+     그래야 그 위젯들의 기존 방향키 조작과 화면 이동이 겹치지 않는다. */
+  document.addEventListener('keydown', function(e){
+    if(e.isComposing || e.keyCode === 229) return;
+    if(e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+    var tag = document.activeElement && document.activeElement.tagName;
+    if(tag==='INPUT' || tag==='TEXTAREA' || tag==='SELECT') return;
+    if(e.defaultPrevented) return;
+    if(e.key === 'ArrowLeft'){ ROUTER.prev(); } else { ROUTER.next(); }
+  });
+  ROUTER.render();
+}
+
+if(document.readyState === 'loading'){
+  document.addEventListener('DOMContentLoaded', boot);
+} else {
+  boot();
+}
+
+})();
+</script>
+</body>
+</html>
