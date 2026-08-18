@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="지뢰찾기를 소재로 지도학습·비지도학습·강화학습의 차이를 직접 조작하며 비교하는 웹앱입니다. 정답이 있는 학습, 정답 없이 무리짓기, 시행착오와 보상으로 스스로 배우는 과정을 각각 체험합니다." />
+  <title>AI는 무엇을 보고 배우나</title>
+  <link rel="icon" href="../../favicon.ico" sizes="16x16 32x32 48x48" />
+  <link rel="icon" href="../../assets/favicon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="../../assets/apple-touch-icon.png" />
+  <style>
+    :root{
+      --bg:#ffffff;--card:#f8fafc;--line:#dbe4ee;--text:#1f2937;--muted:#6b7280;
+      --blue:#2563eb;--blue-soft:#dbeafe;--pink:#db2777;--green:#059669;--green-soft:#ecfdf5;
+      --indigo:#4f46e5;--red:#dc2626;--amber:#d97706;--amber-soft:#fff7ed;
+      --shadow:0 10px 25px rgba(15,23,42,.08)
+    }
+    *{box-sizing:border-box}
+    body{margin:0;background:var(--bg);font-family:"Pretendard","Noto Sans KR",system-ui,sans-serif;color:var(--text)}
+    .wrap{max-width:1140px;margin:0 auto;padding:24px}
+    .back-link{display:inline-block;margin-bottom:14px;color:#2563eb;font-weight:700;text-decoration:none}
+    .back-link:hover{text-decoration:underline}
+    h1{margin:0 0 8px}
+    h2{margin:0 0 10px;font-size:1.2rem}
+    .lead{color:var(--muted);margin:0 0 18px;line-height:1.6}
+    .card{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:20px;box-shadow:var(--shadow);margin-bottom:18px}
+    .stepnum{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;background:var(--blue-soft);color:var(--blue);font-weight:800;font-size:.9rem;margin-right:8px}
+    .mini{font-size:.93rem;color:var(--muted);line-height:1.6}
+    .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+    button{font:inherit}
+    .btn{padding:10px 14px;border:none;border-radius:12px;background:var(--blue);color:#fff;cursor:pointer}
+    .btn:hover{filter:brightness(.97)}
+    .btn.secondary{background:#fff;color:var(--text);border:1px solid var(--line)}
+    .btn.pink{background:var(--pink)}
+    .btn.green{background:var(--green)}
+    .btn:disabled{opacity:.5;cursor:not-allowed}
+    .chips{display:flex;flex-wrap:wrap;gap:8px}
+    .chip{border:1px solid var(--line);background:#fff;border-radius:12px;padding:8px 12px;cursor:pointer;font-weight:700;font-size:.9rem}
+    .chip.active{background:var(--blue-soft);border-color:#bcd4ff;color:var(--blue)}
+    .chip.correct{background:var(--green-soft);border-color:#86efac;color:#166534}
+    .chip.wrong{background:#fff0f0;border-color:#fca5a5;color:#991b1b}
+    textarea,input[type="text"]{width:100%;padding:11px 13px;border:1px solid #cbd5e1;border-radius:12px;font:inherit;background:#fff}
+    textarea{min-height:56px;resize:vertical}
+    table{width:100%;border-collapse:collapse;background:#fff;border-radius:14px;overflow:hidden}
+    th,td{border:1px solid var(--line);padding:8px;text-align:center;font-size:.9rem}
+    th{background:#f8fafc}
+    .feedback{padding:12px 14px;border-radius:14px;margin-top:10px}
+    .good{background:var(--green-soft)}
+    .warnbox{background:#fff6d9}
+    .info{background:var(--amber-soft)}
+    .danger{background:#fff0f0}
+    .panel{background:#fff;border:1px solid var(--line);border-radius:16px;padding:14px}
+    .confirm-code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:1.3rem;font-weight:800;letter-spacing:2px;background:#111827;color:#fff;padding:10px 16px;border-radius:12px;display:inline-block}
+    .progress-row{display:flex;justify-content:flex-end;gap:10px;margin-bottom:8px}
+    .board{display:inline-grid;gap:3px;background:#cbd5e1;padding:4px;border-radius:10px}
+    .cell{display:flex;align-items:center;justify-content:center;font-weight:800;font-size:.95rem;border-radius:6px;background:#e5e7eb;color:#334155;cursor:pointer;user-select:none}
+    .cell.revealed{background:#fff;cursor:default}
+    .cell.mine{background:#dc2626;color:#fff}
+    .stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px}
+    .stat-card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:12px;text-align:center}
+    .stat-card .label{font-size:.8rem;color:var(--muted);margin-bottom:4px}
+    .stat-card .big{font-size:1.4rem;font-weight:800}
+    canvas.chart{border:1px solid var(--line);border-radius:12px;background:#fff;max-width:100%}
+    .table-scroll{overflow-x:auto}
+    .compare-table td.label-cell{font-weight:800;background:#f8fafc}
+    details{border:1px solid var(--line);border-radius:14px;padding:12px 14px;background:#fff;margin-top:14px}
+    summary{cursor:pointer;font-weight:800}
+    @media (max-width:640px){
+      .wrap{padding:16px}
+    }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back-link" href="../">← 영재원 수업 목록</a>
+
+  <div class="progress-row">
+    <button class="btn secondary" id="exportBtn">진행 코드 내보내기</button>
+    <button class="btn secondary" id="importBtn">코드로 불러오기</button>
+  </div>
+  <div id="exportBox" class="panel" style="display:none;margin-bottom:14px">
+    <p class="mini" style="margin:0 0 6px">아래 코드를 복사해 두면 다른 기기에서 이어서 할 수 있습니다.</p>
+    <input type="text" id="exportCode" readonly>
+  </div>
+  <div id="importBox" class="panel" style="display:none;margin-bottom:14px">
+    <div class="row">
+      <input type="text" id="importCode" placeholder="코드 붙여넣기" style="flex:1;min-width:200px">
+      <button class="btn" id="importApplyBtn">불러오기</button>
+    </div>
+  </div>
+
+  <h1>AI는 무엇을 보고 배우나</h1>
+  <p class="lead"><b>지뢰찾기</b>를 소재로 AI가 배우는 세 가지 방식을 비교해 봅니다. 같은 상황이라도 <b>무엇을 알려주고 어떻게 배우느냐</b>가 다릅니다.</p>
+
+  <!-- 0. 도입 -->
+  <section class="card">
+    <h2><span class="stepnum">0</span>지뢰찾기 규칙</h2>
+    <p class="mini">칸을 클릭하면 그 칸 <b>둘레 8칸에 지뢰가 몇 개</b> 있는지 숫자로 알려줍니다. 지뢰 칸을 클릭하면 그 칸이 드러납니다. 몇 번 눌러 감을 잡아 보세요.</p>
+    <div class="row" style="align-items:flex-start;gap:20px">
+      <div id="introBoard" class="board" style="grid-template-columns:repeat(6,40px)"></div>
+      <button class="btn secondary" id="introResetBtn">판 다시 섞기</button>
+    </div>
+  </section>
+
+  <!-- 1. 지도학습 -->
+  <section class="card">
+    <h2><span class="stepnum">1</span>지도학습 — 정답을 알려주고 배우기</h2>
+    <p class="mini">아래는 이미 결과를 확인한 칸 10개의 기록입니다. <b>이웃 지뢰 수</b>와 실제로 <b>지뢰였는지</b>(정답)가 함께 있습니다.</p>
+    <div class="row" style="align-items:flex-start;gap:20px;flex-wrap:wrap">
+      <table style="max-width:320px">
+        <thead><tr><th>이웃 지뢰 수</th><th>정답: 지뢰였나?</th></tr></thead>
+        <tbody id="trainTableBody"></tbody>
+      </table>
+      <div style="flex:1;min-width:240px">
+        <button class="btn" id="trainBtn">규칙 학습시키기</button>
+        <div id="ruleResult" class="feedback info" style="display:none;margin-top:12px"></div>
+        <div id="testSection" style="display:none;margin-top:14px">
+          <p class="mini" style="margin:0 0 8px">이제 <b>정답을 모르는</b> 새 칸 6개에 규칙을 적용해 예측해 봅니다.</p>
+          <table>
+            <thead><tr><th>이웃 지뢰 수</th><th>규칙의 예측</th><th>실제 정답</th></tr></thead>
+            <tbody id="testTableBody"></tbody>
+          </table>
+          <button class="btn secondary" id="revealTestBtn" style="margin-top:10px">정답 확인하기</button>
+          <div id="testAccuracy" class="feedback" style="display:none;margin-top:10px"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2. 비지도학습 -->
+  <section class="card">
+    <h2><span class="stepnum">2</span>비지도학습 — 정답 없이 무리짓기</h2>
+    <p class="mini">이번에는 같은 칸 10개를 보여주지만 <b>지뢰였는지(정답)는 알려주지 않습니다.</b> 대신 두 가지 특징(이웃 지뢰 수, 가장자리까지 거리)만 보고 비슷한 칸끼리 <b>두 그룹</b>으로 묶어 봅니다.</p>
+    <div class="row" style="align-items:flex-start;gap:20px;flex-wrap:wrap">
+      <canvas id="clusterCanvas" class="chart" width="360" height="300"></canvas>
+      <div style="flex:1;min-width:220px">
+        <button class="btn" id="clusterStepBtn">묶기 한 단계 진행</button>
+        <button class="btn secondary" id="clusterResetBtn">초기화</button>
+        <p class="mini" id="clusterStatus" style="margin-top:10px">아직 그룹이 나뉘지 않았습니다.</p>
+      </div>
+    </div>
+    <p style="margin-top:14px"><b>이 두 그룹은 각각 무엇을 나타내는 칸일까요?</b> (정답표는 없습니다. 특징을 보고 짐작해 써 보세요)</p>
+    <textarea id="clusterReflection" placeholder="생각을 써 보세요."></textarea>
+  </section>
+
+  <!-- 3. 강화학습 -->
+  <section class="card">
+    <h2><span class="stepnum">3</span>강화학습 — 시행착오와 보상으로 배우기</h2>
+    <p class="mini">이번엔 <b>정답도, 특징표도 없습니다.</b> 같은 판을 여러 번 반복해서 직접 클릭해 보고, 안전하면 <b>+보상</b>, 지뢰면 <b>-보상</b>을 받으며 스스로 안전한 칸을 찾아가는 과정을 시뮬레이션합니다. (한 회당 최대 8칸까지 도전)</p>
+    <div class="row" style="align-items:flex-start;gap:20px;flex-wrap:wrap">
+      <div id="rlBoard" class="board" style="grid-template-columns:repeat(5,44px)"></div>
+      <div style="flex:1;min-width:260px">
+        <div class="row">
+          <button class="btn" id="run1Btn">1회 실행</button>
+          <button class="btn" id="run10Btn">10회 실행</button>
+          <button class="btn" id="run100Btn">100회 실행</button>
+          <button class="btn secondary" id="autoBtn">자동 실행</button>
+          <button class="btn secondary" id="rlResetBtn">초기화</button>
+        </div>
+        <div class="stat-grid" style="margin-top:14px">
+          <div class="stat-card"><div class="label">에피소드 수</div><div class="big" id="episodeCount">0</div></div>
+          <div class="stat-card"><div class="label">최근 성공률</div><div class="big" id="recentSuccess">-</div></div>
+        </div>
+      </div>
+    </div>
+    <p class="mini" style="margin-top:10px">칸의 색은 <b>학습된 값</b>을 나타냅니다. 초록에 가까울수록 "안전하다고 학습됨", 빨강에 가까울수록 "위험하다고 학습됨"입니다.</p>
+    <canvas id="rlChart" class="chart" width="640" height="160" style="margin-top:10px;width:100%"></canvas>
+    <p class="mini">가로축: 에피소드, 세로축: 8번 시도 중 안전하게 연 칸 수 (최근 10회 이동평균)</p>
+  </section>
+
+  <!-- 4. 정리 -->
+  <section class="card">
+    <h2><span class="stepnum">4</span>세 가지 비교와 판단하기</h2>
+    <div class="table-scroll">
+      <table class="compare-table">
+        <thead><tr><th>학습 방식</th><th>무엇을 알려주나</th><th>이 활동에서 한 일</th></tr></thead>
+        <tbody>
+          <tr><td class="label-cell">지도학습</td><td>정답(라벨)</td><td>이웃 지뢰 수 → 지뢰 여부 규칙 학습</td></tr>
+          <tr><td class="label-cell">비지도학습</td><td>정답 없음, 특징만</td><td>비슷한 칸끼리 두 그룹으로 묶기</td></tr>
+          <tr><td class="label-cell">강화학습</td><td>보상(+/-)만</td><td>직접 클릭해 보며 안전한 칸을 스스로 찾기</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p style="margin-top:14px"><b>다음 상황은 어떤 학습 방식에 가까울까요?</b></p>
+    <div id="quizList"></div>
+  </section>
+
+  <!-- 제출 -->
+  <section class="card">
+    <h2>제출용 결과 만들기</h2>
+    <p class="mini">이름을 입력하고 버튼을 누르면 오늘 활동 요약이 이미지로 저장됩니다.</p>
+    <div class="row">
+      <input type="text" id="submitName" placeholder="이름" style="max-width:200px">
+      <button class="btn green" id="makeSubmitBtn">제출용 결과 만들기</button>
+    </div>
+    <div id="submitStatus" class="feedback good" style="display:none;margin-top:12px"></div>
+    <div id="confirmCodeBox" style="margin-top:12px;display:none">
+      <p class="mini" style="margin:0 0 6px">확인 코드</p>
+      <span class="confirm-code" id="confirmCode"></span>
+    </div>
+  </section>
+</div>
+
+<canvas id="exportSummaryCanvas" width="900" height="900" style="display:none"></canvas>
+
+<script>
+  const STORAGE_KEY = 'gifted26_ai_learning_v1';
+
+  /* ================= 0. 도입 보드 ================= */
+  const INTRO_W = 6, INTRO_H = 5;
+  let introMines = new Set();
+  let introRevealed = new Set();
+  function randMines(total, count, avoid){
+    const s = new Set();
+    while(s.size < count){
+      const idx = Math.floor(Math.random()*total);
+      if(!avoid || !avoid.has(idx)) s.add(idx);
+    }
+    return s;
+  }
+  function neighborMineCount(w,h,mines,idx){
+    const x = idx % w, y = Math.floor(idx/w);
+    let c = 0;
+    for(let dy=-1;dy<=1;dy++){
+      for(let dx=-1;dx<=1;dx++){
+        if(dx===0 && dy===0) continue;
+        const nx=x+dx, ny=y+dy;
+        if(nx<0||ny<0||nx>=w||ny>=h) continue;
+        if(mines.has(ny*w+nx)) c++;
+      }
+    }
+    return c;
+  }
+  function renderIntroBoard(){
+    const box = document.getElementById('introBoard');
+    box.innerHTML = '';
+    for(let i=0;i<INTRO_W*INTRO_H;i++){
+      const cell = document.createElement('div');
+      cell.className = 'cell';
+      cell.style.width = '40px'; cell.style.height='40px';
+      if(introRevealed.has(i)){
+        cell.classList.add('revealed');
+        if(introMines.has(i)){ cell.classList.add('mine'); cell.textContent = '★'; }
+        else cell.textContent = neighborMineCount(INTRO_W,INTRO_H,introMines,i);
+      } else {
+        cell.onclick = ()=>{ introRevealed.add(i); renderIntroBoard(); };
+      }
+      box.appendChild(cell);
+    }
+  }
+  document.getElementById('introResetBtn').onclick = ()=>{
+    introMines = randMines(INTRO_W*INTRO_H, 5);
+    introRevealed = new Set();
+    renderIntroBoard();
+  };
+
+  /* ================= 1. 지도학습 ================= */
+  const TRAIN_DATA = [
+    {f:0,label:0},{f:0,label:0},{f:0,label:1},{f:1,label:0},{f:1,label:0},
+    {f:1,label:1},{f:2,label:1},{f:2,label:1},{f:2,label:0},{f:3,label:1}
+  ];
+  const TEST_DATA = [
+    {f:0,label:0},{f:1,label:1},{f:2,label:1},{f:3,label:1},{f:1,label:0},{f:2,label:0}
+  ];
+  function renderTrainTable(){
+    const body = document.getElementById('trainTableBody');
+    body.innerHTML = '';
+    TRAIN_DATA.forEach(d=>{
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${d.f}</td><td>${d.label ? '지뢰 있음':'안전'}</td>`;
+      body.appendChild(tr);
+    });
+  }
+  function learnThreshold(){
+    let best = { th:0.5, err:Infinity };
+    [-0.5,0.5,1.5,2.5,3.5].forEach(th=>{
+      let err = 0;
+      TRAIN_DATA.forEach(d=>{
+        const pred = d.f >= th ? 1 : 0;
+        if(pred !== d.label) err++;
+      });
+      if(err < best.err) best = { th, err };
+    });
+    return best;
+  }
+  document.getElementById('trainBtn').onclick = ()=>{
+    const best = learnThreshold();
+    state.supervised.threshold = best.th;
+    const acc = ((TRAIN_DATA.length-best.err)/TRAIN_DATA.length*100).toFixed(0);
+    const box = document.getElementById('ruleResult');
+    box.style.display = 'block';
+    box.innerHTML = `학습된 규칙: <b>이웃 지뢰 수가 ${best.th} 이상이면 "지뢰"로 예측</b><br>학습 데이터에서 정확도: ${acc}% (10개 중 ${TRAIN_DATA.length-best.err}개 맞음 — 완벽하지 않아도 됩니다)`;
+    document.getElementById('testSection').style.display = 'block';
+    renderTestTable(false);
+    save();
+  };
+  function renderTestTable(showAnswer){
+    const body = document.getElementById('testTableBody');
+    body.innerHTML = '';
+    const th = state.supervised.threshold ?? 1.5;
+    TEST_DATA.forEach(d=>{
+      const pred = d.f >= th ? 1 : 0;
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${d.f}</td><td>${pred ? '지뢰 예측':'안전 예측'}</td><td>${showAnswer ? (d.label?'지뢰였음':'안전이었음') : '?'}</td>`;
+      body.appendChild(tr);
+    });
+  }
+  document.getElementById('revealTestBtn').onclick = ()=>{
+    const th = state.supervised.threshold ?? 1.5;
+    renderTestTable(true);
+    let correct = 0;
+    TEST_DATA.forEach(d=>{ if((d.f>=th?1:0)===d.label) correct++; });
+    const box = document.getElementById('testAccuracy');
+    box.style.display = 'block';
+    box.className = 'feedback good';
+    box.innerHTML = `새 데이터 정확도: <b>${correct}/${TEST_DATA.length}</b> (${(correct/TEST_DATA.length*100).toFixed(0)}%) — 학습 데이터로 배운 규칙을 <b>본 적 없는 칸</b>에 적용한 결과입니다.`;
+    state.supervised.tested = true; save();
+  };
+
+  /* ================= 2. 비지도학습 ================= */
+  const CLUSTER_DATA = [
+    {f1:0,f2:0.5},{f1:0,f2:1},{f1:0.5,f2:0.5},{f1:1,f2:1},{f1:0.5,f2:1.5},
+    {f1:2,f2:2},{f1:2.5,f2:2},{f1:3,f2:2.5},{f1:2.5,f2:3},{f1:3,f2:3}
+  ];
+  let clusterCentroids = [{x:0.5,y:0.5},{x:2.5,y:2.5}];
+  let clusterAssign = CLUSTER_DATA.map(()=>null);
+  let clusterSteps = 0;
+  const CLUSTER_PAD = 40, CLUSTER_SCALE = 70;
+  function clusterToCanvas(v){ return { x: CLUSTER_PAD + v.f1*CLUSTER_SCALE, y: 300 - CLUSTER_PAD - v.f2*CLUSTER_SCALE }; }
+  function renderClusterCanvas(){
+    const canvas = document.getElementById('clusterCanvas');
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    ctx.strokeStyle = '#e5e7eb';
+    ctx.beginPath(); ctx.moveTo(CLUSTER_PAD,10); ctx.lineTo(CLUSTER_PAD,270); ctx.lineTo(350,270); ctx.stroke();
+    ctx.fillStyle = '#6b7280'; ctx.font='12px sans-serif';
+    ctx.fillText('이웃 지뢰 수 →', 130, 288);
+    ctx.save(); ctx.translate(14,220); ctx.rotate(-Math.PI/2); ctx.fillText('가장자리까지 거리 →',0,0); ctx.restore();
+    const colors = ['#2563eb','#db2777'];
+    CLUSTER_DATA.forEach((d,i)=>{
+      const p = clusterToCanvas({f1:d.f1,f2:d.f2});
+      ctx.beginPath();
+      ctx.arc(p.x,p.y,7,0,Math.PI*2);
+      ctx.fillStyle = clusterAssign[i]===null ? '#94a3b8' : colors[clusterAssign[i]];
+      ctx.fill();
+    });
+    clusterCentroids.forEach((c,i)=>{
+      const p = clusterToCanvas({f1:c.x,f2:c.y});
+      ctx.beginPath();
+      ctx.rect(p.x-6,p.y-6,12,12);
+      ctx.fillStyle = colors[i];
+      ctx.fill();
+    });
+  }
+  function clusterStep(){
+    // 1) 배정
+    CLUSTER_DATA.forEach((d,i)=>{
+      let best=0, bestDist=Infinity;
+      clusterCentroids.forEach((c,ci)=>{
+        const dist = Math.hypot(d.f1-c.x, d.f2-c.y);
+        if(dist<bestDist){ bestDist=dist; best=ci; }
+      });
+      clusterAssign[i] = best;
+    });
+    // 2) 중심 갱신
+    clusterCentroids.forEach((c,ci)=>{
+      const pts = CLUSTER_DATA.filter((d,i)=>clusterAssign[i]===ci);
+      if(pts.length){
+        c.x = pts.reduce((s,p)=>s+p.f1,0)/pts.length;
+        c.y = pts.reduce((s,p)=>s+p.f2,0)/pts.length;
+      }
+    });
+    clusterSteps++;
+    renderClusterCanvas();
+    document.getElementById('clusterStatus').textContent = `${clusterSteps}단계 진행 — 각 점을 더 가까운 중심(사각형)의 그룹으로 옮겼습니다.`;
+  }
+  document.getElementById('clusterStepBtn').onclick = ()=>{ clusterStep(); state.unsupervisedRun = true; save(); };
+  document.getElementById('clusterResetBtn').onclick = ()=>{
+    clusterCentroids = [{x:0.5,y:0.5},{x:2.5,y:2.5}];
+    clusterAssign = CLUSTER_DATA.map(()=>null);
+    clusterSteps = 0;
+    renderClusterCanvas();
+    document.getElementById('clusterStatus').textContent = '아직 그룹이 나뉘지 않았습니다.';
+  };
+  document.getElementById('clusterReflection').addEventListener('input',(e)=>{
+    state.clusterReflection = e.target.value; save();
+  });
+
+  /* ================= 3. 강화학습 ================= */
+  const RL_W = 5, RL_H = 5, RL_N = 25;
+  const RL_MINES = new Set([3,7,11,19]); // 판마다 고정된(학생에게는 보이지 않는) 위험 칸
+  const RL_BUDGET = 8;
+  let rlAutoTimer = null;
+
+  function rlValueColor(v){
+    // v: 대략 -1 ~ 1 범위의 학습값 -> 빨강~회색~초록
+    const t = Math.max(-1, Math.min(1, v));
+    if(t >= 0){
+      const g = Math.round(230 + t*20), r = Math.round(230 - t*140), b = Math.round(230-t*140);
+      return `rgb(${r},${g},${b})`;
+    } else {
+      const r = Math.round(230 + (-t)*20), g = Math.round(230 + t*140), b = Math.round(230 + t*140);
+      return `rgb(${r},${Math.max(0,g)},${Math.max(0,b)})`;
+    }
+  }
+  function renderRLBoard(highlight){
+    const box = document.getElementById('rlBoard');
+    box.innerHTML = '';
+    for(let i=0;i<RL_N;i++){
+      const cell = document.createElement('div');
+      cell.className = 'cell';
+      cell.style.width='44px'; cell.style.height='44px';
+      cell.style.background = rlValueColor(state.rl.values[i]);
+      if(highlight && highlight.includes(i)) cell.style.outline = '3px solid #111827';
+      cell.title = '학습값: ' + state.rl.values[i].toFixed(2);
+      box.appendChild(cell);
+    }
+  }
+  function epsilonFor(ep){ return Math.max(0.05, 1 - ep/150); }
+  function runOneEpisode(animate, cb){
+    const order = [];
+    const remaining = [...Array(RL_N).keys()];
+    const eps = epsilonFor(state.rl.episodeCount);
+    const picks = [];
+    for(let step=0; step<RL_BUDGET && remaining.length; step++){
+      let choice;
+      if(Math.random() < eps){
+        choice = remaining[Math.floor(Math.random()*remaining.length)];
+      } else {
+        choice = remaining.reduce((best,idx)=> state.rl.values[idx] > state.rl.values[best] ? idx : best, remaining[0]);
+      }
+      remaining.splice(remaining.indexOf(choice),1);
+      picks.push(choice);
+      if(RL_MINES.has(choice)){
+        picks.isMineEnd = true;
+        break;
+      }
+    }
+    // 가치 갱신 (증분 평균, alpha=0.25)
+    const alpha = 0.25;
+    picks.forEach((idx,i)=>{
+      const isLast = (i===picks.length-1);
+      const reward = (isLast && picks.isMineEnd) ? -1 : 1;
+      state.rl.values[idx] += alpha*(reward - state.rl.values[idx]);
+      state.rl.visits[idx]++;
+    });
+    const safeCount = picks.isMineEnd ? picks.length-1 : picks.length;
+    state.rl.episodeCount++;
+    state.rl.history.push(safeCount);
+    if(state.rl.history.length > 500) state.rl.history.shift();
+    if(cb) cb(picks, safeCount);
+  }
+  function rollingAvg(arr, window){
+    const out = [];
+    for(let i=0;i<arr.length;i++){
+      const start = Math.max(0,i-window+1);
+      const slice = arr.slice(start,i+1);
+      out.push(slice.reduce((s,v)=>s+v,0)/slice.length);
+    }
+    return out;
+  }
+  function renderRLChart(){
+    const canvas = document.getElementById('rlChart');
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    const hist = state.rl.history;
+    ctx.strokeStyle = '#e5e7eb';
+    ctx.beginPath(); ctx.moveTo(30,10); ctx.lineTo(30,140); ctx.lineTo(630,140); ctx.stroke();
+    if(hist.length < 2) return;
+    const avg = rollingAvg(hist, 10);
+    const n = avg.length;
+    const xStep = Math.max(1, (600)/Math.max(1,n-1));
+    ctx.beginPath();
+    avg.forEach((v,i)=>{
+      const x = 30 + i*xStep;
+      const y = 140 - (v/RL_BUDGET)*120;
+      if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+    });
+    ctx.strokeStyle = '#2563eb'; ctx.lineWidth = 2; ctx.stroke(); ctx.lineWidth = 1;
+    ctx.fillStyle = '#6b7280'; ctx.font = '11px sans-serif';
+    ctx.fillText('8', 8, 15); ctx.fillText('0', 8, 140);
+  }
+  function updateRLStats(){
+    document.getElementById('episodeCount').textContent = state.rl.episodeCount;
+    const hist = state.rl.history;
+    const recent = hist.slice(-10);
+    const rate = recent.length ? (recent.reduce((s,v)=>s+v,0)/recent.length/RL_BUDGET*100).toFixed(0)+'%' : '-';
+    document.getElementById('recentSuccess').textContent = rate;
+  }
+  function runEpisodesBatch(n){
+    for(let i=0;i<n;i++) runOneEpisode(false);
+    renderRLBoard(); renderRLChart(); updateRLStats(); save();
+  }
+  document.getElementById('run1Btn').onclick = ()=>{
+    runOneEpisode(true, (picks)=>{ renderRLBoard(picks); });
+    renderRLChart(); updateRLStats(); save();
+  };
+  document.getElementById('run10Btn').onclick = ()=>runEpisodesBatch(10);
+  document.getElementById('run100Btn').onclick = ()=>runEpisodesBatch(100);
+  document.getElementById('autoBtn').onclick = (e)=>{
+    if(rlAutoTimer){
+      clearInterval(rlAutoTimer); rlAutoTimer = null;
+      e.target.textContent = '자동 실행';
+    } else {
+      rlAutoTimer = setInterval(()=>runEpisodesBatch(1), 180);
+      e.target.textContent = '일시정지';
+    }
+  };
+  document.getElementById('rlResetBtn').onclick = ()=>{
+    if(rlAutoTimer){ clearInterval(rlAutoTimer); rlAutoTimer=null; document.getElementById('autoBtn').textContent='자동 실행'; }
+    state.rl = { values:new Array(RL_N).fill(0), visits:new Array(RL_N).fill(0), episodeCount:0, history:[] };
+    renderRLBoard(); renderRLChart(); updateRLStats(); save();
+  };
+
+  /* ================= 4. 정리 퀴즈 ================= */
+  const QUIZ = [
+    { text:'스팸 메일함에 사람이 스팸/정상이라고 표시해 둔 메일 10만 개로 스팸 필터를 학습시킨다.', answer:'지도학습' },
+    { text:'쇼핑몰이 구매 기록만 보고, 정답 없이 비슷한 취향의 고객끼리 자동으로 그룹을 나눈다.', answer:'비지도학습' },
+    { text:'게임 AI가 수천 번 직접 플레이하며 이기고 지는 것을 반복해 전략을 스스로 찾는다.', answer:'강화학습' },
+    { text:'손글씨 숫자 사진에 사람이 0~9 정답을 달아 놓고 숫자 인식 모델을 훈련한다.', answer:'지도학습' },
+  ];
+  const QUIZ_OPTIONS = ['지도학습','비지도학습','강화학습'];
+  function renderQuiz(){
+    const box = document.getElementById('quizList');
+    box.innerHTML = '';
+    QUIZ.forEach((q,qi)=>{
+      const wrap = document.createElement('div');
+      wrap.className = 'panel';
+      wrap.style.marginBottom = '10px';
+      const p = document.createElement('p');
+      p.style.margin = '0 0 8px';
+      p.textContent = (qi+1)+'. '+q.text;
+      wrap.appendChild(p);
+      const chips = document.createElement('div');
+      chips.className = 'chips';
+      QUIZ_OPTIONS.forEach(opt=>{
+        const btn = document.createElement('button');
+        const chosen = state.quizAnswers[qi];
+        let cls = 'chip';
+        if(chosen === opt) cls += (opt===q.answer ? ' correct' : ' wrong');
+        btn.className = cls;
+        btn.textContent = opt;
+        btn.onclick = ()=>{ state.quizAnswers[qi] = opt; renderQuiz(); save(); };
+        chips.appendChild(btn);
+      });
+      wrap.appendChild(chips);
+      box.appendChild(wrap);
+    });
+  }
+
+  /* ================= 상태 저장/복원 ================= */
+  const state = {
+    supervised: { threshold:null, tested:false },
+    unsupervisedRun: false,
+    clusterReflection: '',
+    rl: { values:new Array(RL_N).fill(0), visits:new Array(RL_N).fill(0), episodeCount:0, history:[] },
+    quizAnswers: {},
+    name: ''
+  };
+  function save(){ try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }catch(e){} }
+  function load(){
+    try{
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if(raw){
+        const obj = JSON.parse(raw);
+        Object.assign(state, obj);
+        if(!state.rl || !Array.isArray(state.rl.values) || state.rl.values.length!==RL_N){
+          state.rl = { values:new Array(RL_N).fill(0), visits:new Array(RL_N).fill(0), episodeCount:0, history:[] };
+        }
+      }
+    }catch(e){}
+  }
+
+  /* ---------- 진행 코드 내보내기/불러오기 ---------- */
+  function encodeState(){ return btoa(encodeURIComponent(JSON.stringify(state))).replace(/=+$/,''); }
+  function decodeState(code){
+    const obj = JSON.parse(decodeURIComponent(atob(code)));
+    if(!obj || typeof obj !== 'object') throw new Error('invalid');
+    return obj;
+  }
+  document.getElementById('exportBtn').onclick = ()=>{
+    const box = document.getElementById('exportBox');
+    document.getElementById('importBox').style.display = 'none';
+    box.style.display = box.style.display==='none' ? 'block' : 'none';
+    if(box.style.display==='block') document.getElementById('exportCode').value = encodeState();
+  };
+  document.getElementById('importBtn').onclick = ()=>{
+    const box = document.getElementById('importBox');
+    document.getElementById('exportBox').style.display = 'none';
+    box.style.display = box.style.display==='none' ? 'block' : 'none';
+  };
+  document.getElementById('importApplyBtn').onclick = ()=>{
+    const code = document.getElementById('importCode').value.trim();
+    if(!code) return;
+    try{
+      Object.assign(state, decodeState(code));
+      renderAll();
+      alert('불러왔습니다.');
+    }catch(e){
+      alert('코드를 다시 확인해 주세요.');
+    }
+  };
+
+  /* ---------- 확인 코드 ---------- */
+  function computeConfirmCode(){
+    let n = 0;
+    n += state.supervised.tested ? 300 : 0;
+    n += state.unsupervisedRun ? 300 : 0;
+    n += Math.min(state.rl.episodeCount, 300);
+    n += Object.values(state.quizAnswers).filter((v,i)=>v===QUIZ[i]?.answer).length * 50;
+    return 'AL-' + ((n % 9000) + 1000);
+  }
+
+  /* ---------- 제출용 결과 만들기 ---------- */
+  document.getElementById('makeSubmitBtn').onclick = ()=>{
+    const name = document.getElementById('submitName').value.trim();
+    if(!name){ alert('이름을 먼저 입력해 주세요.'); return; }
+    state.name = name; save();
+
+    const canvas = document.getElementById('exportSummaryCanvas');
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#ffffff'; ctx.fillRect(0,0,canvas.width,canvas.height);
+    ctx.fillStyle = '#1f2937';
+    ctx.font = 'bold 30px sans-serif';
+    ctx.fillText('AI는 무엇을 보고 배우나 — 결과', 30, 50);
+    ctx.font = '18px sans-serif';
+    ctx.fillText('이름: ' + name, 30, 90);
+    ctx.fillText('날짜: ' + new Date().toLocaleDateString('ko-KR'), 30, 118);
+
+    let y = 165;
+    ctx.font = 'bold 20px sans-serif'; ctx.fillText('1. 지도학습', 30, y); y += 30;
+    ctx.font = '17px sans-serif';
+    ctx.fillText('학습한 규칙 기준: 이웃 지뢰 수 ≥ ' + (state.supervised.threshold ?? '(미실행)'), 50, y); y += 40;
+
+    ctx.font = 'bold 20px sans-serif'; ctx.fillText('2. 비지도학습', 30, y); y += 30;
+    ctx.font = '17px sans-serif';
+    ctx.fillText('그룹 나누기: ' + (state.unsupervisedRun ? '완료' : '미실행'), 50, y); y += 30;
+    wrapText(ctx, '내 생각: ' + (state.clusterReflection || '(미입력)'), 50, y, 800, 24);
+    y += lineCount(ctx, '내 생각: ' + (state.clusterReflection||''), 800) * 24 + 20;
+
+    ctx.font = 'bold 20px sans-serif'; ctx.fillText('3. 강화학습', 30, y); y += 30;
+    ctx.font = '17px sans-serif';
+    ctx.fillText('에피소드 수: ' + state.rl.episodeCount, 50, y); y += 40;
+
+    ctx.font = 'bold 20px sans-serif'; ctx.fillText('4. 판단 퀴즈', 30, y); y += 30;
+    ctx.font = '17px sans-serif';
+    const correctCount = Object.values(state.quizAnswers).filter((v,i)=>v===QUIZ[i]?.answer).length;
+    ctx.fillText(`맞은 개수: ${correctCount} / ${QUIZ.length}`, 50, y); y += 40;
+
+    const code = computeConfirmCode();
+    ctx.font = 'bold 22px sans-serif';
+    ctx.fillStyle = '#111827';
+    ctx.fillRect(30, y, 300, 50);
+    ctx.fillStyle = '#ffffff';
+    ctx.fillText('확인 코드: ' + code, 45, y+33);
+
+    canvas.toBlob((blob)=>{
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `AI는무엇을보고배우나_${name}.png`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(()=>URL.revokeObjectURL(url), 2000);
+    });
+
+    document.getElementById('submitStatus').style.display = 'block';
+    document.getElementById('submitStatus').textContent = '결과 이미지를 내려받았습니다.';
+    document.getElementById('confirmCodeBox').style.display = 'block';
+    document.getElementById('confirmCode').textContent = code;
+  };
+
+  function wrapText(ctx, text, x, y, maxWidth, lineHeight){
+    let line = '', curY = y;
+    for(const ch of text){
+      const test = line + ch;
+      if(ctx.measureText(test).width > maxWidth && line){
+        ctx.fillText(line, x, curY);
+        line = ch; curY += lineHeight;
+      } else { line = test; }
+    }
+    ctx.fillText(line, x, curY);
+  }
+  function lineCount(ctx, text, maxWidth){
+    let line = '', lines = 1;
+    for(const ch of text){
+      const test = line + ch;
+      if(ctx.measureText(test).width > maxWidth && line){ lines++; line = ch; } else { line = test; }
+    }
+    return lines;
+  }
+
+  /* ---------- 초기화 ---------- */
+  function renderAll(){
+    renderIntroBoard();
+    renderTrainTable();
+    if(state.supervised.threshold !== null){
+      const acc = TRAIN_DATA.filter(d=>(d.f>=state.supervised.threshold?1:0)===d.label).length;
+      const box = document.getElementById('ruleResult');
+      box.style.display = 'block';
+      box.innerHTML = `학습된 규칙: <b>이웃 지뢰 수가 ${state.supervised.threshold} 이상이면 "지뢰"로 예측</b><br>학습 데이터에서 정확도: ${(acc/TRAIN_DATA.length*100).toFixed(0)}%`;
+      document.getElementById('testSection').style.display = 'block';
+      renderTestTable(state.supervised.tested);
+      if(state.supervised.tested){
+        const th = state.supervised.threshold;
+        let correct = 0;
+        TEST_DATA.forEach(d=>{ if((d.f>=th?1:0)===d.label) correct++; });
+        const tbox = document.getElementById('testAccuracy');
+        tbox.style.display = 'block';
+        tbox.className = 'feedback good';
+        tbox.innerHTML = `새 데이터 정확도: <b>${correct}/${TEST_DATA.length}</b> (${(correct/TEST_DATA.length*100).toFixed(0)}%) — 학습 데이터로 배운 규칙을 <b>본 적 없는 칸</b>에 적용한 결과입니다.`;
+      }
+    }
+    renderClusterCanvas();
+    document.getElementById('clusterReflection').value = state.clusterReflection || '';
+    renderRLBoard();
+    renderRLChart();
+    updateRLStats();
+    renderQuiz();
+    if(state.name) document.getElementById('submitName').value = state.name;
+  }
+
+  document.getElementById('introResetBtn').click();
+  load();
+  renderAll();
+</script>
+</body>
+</html>

@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="단어에 예/아니오 속성 8개로 비트를 부여해 나만의 단어 사전을 만들고, XOR로 단어 사이의 유사도와 단어 계산을 탐구하며 word2vec의 원리를 미리 맛보는 웹앱입니다." />
+  <title>단어 비트 실험실</title>
+  <link rel="icon" href="../../favicon.ico" sizes="16x16 32x32 48x48" />
+  <link rel="icon" href="../../assets/favicon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="../../assets/apple-touch-icon.png" />
+  <style>
+    :root{
+      --bg:#ffffff;--card:#f8fafc;--line:#dbe4ee;--text:#1f2937;--muted:#6b7280;
+      --blue:#2563eb;--blue-soft:#dbeafe;--pink:#db2777;--green:#059669;--green-soft:#ecfdf5;
+      --indigo:#4f46e5;--red:#dc2626;--amber:#d97706;--amber-soft:#fff7ed;
+      --shadow:0 10px 25px rgba(15,23,42,.08)
+    }
+    *{box-sizing:border-box}
+    body{margin:0;background:var(--bg);font-family:"Pretendard","Noto Sans KR",system-ui,sans-serif;color:var(--text)}
+    .wrap{max-width:1140px;margin:0 auto;padding:24px}
+    .back-link{display:inline-block;margin-bottom:14px;color:#2563eb;font-weight:700;text-decoration:none}
+    .back-link:hover{text-decoration:underline}
+    h1{margin:0 0 8px}
+    h2{margin:0 0 10px;font-size:1.2rem}
+    .lead{color:var(--muted);margin:0 0 18px;line-height:1.6}
+    .card{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:20px;box-shadow:var(--shadow);margin-bottom:18px}
+    .stepnum{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;background:var(--blue-soft);color:var(--blue);font-weight:800;font-size:.9rem;margin-right:8px}
+    .mini{font-size:.93rem;color:var(--muted);line-height:1.6}
+    .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+    button{font:inherit}
+    .btn{padding:10px 14px;border:none;border-radius:12px;background:var(--blue);color:#fff;cursor:pointer}
+    .btn:hover{filter:brightness(.97)}
+    .btn.secondary{background:#fff;color:var(--text);border:1px solid var(--line)}
+    .btn.pink{background:var(--pink)}
+    .btn.green{background:var(--green)}
+    .btn.small{padding:6px 10px;font-size:.85rem;border-radius:9px}
+    input[type="text"]{padding:9px 11px;border:1px solid #cbd5e1;border-radius:10px;font:inherit;background:#fff}
+    select{padding:9px 11px;border:1px solid #cbd5e1;border-radius:10px;font:inherit;background:#fff}
+    .feedback{padding:12px 14px;border-radius:14px;margin-top:10px}
+    .good{background:var(--green-soft)}
+    .warnbox{background:#fff6d9}
+    .info{background:var(--amber-soft)}
+    .danger{background:#fff0f0}
+    .panel{background:#fff;border:1px solid var(--line);border-radius:16px;padding:14px}
+    .bitcell{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:9px;border:2px solid #93c5fd;font-weight:800;color:#1d4ed8;background:#fff;margin:1px;cursor:pointer;user-select:none}
+    .bitcell.on{background:#1d4ed8;color:#fff}
+    .bitcell.diff{background:#fecaca;border-color:#dc2626;color:#991b1b}
+    .bitcell.static{cursor:default}
+    details{border:1px solid var(--line);border-radius:14px;padding:12px 14px;background:#fff;margin-top:14px}
+    summary{cursor:pointer;font-weight:800}
+    .confirm-code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:1.3rem;font-weight:800;letter-spacing:2px;background:#111827;color:#fff;padding:10px 16px;border-radius:12px;display:inline-block}
+    .progress-row{display:flex;justify-content:flex-end;gap:10px;margin-bottom:8px}
+    .attr-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:8px}
+    .attr-item{display:flex;align-items:center;gap:6px}
+    .attr-item .num{width:22px;font-weight:800;color:var(--muted);flex-shrink:0}
+    .table-scroll{overflow-x:auto}
+    table.dict{width:100%;border-collapse:collapse;background:#fff;border-radius:14px;min-width:640px}
+    table.dict th,table.dict td{border:1px solid var(--line);padding:8px;text-align:center;font-size:.88rem}
+    table.dict th{background:#f8fafc;font-size:.78rem;color:var(--muted);font-weight:700}
+    .word-name-input{width:100px}
+    .word-pattern{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-weight:800;color:var(--blue)}
+    .simbox{display:flex;gap:16px;flex-wrap:wrap;align-items:flex-start;margin-top:12px}
+    .wordmap{width:100%;height:auto;border:1px solid var(--line);border-radius:14px;background:#fff}
+    @media (max-width:640px){
+      .wrap{padding:16px}
+      .bitcell{width:28px;height:28px;font-size:.8rem}
+    }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back-link" href="../">← 영재원 수업 목록</a>
+
+  <div class="progress-row">
+    <button class="btn secondary" id="exportBtn">진행 코드 내보내기</button>
+    <button class="btn secondary" id="importBtn">코드로 불러오기</button>
+  </div>
+  <div id="exportBox" class="panel" style="display:none;margin-bottom:14px">
+    <p class="mini" style="margin:0 0 6px">아래 코드를 복사해 두면 다른 기기에서 이어서 할 수 있습니다.</p>
+    <input type="text" id="exportCode" readonly style="width:100%">
+  </div>
+  <div id="importBox" class="panel" style="display:none;margin-bottom:14px">
+    <div class="row">
+      <input type="text" id="importCode" placeholder="코드 붙여넣기" style="flex:1;min-width:200px">
+      <button class="btn" id="importApplyBtn">불러오기</button>
+    </div>
+  </div>
+
+  <h1>단어 비트 실험실</h1>
+  <p class="lead">첫 시간에 "한글을 점자로 어떻게 나타낼까"를 고민했습니다. 이번에는 <b>단어의 뜻</b>도 수로 나타낼 수 있는지 확인해 봅니다. 방법은 같습니다 — 예/아니오 속성을 정하고, 비트로 바꾸고, XOR로 비교합니다.</p>
+
+  <!-- 1. 속성 정하기 -->
+  <section class="card">
+    <h2><span class="stepnum">1</span>속성 8개 정하기</h2>
+    <p class="mini">단어의 뜻을 구별할 수 있는 예/아니오 질문 8개를 정합니다. 아래 예시를 자유롭게 바꿔도 됩니다.</p>
+    <div class="attr-grid" id="attrGrid"></div>
+  </section>
+
+  <!-- 2. 내 단어 사전 -->
+  <section class="card">
+    <h2><span class="stepnum">2</span>내 단어 사전</h2>
+    <p class="mini">단어 이름을 적고, 속성마다 해당하면 칸을 눌러 <b>1</b>로, 아니면 <b>0</b>으로 둡니다. 단어는 최대 10개까지 추가할 수 있습니다.</p>
+    <div class="table-scroll">
+      <table class="dict">
+        <thead><tr id="dictHeadRow"></tr></thead>
+        <tbody id="dictBody"></tbody>
+      </table>
+    </div>
+    <div class="row" style="margin-top:10px">
+      <button class="btn secondary" id="addWordBtn">단어 추가</button>
+    </div>
+  </section>
+
+  <!-- 3. 얼마나 비슷한가 -->
+  <section class="card">
+    <h2><span class="stepnum">3</span>얼마나 비슷한가 — XOR 유사도</h2>
+    <p class="mini">두 단어의 비트를 XOR하면 <b>다른 자리에만 1</b>이 남습니다. 1의 개수가 적을수록 두 단어는 비슷합니다.</p>
+    <div class="row">
+      <select id="simWordA"></select>
+      <span>XOR</span>
+      <select id="simWordB"></select>
+      <button class="btn" id="compareBtn">비교하기</button>
+      <button class="btn secondary" id="findClosestBtn">가장 비슷한 쌍 자동 찾기</button>
+    </div>
+    <div class="simbox" id="simResult"></div>
+  </section>
+
+  <!-- 4. 단어 계산 -->
+  <section class="card">
+    <h2><span class="stepnum">4</span>단어 계산 — 왕 − 남자 + 여자 = ?</h2>
+    <p class="mini">word2vec의 유명한 계산입니다. 우리는 실수 벡터 대신 <b>비트</b>를 씁니다. 세 단어를 고르면 <code>A XOR B XOR C</code>를 계산합니다 (XOR로 빼고 더하는 것은 같은 연산입니다). 결과와 가장 가까운 단어를 사전에서 찾아 봅니다.</p>
+    <div class="row">
+      <select id="calcA"></select>
+      <span>−</span>
+      <select id="calcB"></select>
+      <span>+</span>
+      <select id="calcC"></select>
+      <button class="btn" id="calcBtn">계산하기</button>
+    </div>
+    <div id="calcResult" class="feedback" style="display:none;margin-top:12px"></div>
+  </section>
+
+  <!-- 5. 진짜 단어 지도 -->
+  <section class="card">
+    <h2><span class="stepnum">5</span>진짜 단어 지도 (교사 시연)</h2>
+    <p class="mini">실제 word2vec은 속성을 8개가 아니라 <b>300개</b>쯤 쓰고, 0과 1이 아니라 <b>소수</b>를 씁니다. 그리고 그 속성을 사람이 정하지 않고, <b>컴퓨터가 문장을 잔뜩 읽어서 스스로</b> 찾아냅니다. 아래는 비슷한 뜻의 단어끼리 가까이 모이는 모습을 보여주는 <b>예시 배치</b>입니다.</p>
+    <svg id="wordMap" class="wordmap" viewBox="0 0 640 380"></svg>
+    <p class="mini" style="margin-top:8px">⚠ 이 지도는 이해를 돕기 위해 직접 구성한 <b>예시 배치</b>이며, 실제로 학습된 word2vec 벡터 좌표가 아닙니다. 진짜 word2vec 결과는 수업 중 교사가 별도 자료로 보여줍니다.</p>
+  </section>
+
+  <div class="feedback info" style="margin-bottom:18px">
+    <b>마무리</b> — 속성을 8개가 아니라 300개로 늘리고, 0과 1 대신 소수를 쓰고, 그 속성을 사람이 아니라 컴퓨터가 문장을 잔뜩 읽어서 스스로 정하게 하면 — 그게 word2vec입니다.
+  </div>
+
+  <!-- 제출 -->
+  <section class="card">
+    <h2>제출용 결과 만들기</h2>
+    <p class="mini">이름을 입력하고 버튼을 누르면 내 단어 사전이 이미지로 저장됩니다. 이 이미지를 학습지에 붙여넣어 제출하세요.</p>
+    <div class="row">
+      <input type="text" id="submitName" placeholder="이름" style="max-width:200px">
+      <button class="btn green" id="makeSubmitBtn">제출용 결과 만들기</button>
+    </div>
+    <div id="submitStatus" class="feedback good" style="display:none;margin-top:12px"></div>
+    <div id="confirmCodeBox" style="margin-top:12px;display:none">
+      <p class="mini" style="margin:0 0 6px">확인 코드 (학습지에 적어 두세요)</p>
+      <span class="confirm-code" id="confirmCode"></span>
+    </div>
+  </section>
+</div>
+
+<canvas id="exportSummaryCanvas" width="900" height="1000" style="display:none"></canvas>
+
+<script>
+  const STORAGE_KEY = 'gifted26_word_bits_v1';
+  const MAX_WORDS = 10;
+
+  const DEFAULT_ATTRS = ['동물인가','큰가','나는가','기르는가','물에사는가','밤에활동하는가','다리가있는가','사람이만든것인가'];
+  const DEFAULT_WORDS = [
+    { name:'고양이', bits:[1,0,0,1,0,1,1,0] },
+    { name:'강아지', bits:[1,0,0,1,0,0,1,0] },
+    { name:'독수리', bits:[1,1,1,0,0,0,1,0] },
+    { name:'금붕어', bits:[1,0,0,1,1,0,0,0] },
+  ];
+
+  const state = {
+    attrs: DEFAULT_ATTRS.slice(),
+    words: DEFAULT_WORDS.map(w=>({name:w.name, bits:w.bits.slice()})),
+    calcAns: null,
+    name: ''
+  };
+
+  function save(){ try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }catch(e){} }
+  function load(){
+    try{
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if(raw) Object.assign(state, JSON.parse(raw));
+    }catch(e){}
+  }
+
+  function patternOf(word){ return word.bits.join(''); }
+  function xorBits(a,b){ return a.map((v,i)=>v ^ b[i]); }
+  function hamming(a,b){ return a.reduce((s,v,i)=>s+(v!==b[i]?1:0),0); }
+
+  /* ---------- 1. 속성 ---------- */
+  function renderAttrs(){
+    const box = document.getElementById('attrGrid');
+    box.innerHTML = '';
+    state.attrs.forEach((a,i)=>{
+      const item = document.createElement('div');
+      item.className = 'attr-item';
+      const num = document.createElement('span');
+      num.className = 'num';
+      num.textContent = (i+1)+'.';
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.value = a;
+      input.style.flex = '1';
+      input.addEventListener('input',(e)=>{
+        state.attrs[i] = e.target.value;
+        renderDictHead(); save();
+      });
+      item.appendChild(num); item.appendChild(input);
+      box.appendChild(item);
+    });
+  }
+
+  /* ---------- 2. 단어 사전 ---------- */
+  function renderDictHead(){
+    const head = document.getElementById('dictHeadRow');
+    head.innerHTML = '<th>단어</th>';
+    state.attrs.forEach((a,i)=>{
+      const th = document.createElement('th');
+      th.textContent = (i+1);
+      th.title = a;
+      head.appendChild(th);
+    });
+    const th2 = document.createElement('th');
+    th2.textContent = '패턴';
+    head.appendChild(th2);
+    const th3 = document.createElement('th');
+    head.appendChild(th3);
+  }
+  function renderDictBody(){
+    const body = document.getElementById('dictBody');
+    body.innerHTML = '';
+    state.words.forEach((w,wi)=>{
+      const tr = document.createElement('tr');
+      const nameTd = document.createElement('td');
+      const nameInput = document.createElement('input');
+      nameInput.type = 'text';
+      nameInput.className = 'word-name-input';
+      nameInput.value = w.name;
+      nameInput.placeholder = '단어';
+      nameInput.addEventListener('input',(e)=>{ w.name = e.target.value; save(); refreshSelectors(); });
+      nameTd.appendChild(nameInput);
+      tr.appendChild(nameTd);
+
+      w.bits.forEach((b,bi)=>{
+        const td = document.createElement('td');
+        const cell = document.createElement('span');
+        cell.className = 'bitcell' + (b ? ' on':'');
+        cell.textContent = b;
+        cell.onclick = ()=>{
+          w.bits[bi] = b ? 0 : 1;
+          renderDictBody(); save();
+        };
+        td.appendChild(cell);
+        tr.appendChild(td);
+      });
+
+      const patTd = document.createElement('td');
+      patTd.className = 'word-pattern';
+      patTd.textContent = patternOf(w);
+      tr.appendChild(patTd);
+
+      const delTd = document.createElement('td');
+      const delBtn = document.createElement('button');
+      delBtn.className = 'btn secondary small';
+      delBtn.textContent = '삭제';
+      delBtn.onclick = ()=>{
+        state.words.splice(wi,1);
+        renderDictBody(); save(); refreshSelectors();
+      };
+      delTd.appendChild(delBtn);
+      tr.appendChild(delTd);
+
+      body.appendChild(tr);
+    });
+  }
+  document.getElementById('addWordBtn').onclick = ()=>{
+    if(state.words.length >= MAX_WORDS){ alert('단어는 최대 10개까지 만들 수 있습니다.'); return; }
+    state.words.push({ name:'', bits: new Array(state.attrs.length).fill(0) });
+    renderDictBody(); save(); refreshSelectors();
+  };
+
+  /* ---------- 선택 목록 공통 ---------- */
+  function fillSelect(sel, extraFirst){
+    sel.innerHTML = '';
+    if(extraFirst){
+      const opt = document.createElement('option');
+      opt.value = ''; opt.textContent = extraFirst;
+      sel.appendChild(opt);
+    }
+    state.words.forEach((w,i)=>{
+      const opt = document.createElement('option');
+      opt.value = i;
+      opt.textContent = w.name || ('단어'+(i+1));
+      sel.appendChild(opt);
+    });
+  }
+  function refreshSelectors(){
+    fillSelect(document.getElementById('simWordA'));
+    fillSelect(document.getElementById('simWordB'));
+    fillSelect(document.getElementById('calcA'));
+    fillSelect(document.getElementById('calcB'));
+    fillSelect(document.getElementById('calcC'));
+    if(document.getElementById('simWordB').options.length > 1)
+      document.getElementById('simWordB').selectedIndex = 1;
+    if(document.getElementById('calcB').options.length > 1)
+      document.getElementById('calcB').selectedIndex = 1;
+    if(document.getElementById('calcC').options.length > 2)
+      document.getElementById('calcC').selectedIndex = 2;
+  }
+
+  /* ---------- 3. 유사도 ---------- */
+  function renderBitPair(a,b){
+    const box = document.createElement('div');
+    box.className = 'panel';
+    const xor = xorBits(a.bits,b.bits);
+    const line1 = document.createElement('div');
+    line1.innerHTML = `<b>${a.name||'?'}</b>: `;
+    a.bits.forEach(v=>{ const c=document.createElement('span'); c.className='bitcell static'+(v?' on':''); c.textContent=v; line1.appendChild(c); });
+    const line2 = document.createElement('div');
+    line2.style.marginTop='6px';
+    line2.innerHTML = `<b>${b.name||'?'}</b>: `;
+    b.bits.forEach((v,i)=>{ const c=document.createElement('span'); c.className='bitcell static'+(v?' on':'')+(xor[i]?' diff':''); c.textContent=v; line2.appendChild(c); });
+    const line3 = document.createElement('div');
+    line3.style.marginTop='6px';
+    line3.innerHTML = `<b>XOR</b>: `;
+    xor.forEach(v=>{ const c=document.createElement('span'); c.className='bitcell static'+(v?' diff':''); c.textContent=v; line3.appendChild(c); });
+    const sum = xor.reduce((s,v)=>s+v,0);
+    const line4 = document.createElement('p');
+    line4.className = 'mini';
+    line4.style.marginTop = '8px';
+    line4.innerHTML = `다른 자리(1의 개수): <b>${sum}개</b> / 전체 ${xor.length}개 → ${sum<=2?'매우 비슷합니다':(sum>=xor.length-1?'거의 반대입니다':'어느 정도 다릅니다')}`;
+    box.appendChild(line1); box.appendChild(line2); box.appendChild(line3); box.appendChild(line4);
+    return box;
+  }
+  document.getElementById('compareBtn').onclick = ()=>{
+    const ai = document.getElementById('simWordA').value;
+    const bi = document.getElementById('simWordB').value;
+    const box = document.getElementById('simResult');
+    box.innerHTML = '';
+    if(ai==='' || bi==='' || !state.words[ai] || !state.words[bi]){
+      box.innerHTML = '<p class="mini">두 단어를 골라 주세요.</p>'; return;
+    }
+    box.appendChild(renderBitPair(state.words[ai], state.words[bi]));
+  };
+  document.getElementById('findClosestBtn').onclick = ()=>{
+    const box = document.getElementById('simResult');
+    box.innerHTML = '';
+    if(state.words.length < 2){ box.innerHTML = '<p class="mini">단어를 2개 이상 만들어 주세요.</p>'; return; }
+    let best = null;
+    for(let i=0;i<state.words.length;i++){
+      for(let j=i+1;j<state.words.length;j++){
+        const d = hamming(state.words[i].bits, state.words[j].bits);
+        if(!best || d < best.d) best = { i, j, d };
+      }
+    }
+    const info = document.createElement('p');
+    info.className = 'feedback good';
+    info.innerHTML = `가장 비슷한 쌍: <b>${state.words[best.i].name||'?'}</b> — <b>${state.words[best.j].name||'?'}</b> (다른 자리 ${best.d}개)`;
+    box.appendChild(info);
+    box.appendChild(renderBitPair(state.words[best.i], state.words[best.j]));
+  };
+
+  /* ---------- 4. 단어 계산 ---------- */
+  document.getElementById('calcBtn').onclick = ()=>{
+    const ai = document.getElementById('calcA').value;
+    const bi = document.getElementById('calcB').value;
+    const ci = document.getElementById('calcC').value;
+    const result = document.getElementById('calcResult');
+    if(ai===''||bi===''||ci===''||!state.words[ai]||!state.words[bi]||!state.words[ci]){
+      result.style.display='block'; result.className='feedback warnbox';
+      result.textContent = '세 단어를 모두 골라 주세요.';
+      return;
+    }
+    const A = state.words[ai].bits, B = state.words[bi].bits, C = state.words[ci].bits;
+    const R = A.map((v,i)=>v ^ B[i] ^ C[i]);
+    let nearest = null;
+    state.words.forEach((w,i)=>{
+      if(i===Number(ai)||i===Number(bi)||i===Number(ci)) return;
+      const d = hamming(w.bits, R);
+      if(!nearest || d < nearest.d) nearest = { i, d };
+    });
+    state.calcAns = R;
+    result.style.display = 'block';
+    result.className = 'feedback info';
+    let html = `<b>${state.words[ai].name||'?'}</b> − <b>${state.words[bi].name||'?'}</b> + <b>${state.words[ci].name||'?'}</b> = `;
+    html += R.join('') + '<br>';
+    if(nearest){
+      html += `사전에서 가장 가까운 단어: <b>${state.words[nearest.i].name||'?'}</b> (다른 자리 ${nearest.d}개)`;
+    } else {
+      html += '비교할 다른 단어가 사전에 더 필요합니다.';
+    }
+    result.innerHTML = html;
+    save();
+  };
+
+  /* ---------- 5. 진짜 단어 지도 (예시 배치) ---------- */
+  const WORD_MAP_DATA = [
+    { group:'동물', color:'#2563eb', items:[
+      ['고양이',120,90],['강아지',150,120],['호랑이',95,60],['사자',80,95],['참새',175,55],['독수리',195,40]
+    ]},
+    { group:'가족', color:'#db2777', items:[
+      ['엄마',420,80],['아빠',460,85],['형',440,120],['동생',480,130],['할머니',400,50]
+    ]},
+    { group:'음식', color:'#059669', items:[
+      ['사과',300,250],['바나나',340,270],['김치',270,300],['라면',320,320],['빵',360,240]
+    ]},
+    { group:'감정', color:'#d97706', items:[
+      ['기쁨',540,220],['슬픔',560,260],['화남',595,240],['설렘',520,190]
+    ]},
+    { group:'직업', color:'#7c3aed', items:[
+      ['의사',140,330],['교사',180,350],['소방관',110,300],['요리사',210,310]
+    ]},
+  ];
+  function renderWordMap(){
+    const svg = document.getElementById('wordMap');
+    svg.innerHTML = '';
+    const ns = 'http://www.w3.org/2000/svg';
+    WORD_MAP_DATA.forEach(g=>{
+      g.items.forEach(([label,x,y])=>{
+        const c = document.createElementNS(ns,'circle');
+        c.setAttribute('cx',x); c.setAttribute('cy',y); c.setAttribute('r',6);
+        c.setAttribute('fill', g.color);
+        svg.appendChild(c);
+        const t = document.createElementNS(ns,'text');
+        t.setAttribute('x', x+9); t.setAttribute('y', y+4);
+        t.setAttribute('font-size','13'); t.setAttribute('fill','#1f2937');
+        t.textContent = label;
+        svg.appendChild(t);
+      });
+    });
+    // 범례
+    let lx = 20, ly = 360;
+    WORD_MAP_DATA.forEach((g,i)=>{
+      const c = document.createElementNS(ns,'circle');
+      c.setAttribute('cx', lx + i*115); c.setAttribute('cy', ly); c.setAttribute('r',5);
+      c.setAttribute('fill', g.color);
+      svg.appendChild(c);
+      const t = document.createElementNS(ns,'text');
+      t.setAttribute('x', lx + i*115 + 9); t.setAttribute('y', ly+4);
+      t.setAttribute('font-size','12'); t.setAttribute('fill','#6b7280');
+      t.textContent = g.group;
+      svg.appendChild(t);
+    });
+  }
+
+  /* ---------- 진행 코드 내보내기/불러오기 ---------- */
+  function encodeState(){ return btoa(encodeURIComponent(JSON.stringify(state))).replace(/=+$/,''); }
+  function decodeState(code){
+    const obj = JSON.parse(decodeURIComponent(atob(code)));
+    if(!obj || typeof obj !== 'object') throw new Error('invalid');
+    return obj;
+  }
+  document.getElementById('exportBtn').onclick = ()=>{
+    const box = document.getElementById('exportBox');
+    document.getElementById('importBox').style.display = 'none';
+    box.style.display = box.style.display==='none' ? 'block' : 'none';
+    if(box.style.display==='block') document.getElementById('exportCode').value = encodeState();
+  };
+  document.getElementById('importBtn').onclick = ()=>{
+    const box = document.getElementById('importBox');
+    document.getElementById('exportBox').style.display = 'none';
+    box.style.display = box.style.display==='none' ? 'block' : 'none';
+  };
+  document.getElementById('importApplyBtn').onclick = ()=>{
+    const code = document.getElementById('importCode').value.trim();
+    if(!code) return;
+    try{
+      Object.assign(state, decodeState(code));
+      renderAll();
+      alert('불러왔습니다.');
+    }catch(e){
+      alert('코드를 다시 확인해 주세요.');
+    }
+  };
+
+  /* ---------- 확인 코드 ---------- */
+  function computeConfirmCode(){
+    let n = state.words.length * 37;
+    state.words.forEach(w=>{ n += w.bits.reduce((s,v)=>s+v,0); });
+    n += state.calcAns ? state.calcAns.reduce((s,v,i)=>s+v*(i+1),0) : 0;
+    return 'WB-' + ((n % 9000) + 1000);
+  }
+
+  /* ---------- 제출용 결과 만들기 ---------- */
+  document.getElementById('makeSubmitBtn').onclick = ()=>{
+    const name = document.getElementById('submitName').value.trim();
+    if(!name){ alert('이름을 먼저 입력해 주세요.'); return; }
+    if(state.words.length===0){ alert('단어를 먼저 만들어 주세요.'); return; }
+    state.name = name; save();
+
+    const canvas = document.getElementById('exportSummaryCanvas');
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#ffffff'; ctx.fillRect(0,0,canvas.width,canvas.height);
+    ctx.fillStyle = '#1f2937';
+    ctx.font = 'bold 30px sans-serif';
+    ctx.fillText('단어 비트 실험실 — 결과', 30, 50);
+    ctx.font = '18px sans-serif';
+    ctx.fillText('이름: ' + name, 30, 90);
+    ctx.fillText('날짜: ' + new Date().toLocaleDateString('ko-KR'), 30, 118);
+
+    let y = 165;
+    ctx.font = 'bold 20px sans-serif'; ctx.fillText('내 속성 8개', 30, y); y += 28;
+    ctx.font = '15px sans-serif';
+    ctx.fillText(state.attrs.map((a,i)=>(i+1)+'.'+a).join('  '), 30, y);
+    y += 45;
+
+    ctx.font = 'bold 20px sans-serif'; ctx.fillText('내 단어 사전', 30, y); y += 30;
+    ctx.font = '17px sans-serif';
+    state.words.forEach(w=>{
+      ctx.fillText(`${(w.name||'?').padEnd(6,' ')}  ${patternOf(w)}`, 50, y);
+      y += 28;
+    });
+    y += 15;
+
+    if(state.calcAns){
+      ctx.font = 'bold 20px sans-serif'; ctx.fillText('단어 계산 결과', 30, y); y += 28;
+      ctx.font = '17px sans-serif';
+      ctx.fillText(state.calcAns.join(''), 50, y);
+      y += 40;
+    }
+
+    const code = computeConfirmCode();
+    ctx.font = 'bold 22px sans-serif';
+    ctx.fillStyle = '#111827';
+    ctx.fillRect(30, y, 300, 50);
+    ctx.fillStyle = '#ffffff';
+    ctx.fillText('확인 코드: ' + code, 45, y+33);
+
+    canvas.toBlob((blob)=>{
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `단어비트실험실_${name}.png`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(()=>URL.revokeObjectURL(url), 2000);
+    });
+
+    document.getElementById('submitStatus').style.display = 'block';
+    document.getElementById('submitStatus').textContent = '결과 이미지를 내려받았습니다. 학습지에 붙여넣어 제출하세요.';
+    document.getElementById('confirmCodeBox').style.display = 'block';
+    document.getElementById('confirmCode').textContent = code;
+  };
+
+  /* ---------- 초기화 ---------- */
+  function renderAll(){
+    renderAttrs();
+    renderDictHead();
+    renderDictBody();
+    refreshSelectors();
+    document.getElementById('simResult').innerHTML = '';
+    document.getElementById('calcResult').style.display = 'none';
+    renderWordMap();
+    if(state.name) document.getElementById('submitName').value = state.name;
+  }
+
+  load();
+  renderAll();
+</script>
+</body>
+</html>

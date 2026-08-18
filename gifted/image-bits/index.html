@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="색을 R,G,B 세 숫자로 만들고, 채널당 8비트가 어떻게 256가지 밝기를 만드는지 확인하고, 사진을 확대해 픽셀을 보고, 색 반전이 곧 비트 NOT 연산임을 확인하는 웹앱입니다." />
+  <title>이미지 속 비트</title>
+  <link rel="icon" href="../../favicon.ico" sizes="16x16 32x32 48x48" />
+  <link rel="icon" href="../../assets/favicon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="../../assets/apple-touch-icon.png" />
+  <style>
+    :root{
+      --bg:#ffffff;--card:#f8fafc;--line:#dbe4ee;--text:#1f2937;--muted:#6b7280;
+      --blue:#2563eb;--blue-soft:#dbeafe;--pink:#db2777;--green:#059669;--green-soft:#ecfdf5;
+      --indigo:#4f46e5;--red:#dc2626;--amber:#d97706;--amber-soft:#fff7ed;
+      --shadow:0 10px 25px rgba(15,23,42,.08)
+    }
+    *{box-sizing:border-box}
+    body{margin:0;background:var(--bg);font-family:"Pretendard","Noto Sans KR",system-ui,sans-serif;color:var(--text)}
+    .wrap{max-width:1140px;margin:0 auto;padding:24px}
+    .back-link{display:inline-block;margin-bottom:14px;color:#2563eb;font-weight:700;text-decoration:none}
+    .back-link:hover{text-decoration:underline}
+    h1{margin:0 0 8px}
+    h2{margin:0 0 10px;font-size:1.2rem}
+    h3{margin:0 0 8px;font-size:1rem}
+    .lead{color:var(--muted);margin:0 0 18px;line-height:1.6}
+    .card{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:20px;box-shadow:var(--shadow);margin-bottom:18px}
+    .stepnum{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;background:var(--blue-soft);color:var(--blue);font-weight:800;font-size:.9rem;margin-right:8px}
+    .mini{font-size:.93rem;color:var(--muted);line-height:1.6}
+    .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+    button{font:inherit}
+    .btn{padding:10px 14px;border:none;border-radius:12px;background:var(--blue);color:#fff;cursor:pointer}
+    .btn:hover{filter:brightness(.97)}
+    .btn.secondary{background:#fff;color:var(--text);border:1px solid var(--line)}
+    .btn.pink{background:var(--pink)}
+    .btn.green{background:var(--green)}
+    .chips{display:flex;flex-wrap:wrap;gap:8px}
+    .chip{border:1px solid var(--line);background:#fff;border-radius:12px;padding:10px 14px;cursor:pointer;font-weight:700}
+    .chip.active{background:var(--blue-soft);border-color:#bcd4ff;color:var(--blue)}
+    input[type="text"]{padding:11px 13px;border:1px solid #cbd5e1;border-radius:12px;font:inherit;background:#fff}
+    input[type="range"]{width:100%}
+    table{width:100%;border-collapse:collapse;background:#fff;border-radius:14px;overflow:hidden}
+    th,td{border:1px solid var(--line);padding:9px 8px;text-align:center;font-size:.94rem}
+    th{background:#f8fafc}
+    .feedback{padding:12px 14px;border-radius:14px;margin-top:10px}
+    .good{background:var(--green-soft)}
+    .warnbox{background:#fff6d9}
+    .info{background:var(--amber-soft)}
+    .danger{background:#fff0f0}
+    .panel{background:#fff;border:1px solid var(--line);border-radius:16px;padding:14px}
+    .bitcell{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:9px;border:2px solid #93c5fd;font-weight:800;color:#1d4ed8;background:#fff;margin:2px}
+    .bitcell.on{background:#1d4ed8;color:#fff}
+    .bitcell.diff{background:#fecaca;border-color:#dc2626;color:#991b1b}
+    .group{display:inline-flex;gap:2px;padding:6px 8px;border:1px dashed #cbd5e1;border-radius:12px;margin:4px}
+    details{border:1px solid var(--line);border-radius:14px;padding:12px 14px;background:#fff;margin-top:14px}
+    summary{cursor:pointer;font-weight:800}
+    .confirm-code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:1.3rem;font-weight:800;letter-spacing:2px;background:#111827;color:#fff;padding:10px 16px;border-radius:12px;display:inline-block}
+    .progress-row{display:flex;justify-content:flex-end;gap:10px;margin-bottom:8px}
+    .rgb-row{display:grid;grid-template-columns:56px 1fr 60px;gap:10px;align-items:center;margin-bottom:8px}
+    .rgb-row.r input[type=range]{accent-color:#dc2626}
+    .rgb-row.g input[type=range]{accent-color:#059669}
+    .rgb-row.b input[type=range]{accent-color:#2563eb}
+    .swatch-area{display:flex;gap:18px;flex-wrap:wrap;align-items:center}
+    .swatch{width:120px;height:120px;border-radius:18px;border:1px solid var(--line);box-shadow:var(--shadow);flex-shrink:0}
+    .valbox{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-weight:800}
+    .binline{display:flex;gap:4px;flex-wrap:wrap;align-items:center;margin:4px 0}
+    .binlabel{width:70px;font-weight:800;font-size:.9rem}
+    .canvas-wrap{display:flex;gap:18px;flex-wrap:wrap;align-items:flex-start}
+    canvas.pixcanvas{border:1px solid var(--line);border-radius:12px;image-rendering:pixelated;cursor:crosshair;background:#fff;max-width:100%;height:auto}
+    .pixel-readout{min-width:180px}
+    .palette{display:flex;gap:6px;flex-wrap:wrap}
+    .swatchbtn{width:34px;height:34px;border-radius:8px;border:2px solid #fff;box-shadow:0 0 0 1px var(--line);cursor:pointer}
+    .swatchbtn.active{box-shadow:0 0 0 3px var(--blue)}
+    .count-big{font-size:1.7rem;font-weight:900;color:var(--blue)}
+    @media (max-width:900px){
+      .canvas-wrap{flex-direction:column}
+    }
+    @media (max-width:640px){
+      .wrap{padding:16px}
+      .bitcell{width:28px;height:28px;font-size:.85rem}
+    }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back-link" href="../">← 영재원 수업 목록</a>
+
+  <div class="progress-row">
+    <button class="btn secondary" id="exportBtn">진행 코드 내보내기</button>
+    <button class="btn secondary" id="importBtn">코드로 불러오기</button>
+  </div>
+  <div id="exportBox" class="panel" style="display:none;margin-bottom:14px">
+    <p class="mini" style="margin:0 0 6px">아래 코드를 복사해 두면 다른 기기에서 이어서 할 수 있습니다.</p>
+    <input type="text" id="exportCode" readonly style="width:100%">
+  </div>
+  <div id="importBox" class="panel" style="display:none;margin-bottom:14px">
+    <div class="row">
+      <input type="text" id="importCode" placeholder="코드 붙여넣기" style="flex:1;min-width:200px">
+      <button class="btn" id="importApplyBtn">불러오기</button>
+    </div>
+  </div>
+
+  <h1>이미지 속 비트</h1>
+  <p class="lead">사진도 결국 수(數)의 모음입니다. 색 하나를 숫자로 만들고, 그 숫자가 몇 비트인지 확인하고, 사진을 확대해 네모난 조각(픽셀)을 직접 보고, 색을 뒤집는 것이 3차시에 손으로 계산한 <b>NOT 연산과 같다</b>는 것을 확인해 봅니다.</p>
+
+  <!-- 1. 색도 데이터다 -->
+  <section class="card">
+    <h2><span class="stepnum">1</span>색도 데이터다</h2>
+    <p class="mini">화면의 모든 색은 <b>빨강(R)·초록(G)·파랑(B)</b> 세 숫자의 조합입니다. 슬라이더를 움직여 색을 직접 만들어 보세요.</p>
+    <div class="swatch-area">
+      <div class="swatch" id="swatch1"></div>
+      <div style="flex:1;min-width:260px">
+        <div class="rgb-row r"><label for="rSlider">R</label><input type="range" id="rSlider" min="0" max="255" value="200"><span class="valbox" id="rVal">200</span></div>
+        <div class="rgb-row g"><label for="gSlider">G</label><input type="range" id="gSlider" min="0" max="255" value="90"><span class="valbox" id="gVal">90</span></div>
+        <div class="rgb-row b"><label for="bSlider">B</label><input type="range" id="bSlider" min="0" max="255" value="60"><span class="valbox" id="bVal">60</span></div>
+        <p class="mini" style="margin-top:8px">이 색은 (R, G, B) = <span id="rgbText" class="valbox"></span>, 16진수로는 <span id="hexText" class="valbox"></span> 입니다.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2. 채널당 8비트 = 256가지 -->
+  <section class="card">
+    <h2><span class="stepnum">2</span>채널당 8비트 = 256가지 밝기</h2>
+    <p class="mini">R, G, B는 각각 0~255, 즉 <b>8비트</b>로 저장됩니다. 위에서 만든 색의 R, G, B를 2진수로 나타내면 다음과 같습니다.</p>
+    <div id="binDisplay"></div>
+    <p class="mini" style="margin-top:10px">R·G·B를 이어 붙이면 <b>24비트</b> 하나가 색 하나를 나타냅니다. 8비트씩 3묶음이 만들 수 있는 색의 가짓수는 총</p>
+    <p class="count-big" id="totalColors"></p>
+    <p class="mini">점자 한 칸은 6비트라서 2<sup>6</sup> = 64가지였습니다. 사진의 색 하나는 24비트라서 2<sup>24</sup> ≈ 1677만 가지입니다.</p>
+    <details style="margin-top:10px">
+      <summary>생각해 보기</summary>
+      <p style="margin:8px 0 6px"><b>비트가 1개 늘어날 때마다 나타낼 수 있는 가짓수는 어떻게 변할까요?</b></p>
+      <div class="chips" id="bitQuizChips"></div>
+      <div class="feedback" id="bitQuizFeedback" style="display:none;margin-top:10px"></div>
+    </details>
+  </section>
+
+  <!-- 3. 확대하면 픽셀 -->
+  <section class="card">
+    <h2><span class="stepnum">3</span>사진을 확대하면 네모난 픽셀</h2>
+    <p class="mini">아래는 32×24개의 작은 정사각형(픽셀)으로 이루어진 그림입니다. 픽셀을 클릭하면 그 픽셀의 R, G, B 값을 볼 수 있습니다. 내 사진을 올려서 확인할 수도 있습니다.</p>
+    <div class="row" style="margin-bottom:10px">
+      <button class="btn secondary" id="useSampleBtn">기본 그림 사용</button>
+      <label class="btn secondary" style="cursor:pointer">
+        내 사진 올리기 <input type="file" accept="image/*" id="photoInput" style="display:none">
+      </label>
+      <label class="mini" style="display:flex;align-items:center;gap:6px">해상도
+        <input type="range" id="gridSlider" min="8" max="64" value="32" style="width:120px">
+        <span id="gridSliderVal">32×24</span>
+      </label>
+    </div>
+    <div class="canvas-wrap">
+      <canvas id="pixCanvas" class="pixcanvas" width="480" height="360"></canvas>
+      <div class="pixel-readout panel">
+        <p class="mini" style="margin:0 0 6px">선택한 픽셀</p>
+        <div id="pixelSwatch" style="width:70px;height:70px;border-radius:12px;border:1px solid var(--line);margin-bottom:8px"></div>
+        <p id="pixelReadoutText" class="mini">픽셀을 클릭해 보세요.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4. 색 반전 = NOT -->
+  <section class="card">
+    <h2><span class="stepnum">4</span>색 반전은 NOT 연산이다</h2>
+    <p class="mini">각 채널 값을 <b>255에서 빼면</b> 색이 반전됩니다. 8비트 안에서 이것은 정확히 <b>NOT 연산</b>(0↔1 뒤집기)과 같습니다. 3차시에 손으로 계산한 <code>~1011 = 0100</code>이 사진 한 장으로 나타나는 것입니다.</p>
+    <div class="canvas-wrap">
+      <div>
+        <p class="mini" style="margin:0 0 4px">원본</p>
+        <canvas id="origCanvas" class="pixcanvas" width="280" height="210"></canvas>
+      </div>
+      <div>
+        <p class="mini" style="margin:0 0 4px">색 반전 (NOT)</p>
+        <canvas id="invCanvas" class="pixcanvas" width="280" height="210"></canvas>
+      </div>
+      <div class="panel" style="flex:1;min-width:240px">
+        <p class="mini" style="margin:0 0 8px">한 픽셀의 R값으로 확인하기 (3의 화면에서 클릭한 픽셀)</p>
+        <div class="binline"><span class="binlabel">원본 R</span><span id="notBeforeBits"></span><span class="valbox" id="notBeforeDec"></span></div>
+        <div class="binline"><span class="binlabel">NOT 후</span><span id="notAfterBits"></span><span class="valbox" id="notAfterDec"></span></div>
+        <p class="mini" style="margin-top:8px">비트마다 0은 1로, 1은 0으로 뒤집혔습니다. 10진수로 보면 <span id="notSumText"></span>입니다.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5. 픽셀아트 -->
+  <section class="card">
+    <h2><span class="stepnum">5</span>픽셀아트 만들기 (선택)</h2>
+    <p class="mini">색 하나가 (R,G,B) 숫자 3개라는 것을 이용해, 12×12칸에 직접 색을 칠해 나만의 픽셀아트를 만들어 보세요.</p>
+    <div class="row" style="margin-bottom:10px">
+      <div class="palette" id="palette"></div>
+      <button class="btn secondary" id="clearArtBtn">전체 지우기</button>
+    </div>
+    <canvas id="artCanvas" width="360" height="360" class="pixcanvas" style="image-rendering:auto"></canvas>
+  </section>
+
+  <!-- 제출 -->
+  <section class="card">
+    <h2>제출용 결과 만들기</h2>
+    <p class="mini">이름을 입력하고 버튼을 누르면 오늘 활동 요약과 픽셀아트가 이미지로 저장됩니다. 이 이미지를 학습지에 붙여넣어 제출하세요.</p>
+    <div class="row">
+      <input type="text" id="submitName" placeholder="이름" style="max-width:200px">
+      <button class="btn green" id="makeSubmitBtn">제출용 결과 만들기</button>
+    </div>
+    <div id="submitStatus" class="feedback good" style="display:none;margin-top:12px"></div>
+    <div id="confirmCodeBox" style="margin-top:12px;display:none">
+      <p class="mini" style="margin:0 0 6px">확인 코드 (학습지에 적어 두세요)</p>
+      <span class="confirm-code" id="confirmCode"></span>
+    </div>
+  </section>
+</div>
+
+<canvas id="exportSummaryCanvas" width="900" height="900" style="display:none"></canvas>
+
+<script>
+  const STORAGE_KEY = 'gifted26_image_bits_v1';
+
+  const state = {
+    rgb: { r:200, g:90, b:60 },
+    bitQuizChoice: null,
+    gridSize: 32,
+    art: null, // flat array length 144, palette index or -1
+    name: ''
+  };
+
+  function save(){ try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }catch(e){} }
+  function load(){
+    try{
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if(raw) Object.assign(state, JSON.parse(raw));
+    }catch(e){}
+  }
+
+  function toBin8(n){ return n.toString(2).padStart(8,'0'); }
+  function toHex2(n){ return n.toString(16).padStart(2,'0'); }
+
+  function renderBitRow(bits, compareBits){
+    const span = document.createElement('span');
+    [...bits].forEach((b,i)=>{
+      const c = document.createElement('span');
+      const diff = compareBits && compareBits[i] !== b;
+      c.className = 'bitcell' + (b==='1' ? ' on' : '') + (diff ? ' diff' : '');
+      c.textContent = b;
+      span.appendChild(c);
+    });
+    return span;
+  }
+
+  /* ---------- 1. 색 만들기 ---------- */
+  function updateSwatch1(){
+    const {r,g,b} = state.rgb;
+    document.getElementById('swatch1').style.background = `rgb(${r},${g},${b})`;
+    document.getElementById('rVal').textContent = r;
+    document.getElementById('gVal').textContent = g;
+    document.getElementById('bVal').textContent = b;
+    document.getElementById('rgbText').textContent = `(${r}, ${g}, ${b})`;
+    document.getElementById('hexText').textContent = '#' + toHex2(r)+toHex2(g)+toHex2(b);
+    renderBinDisplay();
+  }
+  ['r','g','b'].forEach(ch=>{
+    document.getElementById(ch+'Slider').addEventListener('input',(e)=>{
+      state.rgb[ch] = Number(e.target.value);
+      updateSwatch1(); save();
+    });
+  });
+
+  /* ---------- 2. 8비트 = 256가지 ---------- */
+  function renderBinDisplay(){
+    const box = document.getElementById('binDisplay');
+    box.innerHTML = '';
+    const {r,g,b} = state.rgb;
+    [['R',r,'#dc2626'],['G',g,'#059669'],['B',b,'#2563eb']].forEach(([label,v,color])=>{
+      const row = document.createElement('div');
+      row.className = 'binline';
+      const lab = document.createElement('span');
+      lab.className = 'binlabel';
+      lab.style.color = color;
+      lab.textContent = label + ' = ' + v;
+      row.appendChild(lab);
+      row.appendChild(renderBitRow(toBin8(v)));
+      box.appendChild(row);
+    });
+  }
+  document.getElementById('totalColors').textContent = (256*256*256).toLocaleString('ko-KR') + '가지';
+
+  const BIT_QUIZ_OPTIONS = ['1씩 늘어난다', '2배씩 늘어난다', '변화가 없다'];
+  function renderBitQuiz(){
+    const box = document.getElementById('bitQuizChips');
+    box.innerHTML = '';
+    BIT_QUIZ_OPTIONS.forEach(opt=>{
+      const btn = document.createElement('button');
+      btn.className = 'chip' + (state.bitQuizChoice===opt ? ' active':'');
+      btn.textContent = opt;
+      btn.onclick = ()=>{
+        state.bitQuizChoice = opt; renderBitQuiz(); save();
+        const fb = document.getElementById('bitQuizFeedback');
+        fb.style.display = 'block';
+        if(opt === '2배씩 늘어난다'){
+          fb.className = 'feedback good';
+          fb.textContent = '맞습니다! 비트 하나가 늘 때마다 표현할 수 있는 가짓수는 2배가 됩니다. 6비트(64가지)에서 24비트(1677만 가지)까지, 비트가 늘수록 가짓수는 곱셈으로 폭발적으로 늘어납니다.';
+        } else {
+          fb.className = 'feedback warnbox';
+          fb.textContent = '비트 하나를 더 쓰면 0/1 두 가지 경우가 기존 각 경우마다 새로 생깁니다. 그래서 가짓수는 2배가 됩니다. 다시 골라 보세요.';
+        }
+      };
+      box.appendChild(btn);
+    });
+  }
+
+  /* ---------- 3. 픽셀 확대 (offscreen 저해상도 -> nearest-neighbor 확대) ---------- */
+  const smallCanvas = document.createElement('canvas');
+  const smallCtx = smallCanvas.getContext('2d', { willReadFrequently:true });
+  const pixCanvas = document.getElementById('pixCanvas');
+  const pixCtx = pixCanvas.getContext('2d');
+  let currentImageEl = null; // 업로드한 이미지가 있으면 저장
+
+  function drawSyntheticScene(gw, gh){
+    smallCanvas.width = gw; smallCanvas.height = gh;
+    const img = smallCtx.createImageData(gw, gh);
+    const sunCx = gw*0.72, sunCy = gh*0.28, sunR = gh*0.22;
+    const groundRow = gh*0.62;
+    for(let y=0;y<gh;y++){
+      for(let x=0;x<gw;x++){
+        const idx = (y*gw+x)*4;
+        const dist = Math.hypot(x-sunCx, y-sunCy);
+        let r,g,b;
+        if(dist < sunR){
+          const t = dist/sunR;
+          r = 255; g = Math.round(200 - t*60); b = Math.round(80 - t*50);
+        } else if(y < groundRow){
+          const t = y/groundRow;
+          r = Math.round(135 - t*40); g = Math.round(195 - t*30); b = Math.round(250 - t*20);
+        } else {
+          const t = (y-groundRow)/(gh-groundRow);
+          r = Math.round(90 - t*30); g = Math.round(170 - t*40); b = Math.round(70 - t*20);
+        }
+        img.data[idx]=r; img.data[idx+1]=g; img.data[idx+2]=b; img.data[idx+3]=255;
+      }
+    }
+    smallCtx.putImageData(img, 0, 0);
+  }
+
+  function drawImageToSmall(imgEl, gw, gh){
+    smallCanvas.width = gw; smallCanvas.height = gh;
+    smallCtx.imageSmoothingEnabled = true;
+    smallCtx.clearRect(0,0,gw,gh);
+    // 이미지 비율을 유지하며 중앙을 채우도록 잘라서 그리기
+    const ir = imgEl.naturalWidth / imgEl.naturalHeight;
+    const gr = gw / gh;
+    let sx,sy,sw,sh;
+    if(ir > gr){ sh = imgEl.naturalHeight; sw = sh*gr; sx=(imgEl.naturalWidth-sw)/2; sy=0; }
+    else { sw = imgEl.naturalWidth; sh = sw/gr; sx=0; sy=(imgEl.naturalHeight-sh)/2; }
+    smallCtx.drawImage(imgEl, sx, sy, sw, sh, 0, 0, gw, gh);
+  }
+
+  function refreshPixelScreen(){
+    const gw = state.gridSize, gh = Math.round(state.gridSize*0.75);
+    if(currentImageEl) drawImageToSmall(currentImageEl, gw, gh);
+    else drawSyntheticScene(gw, gh);
+    pixCtx.imageSmoothingEnabled = false;
+    pixCtx.clearRect(0,0,pixCanvas.width,pixCanvas.height);
+    pixCtx.drawImage(smallCanvas, 0, 0, pixCanvas.width, pixCanvas.height);
+    document.getElementById('gridSliderVal').textContent = gw + '×' + gh;
+    refreshInversionScreen();
+  }
+
+  let lastPixel = { x: 16, y: 12 }; // 4번 화면에서 참조할 마지막 클릭 픽셀
+  pixCanvas.addEventListener('click', (e)=>{
+    const rect = pixCanvas.getBoundingClientRect();
+    const scaleX = pixCanvas.width/rect.width, scaleY = pixCanvas.height/rect.height;
+    const cx = (e.clientX-rect.left)*scaleX, cy = (e.clientY-rect.top)*scaleY;
+    const gw = smallCanvas.width, gh = smallCanvas.height;
+    const gx = Math.min(gw-1, Math.floor(cx/pixCanvas.width*gw));
+    const gy = Math.min(gh-1, Math.floor(cy/pixCanvas.height*gh));
+    lastPixel = { x:gx, y:gy };
+    const d = smallCtx.getImageData(gx, gy, 1, 1).data;
+    document.getElementById('pixelSwatch').style.background = `rgb(${d[0]},${d[1]},${d[2]})`;
+    document.getElementById('pixelReadoutText').innerHTML =
+      `위치 (${gx}, ${gy})<br>R=${d[0]}, G=${d[1]}, B=${d[2]}`;
+    refreshInversionScreen();
+  });
+
+  document.getElementById('gridSlider').addEventListener('input',(e)=>{
+    state.gridSize = Number(e.target.value); save(); refreshPixelScreen();
+  });
+  document.getElementById('useSampleBtn').onclick = ()=>{
+    currentImageEl = null; save(); refreshPixelScreen();
+  };
+  document.getElementById('photoInput').addEventListener('change',(e)=>{
+    const file = e.target.files[0];
+    if(!file) return;
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = ()=>{ currentImageEl = img; refreshPixelScreen(); URL.revokeObjectURL(url); };
+    img.src = url;
+  });
+
+  /* ---------- 4. 색 반전 = NOT ---------- */
+  const origCanvas = document.getElementById('origCanvas');
+  const invCanvas = document.getElementById('invCanvas');
+  const origCtx = origCanvas.getContext('2d');
+  const invCtx = invCanvas.getContext('2d');
+  const invSmall = document.createElement('canvas');
+  const invSmallCtx = invSmall.getContext('2d');
+
+  function refreshInversionScreen(){
+    const gw = smallCanvas.width, gh = smallCanvas.height;
+    origCtx.imageSmoothingEnabled = false;
+    origCtx.clearRect(0,0,origCanvas.width,origCanvas.height);
+    origCtx.drawImage(smallCanvas, 0, 0, origCanvas.width, origCanvas.height);
+
+    invSmall.width = gw; invSmall.height = gh;
+    const src = smallCtx.getImageData(0,0,gw,gh);
+    const out = invSmallCtx.createImageData(gw,gh);
+    for(let i=0;i<src.data.length;i+=4){
+      out.data[i]   = 255-src.data[i];
+      out.data[i+1] = 255-src.data[i+1];
+      out.data[i+2] = 255-src.data[i+2];
+      out.data[i+3] = 255;
+    }
+    invSmallCtx.putImageData(out,0,0);
+    invCtx.imageSmoothingEnabled = false;
+    invCtx.clearRect(0,0,invCanvas.width,invCanvas.height);
+    invCtx.drawImage(invSmall, 0, 0, invCanvas.width, invCanvas.height);
+
+    const before = smallCtx.getImageData(lastPixel.x, lastPixel.y, 1, 1).data;
+    const after = [255-before[0], 255-before[1], 255-before[2]];
+    document.getElementById('notBeforeBits').innerHTML = '';
+    document.getElementById('notBeforeBits').appendChild(renderBitRow(toBin8(before[0])));
+    document.getElementById('notBeforeDec').textContent = '= ' + before[0];
+    document.getElementById('notAfterBits').innerHTML = '';
+    document.getElementById('notAfterBits').appendChild(renderBitRow(toBin8(after[0]), toBin8(before[0])));
+    document.getElementById('notAfterDec').textContent = '= ' + after[0];
+    document.getElementById('notSumText').textContent = `${before[0]} → ${after[0]} (255 − ${before[0]} = ${after[0]})`;
+  }
+
+  /* ---------- 5. 픽셀아트 ---------- */
+  const ART_SIZE = 12;
+  const PALETTE = ['#ffffff','#111827','#dc2626','#d97706','#facc15','#059669','#2563eb','#7c3aed','#db2777','#78350f'];
+  let paletteChoice = 2;
+  const artCanvas = document.getElementById('artCanvas');
+  const artCtx = artCanvas.getContext('2d');
+  const cellPx = artCanvas.width/ART_SIZE;
+
+  function ensureArt(){
+    if(!state.art || state.art.length !== ART_SIZE*ART_SIZE){
+      state.art = new Array(ART_SIZE*ART_SIZE).fill(0);
+    }
+  }
+  function renderPalette(){
+    const box = document.getElementById('palette');
+    box.innerHTML = '';
+    PALETTE.forEach((color,i)=>{
+      const b = document.createElement('button');
+      b.className = 'swatchbtn' + (i===paletteChoice ? ' active':'');
+      b.style.background = color;
+      b.onclick = ()=>{ paletteChoice = i; renderPalette(); };
+      box.appendChild(b);
+    });
+  }
+  function renderArt(){
+    ensureArt();
+    artCtx.clearRect(0,0,artCanvas.width,artCanvas.height);
+    for(let y=0;y<ART_SIZE;y++){
+      for(let x=0;x<ART_SIZE;x++){
+        const idx = y*ART_SIZE+x;
+        artCtx.fillStyle = PALETTE[state.art[idx]];
+        artCtx.fillRect(x*cellPx, y*cellPx, cellPx, cellPx);
+        artCtx.strokeStyle = '#e5e7eb';
+        artCtx.strokeRect(x*cellPx, y*cellPx, cellPx, cellPx);
+      }
+    }
+  }
+  function paintAt(clientX, clientY){
+    const rect = artCanvas.getBoundingClientRect();
+    const scaleX = artCanvas.width/rect.width, scaleY = artCanvas.height/rect.height;
+    const x = Math.floor((clientX-rect.left)*scaleX/cellPx);
+    const y = Math.floor((clientY-rect.top)*scaleY/cellPx);
+    if(x<0||y<0||x>=ART_SIZE||y>=ART_SIZE) return;
+    ensureArt();
+    state.art[y*ART_SIZE+x] = paletteChoice;
+    renderArt(); save();
+  }
+  let painting = false;
+  artCanvas.addEventListener('mousedown', (e)=>{ painting=true; paintAt(e.clientX,e.clientY); });
+  artCanvas.addEventListener('mousemove', (e)=>{ if(painting) paintAt(e.clientX,e.clientY); });
+  window.addEventListener('mouseup', ()=>{ painting=false; });
+  artCanvas.addEventListener('touchstart', (e)=>{ const t=e.touches[0]; paintAt(t.clientX,t.clientY); e.preventDefault(); }, {passive:false});
+  artCanvas.addEventListener('touchmove', (e)=>{ const t=e.touches[0]; paintAt(t.clientX,t.clientY); e.preventDefault(); }, {passive:false});
+  document.getElementById('clearArtBtn').onclick = ()=>{
+    state.art = new Array(ART_SIZE*ART_SIZE).fill(0);
+    renderArt(); save();
+  };
+
+  /* ---------- 진행 코드 내보내기/불러오기 ---------- */
+  function encodeState(){ return btoa(encodeURIComponent(JSON.stringify(state))).replace(/=+$/,''); }
+  function decodeState(code){
+    const obj = JSON.parse(decodeURIComponent(atob(code)));
+    if(!obj || typeof obj !== 'object') throw new Error('invalid');
+    return obj;
+  }
+  document.getElementById('exportBtn').onclick = ()=>{
+    const box = document.getElementById('exportBox');
+    document.getElementById('importBox').style.display = 'none';
+    box.style.display = box.style.display==='none' ? 'block' : 'none';
+    if(box.style.display==='block') document.getElementById('exportCode').value = encodeState();
+  };
+  document.getElementById('importBtn').onclick = ()=>{
+    const box = document.getElementById('importBox');
+    document.getElementById('exportBox').style.display = 'none';
+    box.style.display = box.style.display==='none' ? 'block' : 'none';
+  };
+  document.getElementById('importApplyBtn').onclick = ()=>{
+    const code = document.getElementById('importCode').value.trim();
+    if(!code) return;
+    try{
+      Object.assign(state, decodeState(code));
+      renderAll();
+      alert('불러왔습니다.');
+    }catch(e){
+      alert('코드를 다시 확인해 주세요.');
+    }
+  };
+
+  /* ---------- 확인 코드 ---------- */
+  function computeConfirmCode(){
+    const {r,g,b} = state.rgb;
+    let n = r + g*3 + b*7;
+    n += state.bitQuizChoice==='2배씩 늘어난다' ? 500 : 0;
+    ensureArt();
+    n += state.art.filter(v=>v!==0).length * 11;
+    return 'IB-' + ((n % 9000) + 1000);
+  }
+
+  /* ---------- 제출용 결과 만들기 ---------- */
+  document.getElementById('makeSubmitBtn').onclick = ()=>{
+    const name = document.getElementById('submitName').value.trim();
+    if(!name){ alert('이름을 먼저 입력해 주세요.'); return; }
+    state.name = name; save();
+
+    const canvas = document.getElementById('exportSummaryCanvas');
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#ffffff'; ctx.fillRect(0,0,canvas.width,canvas.height);
+    ctx.fillStyle = '#1f2937';
+    ctx.font = 'bold 30px sans-serif';
+    ctx.fillText('이미지 속 비트 — 결과', 30, 50);
+    ctx.font = '18px sans-serif';
+    ctx.fillText('이름: ' + name, 30, 90);
+    ctx.fillText('날짜: ' + new Date().toLocaleDateString('ko-KR'), 30, 118);
+
+    let y = 165;
+    ctx.font = 'bold 20px sans-serif'; ctx.fillText('1. 내가 만든 색', 30, y); y += 10;
+    const {r,g,b} = state.rgb;
+    ctx.fillStyle = `rgb(${r},${g},${b})`;
+    ctx.fillRect(30, y, 90, 90);
+    ctx.fillStyle = '#1f2937';
+    ctx.font = '17px sans-serif';
+    ctx.fillText(`(R,G,B) = (${r}, ${g}, ${b})`, 140, y+35);
+    ctx.fillText(`2진수: ${toBin8(r)} ${toBin8(g)} ${toBin8(b)}`, 140, y+62);
+    y += 130;
+
+    ctx.font = 'bold 20px sans-serif'; ctx.fillText('2. 비트 퀴즈', 30, y); y += 30;
+    ctx.font = '17px sans-serif';
+    ctx.fillText('내 답: ' + (state.bitQuizChoice || '(미입력)'), 50, y); y += 40;
+
+    ctx.font = 'bold 20px sans-serif'; ctx.fillText('3. 내 픽셀아트', 30, y); y += 14;
+    ensureArt();
+    const artPx = 240/ART_SIZE;
+    for(let yy=0;yy<ART_SIZE;yy++){
+      for(let xx=0;xx<ART_SIZE;xx++){
+        ctx.fillStyle = PALETTE[state.art[yy*ART_SIZE+xx]];
+        ctx.fillRect(30+xx*artPx, y+yy*artPx, artPx, artPx);
+      }
+    }
+    ctx.strokeStyle = '#e5e7eb';
+    ctx.strokeRect(30, y, 240, 240);
+    y += 270;
+
+    const code = computeConfirmCode();
+    ctx.font = 'bold 22px sans-serif';
+    ctx.fillStyle = '#111827';
+    ctx.fillRect(30, y, 300, 50);
+    ctx.fillStyle = '#ffffff';
+    ctx.fillText('확인 코드: ' + code, 45, y+33);
+
+    canvas.toBlob((blob)=>{
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `이미지속비트_${name}.png`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(()=>URL.revokeObjectURL(url), 2000);
+    });
+
+    document.getElementById('submitStatus').style.display = 'block';
+    document.getElementById('submitStatus').textContent = '결과 이미지를 내려받았습니다. 학습지에 붙여넣어 제출하세요.';
+    document.getElementById('confirmCodeBox').style.display = 'block';
+    document.getElementById('confirmCode').textContent = code;
+  };
+
+  /* ---------- 초기화 ---------- */
+  function renderAll(){
+    document.getElementById('rSlider').value = state.rgb.r;
+    document.getElementById('gSlider').value = state.rgb.g;
+    document.getElementById('bSlider').value = state.rgb.b;
+    updateSwatch1();
+    renderBitQuiz();
+    document.getElementById('gridSlider').value = state.gridSize;
+    refreshPixelScreen();
+    renderPalette();
+    renderArt();
+    if(state.name) document.getElementById('submitName').value = state.name;
+  }
+
+  load();
+  renderAll();
+</script>
+</body>
+</html>
