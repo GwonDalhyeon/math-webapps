@@ -3,3 +3,9 @@
 tasks/private/
 local-resources/
 
+# 로컬 보관용 geometry/gifted 자료: 저장소에 커밋하지 않음
+/geometry/1. 포물면 반사 체험 시뮬레이터(데스크톱형).html
+/geometry/2. 원뿔 절단면과 이차곡선 탐구 시뮬레이터(데스크톱형).html
+/gifted/Fractal.txt
+/gifted/fractal/
+
