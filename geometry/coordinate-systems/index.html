@@ -1,0 +1,864 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="같은 점을 직교좌표, 극좌표, 원기둥좌표, 구면좌표로 나타내며 좌표계 사이의 변환 과정을 탐구합니다." />
+  <title>같은 점, 다른 좌표계</title>
+  <link rel="icon" href="../../favicon.ico" sizes="16x16 32x32 48x48" />
+  <link rel="icon" href="../../assets/favicon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="../../assets/apple-touch-icon.png" />
+  <link rel="stylesheet" href="../../assets/common.css" />
+  <script>
+    window.MathJax = {
+      tex: { inlineMath: [['\\(', '\\)']], displayMath: [['\\[', '\\]']] },
+      svg: { fontCache: 'global' }
+    };
+  </script>
+  <!-- 변환식과 도형의 방정식을 교과서식으로 표시하기 위해 MathJax CDN을 사용합니다. -->
+  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+  <!-- 3차원 좌표계 비교와 카메라 회전에 저장소의 three.js r184를 사용합니다. -->
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "../../assets/vendor/three/three.module.js",
+      "three/addons/": "../../assets/vendor/three/addons/"
+    }
+  }
+  </script>
+  <style>
+    :root {
+      --ink: #14213d;
+      --muted: #52627a;
+      --line: #d8e1ed;
+      --paper: #ffffff;
+      --blue: #2563eb;
+      --blue-soft: #eff6ff;
+      --teal: #087f78;
+      --teal-soft: #e8faf7;
+      --orange: #b45309;
+      --orange-soft: #fff7ed;
+      --purple: #6941c6;
+      --shadow: 0 12px 30px rgba(20, 33, 61, .09);
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #f4f7fb; color: var(--ink); }
+    button, select { font: inherit; }
+    .app { width: min(1420px, calc(100% - 28px)); margin: 0 auto; padding: 14px 0 42px; }
+    .back-link { display: inline-block; margin-bottom: 9px; color: var(--blue); font-weight: 800; text-decoration: none; }
+    .hero { margin-bottom: 10px; }
+    .eyebrow { margin: 0 0 4px; color: var(--blue); font-size: 13px; font-weight: 900; letter-spacing: .04em; }
+    .hero h1 { margin: 0 0 5px; font-size: clamp(25px, 3.3vw, 38px); letter-spacing: -.045em; }
+    .hero p { max-width: 1000px; margin: 0; color: var(--muted); font-size: 15px; line-height: 1.55; }
+    .learning-note { display: flex; gap: 9px; align-items: flex-start; padding: 8px 12px; margin-bottom: 10px; border: 1px solid #c9dafa; border-radius: 12px; background: var(--blue-soft); color: #284365; font-size: 13.5px; line-height: 1.5; }
+    .learning-note strong { color: #17498d; white-space: nowrap; }
+
+    .mode-tabs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-bottom: 9px; }
+    .mode-tab { min-height: 49px; padding: 7px 13px; border: 2px solid var(--line); border-radius: 13px; background: var(--paper); color: var(--muted); cursor: pointer; text-align: left; font-weight: 900; transition: .15s ease; }
+    .mode-tab span { display: block; margin-top: 2px; color: #718096; font-size: 12px; font-weight: 600; }
+    .mode-tab:hover { border-color: #9eb2ce; transform: translateY(-1px); }
+    .mode-tab[aria-selected="true"] { border-color: var(--ink); background: var(--ink); color: #fff; box-shadow: var(--shadow); }
+    .mode-tab[aria-selected="true"] span { color: #dbeafe; }
+
+    .control-panel, .formula-panel, .interpretation, .structure-panel { border: 1px solid var(--line); border-radius: 15px; background: var(--paper); box-shadow: var(--shadow); }
+    .control-panel { padding: 10px 12px; margin-bottom: 10px; }
+    .control-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+    .control-row + .control-row { margin-top: 8px; }
+    .control-label { color: #40516b; font-size: 12px; font-weight: 900; }
+    .segmented { display: inline-flex; padding: 3px; border-radius: 10px; background: #edf2f8; }
+    .segmented button, .case-button, .action-button, .view-button, .shape-button { min-height: 34px; padding: 6px 10px; border: 1px solid var(--line); border-radius: 9px; background: #fff; color: #40516b; cursor: pointer; font-size: 13px; font-weight: 850; }
+    .segmented button { min-height: 30px; border: 0; background: transparent; }
+    .segmented button[aria-pressed="true"], .case-button[aria-pressed="true"], .shape-button[aria-pressed="true"] { border-color: var(--blue); background: var(--blue); color: white; }
+    .action-button { background: var(--ink); color: white; border-color: var(--ink); }
+    .action-button.secondary { background: white; color: var(--ink); }
+    .action-button:hover, .case-button:hover, .view-button:hover, .shape-button:hover { border-color: #8ea5c8; }
+    .step-status { margin-left: auto; color: #40516b; font-size: 13px; font-weight: 800; }
+    .step-status b { color: var(--blue); }
+    .case-list { display: inline-flex; flex-wrap: wrap; gap: 6px; }
+    .coordinate-inputs { display: inline-flex; flex-wrap: wrap; gap: 6px; }
+    .coordinate-inputs label { display: inline-flex; align-items: center; gap: 4px; color: #40516b; font-size: 13px; font-weight: 900; }
+    .coordinate-inputs input { width: 72px; min-height: 34px; padding: 5px 7px; border: 1px solid var(--line); border-radius: 8px; color: var(--ink); background: #fff; font: inherit; font-size: 13px; }
+    .coordinate-inputs input:focus { outline: 3px solid rgba(37, 99, 235, .2); border-color: var(--blue); }
+    .input-status { color: #52627a; font-size: 12px; line-height: 1.4; }
+
+    .visual-stage { min-width: 0; }
+    .view-grid { display: grid; gap: 10px; }
+    .view-grid.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .view-grid.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .view-card { min-width: 0; overflow: hidden; border: 1px solid var(--line); border-radius: 15px; background: var(--paper); box-shadow: var(--shadow); }
+    .view-card-header { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; padding: 8px 11px; border-bottom: 1px solid var(--line); background: #fbfcfe; }
+    .view-card-header h2 { margin: 0; color: #263953; font-size: 15px; }
+    .view-card-header span { color: #718096; font-size: 12px; font-weight: 700; white-space: nowrap; }
+    .svg-wrap { padding: 5px; background: #f9fbfe; }
+    svg.diagram-2d { display: block; width: 100%; aspect-ratio: 500 / 380; border-radius: 10px; background: #fff; touch-action: none; }
+    .mini-readout { min-height: 42px; padding: 7px 11px 9px; border-top: 1px solid var(--line); color: #31425c; font-size: 13px; line-height: 1.45; }
+    .mini-readout strong { color: var(--ink); }
+    .three-wrap { position: relative; height: 345px; background: radial-gradient(circle at 48% 43%, #1a3158 0%, #0c1935 68%, #091126 100%); touch-action: none; }
+    .three-wrap canvas { display: block; width: 100%; height: 100%; }
+    .label3d { display: inline-block; padding: 1px 5px; border-radius: 6px; color: white; background: rgba(4, 12, 29, .84); border: 1px solid rgba(255,255,255,.25); font: 800 12px system-ui, sans-serif; white-space: nowrap; transform: translateZ(0); backface-visibility: hidden; }
+    .three-overlay-note { position: absolute; left: 9px; bottom: 8px; padding: 5px 7px; border-radius: 7px; background: rgba(255,255,255,.9); color: #40516b; font-size: 11px; font-weight: 750; pointer-events: none; }
+    .three-readout { min-height: 47px; padding: 7px 10px 9px; border-top: 1px solid var(--line); color: #31425c; font-size: 12px; line-height: 1.45; }
+    .three-readout strong { display: block; color: var(--ink); font-size: 13px; }
+    .hidden { display: none !important; }
+
+    .after-stage { display: grid; grid-template-columns: minmax(0, 1fr) minmax(260px, 355px); gap: 10px; margin-top: 10px; }
+    .formula-panel { padding: 9px 13px; min-height: 82px; color: #31425c; }
+    .formula-panel h2 { margin: 0 0 4px; color: #40516b; font-size: 13px; }
+    .formula-panel .formula { min-height: 42px; font-size: 17px; }
+    .interpretation { padding: 10px 13px; border-color: #c5e5df; background: var(--teal-soft); color: #245c58; font-size: 13.5px; line-height: 1.55; }
+    .interpretation strong { display: block; margin-bottom: 2px; color: #086861; font-size: 12px; }
+    .structure-panel { margin-top: 12px; padding: 13px; }
+    .structure-panel h2 { margin: 0 0 4px; font-size: 18px; }
+    .structure-panel > p { margin: 0 0 9px; color: var(--muted); font-size: 14px; line-height: 1.5; }
+    .shape-buttons { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 9px; }
+    .shape-compare { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+    .equation-box { padding: 9px 11px; border-radius: 10px; background: #f8fafc; border: 1px solid var(--line); }
+    .equation-box small { display: block; margin-bottom: 3px; color: #718096; font-size: 11px; font-weight: 800; }
+    .equation-box .math { min-height: 25px; font-size: 16px; }
+    .shape-explanation { margin: 8px 0 0; padding: 8px 10px; border-left: 4px solid var(--orange); background: var(--orange-soft); color: #7c3b0b; font-size: 13px; line-height: 1.5; }
+    .footer-note { margin: 12px 2px 0; color: #718096; font-size: 12px; line-height: 1.5; }
+
+    @media (max-width: 980px) {
+      .three-wrap { height: 300px; }
+      .after-stage { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 900px) {
+      .view-grid.three { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 700px) {
+      .app { width: min(100% - 18px, 1420px); padding-top: 12px; }
+      .mode-tabs, .view-grid.two, .view-grid.three, .shape-compare { grid-template-columns: 1fr; }
+      .mode-tab { min-height: 46px; }
+      .step-status { width: 100%; margin-left: 0; }
+      .three-wrap { height: 315px; }
+      .formula-panel .formula { font-size: 15px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <a class="back-link" href="../">← 기하 웹앱</a>
+    <header class="hero">
+      <p class="eyebrow">GEOMETRY · COORDINATE SYSTEMS</p>
+      <h1>같은 점, 다른 좌표계</h1>
+      <p>점은 그대로 두고, 직교·극·원기둥·구면좌표가 그 점의 위치를 찾아가고 읽어 내는 과정을 비교합니다.</p>
+    </header>
+    <div class="learning-note"><strong>오늘의 관찰</strong><span>좌표계를 바꾸는 것은 점을 옮기는 일이 아니라, 같은 점을 나타내는 기준을 바꾸는 일입니다. 값이 하나씩 찾아가는 순서를 따라가 보세요.</span></div>
+
+    <div class="mode-tabs" role="tablist" aria-label="좌표 차원 선택">
+      <button class="mode-tab" id="mode2d" role="tab" aria-selected="true" aria-controls="twoDPanel">2차원 좌표계<span>직교좌표 ↔ 극좌표</span></button>
+      <button class="mode-tab" id="mode3d" role="tab" aria-selected="false" aria-controls="threeDPanel">3차원 좌표계<span>직교좌표 ↔ 원기둥좌표 ↔ 구면좌표</span></button>
+    </div>
+
+    <section class="control-panel" aria-label="좌표계 변환 조작">
+      <div class="control-row">
+        <span class="control-label">변환 방향</span>
+        <div class="segmented" role="group" aria-label="변환 방향">
+          <button id="directionRead" aria-pressed="true">점 → 좌표 읽기</button>
+          <button id="directionBuild" aria-pressed="false">좌표 → 점 찾기</button>
+        </div>
+        <span class="control-label">대표 사례</span>
+        <div id="caseList" class="case-list"></div>
+      </div>
+      <div class="control-row coordinate-input-row">
+        <span class="control-label">직교좌표 대입</span>
+        <div class="coordinate-inputs" aria-label="직교좌표 입력">
+          <label for="cartesianX">x<input id="cartesianX" type="number" step="0.1" inputmode="decimal" value="1" aria-label="직교좌표 x" /></label>
+          <label for="cartesianY">y<input id="cartesianY" type="number" step="0.1" inputmode="decimal" value="1.73" aria-label="직교좌표 y" /></label>
+          <label id="cartesianZField" class="hidden" for="cartesianZ">z<input id="cartesianZ" type="number" step="0.1" inputmode="decimal" value="4.24" aria-label="직교좌표 z" /></label>
+        </div>
+        <button class="action-button" id="applyCartesianButton" type="button">값 대입</button>
+        <span class="input-status" id="coordinateInputStatus" aria-live="polite">현재 차원의 직교좌표를 입력하세요.</span>
+      </div>
+      <div class="control-row">
+        <button class="action-button" id="playButton">▶ 전체 재생</button>
+        <button class="action-button secondary" id="previousButton">← 이전 단계</button>
+        <button class="action-button secondary" id="nextButton">다음 단계 →</button>
+        <button class="action-button secondary" id="resetButton">초기화</button>
+        <span class="step-status">현재 단계: <b id="stepLabel">시작</b></span>
+      </div>
+    </section>
+
+    <section id="twoDPanel" class="visual-stage" aria-label="2차원 좌표계 비교">
+      <div class="view-grid two">
+        <article class="view-card">
+          <div class="view-card-header"><h2>직교좌표계</h2><span>가로 + 세로</span></div>
+          <div class="svg-wrap"><svg id="cartesianSvg" class="diagram-2d" viewBox="0 0 500 380" role="img" aria-label="직교좌표평면"></svg></div>
+          <div class="mini-readout" id="cartesianReadout"></div>
+        </article>
+        <article class="view-card">
+          <div class="view-card-header"><h2>극좌표계</h2><span>거리 + 방향</span></div>
+          <div class="svg-wrap"><svg id="polarSvg" class="diagram-2d" viewBox="0 0 500 380" role="img" aria-label="극좌표평면"></svg></div>
+          <div class="mini-readout" id="polarReadout"></div>
+        </article>
+      </div>
+    </section>
+
+    <section id="threeDPanel" class="visual-stage hidden" aria-label="3차원 좌표계 비교">
+      <div class="view-grid three">
+        <article class="view-card">
+          <div class="view-card-header"><h2>3차원 직교좌표</h2><span>세 방향의 거리</span></div>
+          <div class="three-wrap" id="cart3dHost"><div class="three-overlay-note">드래그: 시점 회전 · 휠: 확대</div></div>
+          <div class="three-readout" id="cart3dReadout"></div>
+        </article>
+        <article class="view-card">
+          <div class="view-card-header"><h2>원기둥좌표</h2><span>정사영 + 높이</span></div>
+          <div class="three-wrap" id="cyl3dHost"><div class="three-overlay-note">r은 정사영까지의 거리</div></div>
+          <div class="three-readout" id="cyl3dReadout"></div>
+        </article>
+        <article class="view-card">
+          <div class="view-card-header"><h2>구면좌표</h2><span>거리 + 두 방향</span></div>
+          <div class="three-wrap" id="sph3dHost"><div class="three-overlay-note">φ는 +z축에서 측정</div></div>
+          <div class="three-readout" id="sph3dReadout"></div>
+        </article>
+      </div>
+    </section>
+
+    <div class="after-stage">
+      <section class="formula-panel" aria-live="polite">
+        <h2>이번 단계에서 보이는 관계</h2>
+        <div class="formula" id="formulaBox"></div>
+      </section>
+      <section class="interpretation" aria-live="polite">
+        <strong>해석</strong>
+        <div id="interpretationText"></div>
+      </section>
+    </div>
+
+    <section class="structure-panel" aria-label="좌표계 선택과 식의 간단함">
+      <h2>도형의 구조에 맞는 좌표계</h2>
+      <p>같은 도형도 좌표계를 선택하면 식이 더 짧아질 수 있습니다. 모양을 선택해 비교해 보세요.</p>
+      <div class="shape-buttons" role="group" aria-label="도형 선택">
+        <button class="shape-button" data-shape="circle" aria-pressed="true">원</button>
+        <button class="shape-button" data-shape="cylinder" aria-pressed="false">원기둥 옆면</button>
+        <button class="shape-button" data-shape="sphere" aria-pressed="false">구의 표면</button>
+      </div>
+      <div class="shape-compare">
+        <div class="equation-box"><small>직교좌표계</small><div class="math" id="shapeCartesian"></div></div>
+        <div class="equation-box"><small id="shapeNativeLabel">극좌표계</small><div class="math" id="shapeNative"></div></div>
+      </div>
+      <p class="shape-explanation" id="shapeExplanation"></p>
+    </section>
+    <p class="footer-note">현재 기본 구면좌표 사례는 학습지의 최신 활동 5와 같습니다: \((\rho,\theta,\phi)=(6,45^\circ,45^\circ)\) ↔ \((x,y,z)=(3,3,3\sqrt2)\). 구면좌표의 \(\phi\)는 이 앱에서도 항상 (+z)축에서 잽니다.</p>
+  </main>
+
+  <script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+    import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
+
+    const SVG_NS = 'http://www.w3.org/2000/svg';
+    const TAU = Math.PI * 2;
+    const rad = deg => deg * Math.PI / 180;
+    const deg = angle => angle * 180 / Math.PI;
+    const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
+    const near = (a, b) => Math.abs(a - b) < 1e-6;
+
+    const state = {
+      mode: '2d',
+      direction: 'read',
+      point2d: { x: 1, y: Math.sqrt(3) },
+      point3d: { x: 3, y: 3, z: 3 * Math.sqrt(2) },
+      twoDCase: 'worksheet',
+      threeDCase: 'activity5',
+      shape: 'circle'
+    };
+    const animation = { step: 0, stageProgress: 1, playing: false, lastTime: 0, timer: 0 };
+    const threeViews = {};
+
+    const $ = id => document.getElementById(id);
+    const createSvg = (tag, attrs = {}) => {
+      const node = document.createElementNS(SVG_NS, tag);
+      Object.entries(attrs).forEach(([key, value]) => node.setAttribute(key, value));
+      return node;
+    };
+    const appendText = (parent, x, y, text, attrs = {}) => {
+      const node = createSvg('text', { x, y, ...attrs });
+      node.textContent = text;
+      parent.appendChild(node);
+      return node;
+    };
+    const point2d = () => ({ ...state.point2d, r: Math.hypot(state.point2d.x, state.point2d.y), theta: normalizeAngle(deg(Math.atan2(state.point2d.y, state.point2d.x))) });
+    const point3d = () => {
+      const { x, y, z } = state.point3d;
+      const rxy = Math.hypot(x, y);
+      const rho = Math.hypot(x, y, z);
+      return { x, y, z, rxy, rho, theta: rxy < 1e-8 ? 0 : normalizeAngle(deg(Math.atan2(y, x))), phi: rho < 1e-8 ? 0 : deg(Math.acos(clamp(z / rho, -1, 1))) };
+    };
+    const normalizeAngle = angle => ((angle % 360) + 360) % 360;
+    const formatNumber = value => {
+      if (near(value, 0)) return '0';
+      if (near(value, 1)) return '1';
+      if (near(value, 2)) return '2';
+      if (near(value, 3)) return '3';
+      if (near(value, 4)) return '4';
+      if (near(value, 5)) return '5';
+      if (near(value, 6)) return '6';
+      if (near(value, Math.sqrt(3))) return '\u221a3';
+      if (near(value, 3 * Math.sqrt(2))) return '3\u221a2';
+      if (near(value, 2 * Math.sqrt(3))) return '2\u221a3';
+      return value.toFixed(2);
+    };
+    const formatAngle = value => `${Math.abs(value - Math.round(value)) < 1e-5 ? Math.round(value) : value.toFixed(1)}°`;
+    const formatPair2d = p => `(${formatNumber(p.x)}, ${formatNumber(p.y)})`;
+    const formatPair3d = p => `(${formatNumber(p.x)}, ${formatNumber(p.y)}, ${formatNumber(p.z)})`;
+
+    function updateModeButtons() {
+      $('mode2d').setAttribute('aria-selected', String(state.mode === '2d'));
+      $('mode3d').setAttribute('aria-selected', String(state.mode === '3d'));
+      $('twoDPanel').classList.toggle('hidden', state.mode !== '2d');
+      $('threeDPanel').classList.toggle('hidden', state.mode !== '3d');
+      $('cartesianZField').classList.toggle('hidden', state.mode !== '3d');
+      buildCaseButtons();
+      updateCoordinateInputs();
+    }
+
+    function inputNumber(value) {
+      return Number(value.toFixed(2)).toString();
+    }
+
+    function updateCoordinateInputs() {
+      const point = state.mode === '2d' ? state.point2d : state.point3d;
+      $('cartesianX').value = inputNumber(point.x);
+      $('cartesianY').value = inputNumber(point.y);
+      $('cartesianZ').value = inputNumber(state.point3d.z);
+    }
+
+    function buildCaseButtons() {
+      const list = $('caseList');
+      list.innerHTML = '';
+      const cases = state.mode === '2d'
+        ? [
+            { id: 'worksheet', label: '활동 2: (1, √3)' },
+            { id: 'threefour', label: '도입: (3, 4)' },
+            { id: 'custom', label: '직접 입력' }
+          ]
+        : [
+            { id: 'activity5', label: '활동 5: (3, 3, 3√2)' },
+            { id: 'activity4', label: '활동 4: (1, √3, 3)' },
+            { id: 'distance', label: '활동 3: (2, 3, 6)' },
+            { id: 'custom', label: '직접 입력' }
+          ];
+      cases.forEach(item => {
+        const button = document.createElement('button');
+        button.className = 'case-button';
+        button.textContent = item.label;
+        button.setAttribute('aria-pressed', String((state.mode === '2d' ? state.twoDCase : state.threeDCase) === item.id));
+        button.addEventListener('click', () => selectCase(item.id));
+        list.appendChild(button);
+      });
+    }
+
+    function selectCase(id) {
+      stopAnimation();
+      if (state.mode === '2d') {
+        state.twoDCase = id;
+        if (id === 'worksheet') state.point2d = { x: 1, y: Math.sqrt(3) };
+        if (id === 'threefour') state.point2d = { x: 3, y: 4 };
+      } else {
+        state.threeDCase = id;
+        if (id === 'activity5') state.point3d = { x: 3, y: 3, z: 3 * Math.sqrt(2) };
+        if (id === 'activity4') state.point3d = { x: 1, y: Math.sqrt(3), z: 3 };
+        if (id === 'distance') state.point3d = { x: 2, y: 3, z: 6 };
+      }
+      resetAnimation();
+      buildCaseButtons();
+      renderAll();
+    }
+
+    function applyCartesianInputs() {
+      const x = Number($('cartesianX').value);
+      const y = Number($('cartesianY').value);
+      const z = Number($('cartesianZ').value);
+      const values = state.mode === '2d' ? [x, y] : [x, y, z];
+      if (values.some(value => !Number.isFinite(value))) {
+        $('coordinateInputStatus').textContent = '모든 좌표값을 유한한 숫자로 입력하세요.';
+        return;
+      }
+      stopAnimation();
+      if (state.mode === '2d') {
+        state.point2d = { x, y };
+        state.twoDCase = 'custom';
+        $('coordinateInputStatus').textContent = `직교좌표 (${inputNumber(x)}, ${inputNumber(y)})를 반영했습니다.`;
+      } else {
+        state.point3d = { x, y, z };
+        state.threeDCase = 'custom';
+        $('coordinateInputStatus').textContent = `직교좌표 (${inputNumber(x)}, ${inputNumber(y)}, ${inputNumber(z)})를 반영했습니다.`;
+      }
+      resetAnimation();
+      renderAll();
+    }
+
+    function setDirection(direction) {
+      stopAnimation();
+      state.direction = direction;
+      $('directionRead').setAttribute('aria-pressed', String(direction === 'read'));
+      $('directionBuild').setAttribute('aria-pressed', String(direction === 'build'));
+      resetAnimation();
+      renderAll();
+    }
+
+    function resetAnimation() {
+      animation.step = 0;
+      animation.stageProgress = 1;
+      animation.playing = false;
+      updateStepLabels();
+    }
+
+    function stopAnimation() {
+      animation.playing = false;
+      if (animation.timer) cancelAnimationFrame(animation.timer);
+      animation.timer = 0;
+      animation.stageProgress = 1;
+    }
+
+    function currentAnimationT() {
+      return animation.playing ? animation.step + animation.stageProgress : animation.step;
+    }
+
+    function stepName(t) {
+      const step = Math.min(4, Math.floor(t + 1e-5));
+      if (state.mode === '2d') {
+        if (state.direction === 'read') return ['점 P 확인', '거리 r 찾기', '반지름 r과 각 θ', '좌표값 연결', '극좌표 완성'][step];
+        return ['극좌표 확인', '반지름 선분 놓기', 'x축 정사영', 'y축 정사영', '직교좌표 완성'][step];
+      }
+      if (state.direction === 'read') return ['점 P 확인', '거리와 정사영', '방향각 θ', '높이 z 또는 각 φ', '좌표 표현 완성'][step];
+      return ['좌표 확인', '거리 정하기', '방향 정하기', '높이·기울기 정하기', '공간의 점 완성'][step];
+    }
+
+    function updateStepLabels() {
+      $('stepLabel').textContent = stepName(currentAnimationT());
+      $('playButton').textContent = animation.playing ? 'Ⅱ 일시정지' : '▶ 전체 재생';
+    }
+
+    function advanceStep(delta) {
+      stopAnimation();
+      animation.step = clamp(animation.step + delta, 0, 4);
+      animation.stageProgress = 1;
+      renderAll();
+    }
+
+    function playAnimation() {
+      if (animation.playing) {
+        stopAnimation();
+        renderAll();
+        return;
+      }
+      animation.step = 0;
+      animation.stageProgress = 0;
+      animation.playing = true;
+      animation.lastTime = performance.now();
+      animation.timer = requestAnimationFrame(animationTick);
+    }
+
+    function animationTick(now) {
+      if (!animation.playing) return;
+      const elapsed = Math.min(80, now - animation.lastTime);
+      animation.lastTime = now;
+      animation.stageProgress += elapsed / 850;
+      if (animation.stageProgress >= 1) {
+        animation.stageProgress = 0;
+        animation.step += 1;
+        if (animation.step >= 4) {
+          animation.step = 4;
+          animation.stageProgress = 1;
+          animation.playing = false;
+        }
+      }
+      renderAll();
+      if (animation.playing) animation.timer = requestAnimationFrame(animationTick);
+    }
+
+    function drawGrid(svg, polar = false) {
+      const grid = createSvg('g', { stroke: '#dfe7f1', 'stroke-width': 1 });
+      for (let i = -6; i <= 6; i += 1) {
+        const x = 250 + i * 40;
+        const y = 190 - i * 40;
+        grid.appendChild(createSvg('line', { x1: x, y1: 10, x2: x, y2: 370 }));
+        grid.appendChild(createSvg('line', { x1: 10, y1: y, x2: 490, y2: y }));
+      }
+      svg.appendChild(grid);
+      if (polar) {
+        const polarGrid = createSvg('g', { fill: 'none', stroke: '#b9ccea', 'stroke-width': 1, 'stroke-dasharray': '3 5' });
+        for (let radius = 1; radius <= 6; radius += 1) polarGrid.appendChild(createSvg('circle', { cx: 250, cy: 190, r: radius * 40 }));
+        for (let angle = 0; angle < 180; angle += 30) {
+          const a = rad(angle);
+          polarGrid.appendChild(createSvg('line', { x1: 250 - 240 * Math.cos(a), y1: 190 + 240 * Math.sin(a), x2: 250 + 240 * Math.cos(a), y2: 190 - 240 * Math.sin(a) }));
+        }
+        svg.appendChild(polarGrid);
+      }
+      const axes = createSvg('g', { stroke: '#23395d', 'stroke-width': 2.1 });
+      axes.appendChild(createSvg('line', { x1: 10, y1: 190, x2: 490, y2: 190 }));
+      axes.appendChild(createSvg('line', { x1: 250, y1: 370, x2: 250, y2: 10 }));
+      svg.appendChild(axes);
+      appendText(svg, 475, 181, 'x', { fill: '#23395d', 'font-size': 14, 'font-weight': 800 });
+      appendText(svg, 260, 22, 'y', { fill: '#23395d', 'font-size': 14, 'font-weight': 800 });
+      appendText(svg, 257, 205, 'O', { fill: '#52627a', 'font-size': 12, 'font-weight': 800 });
+    }
+
+    function xyToScreen(x, y) { return [250 + x * 40, 190 - y * 40]; }
+    function draw2D() {
+      const p = point2d();
+      const t = currentAnimationT();
+      ['cartesianSvg', 'polarSvg'].forEach(id => $(id).replaceChildren());
+      drawGrid($('cartesianSvg'), false);
+      drawGrid($('polarSvg'), true);
+      const progress = clamp(t, 0, 4);
+      const targetAngle = rad(p.theta);
+      const displayAngle = state.direction === 'read' && progress >= 1 && progress < 2 ? targetAngle * clamp(progress - 1, 0, 1) : targetAngle;
+      const circleVisible = state.direction === 'read' ? progress >= 1 : progress >= 0.5;
+      const projectionsVisible = state.direction === 'read' ? progress >= 2 : progress >= 1.6;
+      const pointVisible = state.direction === 'build' ? progress >= 3.4 : true;
+      const lineOpacity = state.direction === 'build' ? clamp(progress - 1, 0, 1) : 1;
+      const [px, py] = xyToScreen(p.x, p.y);
+      const [ox, oy] = xyToScreen(0, 0);
+      const [qx, qy] = xyToScreen(p.x, 0);
+      const [rx, ry] = xyToScreen(0, p.y);
+      const [angleX, angleY] = xyToScreen(p.r * Math.cos(displayAngle), p.r * Math.sin(displayAngle));
+
+      document.querySelectorAll('.diagram-2d').forEach(svg => {
+        if (circleVisible) svg.appendChild(createSvg('circle', { cx: 250, cy: 190, r: p.r * 40, fill: 'none', stroke: '#f59e0b', 'stroke-width': 2.2, 'stroke-dasharray': '7 5', opacity: .85 }));
+        if (state.direction === 'read' && progress >= 1) svg.appendChild(createSvg('line', { x1: ox, y1: oy, x2: angleX, y2: angleY, stroke: '#f97316', 'stroke-width': 3.2, opacity: .95 }));
+        if (state.direction === 'build' && progress >= .5) svg.appendChild(createSvg('line', { x1: ox, y1: oy, x2: px, y2: py, stroke: '#f97316', 'stroke-width': 3.2, opacity: lineOpacity }));
+        if (projectionsVisible) {
+          svg.appendChild(createSvg('line', { x1: px, y1: py, x2: qx, y2: qy, stroke: '#2563eb', 'stroke-width': 2.5, 'stroke-dasharray': '5 4', opacity: .9 }));
+          svg.appendChild(createSvg('line', { x1: px, y1: py, x2: rx, y2: ry, stroke: '#087f78', 'stroke-width': 2.5, 'stroke-dasharray': '5 4', opacity: .9 }));
+          appendText(svg, (px + qx) / 2 + 4, (py + qy) / 2 - 4, `x = ${formatNumber(p.x)}`, { fill: '#1d4ed8', 'font-size': 12, 'font-weight': 800 });
+          appendText(svg, (px + rx) / 2 - 42, (py + ry) / 2, `y = ${formatNumber(p.y)}`, { fill: '#087f78', 'font-size': 12, 'font-weight': 800 });
+        }
+        if (state.direction === 'read' && progress >= 1.8) {
+          const arcR = 36;
+          const arcEnd = Math.min(targetAngle, rad(359));
+          const arc = `M ${250 + arcR} 190 A ${arcR} ${arcR} 0 ${p.theta > 180 ? 1 : 0} 0 ${250 + arcR * Math.cos(arcEnd)} ${190 - arcR * Math.sin(arcEnd)}`;
+          svg.appendChild(createSvg('path', { d: arc, fill: 'none', stroke: '#6941c6', 'stroke-width': 3 }));
+          appendText(svg, 287, 181, `θ = ${formatAngle(p.theta)}`, { fill: '#6941c6', 'font-size': 12, 'font-weight': 900 });
+        }
+        if (pointVisible) {
+          svg.appendChild(createSvg('circle', { cx: px, cy: py, r: 7.5, fill: '#ef4444', stroke: '#fff', 'stroke-width': 2 }));
+          appendText(svg, px + 10, py - 10, 'P', { fill: '#b42318', 'font-size': 15, 'font-weight': 900 });
+        }
+        if (circleVisible && state.direction === 'read') appendText(svg, 255 + p.r * 40 * .68, 188 - p.r * 40 * .68, `r = ${formatNumber(p.r)}`, { fill: '#b45309', 'font-size': 12, 'font-weight': 900 });
+      });
+      $('cartesianReadout').innerHTML = `<strong>P(x,y) = ${formatPair2d(p)}</strong> ${projectionsVisible ? `정사영: x = ${formatNumber(p.x)}, y = ${formatNumber(p.y)}` : '가로와 세로 방향으로 점의 위치를 읽습니다.'}`;
+      $('polarReadout').innerHTML = `<strong>P(r, θ) = (${formatNumber(p.r)}, ${formatAngle(p.theta)})</strong> ${circleVisible ? `반지름 r = ${formatNumber(p.r)}인 원과 방향각 θ를 확인합니다.` : '원점에서의 거리와 방향으로 점을 읽습니다.'}`;
+    }
+
+    function svgPointer(event) {
+      if (animation.playing) stopAnimation();
+      const svg = event.currentTarget;
+      const rect = svg.getBoundingClientRect();
+      const vx = (event.clientX - rect.left) / rect.width * 500;
+      const vy = (event.clientY - rect.top) / rect.height * 380;
+      state.point2d = { x: clamp((vx - 250) / 40, -5.6, 5.6), y: clamp((190 - vy) / 40, -4.4, 4.4) };
+      state.twoDCase = 'custom';
+      buildCaseButtons();
+      renderAll();
+    }
+
+    function createLabel(text, color = '#ffffff') {
+      const element = document.createElement('div');
+      element.className = 'label3d';
+      element.textContent = text;
+      element.style.color = color;
+      return new CSS2DObject(element);
+    }
+
+    function disposeObject(object) {
+      if (object.geometry) object.geometry.dispose();
+      if (object.material) {
+        const materials = Array.isArray(object.material) ? object.material : [object.material];
+        materials.forEach(material => material.dispose());
+      }
+      object.children?.forEach(disposeObject);
+    }
+
+    function clearGroup(group) {
+      while (group.children.length) {
+        const child = group.children[0];
+        group.remove(child);
+        disposeObject(child);
+      }
+    }
+
+    function lineObject(points, color, width = 2, opacity = 1) {
+      const geometry = new THREE.BufferGeometry().setFromPoints(points);
+      const material = new THREE.LineBasicMaterial({ color, transparent: opacity < 1, opacity });
+      return new THREE.Line(geometry, material);
+    }
+
+    function dashedLineObject(points, color, opacity = .9) {
+      const geometry = new THREE.BufferGeometry().setFromPoints(points);
+      const material = new THREE.LineDashedMaterial({ color, transparent: opacity < 1, opacity, dashSize: .08, gapSize: .06 });
+      const line = new THREE.Line(geometry, material);
+      line.computeLineDistances();
+      return line;
+    }
+
+    function create3DView(hostId, kind) {
+      const host = $(hostId);
+      const scene = new THREE.Scene();
+      const camera = new THREE.PerspectiveCamera(36, 1, .1, 100);
+      camera.position.set(6.2, 2.8, 6.2);
+      camera.up.set(0, 0, 1);
+      const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
+      renderer.setClearColor(0x0b1730, 1);
+      host.prepend(renderer.domElement);
+      const labels = new CSS2DRenderer();
+      labels.domElement.style.position = 'absolute';
+      labels.domElement.style.inset = '0';
+      labels.domElement.style.pointerEvents = 'none';
+      host.appendChild(labels.domElement);
+      const controls = new OrbitControls(camera, renderer.domElement);
+      controls.enableDamping = true;
+      controls.enablePan = false;
+      controls.minDistance = 3.7;
+      controls.maxDistance = 10;
+      const coordinateFrame = new THREE.Group();
+      // Match the textbook default: +z is up, +y is right, and +x recedes down-left.
+      const base = new THREE.Group();
+      const dynamic = new THREE.Group();
+      coordinateFrame.add(base, dynamic);
+      scene.add(coordinateFrame);
+      const axisLabels = [];
+      const axisData = [
+        { end: coordinateVector(3.4, 0, 0), text: 'x', color: '#ff9b9b', line: 0xef5350 },
+        { end: coordinateVector(0, 3.4, 0), text: 'y', color: '#8fe3c5', line: 0x36b37e },
+        { end: coordinateVector(0, 0, 3.4), text: 'z', color: '#9dbdff', line: 0x5594ff }
+      ];
+      axisData.forEach(item => {
+        base.add(lineObject([new THREE.Vector3(0, 0, 0), item.end], item.line, 2.5, .95));
+        const label = createLabel(item.text, item.color);
+        label.position.copy(item.end.clone().multiplyScalar(.88));
+        coordinateFrame.add(label);
+        axisLabels.push(label);
+      });
+      const grid = new THREE.GridHelper(7, 14, 0x6b86b7, 0x355079);
+      grid.rotation.x = Math.PI / 2;
+      grid.position.z = -0.01;
+      grid.material.transparent = true;
+      grid.material.opacity = .28;
+      base.add(grid);
+      const resize = () => {
+        const width = Math.max(20, host.clientWidth);
+        const height = Math.max(20, host.clientHeight);
+        camera.aspect = width / height;
+        camera.updateProjectionMatrix();
+        renderer.setSize(width, height, false);
+        labels.setSize(width, height);
+      };
+      new ResizeObserver(resize).observe(host);
+      resize();
+      return { kind, host, scene, camera, renderer, labels, controls, dynamic, resize };
+    }
+
+    // Rotate the complete coordinate frame so the mathematical coordinates remain unchanged.
+    function coordinateVector(x, y, z) { return new THREE.Vector3(x * .42, y * .42, z * .42); }
+    function v3(x, y, z) { return coordinateVector(x, y, z); }
+    function sphericalVector(radius, theta, phi) {
+      return v3(radius * Math.sin(rad(phi)) * Math.cos(rad(theta)), radius * Math.sin(rad(phi)) * Math.sin(rad(theta)), radius * Math.cos(rad(phi)));
+    }
+    function cylinderRingPoints(radius, z, count = 16) {
+      const points = [];
+      for (let i = 0; i <= count; i += 1) {
+        const angle = TAU * i / count;
+        points.push(v3(radius * Math.cos(angle), radius * Math.sin(angle), z));
+      }
+      return points;
+    }
+    function addPoint(group, position, labelText, color = 0xef4444) {
+      const sphere = new THREE.Mesh(new THREE.SphereGeometry(.09, 16, 12), new THREE.MeshBasicMaterial({ color }));
+      sphere.position.copy(position);
+      group.add(sphere);
+      const label = createLabel(labelText, '#ffffff');
+      label.position.copy(position).add(new THREE.Vector3(.12, .12, .04));
+      group.add(label);
+    }
+    function addGroupLabel(group, position, text, color) {
+      const label = createLabel(text, color);
+      label.position.copy(position);
+      group.add(label);
+    }
+    function arcPoints(radius, start, end, plane, theta = 0) {
+      const points = [];
+      const count = 28;
+      for (let i = 0; i <= count; i += 1) {
+        const a = start + (end - start) * i / count;
+        if (plane === 'xy') points.push(v3(radius * Math.cos(a), radius * Math.sin(a), 0));
+        else points.push(sphericalVector(radius, theta, deg(a)));
+      }
+      return points;
+    }
+    function update3DView(view, p, t) {
+      clearGroup(view.dynamic);
+      const isBuild = state.direction === 'build';
+      const pointVisible = !isBuild || t >= 3.5;
+      const full = !animation.playing && animation.step === 0 ? 0 : t;
+      const rProgress = clamp(full - .5, 0, 1);
+      const angleProgress = clamp(full - 1.3, 0, 1);
+      const heightProgress = clamp(full - 2.3, 0, 1);
+      const q = v3(p.x, p.y, 0);
+      const point = v3(p.x, p.y, p.z);
+      const origin = new THREE.Vector3(0, 0, 0);
+      const rxyPoint = v3(p.rxy, 0, 0);
+      if (view.kind === 'cart') {
+        if (pointVisible) {
+          view.dynamic.add(lineObject([origin, v3(p.x, 0, 0), v3(p.x, p.y, 0), point], 0xf5b642, 2.2, .9));
+          view.dynamic.add(dashedLineObject([point, q], 0x73a7ff, .9));
+          addPoint(view.dynamic, point, 'P');
+        } else if (isBuild && t > .2) {
+          view.dynamic.add(lineObject([origin, v3(p.x * rProgress, 0, 0)], 0xf5b642, 2.2, .85));
+        }
+      } else if (view.kind === 'cyl') {
+        const cylinderTop = Math.max(5, p.z + 1.2);
+        const cylinderRadius = p.rxy * .42;
+        const cylinderHeight = cylinderTop * .42;
+        const cylinderGeometry = new THREE.CylinderGeometry(cylinderRadius, cylinderRadius, cylinderHeight, 16, 2, true);
+        const cylinder = new THREE.Mesh(cylinderGeometry, new THREE.MeshBasicMaterial({ color: 0x34d399, transparent: true, opacity: .09, side: THREE.DoubleSide, depthWrite: false }));
+        cylinder.rotation.x = Math.PI / 2;
+        cylinder.position.copy(v3(0, 0, cylinderTop / 2));
+        view.dynamic.add(cylinder);
+        view.dynamic.add(lineObject(cylinderRingPoints(p.rxy, 0), 0x6ee7b7, 1.7, .48));
+        view.dynamic.add(lineObject(cylinderRingPoints(p.rxy, cylinderTop), 0x6ee7b7, 1.7, .48));
+        for (let i = 0; i < 8; i += 1) {
+          const angle = TAU * i / 8;
+          view.dynamic.add(lineObject([
+            v3(p.rxy * Math.cos(angle), p.rxy * Math.sin(angle), 0),
+            v3(p.rxy * Math.cos(angle), p.rxy * Math.sin(angle), cylinderTop)
+          ], 0x6ee7b7, 1.2, .34));
+        }
+        view.dynamic.add(lineObject([origin, q], 0xf59e0b, 2.4, .95));
+        view.dynamic.add(lineObject(arcPoints(p.rxy, 0, rad(p.theta) * clamp(angleProgress || 1, 0, 1), 'xy'), 0x9f7aea, 2.5, .95));
+        if (pointVisible) {
+          view.dynamic.add(dashedLineObject([q, point], 0x4ade80, .95));
+          addPoint(view.dynamic, point, 'P');
+          addPoint(view.dynamic, q, 'Q', 0x38bdf8);
+          if (t >= 1.5) addGroupLabel(view.dynamic, v3(p.rxy / 2, .12, 0), 'r', '#ffd28a');
+          if (t >= 1.8) addGroupLabel(view.dynamic, v3(p.x * .52, p.y * .52, 0).add(new THREE.Vector3(.12, .12, 0)), 'θ', '#c4b5fd');
+          if (t >= 2.6) addGroupLabel(view.dynamic, v3(p.x, p.y, p.z / 2).add(new THREE.Vector3(.12, 0, 0)), 'z', '#9ff0ba');
+        }
+      } else {
+        const sphere = new THREE.Mesh(new THREE.SphereGeometry(p.rho * .42, 20, 12), new THREE.MeshBasicMaterial({ color: 0x73a7ff, wireframe: true, transparent: true, opacity: .16, depthWrite: false }));
+        view.dynamic.add(sphere);
+        if (pointVisible || !isBuild) {
+          view.dynamic.add(lineObject([origin, point], 0xffb347, 2.7, .95));
+          view.dynamic.add(dashedLineObject([point, q], 0x73a7ff, .85));
+          addPoint(view.dynamic, point, 'P');
+          addPoint(view.dynamic, q, 'Q', 0x38bdf8);
+          if (t >= .8) addGroupLabel(view.dynamic, point.clone().multiplyScalar(.62).add(new THREE.Vector3(.16, .16, 0)), 'ρ', '#ffd28a');
+          if (t >= 1.6) view.dynamic.add(lineObject(arcPoints(Math.max(.35, p.rxy * .27), 0, rad(p.theta), 'xy'), 0xc4b5fd, 2.5, .95));
+          if (t >= 2.4) view.dynamic.add(lineObject(arcPoints(Math.max(.35, p.rho * .27), 0, rad(p.phi), 'xz', p.theta), 0x8fe3c5, 2.5, .95));
+          if (t >= 1.8) addGroupLabel(view.dynamic, v3(p.rxy * .45, p.rxy * .28, 0).add(new THREE.Vector3(.12, .12, 0)), 'θ', '#c4b5fd');
+          if (t >= 2.7) addGroupLabel(view.dynamic, sphericalVector(p.rho * .48, p.theta, p.phi / 2).add(new THREE.Vector3(.14, .12, .1)), 'φ', '#9ff0ba');
+        }
+      }
+    }
+
+    function render3D() {
+      const p = point3d();
+      const t = currentAnimationT();
+      update3DView(threeViews.cart, p, t);
+      update3DView(threeViews.cyl, p, t);
+      update3DView(threeViews.sph, p, t);
+      $('cart3dReadout').innerHTML = `<strong>P(x,y,z) = ${formatPair3d(p)}</strong> 세 축 방향의 좌표로 공간의 위치를 읽습니다.`;
+      $('cyl3dReadout').innerHTML = `<strong>P(r, θ, z) = (${formatNumber(p.rxy)}, ${formatAngle(p.theta)}, ${formatNumber(p.z)})</strong> 정사영 Q까지의 거리 r과 높이 z를 함께 봅니다.`;
+      $('sph3dReadout').innerHTML = `<strong>P(ρ, θ, φ) = (${formatNumber(p.rho)}, ${formatAngle(p.theta)}, ${formatAngle(p.phi)})</strong> φ는 +z축에서 OP까지 잰 각입니다.`;
+    }
+
+    function updateFormulaAndText() {
+      const p2 = point2d();
+      const p3 = point3d();
+      const t = currentAnimationT();
+      let formula = '';
+      let text = '';
+      if (state.mode === '2d') {
+        if (state.direction === 'read') {
+          if (t < 1) { formula = `\\[P(x,y)=${formatPair2d(p2)}\\]`; text = '먼저 직교좌표의 점 P를 확인합니다.'; }
+          else if (t < 2) { formula = `\\[r=\\sqrt{x^2+y^2}=\\sqrt{${formatNumber(p2.x)}^2+${formatNumber(p2.y)}^2}\\]`; text = '원점에서 점까지의 거리를 반지름 r로 읽습니다.'; }
+          else { formula = `\\[x=r\\cos\\theta,\\qquad y=r\\sin\\theta\\]`; text = '반지름 r인 선분을 θ만큼 회전하면 같은 점 P에 도달합니다.'; }
+        } else {
+          if (t < 1) { formula = `\\[P(r,\\theta)=(${formatNumber(p2.r)},${formatAngle(p2.theta)})\\]`; text = '극좌표는 원점에서의 거리와 방향으로 점을 찾습니다.'; }
+          else if (t < 3) { formula = `\\[x=r\\cos\\theta=${formatNumber(p2.r)}\\cos${formatAngle(p2.theta)}\\]`; text = '반지름 선분의 끝점에서 x축으로 정사영을 내립니다.'; }
+          else { formula = `\\[x=r\\cos\\theta,\\qquad y=r\\sin\\theta\\]`; text = 'x축과 y축 정사영이 직교좌표의 두 성분이 됩니다.'; }
+        }
+      } else if (state.direction === 'read') {
+        if (t < 1) { formula = `\\[P(x,y,z)=(${formatNumber(p3.x)},${formatNumber(p3.y)},${formatNumber(p3.z)})\\]`; text = '공간의 점 P를 세 축 방향의 거리로 확인합니다.'; }
+        else if (t < 2) { formula = `\\[r_{xy}=\\sqrt{x^2+y^2},\\qquad \\rho=\\sqrt{x^2+y^2+z^2}\\]`; text = 'xy평면의 정사영 Q와 원점에서 점까지의 거리를 구분합니다.'; }
+        else if (t < 3) { formula = `\\[\\theta=\\text{xy평면의 방위각}\\]`; text = 'θ는 xy평면에서 양의 x축부터 정사영까지 잰 각입니다.'; }
+        else { formula = `\\[P(r,\\theta,z)\\quad\\text{또는}\\quad P(\\rho,\\theta,\\phi)\\]`; text = '같은 점을 원기둥좌표와 구면좌표로 각각 읽을 수 있습니다.'; }
+      } else {
+        if (t < 1) { formula = `\\[P(r,\\theta,z),\\qquad P(\\rho,\\theta,\\phi)\\]`; text = '좌표를 보고 어떤 길이와 방향을 먼저 정할지 생각합니다.'; }
+        else if (t < 2) { formula = `\\[r_{xy}=\\rho\\sin\\phi\\qquad (\\rho=6\\text{인 활동 5})\\]`; text = '구면좌표에서는 먼저 원점에서의 거리 ρ를 정하고, xy평면 정사영의 크기를 봅니다.'; }
+        else if (t < 3) { formula = `\\[x=r\\cos\\theta,\\qquad y=r\\sin\\theta\\]`; text = 'xy평면에서 θ 방향을 정하면 정사영 Q가 정해집니다.'; }
+        else { formula = `\\[x=\\rho\\sin\\phi\\cos\\theta,\\ y=\\rho\\sin\\phi\\sin\\theta,\\ z=\\rho\\cos\\phi\\]`; text = '높이 또는 +z축에서 잰 φ까지 정하면 공간의 점 P가 완성됩니다.'; }
+      }
+      $('formulaBox').innerHTML = formula;
+      $('interpretationText').textContent = text;
+      updateStepLabels();
+      if (window.MathJax?.typesetPromise) window.MathJax.typesetPromise([$(`formulaBox`)]).catch(() => {});
+    }
+
+    function renderShape() {
+      const shapeData = {
+        circle: { cart: '\\[x^2+y^2=R^2\\]', native: '\\[r=R\\]', label: '극좌표계', text: '중심에서의 거리가 일정한 원은 극좌표에서 r=R로 짧게 나타납니다.' },
+        cylinder: { cart: '\\[x^2+y^2=R^2\\]', native: '\\[r=R\\]', label: '원기둥좌표계', text: '원기둥 옆면은 중심축에서의 거리 r이 일정하므로 원기둥좌표가 자연스럽습니다.' },
+        sphere: { cart: '\\[x^2+y^2+z^2=R^2\\]', native: '\\[\\rho=R\\]', label: '구면좌표계', text: '구의 표면은 원점에서의 거리 ρ가 일정하므로 구면좌표에서 단순해집니다.' }
+      }[state.shape];
+      $('shapeCartesian').innerHTML = shapeData.cart;
+      $('shapeNative').innerHTML = shapeData.native;
+      $('shapeNativeLabel').textContent = shapeData.label;
+      $('shapeExplanation').textContent = shapeData.text;
+      document.querySelectorAll('.shape-button').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.shape === state.shape)));
+      if (window.MathJax?.typesetPromise) window.MathJax.typesetPromise([$(`shapeCartesian`), $(`shapeNative`)]).catch(() => {});
+    }
+
+    function renderAll() {
+      updateModeButtons();
+      if (state.mode === '2d') draw2D(); else render3D();
+      updateFormulaAndText();
+      renderShape();
+    }
+
+    function renderLoop() {
+      Object.values(threeViews).forEach(view => { view.controls.update(); view.renderer.render(view.scene, view.camera); view.labels.render(view.scene, view.camera); });
+      requestAnimationFrame(renderLoop);
+    }
+
+    function setup3D() {
+      threeViews.cart = create3DView('cart3dHost', 'cart');
+      threeViews.cyl = create3DView('cyl3dHost', 'cyl');
+      threeViews.sph = create3DView('sph3dHost', 'sph');
+      renderLoop();
+    }
+
+    $('mode2d').addEventListener('click', () => { stopAnimation(); state.mode = '2d'; resetAnimation(); renderAll(); });
+    $('mode3d').addEventListener('click', () => { stopAnimation(); state.mode = '3d'; resetAnimation(); renderAll(); });
+    $('directionRead').addEventListener('click', () => setDirection('read'));
+    $('directionBuild').addEventListener('click', () => setDirection('build'));
+    $('playButton').addEventListener('click', playAnimation);
+    $('previousButton').addEventListener('click', () => advanceStep(-1));
+    $('nextButton').addEventListener('click', () => advanceStep(1));
+    $('resetButton').addEventListener('click', () => { stopAnimation(); resetAnimation(); renderAll(); });
+    $('applyCartesianButton').addEventListener('click', applyCartesianInputs);
+    document.querySelectorAll('.coordinate-inputs input').forEach(input => input.addEventListener('keydown', event => {
+      if (event.key === 'Enter') applyCartesianInputs();
+    }));
+    document.querySelectorAll('.shape-button').forEach(button => button.addEventListener('click', () => { state.shape = button.dataset.shape; renderShape(); }));
+    ['cartesianSvg', 'polarSvg'].forEach(id => {
+      $(id).addEventListener('pointerdown', svgPointer);
+      $(id).addEventListener('pointermove', event => { if (event.buttons) svgPointer(event); });
+    });
+    window.addEventListener('keydown', event => {
+      if (event.key === 'ArrowRight') advanceStep(1);
+      if (event.key === 'ArrowLeft') advanceStep(-1);
+      if (event.key === ' ') { event.preventDefault(); playAnimation(); }
+    });
+
+    setup3D();
+    renderAll();
+  </script>
+</body>
+</html>
