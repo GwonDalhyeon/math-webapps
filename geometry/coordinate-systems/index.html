@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="같은 점을 직교좌표, 극좌표, 원기둥좌표, 구면좌표로 나타내며 좌표계 사이의 변환 과정을 탐구합니다." />
+  <meta name="description" content="같은 점을 직교좌표, 극좌표, 원기둥좌표, 구면좌표로 나타내며 좌표계 사이의 변환 과정을 단계별 애니메이션으로 탐구합니다." />
   <title>같은 점, 다른 좌표계</title>
   <link rel="icon" href="../../favicon.ico" sizes="16x16 32x32 48x48" />
   <link rel="icon" href="../../assets/favicon.svg" type="image/svg+xml" />
@@ -15,7 +15,8 @@
       svg: { fontCache: 'global' }
     };
   </script>
-  <!-- 변환식과 도형의 방정식을 교과서식으로 표시하기 위해 MathJax CDN을 사용합니다. -->
+  <!-- 그래프 아래 설명 패널의 변환식과 도형의 방정식을 교과서식으로 표시하기 위해 MathJax CDN을 사용합니다. -->
+  <!-- 조작부와 그래프 안의 수식은 애니메이션 중 매 프레임 값이 바뀌므로 브라우저 내장 MathML로 렌더링합니다. -->
   <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
   <!-- 3차원 좌표계 비교와 카메라 회전에 저장소의 three.js r184를 사용합니다. -->
   <script type="importmap">
@@ -44,6 +45,7 @@
     * { box-sizing: border-box; }
     body { margin: 0; background: #f4f7fb; color: var(--ink); }
     button, select { font: inherit; }
+    math { font-size: inherit; }
     .app { width: min(1420px, calc(100% - 28px)); margin: 0 auto; padding: 14px 0 42px; }
     .back-link { display: inline-block; margin-bottom: 9px; color: var(--blue); font-weight: 800; text-decoration: none; }
     .hero { margin-bottom: 10px; }
@@ -72,14 +74,17 @@
     .action-button { background: var(--ink); color: white; border-color: var(--ink); }
     .action-button.secondary { background: white; color: var(--ink); }
     .action-button:hover, .case-button:hover, .view-button:hover, .shape-button:hover { border-color: #8ea5c8; }
-    .step-status { margin-left: auto; color: #40516b; font-size: 13px; font-weight: 800; }
-    .step-status b { color: var(--blue); }
+    .step-status { display: inline-flex; align-items: center; margin-left: auto; color: #40516b; font-size: 13px; font-weight: 800; }
+    .step-status b { margin-left: 4px; color: var(--blue); }
+    .step-count { margin-left: 7px; padding: 2px 8px; border-radius: 999px; background: #edf2f8; color: #52627a; font-size: 12px; font-weight: 900; }
     .case-list { display: inline-flex; flex-wrap: wrap; gap: 6px; }
+    .case-button math { color: inherit; }
     .coordinate-inputs { display: inline-flex; flex-wrap: wrap; gap: 6px; }
-    .coordinate-inputs label { display: inline-flex; align-items: center; gap: 4px; color: #40516b; font-size: 13px; font-weight: 900; }
-    .coordinate-inputs input { width: 72px; min-height: 34px; padding: 5px 7px; border: 1px solid var(--line); border-radius: 8px; color: var(--ink); background: #fff; font: inherit; font-size: 13px; }
+    .coordinate-inputs label { display: inline-flex; align-items: center; gap: 5px; color: #40516b; font-size: 14px; font-weight: 900; }
+    .coordinate-inputs input { width: 74px; min-height: 34px; padding: 5px 7px; border: 1px solid var(--line); border-radius: 8px; color: var(--ink); background: #fff; font: inherit; font-size: 13px; }
     .coordinate-inputs input:focus { outline: 3px solid rgba(37, 99, 235, .2); border-color: var(--blue); }
     .input-status { color: #52627a; font-size: 12px; line-height: 1.4; }
+    .input-status math { color: var(--ink); }
 
     .visual-stage { min-width: 0; }
     .view-grid { display: grid; gap: 10px; }
@@ -90,14 +95,27 @@
     .view-card-header h2 { margin: 0; color: #263953; font-size: 15px; }
     .view-card-header span { color: #718096; font-size: 12px; font-weight: 700; white-space: nowrap; }
     .svg-wrap { padding: 5px; background: #f9fbfe; }
+    .stage2d { position: relative; width: 100%; margin: 0 auto; }
     svg.diagram-2d { display: block; width: 100%; aspect-ratio: 500 / 380; border-radius: 10px; background: #fff; touch-action: none; }
-    .mini-readout { min-height: 42px; padding: 7px 11px 9px; border-top: 1px solid var(--line); color: #31425c; font-size: 13px; line-height: 1.45; }
-    .mini-readout strong { color: var(--ink); }
+    .label-layer { position: absolute; inset: 0; pointer-events: none; }
+    .g-label { position: absolute; transform: translate(-50%, -50%); padding: 0 4px; border-radius: 6px; background: rgba(255, 255, 255, .88); font-size: 13.5px; font-weight: 800; line-height: 1.3; white-space: nowrap; }
+    .g-label.tone-r { color: #b45309; }
+    .g-label.tone-theta { color: #5b21b6; }
+    .g-label.tone-x { color: #1d4ed8; }
+    .g-label.tone-y { color: #0f766e; }
+    .g-label.tone-p { color: #b42318; }
+    .g-label.tone-q { color: #0369a1; }
+    .g-label.tone-axis { color: #23395d; background: transparent; }
+    .g-label.anchor-start { transform: translate(0, -50%); }
+    .g-label.anchor-end { transform: translate(-100%, -50%); }
+    .mini-readout { min-height: 46px; padding: 7px 11px 9px; border-top: 1px solid var(--line); color: #31425c; font-size: 13px; line-height: 1.5; }
+    .mini-readout strong { display: block; color: var(--ink); }
     .three-wrap { position: relative; height: 345px; background: radial-gradient(circle at 48% 43%, #1a3158 0%, #0c1935 68%, #091126 100%); touch-action: none; }
     .three-wrap canvas { display: block; width: 100%; height: 100%; }
-    .label3d { display: inline-block; padding: 1px 5px; border-radius: 6px; color: white; background: rgba(4, 12, 29, .84); border: 1px solid rgba(255,255,255,.25); font: 800 12px system-ui, sans-serif; white-space: nowrap; transform: translateZ(0); backface-visibility: hidden; }
+    .label3d { display: inline-block; padding: 1px 5px; border-radius: 6px; color: white; background: rgba(4, 12, 29, .84); border: 1px solid rgba(255,255,255,.25); font: 800 12.5px system-ui, sans-serif; white-space: nowrap; transform: translateZ(0); backface-visibility: hidden; }
+    .label3d math { color: inherit; }
     .three-overlay-note { position: absolute; left: 9px; bottom: 8px; padding: 5px 7px; border-radius: 7px; background: rgba(255,255,255,.9); color: #40516b; font-size: 11px; font-weight: 750; pointer-events: none; }
-    .three-readout { min-height: 47px; padding: 7px 10px 9px; border-top: 1px solid var(--line); color: #31425c; font-size: 12px; line-height: 1.45; }
+    .three-readout { min-height: 50px; padding: 7px 10px 9px; border-top: 1px solid var(--line); color: #31425c; font-size: 12px; line-height: 1.5; }
     .three-readout strong { display: block; color: var(--ink); font-size: 13px; }
     .hidden { display: none !important; }
 
@@ -118,6 +136,25 @@
     .shape-explanation { margin: 8px 0 0; padding: 8px 10px; border-left: 4px solid var(--orange); background: var(--orange-soft); color: #7c3b0b; font-size: 13px; line-height: 1.5; }
     .footer-note { margin: 12px 2px 0; color: #718096; font-size: 12px; line-height: 1.5; }
 
+    /* 교실 프로젝터와 iPad 가로처럼 세로가 짧은 화면에서 조작 영역과 그래프가 한 화면에 함께 보이게 한다. */
+    @media (min-width: 701px) {
+      .stage2d { max-width: min(100%, calc((100vh - 468px) * 500 / 380)); }
+    }
+    @media (min-width: 701px) and (max-height: 900px) {
+      .app { padding-top: 8px; }
+      .hero { margin-bottom: 7px; }
+      .eyebrow { margin-bottom: 2px; font-size: 12px; }
+      .hero h1 { margin-bottom: 2px; font-size: clamp(23px, 2.6vw, 29px); }
+      .hero p { font-size: 13.5px; }
+      .learning-note { padding: 6px 11px; margin-bottom: 7px; font-size: 12.5px; }
+      .mode-tabs { margin-bottom: 7px; }
+      .mode-tab { min-height: 42px; padding: 5px 12px; }
+      .control-panel { padding: 8px 11px; margin-bottom: 8px; }
+      .control-row + .control-row { margin-top: 6px; }
+      .mini-readout { min-height: 40px; padding: 6px 10px 8px; font-size: 12.5px; }
+      .three-wrap { height: min(345px, calc(100vh - 470px)); }
+    }
+
     @media (max-width: 980px) {
       .three-wrap { height: 300px; }
       .after-stage { grid-template-columns: 1fr; }
@@ -132,6 +169,7 @@
       .step-status { width: 100%; margin-left: 0; }
       .three-wrap { height: 315px; }
       .formula-panel .formula { font-size: 15px; }
+      .g-label { font-size: 12.5px; }
     }
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; }
@@ -144,9 +182,9 @@
     <header class="hero">
       <p class="eyebrow">GEOMETRY · COORDINATE SYSTEMS</p>
       <h1>같은 점, 다른 좌표계</h1>
-      <p>점은 그대로 두고, 직교·극·원기둥·구면좌표가 그 점의 위치를 찾아가고 읽어 내는 과정을 비교합니다.</p>
+      <p>점은 그대로 두고, 직교·극·원기둥·구면좌표가 그 점의 위치를 찾아가고 읽어 내는 과정을 단계별로 비교합니다.</p>
     </header>
-    <div class="learning-note"><strong>오늘의 관찰</strong><span>좌표계를 바꾸는 것은 점을 옮기는 일이 아니라, 같은 점을 나타내는 기준을 바꾸는 일입니다. 값이 하나씩 찾아가는 순서를 따라가 보세요.</span></div>
+    <div class="learning-note"><strong>오늘의 관찰</strong><span>좌표계를 바꾸는 것은 점을 옮기는 일이 아니라, 같은 점을 나타내는 기준을 바꾸는 일입니다. 「다음 단계」를 누르면 선분이 자라고 회전하면서 성분이 하나씩 정해집니다.</span></div>
 
     <div class="mode-tabs" role="tablist" aria-label="좌표 차원 선택">
       <button class="mode-tab" id="mode2d" role="tab" aria-selected="true" aria-controls="twoDPanel">2차원 좌표계<span>직교좌표 ↔ 극좌표</span></button>
@@ -166,9 +204,9 @@
       <div class="control-row coordinate-input-row">
         <span class="control-label">직교좌표 대입</span>
         <div class="coordinate-inputs" aria-label="직교좌표 입력">
-          <label for="cartesianX">x<input id="cartesianX" type="number" step="0.1" inputmode="decimal" value="1" aria-label="직교좌표 x" /></label>
-          <label for="cartesianY">y<input id="cartesianY" type="number" step="0.1" inputmode="decimal" value="1.73" aria-label="직교좌표 y" /></label>
-          <label id="cartesianZField" class="hidden" for="cartesianZ">z<input id="cartesianZ" type="number" step="0.1" inputmode="decimal" value="4.24" aria-label="직교좌표 z" /></label>
+          <label for="cartesianX"><math xmlns="http://www.w3.org/1998/Math/MathML"><mi>x</mi></math><input id="cartesianX" type="number" step="0.1" inputmode="decimal" value="1" aria-label="직교좌표 x" /></label>
+          <label for="cartesianY"><math xmlns="http://www.w3.org/1998/Math/MathML"><mi>y</mi></math><input id="cartesianY" type="number" step="0.1" inputmode="decimal" value="1.73" aria-label="직교좌표 y" /></label>
+          <label id="cartesianZField" class="hidden" for="cartesianZ"><math xmlns="http://www.w3.org/1998/Math/MathML"><mi>z</mi></math><input id="cartesianZ" type="number" step="0.1" inputmode="decimal" value="4.24" aria-label="직교좌표 z" /></label>
         </div>
         <button class="action-button" id="applyCartesianButton" type="button">값 대입</button>
         <span class="input-status" id="coordinateInputStatus" aria-live="polite">현재 차원의 직교좌표를 입력하세요.</span>
@@ -178,7 +216,7 @@
         <button class="action-button secondary" id="previousButton">← 이전 단계</button>
         <button class="action-button secondary" id="nextButton">다음 단계 →</button>
         <button class="action-button secondary" id="resetButton">초기화</button>
-        <span class="step-status">현재 단계: <b id="stepLabel">시작</b></span>
+        <span class="step-status">현재 단계: <b id="stepLabel">시작</b><span class="step-count" id="stepCount">0 / 4</span></span>
       </div>
     </section>
 
@@ -186,12 +224,22 @@
       <div class="view-grid two">
         <article class="view-card">
           <div class="view-card-header"><h2>직교좌표계</h2><span>가로 + 세로</span></div>
-          <div class="svg-wrap"><svg id="cartesianSvg" class="diagram-2d" viewBox="0 0 500 380" role="img" aria-label="직교좌표평면"></svg></div>
+          <div class="svg-wrap">
+            <div class="stage2d">
+              <svg id="cartesianSvg" class="diagram-2d" viewBox="0 0 500 380" role="img" aria-label="직교좌표평면"></svg>
+              <div class="label-layer" id="cartesianLabels" aria-hidden="true"></div>
+            </div>
+          </div>
           <div class="mini-readout" id="cartesianReadout"></div>
         </article>
         <article class="view-card">
           <div class="view-card-header"><h2>극좌표계</h2><span>거리 + 방향</span></div>
-          <div class="svg-wrap"><svg id="polarSvg" class="diagram-2d" viewBox="0 0 500 380" role="img" aria-label="극좌표평면"></svg></div>
+          <div class="svg-wrap">
+            <div class="stage2d">
+              <svg id="polarSvg" class="diagram-2d" viewBox="0 0 500 380" role="img" aria-label="극좌표평면"></svg>
+              <div class="label-layer" id="polarLabels" aria-hidden="true"></div>
+            </div>
+          </div>
           <div class="mini-readout" id="polarReadout"></div>
         </article>
       </div>
@@ -206,12 +254,12 @@
         </article>
         <article class="view-card">
           <div class="view-card-header"><h2>원기둥좌표</h2><span>정사영 + 높이</span></div>
-          <div class="three-wrap" id="cyl3dHost"><div class="three-overlay-note">r은 정사영까지의 거리</div></div>
+          <div class="three-wrap" id="cyl3dHost"><div class="three-overlay-note"><math xmlns="http://www.w3.org/1998/Math/MathML"><mi>r</mi></math>은 정사영까지의 거리</div></div>
           <div class="three-readout" id="cyl3dReadout"></div>
         </article>
         <article class="view-card">
           <div class="view-card-header"><h2>구면좌표</h2><span>거리 + 두 방향</span></div>
-          <div class="three-wrap" id="sph3dHost"><div class="three-overlay-note">φ는 +z축에서 측정</div></div>
+          <div class="three-wrap" id="sph3dHost"><div class="three-overlay-note"><math xmlns="http://www.w3.org/1998/Math/MathML"><mi>&#x3C6;</mi></math>는 <math xmlns="http://www.w3.org/1998/Math/MathML"><mo>+</mo><mi>z</mi></math>축에서 측정</div></div>
           <div class="three-readout" id="sph3dReadout"></div>
         </article>
       </div>
@@ -251,330 +299,494 @@
     import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
 
     const SVG_NS = 'http://www.w3.org/2000/svg';
+    const MML_NS = 'http://www.w3.org/1998/Math/MathML';
     const TAU = Math.PI * 2;
-    const rad = deg => deg * Math.PI / 180;
-    const deg = angle => angle * 180 / Math.PI;
+    const MAX_STEP = 4;
+    const rad = value => value * Math.PI / 180;
+    const deg = value => value * 180 / Math.PI;
     const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
     const near = (a, b) => Math.abs(a - b) < 1e-6;
+    const lerp = (a, b, t) => a + (b - a) * t;
+    const $ = id => document.getElementById(id);
+
+    /* ---------- 상태 ---------- */
 
     const state = {
       mode: '2d',
       direction: 'read',
       point2d: { x: 1, y: Math.sqrt(3) },
-      point3d: { x: 3, y: 3, z: 3 * Math.sqrt(2) },
+      point3d: { x: 3, y: 3, z: 3 * Math.SQRT2 },
       twoDCase: 'worksheet',
       threeDCase: 'activity5',
       shape: 'circle'
     };
-    const animation = { step: 0, stageProgress: 1, playing: false, lastTime: 0, timer: 0 };
+
+    // step은 정수 단계, progress는 그 단계 안의 진행률(0~1)이다. 둘을 절대 하나로 합치지 않는다.
+    const animation = { step: 0, progress: 1, mode: 'idle', timer: 0, startTime: 0, duration: 1 };
+    const STEP_MS = [420, 700, 850, 950, 850];
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     const threeViews = {};
 
-    const $ = id => document.getElementById(id);
+    const easeInOut = t => (t < .5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2);
+
+    // 단계 s의 표시 진행률. 0이면 아직 그리지 않고, 0<e<1이면 자라는 중, 1이면 완성이다.
+    function at(s) {
+      if (animation.step > s) return 1;
+      if (animation.step < s) return 0;
+      return easeInOut(clamp(animation.progress, 0, 1));
+    }
+    // 한 단계 안에서 하위 구간을 나눌 때 사용한다(예: 밑면 원 → 옆면 상승).
+    const sub = (e, from, to) => clamp((e - from) / (to - from), 0, 1);
+
+    /* ---------- 수학 값 ---------- */
+
+    const normalizeAngle = angle => ((angle % 360) + 360) % 360;
+    const point2d = () => {
+      const { x, y } = state.point2d;
+      return { x, y, r: Math.hypot(x, y), theta: normalizeAngle(deg(Math.atan2(y, x))) };
+    };
+    const point3d = () => {
+      const { x, y, z } = state.point3d;
+      const rxy = Math.hypot(x, y);
+      const rho = Math.hypot(x, y, z);
+      return {
+        x, y, z, rxy, rho,
+        theta: rxy < 1e-8 ? 0 : normalizeAngle(deg(Math.atan2(y, x))),
+        phi: rho < 1e-8 ? 0 : deg(Math.acos(clamp(z / rho, -1, 1)))
+      };
+    };
+
+    /* ---------- 수식 표기 (조작부·그래프는 MathML, 아래 설명 패널은 MathJax LaTeX) ---------- */
+
+    const mathml = inner => `<math xmlns="${MML_NS}">${inner}</math>`;
+    const mi = symbol => `<mi>${symbol}</mi>`;
+    const SYM = {
+      r: mi('r'), theta: mi('&#x3B8;'), rho: mi('&#x3C1;'), phi: mi('&#x3C6;'),
+      x: mi('x'), y: mi('y'), z: mi('z'), P: mi('P'), Q: mi('Q'), O: mi('O')
+    };
+    const tuple = items => `<mo stretchy="false">(</mo>${items.join('<mo>,</mo>')}<mo stretchy="false">)</mo>`;
+    const eq = (lhs, rhs) => mathml(`${lhs}<mo>=</mo>${rhs}`);
+
+    // 자주 나오는 무리수는 근호 꼴로 표시한다.
+    const SURDS = [
+      [Math.SQRT2, '<msqrt><mn>2</mn></msqrt>', '\\sqrt{2}'],
+      [Math.sqrt(3), '<msqrt><mn>3</mn></msqrt>', '\\sqrt{3}'],
+      [Math.sqrt(5), '<msqrt><mn>5</mn></msqrt>', '\\sqrt{5}'],
+      [Math.sqrt(7), '<msqrt><mn>7</mn></msqrt>', '\\sqrt{7}'],
+      [Math.sqrt(13), '<msqrt><mn>13</mn></msqrt>', '\\sqrt{13}'],
+      [2 * Math.SQRT2, '<mn>2</mn><msqrt><mn>2</mn></msqrt>', '2\\sqrt{2}'],
+      [2 * Math.sqrt(3), '<mn>2</mn><msqrt><mn>3</mn></msqrt>', '2\\sqrt{3}'],
+      [3 * Math.SQRT2, '<mn>3</mn><msqrt><mn>2</mn></msqrt>', '3\\sqrt{2}'],
+      [3 * Math.sqrt(3), '<mn>3</mn><msqrt><mn>3</mn></msqrt>', '3\\sqrt{3}'],
+      [4 * Math.SQRT2, '<mn>4</mn><msqrt><mn>2</mn></msqrt>', '4\\sqrt{2}'],
+      [6 * Math.SQRT2, '<mn>6</mn><msqrt><mn>2</mn></msqrt>', '6\\sqrt{2}']
+    ];
+
+    function numberParts(value) {
+      const negative = value < -1e-9;
+      const abs = Math.abs(value);
+      if (abs < 1e-9) return { negative: false, ml: '<mn>0</mn>', tex: '0' };
+      const rounded = Math.round(abs);
+      if (Math.abs(abs - rounded) < 1e-6) return { negative, ml: `<mn>${rounded}</mn>`, tex: String(rounded) };
+      for (const [value2, ml, tex] of SURDS) {
+        if (Math.abs(abs - value2) < 1e-6) return { negative, ml, tex };
+      }
+      const fixed = abs.toFixed(2);
+      return { negative, ml: `<mn>${fixed}</mn>`, tex: fixed };
+    }
+    const mathNumber = value => {
+      const parts = numberParts(value);
+      return (parts.negative ? '<mo>&#x2212;</mo>' : '') + parts.ml;
+    };
+    const texNumber = value => {
+      const parts = numberParts(value);
+      return (parts.negative ? '-' : '') + parts.tex;
+    };
+    const angleValue = value => (Math.abs(value - Math.round(value)) < 1e-5 ? Math.round(value) : Number(value.toFixed(1)));
+    const mathAngle = value => `<mn>${angleValue(value)}</mn><mo>&#xB0;</mo>`;
+    const texAngle = value => `${angleValue(value)}^\\circ`;
+    const inputNumber = value => Number(value.toFixed(2)).toString();
+
+    /* ---------- 단계 이름과 카드별 설명 ---------- */
+
+    const STEP_NAMES = {
+      '2d-read': ['점 P 확인', '거리 성분 재기', '기준 도형 그리기', '방향 확정하기', '두 좌표 완성'],
+      '2d-build': ['좌표값 확인', '거리 조건 그리기', '방향각 정하기', '직교 성분 읽기', '두 좌표 완성'],
+      '3d-read': ['점 P 확인', '첫 성분·거리 재기', '기준 도형 세우기', 'xy평면 위 위치 확정', '마지막 성분으로 완성'],
+      '3d-build': ['좌표값 확인', '첫 성분 놓기', '두 번째 성분 정하기', '마지막 성분으로 P 도착', '좌표 변환 완성']
+    };
+    const CARD_STEPS = {
+      'cartesian-read': ['점 P의 위치를 확인합니다.', 'P에서 x축으로 수선을 내려 가로 성분을 읽습니다.', 'y축 성분을 읽고 두 성분이 만드는 직사각형을 봅니다.', '각도를 쓰지 않고 두 성분만으로 위치가 정해집니다.', '직교좌표를 완성했습니다.'],
+      'cartesian-build': ['원점에서 출발합니다.', '거리 조건인 원이 옅게 보입니다.', '방향이 정해지는 순간 점 P가 생깁니다.', 'P에서 두 축으로 수선을 내려 성분을 읽습니다.', '직교좌표를 완성했습니다.'],
+      'polar-read': ['점 P의 위치를 확인합니다.', '원점에서 P까지 선분을 그어 거리 r을 잽니다.', '같은 거리에 있는 점들이 원을 이룹니다.', 'x축에서 선분을 돌려 방향각 θ를 잽니다.', '극좌표를 완성했습니다.'],
+      'polar-build': ['원점에서 출발합니다.', 'x축 위에 길이 r인 선분을 놓고 돌려 원을 그립니다.', '선분을 θ만큼 돌리면 멈추는 자리가 점 P입니다.', 'P의 직교 성분을 함께 읽습니다.', '극좌표를 완성했습니다.'],
+      'cart-read': ['점 P의 위치를 확인합니다.', 'x축 방향으로 첫 성분을 잽니다.', 'y축 방향으로 옮겨 정사영 Q에 닿습니다.', 'xy평면 위 직사각형으로 위치가 정해집니다.', '높이 z만큼 올라가 P에 닿습니다.'],
+      'cart-build': ['원점에서 출발합니다.', 'x축 방향으로 이동합니다.', 'y축 방향으로 이동해 Q를 정합니다.', 'z만큼 올라가 점 P에 도착합니다.', 'xy평면 직사각형으로 세 성분을 확인합니다.'],
+      'cyl-read': ['점 P의 위치를 확인합니다.', '원점에서 정사영 Q까지의 거리 r을 잽니다.', '거리가 r인 자취인 원기둥을 세웁니다.', 'x축에서 선분을 돌려 방향각 θ를 잽니다.', '높이 z만큼 올라가 P에 닿습니다.'],
+      'cyl-build': ['원점에서 출발합니다.', '반지름 r인 원기둥을 세웁니다.', '선분을 θ만큼 돌리면 정사영 Q가 정해집니다.', 'z만큼 올라가 점 P에 도착합니다.', '원기둥좌표 변환을 완성했습니다.'],
+      'sph-read': ['점 P의 위치를 확인합니다.', '원점에서 P까지의 거리 ρ를 잽니다.', '거리가 ρ인 자취인 구를 그립니다.', 'xy평면에서 방향각 θ를 잽니다.', '+z축에서 선분을 φ만큼 기울여 P에 닿습니다.'],
+      'sph-build': ['원점에서 출발합니다.', '반지름 ρ인 구를 그립니다.', 'xy평면에서 방향각 θ를 정합니다.', '+z축에서 선분을 φ만큼 기울여 P에 도착합니다.', '구면좌표 변환을 완성했습니다.']
+    };
+
+    /* ---------- 애니메이션 제어 ---------- */
+
+    function stopTimer() {
+      if (animation.timer) cancelAnimationFrame(animation.timer);
+      animation.timer = 0;
+    }
+    function startTimer() {
+      stopTimer();
+      animation.startTime = performance.now();
+      animation.timer = requestAnimationFrame(tick);
+    }
+    function tick(now) {
+      // 프레임 간격을 누적하지 않고 시작 시각으로부터 계산해, 프레임이 끊겨도 단계 길이가 늘어지지 않게 한다.
+      animation.progress = clamp((now - animation.startTime) / Math.max(1, animation.duration), 0, 1);
+      if (animation.progress >= 1) {
+        animation.progress = 1;
+        if (animation.mode === 'play' && animation.step < MAX_STEP) {
+          animation.step += 1;
+          animation.progress = 0;
+          animation.duration = STEP_MS[animation.step];
+          animation.startTime = now;
+        } else {
+          animation.mode = 'idle';
+          animation.timer = 0;
+          drawScene();
+          return;
+        }
+      }
+      drawScene();
+      animation.timer = requestAnimationFrame(tick);
+    }
+    // 재생 중 버튼을 다시 누르면 현재 단계를 즉시 완성시킨다(수업 시연 중 대기 방지).
+    function settleStep() {
+      stopTimer();
+      animation.progress = 1;
+      animation.mode = 'idle';
+      drawScene();
+    }
+    function goToStep(target, animate) {
+      stopTimer();
+      const next = clamp(target, 0, MAX_STEP);
+      const forward = next > animation.step;
+      animation.step = next;
+      if (animate && forward && !reduceMotion) {
+        animation.progress = 0;
+        animation.mode = 'step';
+        animation.duration = STEP_MS[next];
+        startTimer();
+      } else {
+        animation.progress = 1;
+        animation.mode = 'idle';
+      }
+      drawScene();
+    }
+    function nextStep() {
+      if (animation.mode !== 'idle' && animation.progress < 1) { settleStep(); return; }
+      if (animation.step >= MAX_STEP) return;
+      goToStep(animation.step + 1, true);
+    }
+    function previousStep() { goToStep(animation.step - 1, false); }
+    function resetAnimation() {
+      stopTimer();
+      animation.step = 0;
+      animation.progress = 1;
+      animation.mode = 'idle';
+    }
+    function playAll() {
+      if (animation.mode === 'play') { settleStep(); return; }
+      stopTimer();
+      if (reduceMotion) {
+        animation.step = MAX_STEP; animation.progress = 1; animation.mode = 'idle';
+        drawScene();
+        return;
+      }
+      animation.step = 0;
+      animation.progress = 0;
+      animation.mode = 'play';
+      animation.duration = STEP_MS[0];
+      startTimer();
+      drawScene();
+    }
+
+    /* ---------- SVG 헬퍼 ---------- */
+
+    const X0 = 250, Y0 = 190, UNIT = 40;
+    const sx = x => X0 + x * UNIT;
+    const sy = y => Y0 - y * UNIT;
+
     const createSvg = (tag, attrs = {}) => {
       const node = document.createElementNS(SVG_NS, tag);
       Object.entries(attrs).forEach(([key, value]) => node.setAttribute(key, value));
       return node;
     };
-    const appendText = (parent, x, y, text, attrs = {}) => {
-      const node = createSvg('text', { x, y, ...attrs });
-      node.textContent = text;
-      parent.appendChild(node);
-      return node;
-    };
-    const point2d = () => ({ ...state.point2d, r: Math.hypot(state.point2d.x, state.point2d.y), theta: normalizeAngle(deg(Math.atan2(state.point2d.y, state.point2d.x))) });
-    const point3d = () => {
-      const { x, y, z } = state.point3d;
-      const rxy = Math.hypot(x, y);
-      const rho = Math.hypot(x, y, z);
-      return { x, y, z, rxy, rho, theta: rxy < 1e-8 ? 0 : normalizeAngle(deg(Math.atan2(y, x))), phi: rho < 1e-8 ? 0 : deg(Math.acos(clamp(z / rho, -1, 1))) };
-    };
-    const normalizeAngle = angle => ((angle % 360) + 360) % 360;
-    const formatNumber = value => {
-      if (near(value, 0)) return '0';
-      if (near(value, 1)) return '1';
-      if (near(value, 2)) return '2';
-      if (near(value, 3)) return '3';
-      if (near(value, 4)) return '4';
-      if (near(value, 5)) return '5';
-      if (near(value, 6)) return '6';
-      if (near(value, Math.sqrt(3))) return '\u221a3';
-      if (near(value, 3 * Math.sqrt(2))) return '3\u221a2';
-      if (near(value, 2 * Math.sqrt(3))) return '2\u221a3';
-      return value.toFixed(2);
-    };
-    const formatAngle = value => `${Math.abs(value - Math.round(value)) < 1e-5 ? Math.round(value) : value.toFixed(1)}°`;
-    const formatPair2d = p => `(${formatNumber(p.x)}, ${formatNumber(p.y)})`;
-    const formatPair3d = p => `(${formatNumber(p.x)}, ${formatNumber(p.y)}, ${formatNumber(p.z)})`;
-
-    function updateModeButtons() {
-      $('mode2d').setAttribute('aria-selected', String(state.mode === '2d'));
-      $('mode3d').setAttribute('aria-selected', String(state.mode === '3d'));
-      $('twoDPanel').classList.toggle('hidden', state.mode !== '2d');
-      $('threeDPanel').classList.toggle('hidden', state.mode !== '3d');
-      $('cartesianZField').classList.toggle('hidden', state.mode !== '3d');
-      buildCaseButtons();
-      updateCoordinateInputs();
+    function svgLine(svg, x1, y1, x2, y2, opt = {}) {
+      if (opt.opacity !== undefined && opt.opacity <= .01) return;
+      const attrs = {
+        x1, y1, x2, y2,
+        stroke: opt.color || '#23395d',
+        'stroke-width': opt.width || 2,
+        'stroke-linecap': 'round',
+        opacity: opt.opacity === undefined ? 1 : opt.opacity
+      };
+      if (opt.dash) attrs['stroke-dasharray'] = opt.dash;
+      svg.appendChild(createSvg('line', attrs));
     }
-
-    function inputNumber(value) {
-      return Number(value.toFixed(2)).toString();
-    }
-
-    function updateCoordinateInputs() {
-      const point = state.mode === '2d' ? state.point2d : state.point3d;
-      $('cartesianX').value = inputNumber(point.x);
-      $('cartesianY').value = inputNumber(point.y);
-      $('cartesianZ').value = inputNumber(state.point3d.z);
-    }
-
-    function buildCaseButtons() {
-      const list = $('caseList');
-      list.innerHTML = '';
-      const cases = state.mode === '2d'
-        ? [
-            { id: 'worksheet', label: '활동 2: (1, √3)' },
-            { id: 'threefour', label: '도입: (3, 4)' },
-            { id: 'custom', label: '직접 입력' }
-          ]
-        : [
-            { id: 'activity5', label: '활동 5: (3, 3, 3√2)' },
-            { id: 'activity4', label: '활동 4: (1, √3, 3)' },
-            { id: 'distance', label: '활동 3: (2, 3, 6)' },
-            { id: 'custom', label: '직접 입력' }
-          ];
-      cases.forEach(item => {
-        const button = document.createElement('button');
-        button.className = 'case-button';
-        button.textContent = item.label;
-        button.setAttribute('aria-pressed', String((state.mode === '2d' ? state.twoDCase : state.threeDCase) === item.id));
-        button.addEventListener('click', () => selectCase(item.id));
-        list.appendChild(button);
-      });
-    }
-
-    function selectCase(id) {
-      stopAnimation();
-      if (state.mode === '2d') {
-        state.twoDCase = id;
-        if (id === 'worksheet') state.point2d = { x: 1, y: Math.sqrt(3) };
-        if (id === 'threefour') state.point2d = { x: 3, y: 4 };
-      } else {
-        state.threeDCase = id;
-        if (id === 'activity5') state.point3d = { x: 3, y: 3, z: 3 * Math.sqrt(2) };
-        if (id === 'activity4') state.point3d = { x: 1, y: Math.sqrt(3), z: 3 };
-        if (id === 'distance') state.point3d = { x: 2, y: 3, z: 6 };
+    // 원과 호를 모두 이 함수로 그린다. 각은 항상 수학 기준(반시계, +x축에서 시작)이다.
+    function svgArc(svg, radius, from, to, opt = {}) {
+      if (radius <= .5 || Math.abs(to - from) < 1e-4) return;
+      const steps = Math.max(8, Math.round(Math.abs(to - from) / TAU * 96));
+      let d = '';
+      for (let i = 0; i <= steps; i += 1) {
+        const angle = from + (to - from) * i / steps;
+        d += `${i ? 'L' : 'M'} ${(X0 + radius * Math.cos(angle)).toFixed(2)} ${(Y0 - radius * Math.sin(angle)).toFixed(2)} `;
       }
-      resetAnimation();
-      buildCaseButtons();
-      renderAll();
+      svg.appendChild(createSvg('path', {
+        d, fill: 'none',
+        stroke: opt.color || '#23395d',
+        'stroke-width': opt.width || 2.6,
+        'stroke-linecap': 'round',
+        opacity: opt.opacity === undefined ? 1 : opt.opacity,
+        ...(opt.dash ? { 'stroke-dasharray': opt.dash } : {})
+      }));
+    }
+    function svgDot(svg, x, y, radius, color, opacity = 1) {
+      if (radius <= .3) return;
+      svg.appendChild(createSvg('circle', { cx: x, cy: y, r: radius, fill: color, stroke: '#fff', 'stroke-width': 2, opacity }));
     }
 
-    function applyCartesianInputs() {
-      const x = Number($('cartesianX').value);
-      const y = Number($('cartesianY').value);
-      const z = Number($('cartesianZ').value);
-      const values = state.mode === '2d' ? [x, y] : [x, y, z];
-      if (values.some(value => !Number.isFinite(value))) {
-        $('coordinateInputStatus').textContent = '모든 좌표값을 유한한 숫자로 입력하세요.';
-        return;
-      }
-      stopAnimation();
-      if (state.mode === '2d') {
-        state.point2d = { x, y };
-        state.twoDCase = 'custom';
-        $('coordinateInputStatus').textContent = `직교좌표 (${inputNumber(x)}, ${inputNumber(y)})를 반영했습니다.`;
-      } else {
-        state.point3d = { x, y, z };
-        state.threeDCase = 'custom';
-        $('coordinateInputStatus').textContent = `직교좌표 (${inputNumber(x)}, ${inputNumber(y)}, ${inputNumber(z)})를 반영했습니다.`;
-      }
-      resetAnimation();
-      renderAll();
-    }
-
-    function setDirection(direction) {
-      stopAnimation();
-      state.direction = direction;
-      $('directionRead').setAttribute('aria-pressed', String(direction === 'read'));
-      $('directionBuild').setAttribute('aria-pressed', String(direction === 'build'));
-      resetAnimation();
-      renderAll();
-    }
-
-    function resetAnimation() {
-      animation.step = 0;
-      animation.stageProgress = 1;
-      animation.playing = false;
-      updateStepLabels();
-    }
-
-    function stopAnimation() {
-      animation.playing = false;
-      if (animation.timer) cancelAnimationFrame(animation.timer);
-      animation.timer = 0;
-      animation.stageProgress = 1;
-    }
-
-    function currentAnimationT() {
-      return animation.playing ? animation.step + animation.stageProgress : animation.step;
-    }
-
-    function stepName(t) {
-      const step = Math.min(4, Math.floor(t + 1e-5));
-      if (state.mode === '2d') {
-        if (state.direction === 'read') return ['점 P 확인', '거리 r 찾기', '반지름 r과 각 θ', '좌표값 연결', '극좌표 완성'][step];
-        return ['극좌표 확인', '반지름 선분 놓기', 'x축 정사영', 'y축 정사영', '직교좌표 완성'][step];
-      }
-      if (state.direction === 'read') return ['점 P 확인', '거리와 정사영', '방향각 θ', '높이 z 또는 각 φ', '좌표 표현 완성'][step];
-      return ['좌표 확인', '거리 정하기', '방향 정하기', '높이·기울기 정하기', '공간의 점 완성'][step];
-    }
-
-    function updateStepLabels() {
-      $('stepLabel').textContent = stepName(currentAnimationT());
-      $('playButton').textContent = animation.playing ? 'Ⅱ 일시정지' : '▶ 전체 재생';
-    }
-
-    function advanceStep(delta) {
-      stopAnimation();
-      animation.step = clamp(animation.step + delta, 0, 4);
-      animation.stageProgress = 1;
-      renderAll();
-    }
-
-    function playAnimation() {
-      if (animation.playing) {
-        stopAnimation();
-        renderAll();
-        return;
-      }
-      animation.step = 0;
-      animation.stageProgress = 0;
-      animation.playing = true;
-      animation.lastTime = performance.now();
-      animation.timer = requestAnimationFrame(animationTick);
-    }
-
-    function animationTick(now) {
-      if (!animation.playing) return;
-      const elapsed = Math.min(80, now - animation.lastTime);
-      animation.lastTime = now;
-      animation.stageProgress += elapsed / 850;
-      if (animation.stageProgress >= 1) {
-        animation.stageProgress = 0;
-        animation.step += 1;
-        if (animation.step >= 4) {
-          animation.step = 4;
-          animation.stageProgress = 1;
-          animation.playing = false;
-        }
-      }
-      renderAll();
-      if (animation.playing) animation.timer = requestAnimationFrame(animationTick);
-    }
-
-    function drawGrid(svg, polar = false) {
+    function drawGrid(svg, polar) {
       const grid = createSvg('g', { stroke: '#dfe7f1', 'stroke-width': 1 });
       for (let i = -6; i <= 6; i += 1) {
-        const x = 250 + i * 40;
-        const y = 190 - i * 40;
-        grid.appendChild(createSvg('line', { x1: x, y1: 10, x2: x, y2: 370 }));
-        grid.appendChild(createSvg('line', { x1: 10, y1: y, x2: 490, y2: y }));
+        grid.appendChild(createSvg('line', { x1: sx(i), y1: 10, x2: sx(i), y2: 370 }));
+        grid.appendChild(createSvg('line', { x1: 10, y1: sy(i), x2: 490, y2: sy(i) }));
       }
       svg.appendChild(grid);
       if (polar) {
         const polarGrid = createSvg('g', { fill: 'none', stroke: '#b9ccea', 'stroke-width': 1, 'stroke-dasharray': '3 5' });
-        for (let radius = 1; radius <= 6; radius += 1) polarGrid.appendChild(createSvg('circle', { cx: 250, cy: 190, r: radius * 40 }));
+        for (let radius = 1; radius <= 6; radius += 1) polarGrid.appendChild(createSvg('circle', { cx: X0, cy: Y0, r: radius * UNIT }));
         for (let angle = 0; angle < 180; angle += 30) {
           const a = rad(angle);
-          polarGrid.appendChild(createSvg('line', { x1: 250 - 240 * Math.cos(a), y1: 190 + 240 * Math.sin(a), x2: 250 + 240 * Math.cos(a), y2: 190 - 240 * Math.sin(a) }));
+          polarGrid.appendChild(createSvg('line', { x1: X0 - 240 * Math.cos(a), y1: Y0 + 240 * Math.sin(a), x2: X0 + 240 * Math.cos(a), y2: Y0 - 240 * Math.sin(a) }));
         }
         svg.appendChild(polarGrid);
       }
       const axes = createSvg('g', { stroke: '#23395d', 'stroke-width': 2.1 });
-      axes.appendChild(createSvg('line', { x1: 10, y1: 190, x2: 490, y2: 190 }));
-      axes.appendChild(createSvg('line', { x1: 250, y1: 370, x2: 250, y2: 10 }));
+      axes.appendChild(createSvg('line', { x1: 10, y1: Y0, x2: 490, y2: Y0 }));
+      axes.appendChild(createSvg('line', { x1: X0, y1: 370, x2: X0, y2: 10 }));
       svg.appendChild(axes);
-      appendText(svg, 475, 181, 'x', { fill: '#23395d', 'font-size': 14, 'font-weight': 800 });
-      appendText(svg, 260, 22, 'y', { fill: '#23395d', 'font-size': 14, 'font-weight': 800 });
-      appendText(svg, 257, 205, 'O', { fill: '#52627a', 'font-size': 12, 'font-weight': 800 });
     }
 
-    function xyToScreen(x, y) { return [250 + x * 40, 190 - y * 40]; }
+    /* ---------- 그래프 위 MathML 라벨 (위치는 %로 두어 SVG와 함께 늘어난다) ---------- */
+
+    const labelStores = new Map();
+    function renderLabels(layerId, items) {
+      const layer = $(layerId);
+      let store = labelStores.get(layerId);
+      if (!store) { store = new Map(); labelStores.set(layerId, store); }
+      const used = new Set();
+      items.forEach(item => {
+        used.add(item.key);
+        let entry = store.get(item.key);
+        if (!entry) {
+          const element = document.createElement('div');
+          layer.appendChild(element);
+          entry = { element, html: '', className: '' };
+          store.set(item.key, entry);
+        }
+        // 가장자리에 놓이는 라벨은 카드 밖으로 잘리지 않도록 기준점을 바꾼다.
+        const anchor = item.x > 372 ? ' anchor-end' : (item.x < 128 ? ' anchor-start' : '');
+        const className = `g-label tone-${item.tone || 'p'}${anchor}`;
+        if (entry.className !== className) { entry.element.className = className; entry.className = className; }
+        if (entry.html !== item.html) { entry.element.innerHTML = item.html; entry.html = item.html; }
+        entry.element.style.left = `${item.x / 500 * 100}%`;
+        entry.element.style.top = `${item.y / 380 * 100}%`;
+        entry.element.style.opacity = item.opacity === undefined ? '1' : String(item.opacity);
+      });
+      store.forEach((entry, key) => {
+        if (!used.has(key)) { entry.element.remove(); store.delete(key); }
+      });
+    }
+
+    /* ---------- 2차원 그리기 ---------- */
+
     function draw2D() {
       const p = point2d();
-      const t = currentAnimationT();
-      ['cartesianSvg', 'polarSvg'].forEach(id => $(id).replaceChildren());
-      drawGrid($('cartesianSvg'), false);
-      drawGrid($('polarSvg'), true);
-      const progress = clamp(t, 0, 4);
-      const targetAngle = rad(p.theta);
-      const displayAngle = state.direction === 'read' && progress >= 1 && progress < 2 ? targetAngle * clamp(progress - 1, 0, 1) : targetAngle;
-      const circleVisible = state.direction === 'read' ? progress >= 1 : progress >= 0.5;
-      const projectionsVisible = state.direction === 'read' ? progress >= 2 : progress >= 1.6;
-      const pointVisible = state.direction === 'build' ? progress >= 3.4 : true;
-      const lineOpacity = state.direction === 'build' ? clamp(progress - 1, 0, 1) : 1;
-      const [px, py] = xyToScreen(p.x, p.y);
-      const [ox, oy] = xyToScreen(0, 0);
-      const [qx, qy] = xyToScreen(p.x, 0);
-      const [rx, ry] = xyToScreen(0, p.y);
-      const [angleX, angleY] = xyToScreen(p.r * Math.cos(displayAngle), p.r * Math.sin(displayAngle));
-
-      document.querySelectorAll('.diagram-2d').forEach(svg => {
-        if (circleVisible) svg.appendChild(createSvg('circle', { cx: 250, cy: 190, r: p.r * 40, fill: 'none', stroke: '#f59e0b', 'stroke-width': 2.2, 'stroke-dasharray': '7 5', opacity: .85 }));
-        if (state.direction === 'read' && progress >= 1) svg.appendChild(createSvg('line', { x1: ox, y1: oy, x2: angleX, y2: angleY, stroke: '#f97316', 'stroke-width': 3.2, opacity: .95 }));
-        if (state.direction === 'build' && progress >= .5) svg.appendChild(createSvg('line', { x1: ox, y1: oy, x2: px, y2: py, stroke: '#f97316', 'stroke-width': 3.2, opacity: lineOpacity }));
-        if (projectionsVisible) {
-          svg.appendChild(createSvg('line', { x1: px, y1: py, x2: qx, y2: qy, stroke: '#2563eb', 'stroke-width': 2.5, 'stroke-dasharray': '5 4', opacity: .9 }));
-          svg.appendChild(createSvg('line', { x1: px, y1: py, x2: rx, y2: ry, stroke: '#087f78', 'stroke-width': 2.5, 'stroke-dasharray': '5 4', opacity: .9 }));
-          appendText(svg, (px + qx) / 2 + 4, (py + qy) / 2 - 4, `x = ${formatNumber(p.x)}`, { fill: '#1d4ed8', 'font-size': 12, 'font-weight': 800 });
-          appendText(svg, (px + rx) / 2 - 42, (py + ry) / 2, `y = ${formatNumber(p.y)}`, { fill: '#087f78', 'font-size': 12, 'font-weight': 800 });
-        }
-        if (state.direction === 'read' && progress >= 1.8) {
-          const arcR = 36;
-          const arcEnd = Math.min(targetAngle, rad(359));
-          const arc = `M ${250 + arcR} 190 A ${arcR} ${arcR} 0 ${p.theta > 180 ? 1 : 0} 0 ${250 + arcR * Math.cos(arcEnd)} ${190 - arcR * Math.sin(arcEnd)}`;
-          svg.appendChild(createSvg('path', { d: arc, fill: 'none', stroke: '#6941c6', 'stroke-width': 3 }));
-          appendText(svg, 287, 181, `θ = ${formatAngle(p.theta)}`, { fill: '#6941c6', 'font-size': 12, 'font-weight': 900 });
-        }
-        if (pointVisible) {
-          svg.appendChild(createSvg('circle', { cx: px, cy: py, r: 7.5, fill: '#ef4444', stroke: '#fff', 'stroke-width': 2 }));
-          appendText(svg, px + 10, py - 10, 'P', { fill: '#b42318', 'font-size': 15, 'font-weight': 900 });
-        }
-        if (circleVisible && state.direction === 'read') appendText(svg, 255 + p.r * 40 * .68, 188 - p.r * 40 * .68, `r = ${formatNumber(p.r)}`, { fill: '#b45309', 'font-size': 12, 'font-weight': 900 });
-      });
-      $('cartesianReadout').innerHTML = `<strong>P(x,y) = ${formatPair2d(p)}</strong> ${projectionsVisible ? `정사영: x = ${formatNumber(p.x)}, y = ${formatNumber(p.y)}` : '가로와 세로 방향으로 점의 위치를 읽습니다.'}`;
-      $('polarReadout').innerHTML = `<strong>P(r, θ) = (${formatNumber(p.r)}, ${formatAngle(p.theta)})</strong> ${circleVisible ? `반지름 r = ${formatNumber(p.r)}인 원과 방향각 θ를 확인합니다.` : '원점에서의 거리와 방향으로 점을 읽습니다.'}`;
+      draw2DCard('cartesianSvg', 'cartesianLabels', p, 'cartesian');
+      draw2DCard('polarSvg', 'polarLabels', p, 'polar');
     }
 
-    function svgPointer(event) {
-      if (animation.playing) stopAnimation();
-      const svg = event.currentTarget;
-      const rect = svg.getBoundingClientRect();
-      const vx = (event.clientX - rect.left) / rect.width * 500;
-      const vy = (event.clientY - rect.top) / rect.height * 380;
-      state.point2d = { x: clamp((vx - 250) / 40, -5.6, 5.6), y: clamp((190 - vy) / 40, -4.4, 4.4) };
-      state.twoDCase = 'custom';
-      buildCaseButtons();
-      renderAll();
+    function draw2DCard(svgId, layerId, p, role) {
+      const svg = $(svgId);
+      svg.replaceChildren();
+      drawGrid(svg, role === 'polar');
+
+      const read = state.direction === 'read';
+      const e = [at(0), at(1), at(2), at(3), at(4)];
+      const R = p.r * UNIT;
+      const theta = rad(p.theta);
+      const px = sx(p.x), py = sy(p.y);
+      const footX = sx(p.x), footY = Y0;
+      const footYx = X0, footYy = sy(p.y);
+      const arcR = clamp(R * .42, 30, 58);
+      const xLabelY = Y0 + (p.y >= 0 ? 22 : -22);
+      const yLabelX = X0 + (p.x >= 0 ? -34 : 34);
+      const labels = [
+        { key: 'axis-x', x: 478, y: 176, html: mathml(SYM.x), tone: 'axis' },
+        { key: 'axis-y', x: 266, y: 18, html: mathml(SYM.y), tone: 'axis' },
+        { key: 'axis-o', x: 236, y: 206, html: mathml(SYM.O), tone: 'axis' }
+      ];
+      let pointScale = 0;
+      // θ 호는 항상 OP의 시계방향 쪽에 그려지므로, 반지름 라벨은 반대쪽(반시계 쪽)으로 밀어 겹침을 막는다.
+      const offAxisLabel = (x1, y1, x2, y2, distance) => {
+        const dx = x2 - x1, dy = y2 - y1, len = Math.hypot(dx, dy) || 1;
+        return { x: (x1 + x2) / 2 + dy / len * distance, y: (y1 + y2) / 2 - dx / len * distance };
+      };
+
+      const drawCircle = (progress, opacity) => svgArc(svg, R, 0, TAU * progress, { color: '#f59e0b', width: 2.4, opacity });
+      const drawFeet = (progress, opacity, withLabels) => {
+        svgLine(svg, px, py, px, lerp(py, footY, progress), { color: '#2563eb', width: 2.4, dash: '5 4', opacity });
+        svgLine(svg, X0, Y0, lerp(X0, footX, progress), Y0, { color: '#2563eb', width: 4.2, opacity });
+        svgLine(svg, px, py, lerp(px, footYx, progress), py, { color: '#087f78', width: 2.4, dash: '5 4', opacity });
+        svgLine(svg, X0, Y0, X0, lerp(Y0, footYy, progress), { color: '#087f78', width: 4.2, opacity });
+        if (!withLabels) return;
+        labels.push({ key: 'x', x: (X0 + lerp(X0, footX, progress)) / 2, y: xLabelY, html: eq(SYM.x, mathNumber(p.x * progress)), tone: 'x' });
+        labels.push({ key: 'y', x: yLabelX, y: (Y0 + lerp(Y0, footYy, progress)) / 2, html: eq(SYM.y, mathNumber(p.y * progress)), tone: 'y' });
+      };
+      // θ 측정 선분: e=0이면 +x축 위에 놓이고, e=1이면 점 P 방향에서 멈춘다.
+      const drawRotation = (progress, color, width, dash) => {
+        const angle = theta * progress;
+        svgLine(svg, X0, Y0, X0 + R * Math.cos(angle), Y0 - R * Math.sin(angle), { color, width, dash });
+        svgArc(svg, arcR, 0, angle, { color: '#6941c6', width: 3 });
+        labels.push({
+          key: 'theta',
+          x: X0 + (arcR + 24) * Math.cos(angle / 2),
+          y: Y0 - (arcR + 24) * Math.sin(angle / 2),
+          html: eq(SYM.theta, mathAngle(p.theta * progress)), tone: 'theta'
+        });
+      };
+
+      if (role === 'polar' && read) {
+        if (e[2] > 0) drawCircle(e[2], .9);
+        if (e[1] > 0 && e[3] <= 0) {
+          const ex = lerp(X0, px, e[1]), ey = lerp(Y0, py, e[1]);
+          svgLine(svg, X0, Y0, ex, ey, { color: '#f97316', width: 3.6 });
+          labels.push({ key: 'r', ...offAxisLabel(X0, Y0, ex, ey, 24), html: eq(SYM.r, mathNumber(p.r * e[1])), tone: 'r' });
+        }
+        if (e[3] > 0) {
+          svgLine(svg, X0, Y0, px, py, { color: '#f97316', width: 3.6, opacity: .35 });
+          drawRotation(e[3], '#6941c6', 3.2, '7 5');
+          labels.push({ key: 'r', ...offAxisLabel(X0, Y0, px, py, 24), html: eq(SYM.r, mathNumber(p.r)), tone: 'r' });
+        }
+        pointScale = e[0];
+      } else if (role === 'polar') {
+        if (e[1] > 0) {
+          const rise = sub(e[1], 0, .34), sweep = sub(e[1], .3, 1);
+          if (e[2] <= 0) {
+            svgLine(svg, X0, Y0, X0 + R * rise, Y0, { color: '#f97316', width: 3.6 });
+            labels.push({ key: 'r', x: X0 + R * rise / 2, y: Y0 + 22, html: eq(SYM.r, mathNumber(p.r * rise)), tone: 'r' });
+          }
+          if (sweep > 0) drawCircle(sweep, .9);
+        }
+        if (e[2] > 0) {
+          drawRotation(e[2], '#f97316', 3.6, null);
+          const tipX = X0 + R * Math.cos(theta * e[2]), tipY = Y0 - R * Math.sin(theta * e[2]);
+          labels.push({ key: 'r', ...offAxisLabel(X0, Y0, tipX, tipY, 24), html: eq(SYM.r, mathNumber(p.r)), tone: 'r' });
+          pointScale = sub(e[2], .78, 1);
+        }
+        if (e[3] > 0) drawFeet(e[3], .34, false);
+      } else if (read) {
+        if (e[1] > 0) {
+          svgLine(svg, px, py, px, lerp(py, footY, e[1]), { color: '#2563eb', width: 2.4, dash: '5 4', opacity: .9 });
+          svgLine(svg, X0, Y0, lerp(X0, footX, e[1]), Y0, { color: '#2563eb', width: 4.2 });
+          labels.push({ key: 'x', x: (X0 + lerp(X0, footX, e[1])) / 2, y: xLabelY, html: eq(SYM.x, mathNumber(p.x * e[1])), tone: 'x' });
+        }
+        if (e[2] > 0) {
+          svg.appendChild(createSvg('polygon', { points: `${X0},${Y0} ${footX},${Y0} ${px},${py} ${X0},${footYy}`, fill: '#2563eb', opacity: .07 * e[2] }));
+          svgLine(svg, px, py, lerp(px, footYx, e[2]), py, { color: '#087f78', width: 2.4, dash: '5 4', opacity: .9 });
+          svgLine(svg, X0, Y0, X0, lerp(Y0, footYy, e[2]), { color: '#087f78', width: 4.2 });
+          labels.push({ key: 'y', x: yLabelX, y: (Y0 + lerp(Y0, footYy, e[2])) / 2, html: eq(SYM.y, mathNumber(p.y * e[2])), tone: 'y' });
+        }
+        if (e[3] > 0) {
+          svg.appendChild(createSvg('polygon', { points: `${X0},${Y0} ${footX},${Y0} ${px},${py} ${X0},${footYy}`, fill: 'none', stroke: '#2563eb', 'stroke-width': 2, opacity: .5 * e[3] }));
+          if (e[4] <= 0) labels.push({ key: 'xy', x: px + (p.x >= 0 ? 34 : -34), y: py + (p.y >= 0 ? 24 : -24), html: mathml(tuple([mathNumber(p.x), mathNumber(p.y)])), tone: 'p', opacity: e[3] });
+        }
+        pointScale = e[0];
+      } else {
+        if (e[1] > 0) drawCircle(e[1], .34);
+        if (e[2] > 0) {
+          const angle = theta * e[2];
+          svgLine(svg, X0, Y0, X0 + R * Math.cos(angle), Y0 - R * Math.sin(angle), { color: '#f97316', width: 3, opacity: .34 });
+          svgArc(svg, arcR, 0, angle, { color: '#6941c6', width: 2.6, opacity: .34 });
+          pointScale = sub(e[2], .78, 1);
+        }
+        if (e[3] > 0) drawFeet(e[3], .95, true);
+      }
+
+      if (pointScale > 0) {
+        svgDot(svg, px, py, 7.8 * pointScale, '#ef4444');
+        const done = e[4] > .5;
+        const html = done
+          ? (role === 'polar'
+            ? mathml(`${SYM.P}${tuple([SYM.r, SYM.theta])}<mo>=</mo>${tuple([mathNumber(p.r), mathAngle(p.theta)])}`)
+            : mathml(`${SYM.P}${tuple([SYM.x, SYM.y])}<mo>=</mo>${tuple([mathNumber(p.x), mathNumber(p.y)])}`))
+          : mathml(SYM.P);
+        // P 라벨은 원점 반대쪽(바깥)으로 밀어 반지름·좌표쌍 라벨과 겹치지 않게 한다.
+        const away = Math.hypot(px - X0, py - Y0) || 1;
+        const push = done ? 58 : 24;
+        labels.push({
+          key: 'P',
+          x: clamp(px + (px - X0) / away * push, 48, 452),
+          y: clamp(py + (py - Y0) / away * push - 12, 18, 362),
+          html, tone: 'p', opacity: pointScale
+        });
+      }
+      renderLabels(layerId, labels);
     }
 
-    function createLabel(text, color = '#ffffff') {
-      const element = document.createElement('div');
-      element.className = 'label3d';
-      element.textContent = text;
-      element.style.color = color;
-      return new CSS2DObject(element);
-    }
+    /* ---------- 3차원 장면 ---------- */
 
+    const SCALE3D = .42;
+    function v3(x, y, z) { return new THREE.Vector3(x * SCALE3D, y * SCALE3D, z * SCALE3D); }
+    function sphericalVector(radius, theta, phi) {
+      return v3(radius * Math.sin(rad(phi)) * Math.cos(rad(theta)), radius * Math.sin(rad(phi)) * Math.sin(rad(theta)), radius * Math.cos(rad(phi)));
+    }
+    function arcPoints(radius, start, end, plane, theta = 0) {
+      const points = [];
+      const count = 32;
+      for (let i = 0; i <= count; i += 1) {
+        const a = start + (end - start) * i / count;
+        points.push(plane === 'xy' ? v3(radius * Math.cos(a), radius * Math.sin(a), 0) : sphericalVector(radius, theta, deg(a)));
+      }
+      return points;
+    }
+    function ringPoints(radius, z, portion = 1) {
+      const points = [];
+      const count = 32;
+      for (let i = 0; i <= count; i += 1) {
+        const angle = TAU * portion * i / count;
+        points.push(v3(radius * Math.cos(angle), radius * Math.sin(angle), z));
+      }
+      return points;
+    }
+    function lineObject(points, color, width = 2, opacity = 1) {
+      const material = new THREE.LineBasicMaterial({ color, transparent: opacity < 1, opacity, linewidth: width });
+      return new THREE.Line(new THREE.BufferGeometry().setFromPoints(points), material);
+    }
+    function dashedLineObject(points, color, opacity = .9) {
+      const material = new THREE.LineDashedMaterial({ color, transparent: true, opacity, dashSize: .09, gapSize: .07 });
+      const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints(points), material);
+      line.computeLineDistances();
+      return line;
+    }
     function disposeObject(object) {
       if (object.geometry) object.geometry.dispose();
       if (object.material) {
-        const materials = Array.isArray(object.material) ? object.material : [object.material];
-        materials.forEach(material => material.dispose());
+        (Array.isArray(object.material) ? object.material : [object.material]).forEach(material => material.dispose());
       }
       object.children?.forEach(disposeObject);
     }
-
     function clearGroup(group) {
       while (group.children.length) {
         const child = group.children[0];
@@ -582,19 +794,33 @@
         disposeObject(child);
       }
     }
-
-    function lineObject(points, color, width = 2, opacity = 1) {
-      const geometry = new THREE.BufferGeometry().setFromPoints(points);
-      const material = new THREE.LineBasicMaterial({ color, transparent: opacity < 1, opacity });
-      return new THREE.Line(geometry, material);
+    function addDot(group, position, color = 0xef4444, scale = 1) {
+      if (scale <= .02) return;
+      const sphere = new THREE.Mesh(new THREE.SphereGeometry(.095 * scale, 16, 12), new THREE.MeshBasicMaterial({ color }));
+      sphere.position.copy(position);
+      group.add(sphere);
     }
 
-    function dashedLineObject(points, color, opacity = .9) {
-      const geometry = new THREE.BufferGeometry().setFromPoints(points);
-      const material = new THREE.LineDashedMaterial({ color, transparent: opacity < 1, opacity, dashSize: .08, gapSize: .06 });
-      const line = new THREE.Line(geometry, material);
-      line.computeLineDistances();
-      return line;
+    // CSS2D 라벨은 매 프레임 새로 만들지 않고 키로 재사용한다(MathML 재조판 비용을 줄인다).
+    function setLabel3D(view, used, key, position, html, color) {
+      let label = view.labelMap.get(key);
+      if (!label) {
+        const element = document.createElement('div');
+        element.className = 'label3d';
+        label = new CSS2DObject(element);
+        label.userData.html = '';
+        view.labelGroup.add(label);
+        view.labelMap.set(key, label);
+      }
+      label.position.copy(position);
+      if (label.element.style.color !== color) label.element.style.color = color;
+      if (label.userData.html !== html) { label.element.innerHTML = html; label.userData.html = html; }
+      label.visible = true;
+      used.add(key);
+      return label;
+    }
+    function hideUnusedLabels(view, used) {
+      view.labelMap.forEach((label, key) => { if (!used.has(key)) label.visible = false; });
     }
 
     function create3DView(hostId, kind) {
@@ -617,24 +843,28 @@
       controls.enablePan = false;
       controls.minDistance = 3.7;
       controls.maxDistance = 10;
-      const coordinateFrame = new THREE.Group();
-      // Match the textbook default: +z is up, +y is right, and +x recedes down-left.
+
+      // base는 고정 요소, persist는 단계에 따라 크기만 바뀌는 기준 도형, dynamic은 매 프레임 다시 그리는 선분이다.
       const base = new THREE.Group();
+      const persist = new THREE.Group();
       const dynamic = new THREE.Group();
-      coordinateFrame.add(base, dynamic);
-      scene.add(coordinateFrame);
-      const axisLabels = [];
+      const labelGroup = new THREE.Group();
+      scene.add(base, persist, dynamic, labelGroup);
+
       const axisData = [
-        { end: coordinateVector(3.4, 0, 0), text: 'x', color: '#ff9b9b', line: 0xef5350 },
-        { end: coordinateVector(0, 3.4, 0), text: 'y', color: '#8fe3c5', line: 0x36b37e },
-        { end: coordinateVector(0, 0, 3.4), text: 'z', color: '#9dbdff', line: 0x5594ff }
+        { end: v3(3.4, 0, 0), symbol: SYM.x, color: '#ff9b9b', line: 0xef5350 },
+        { end: v3(0, 3.4, 0), symbol: SYM.y, color: '#8fe3c5', line: 0x36b37e },
+        { end: v3(0, 0, 3.4), symbol: SYM.z, color: '#9dbdff', line: 0x5594ff }
       ];
       axisData.forEach(item => {
-        base.add(lineObject([new THREE.Vector3(0, 0, 0), item.end], item.line, 2.5, .95));
-        const label = createLabel(item.text, item.color);
-        label.position.copy(item.end.clone().multiplyScalar(.88));
-        coordinateFrame.add(label);
-        axisLabels.push(label);
+        base.add(lineObject([new THREE.Vector3(), item.end], item.line, 2.5, .95));
+        const element = document.createElement('div');
+        element.className = 'label3d';
+        element.style.color = item.color;
+        element.innerHTML = mathml(item.symbol);
+        const label = new CSS2DObject(element);
+        label.position.copy(item.end.clone().multiplyScalar(1.04));
+        base.add(label);
       });
       const grid = new THREE.GridHelper(7, 14, 0x6b86b7, 0x355079);
       grid.rotation.x = Math.PI / 2;
@@ -642,6 +872,7 @@
       grid.material.transparent = true;
       grid.material.opacity = .28;
       base.add(grid);
+
       const resize = () => {
         const width = Math.max(20, host.clientWidth);
         const height = Math.max(20, host.clientHeight);
@@ -652,196 +883,445 @@
       };
       new ResizeObserver(resize).observe(host);
       resize();
-      return { kind, host, scene, camera, renderer, labels, controls, dynamic, resize };
+      return { kind, host, scene, camera, renderer, labels, controls, persist, dynamic, labelGroup, labelMap: new Map(), shell: null, shellKey: '' };
     }
 
-    // Rotate the complete coordinate frame so the mathematical coordinates remain unchanged.
-    function coordinateVector(x, y, z) { return new THREE.Vector3(x * .42, y * .42, z * .42); }
-    function v3(x, y, z) { return coordinateVector(x, y, z); }
-    function sphericalVector(radius, theta, phi) {
-      return v3(radius * Math.sin(rad(phi)) * Math.cos(rad(theta)), radius * Math.sin(rad(phi)) * Math.sin(rad(theta)), radius * Math.cos(rad(phi)));
-    }
-    function cylinderRingPoints(radius, z, count = 16) {
-      const points = [];
-      for (let i = 0; i <= count; i += 1) {
-        const angle = TAU * i / count;
-        points.push(v3(radius * Math.cos(angle), radius * Math.sin(angle), z));
+    // 원기둥과 구는 매 프레임 geometry를 다시 만들지 않고 크기가 바뀔 때만 새로 만든다.
+    function ensureShell(view, key, build) {
+      if (view.shellKey !== key) {
+        if (view.shell) { view.persist.remove(view.shell); disposeObject(view.shell); }
+        view.shell = build();
+        view.persist.add(view.shell);
+        view.shellKey = key;
       }
-      return points;
+      return view.shell;
     }
-    function addPoint(group, position, labelText, color = 0xef4444) {
-      const sphere = new THREE.Mesh(new THREE.SphereGeometry(.09, 16, 12), new THREE.MeshBasicMaterial({ color }));
-      sphere.position.copy(position);
-      group.add(sphere);
-      const label = createLabel(labelText, '#ffffff');
-      label.position.copy(position).add(new THREE.Vector3(.12, .12, .04));
-      group.add(label);
-    }
-    function addGroupLabel(group, position, text, color) {
-      const label = createLabel(text, color);
-      label.position.copy(position);
-      group.add(label);
-    }
-    function arcPoints(radius, start, end, plane, theta = 0) {
-      const points = [];
-      const count = 28;
-      for (let i = 0; i <= count; i += 1) {
-        const a = start + (end - start) * i / count;
-        if (plane === 'xy') points.push(v3(radius * Math.cos(a), radius * Math.sin(a), 0));
-        else points.push(sphericalVector(radius, theta, deg(a)));
-      }
-      return points;
-    }
-    function update3DView(view, p, t) {
+
+    function update3DView(view, p) {
       clearGroup(view.dynamic);
-      const isBuild = state.direction === 'build';
-      const pointVisible = !isBuild || t >= 3.5;
-      const full = !animation.playing && animation.step === 0 ? 0 : t;
-      const rProgress = clamp(full - .5, 0, 1);
-      const angleProgress = clamp(full - 1.3, 0, 1);
-      const heightProgress = clamp(full - 2.3, 0, 1);
-      const q = v3(p.x, p.y, 0);
-      const point = v3(p.x, p.y, p.z);
-      const origin = new THREE.Vector3(0, 0, 0);
-      const rxyPoint = v3(p.rxy, 0, 0);
+      const used = new Set();
+      const group = view.dynamic;
+      const read = state.direction === 'read';
+      const origin = new THREE.Vector3();
+      const axisPoint = v3(p.x, 0, 0);
+      const Q = v3(p.x, p.y, 0);
+      const P = v3(p.x, p.y, p.z);
+      const theta = rad(p.theta);
+      const arcR = clamp(p.rxy * .4, .85, 1.7);
+      const arcRphi = clamp(p.rho * .34, .85, 1.7);
+
       if (view.kind === 'cart') {
-        if (pointVisible) {
-          view.dynamic.add(lineObject([origin, v3(p.x, 0, 0), v3(p.x, p.y, 0), point], 0xf5b642, 2.2, .9));
-          view.dynamic.add(dashedLineObject([point, q], 0x73a7ff, .9));
-          addPoint(view.dynamic, point, 'P');
-        } else if (isBuild && t > .2) {
-          view.dynamic.add(lineObject([origin, v3(p.x * rProgress, 0, 0)], 0xf5b642, 2.2, .85));
+        const eX = at(1), eY = at(2);
+        const eRect = at(read ? 3 : 4);
+        const eZ = at(read ? 4 : 3);
+        const pointScale = read ? at(0) : sub(eZ, .75, 1);
+        if (eX > 0) {
+          group.add(lineObject([origin, origin.clone().lerp(axisPoint, eX)], 0xef5350, 2.6, .95));
+          setLabel3D(view, used, 'x', v3(p.x * eX / 2, 0, 0).add(new THREE.Vector3(0, -.16, -.12)), eq(SYM.x, mathNumber(p.x * eX)), '#ffb4b4');
         }
+        if (eY > 0) {
+          group.add(lineObject([axisPoint, axisPoint.clone().lerp(Q, eY)], 0x36b37e, 2.6, .95));
+          setLabel3D(view, used, 'y', v3(p.x, p.y * eY / 2, 0).add(new THREE.Vector3(.14, 0, -.12)), eq(SYM.y, mathNumber(p.y * eY)), '#9ff0ba');
+          addDot(group, Q, 0x38bdf8, sub(eY, .72, 1));
+          if (sub(eY, .72, 1) > .3) setLabel3D(view, used, 'Q', Q.clone().add(new THREE.Vector3(.14, .14, -.14)), mathml(SYM.Q), '#8fd6ff');
+        }
+        if (eRect > 0) {
+          group.add(dashedLineObject([Q, v3(0, p.y, 0), origin], 0x9dbdff, .55 * eRect));
+          setLabel3D(view, used, 'xy', Q.clone().add(new THREE.Vector3(.16, .16, .2)), mathml(tuple([mathNumber(p.x), mathNumber(p.y)])), '#cfe0ff');
+        }
+        if (eZ > 0) {
+          group.add(lineObject([Q, Q.clone().lerp(P, eZ)], 0x5594ff, 2.8, .95));
+          setLabel3D(view, used, 'z', v3(p.x, p.y, p.z * eZ / 2).add(new THREE.Vector3(.16, .16, 0)), eq(SYM.z, mathNumber(p.z * eZ)), '#bcd4ff');
+        }
+        addDot(group, P, 0xef4444, pointScale);
+        if (pointScale > .3) setLabel3D(view, used, 'P', P.clone().add(new THREE.Vector3(.14, .14, .06)), mathml(SYM.P), '#ffffff');
       } else if (view.kind === 'cyl') {
-        const cylinderTop = Math.max(5, p.z + 1.2);
-        const cylinderRadius = p.rxy * .42;
-        const cylinderHeight = cylinderTop * .42;
-        const cylinderGeometry = new THREE.CylinderGeometry(cylinderRadius, cylinderRadius, cylinderHeight, 16, 2, true);
-        const cylinder = new THREE.Mesh(cylinderGeometry, new THREE.MeshBasicMaterial({ color: 0x34d399, transparent: true, opacity: .09, side: THREE.DoubleSide, depthWrite: false }));
-        cylinder.rotation.x = Math.PI / 2;
-        cylinder.position.copy(v3(0, 0, cylinderTop / 2));
-        view.dynamic.add(cylinder);
-        view.dynamic.add(lineObject(cylinderRingPoints(p.rxy, 0), 0x6ee7b7, 1.7, .48));
-        view.dynamic.add(lineObject(cylinderRingPoints(p.rxy, cylinderTop), 0x6ee7b7, 1.7, .48));
-        for (let i = 0; i < 8; i += 1) {
-          const angle = TAU * i / 8;
-          view.dynamic.add(lineObject([
-            v3(p.rxy * Math.cos(angle), p.rxy * Math.sin(angle), 0),
-            v3(p.rxy * Math.cos(angle), p.rxy * Math.sin(angle), cylinderTop)
-          ], 0x6ee7b7, 1.2, .34));
+        const eCyl = at(read ? 2 : 1);
+        const eTheta = at(read ? 3 : 2);
+        const eZ = at(read ? 4 : 3);
+        const eR = read ? at(1) : 0;
+        const pointScale = read ? at(0) : sub(eZ, .75, 1);
+        const top = Math.max(4, p.z + 1.2);
+        const shell = ensureShell(view, `cyl|${p.rxy.toFixed(3)}|${top.toFixed(3)}`, () => {
+          const mesh = new THREE.Mesh(
+            new THREE.CylinderGeometry(p.rxy * SCALE3D, p.rxy * SCALE3D, top * SCALE3D, 28, 1, true),
+            new THREE.MeshBasicMaterial({ color: 0x34d399, transparent: true, opacity: .10, side: THREE.DoubleSide, depthWrite: false })
+          );
+          mesh.rotation.x = Math.PI / 2;
+          return mesh;
+        });
+        const ringE = sub(eCyl, 0, .4), riseE = sub(eCyl, .3, 1);
+        shell.visible = riseE > .01;
+        shell.scale.y = Math.max(.001, riseE);
+        shell.position.copy(v3(0, 0, top * riseE / 2));
+        if (ringE > 0) group.add(lineObject(ringPoints(p.rxy, 0, ringE), 0x6ee7b7, 1.8, .55));
+        if (riseE > .01) {
+          group.add(lineObject(ringPoints(p.rxy, top * riseE, 1), 0x6ee7b7, 1.8, .45));
+          for (let i = 0; i < 8; i += 1) {
+            const angle = TAU * i / 8;
+            group.add(lineObject([v3(p.rxy * Math.cos(angle), p.rxy * Math.sin(angle), 0), v3(p.rxy * Math.cos(angle), p.rxy * Math.sin(angle), top * riseE)], 0x6ee7b7, 1.2, .3));
+          }
         }
-        view.dynamic.add(lineObject([origin, q], 0xf59e0b, 2.4, .95));
-        view.dynamic.add(lineObject(arcPoints(p.rxy, 0, rad(p.theta) * clamp(angleProgress || 1, 0, 1), 'xy'), 0x9f7aea, 2.5, .95));
-        if (pointVisible) {
-          view.dynamic.add(dashedLineObject([q, point], 0x4ade80, .95));
-          addPoint(view.dynamic, point, 'P');
-          addPoint(view.dynamic, q, 'Q', 0x38bdf8);
-          if (t >= 1.5) addGroupLabel(view.dynamic, v3(p.rxy / 2, .12, 0), 'r', '#ffd28a');
-          if (t >= 1.8) addGroupLabel(view.dynamic, v3(p.x * .52, p.y * .52, 0).add(new THREE.Vector3(.12, .12, 0)), 'θ', '#c4b5fd');
-          if (t >= 2.6) addGroupLabel(view.dynamic, v3(p.x, p.y, p.z / 2).add(new THREE.Vector3(.12, 0, 0)), 'z', '#9ff0ba');
+        if (eR > 0 && eTheta <= 0) {
+          group.add(lineObject([origin, origin.clone().lerp(Q, eR)], 0xf59e0b, 2.8, .95));
+          setLabel3D(view, used, 'r', v3(p.x * eR / 2, p.y * eR / 2, 0).add(new THREE.Vector3(0, 0, .16)), eq(SYM.r, mathNumber(p.rxy * eR)), '#ffd28a');
+          addDot(group, Q, 0x38bdf8, sub(eR, .72, 1));
         }
+        if (eTheta > 0) {
+          const angle = theta * eTheta;
+          const tip = v3(p.rxy * Math.cos(angle), p.rxy * Math.sin(angle), 0);
+          if (read) group.add(lineObject([origin, Q], 0xf59e0b, 2.8, .35));
+          group.add(lineObject([origin, tip], read ? 0x9f7aea : 0xf59e0b, 2.8, .95));
+          group.add(lineObject(arcPoints(arcR, 0, angle, 'xy'), 0x9f7aea, 2.6, .95));
+          setLabel3D(view, used, 'theta', v3(arcR * Math.cos(angle / 2), arcR * Math.sin(angle / 2), 0).add(new THREE.Vector3(0, 0, .14)), eq(SYM.theta, mathAngle(p.theta * eTheta)), '#c4b5fd');
+          setLabel3D(view, used, 'r', v3(p.x / 2, p.y / 2, 0).add(new THREE.Vector3(0, 0, -.18)), eq(SYM.r, mathNumber(p.rxy)), '#ffd28a');
+          addDot(group, Q, 0x38bdf8, read ? 1 : sub(eTheta, .78, 1));
+          setLabel3D(view, used, 'Q', Q.clone().add(new THREE.Vector3(.14, .14, -.16)), mathml(SYM.Q), '#8fd6ff');
+        }
+        if (eZ > 0) {
+          group.add(lineObject([Q, Q.clone().lerp(P, eZ)], 0x4ade80, 2.8, .95));
+          setLabel3D(view, used, 'z', v3(p.x, p.y, p.z * eZ / 2).add(new THREE.Vector3(.16, 0, 0)), eq(SYM.z, mathNumber(p.z * eZ)), '#9ff0ba');
+        }
+        if (pointScale > .3) {
+          group.add(dashedLineObject([Q, P], 0x4ade80, .5));
+          setLabel3D(view, used, 'P', P.clone().add(new THREE.Vector3(.14, .14, .06)), mathml(SYM.P), '#ffffff');
+        }
+        addDot(group, P, 0xef4444, pointScale);
       } else {
-        const sphere = new THREE.Mesh(new THREE.SphereGeometry(p.rho * .42, 20, 12), new THREE.MeshBasicMaterial({ color: 0x73a7ff, wireframe: true, transparent: true, opacity: .16, depthWrite: false }));
-        view.dynamic.add(sphere);
-        if (pointVisible || !isBuild) {
-          view.dynamic.add(lineObject([origin, point], 0xffb347, 2.7, .95));
-          view.dynamic.add(dashedLineObject([point, q], 0x73a7ff, .85));
-          addPoint(view.dynamic, point, 'P');
-          addPoint(view.dynamic, q, 'Q', 0x38bdf8);
-          if (t >= .8) addGroupLabel(view.dynamic, point.clone().multiplyScalar(.62).add(new THREE.Vector3(.16, .16, 0)), 'ρ', '#ffd28a');
-          if (t >= 1.6) view.dynamic.add(lineObject(arcPoints(Math.max(.35, p.rxy * .27), 0, rad(p.theta), 'xy'), 0xc4b5fd, 2.5, .95));
-          if (t >= 2.4) view.dynamic.add(lineObject(arcPoints(Math.max(.35, p.rho * .27), 0, rad(p.phi), 'xz', p.theta), 0x8fe3c5, 2.5, .95));
-          if (t >= 1.8) addGroupLabel(view.dynamic, v3(p.rxy * .45, p.rxy * .28, 0).add(new THREE.Vector3(.12, .12, 0)), 'θ', '#c4b5fd');
-          if (t >= 2.7) addGroupLabel(view.dynamic, sphericalVector(p.rho * .48, p.theta, p.phi / 2).add(new THREE.Vector3(.14, .12, .1)), 'φ', '#9ff0ba');
+        const eSphere = at(read ? 2 : 1);
+        const eTheta = at(read ? 3 : 2);
+        const ePhi = at(read ? 4 : 3);
+        const eRho = read ? at(1) : 0;
+        const pointScale = read ? at(0) : sub(ePhi, .78, 1);
+        const shell = ensureShell(view, `sph|${p.rho.toFixed(3)}`, () => new THREE.Mesh(
+          new THREE.SphereGeometry(Math.max(.05, p.rho * SCALE3D), 22, 14),
+          new THREE.MeshBasicMaterial({ color: 0x73a7ff, wireframe: true, transparent: true, opacity: .16, depthWrite: false })
+        ));
+        shell.visible = eSphere > .01;
+        shell.scale.setScalar(Math.max(.001, eSphere));
+        shell.material.opacity = .16 * eSphere;
+        if (eRho > 0 && ePhi <= 0) {
+          group.add(lineObject([origin, origin.clone().lerp(P, eRho)], 0xffb347, 2.9, .95));
+          setLabel3D(view, used, 'rho', P.clone().multiplyScalar(.55 * Math.max(.35, eRho)).add(new THREE.Vector3(.16, .16, 0)), eq(SYM.rho, mathNumber(p.rho * eRho)), '#ffd28a');
         }
+        if (eTheta > 0) {
+          const angle = theta * eTheta;
+          group.add(lineObject([origin, v3(p.rxy * Math.cos(angle), p.rxy * Math.sin(angle), 0)], 0xc4b5fd, 2.4, .9));
+          group.add(lineObject(arcPoints(arcR, 0, angle, 'xy'), 0xc4b5fd, 2.6, .95));
+          setLabel3D(view, used, 'theta', v3(arcR * Math.cos(angle / 2), arcR * Math.sin(angle / 2), 0).add(new THREE.Vector3(0, 0, .14)), eq(SYM.theta, mathAngle(p.theta * eTheta)), '#c4b5fd');
+          addDot(group, Q, 0x38bdf8, sub(eTheta, .75, 1));
+          if (sub(eTheta, .75, 1) > .3) setLabel3D(view, used, 'Q', Q.clone().add(new THREE.Vector3(.14, .14, -.16)), mathml(SYM.Q), '#8fd6ff');
+        }
+        if (ePhi > 0) {
+          // +z축에 놓인 길이 ρ인 선분을 φ만큼 기울여 점 P에 닿게 한다.
+          const tip = sphericalVector(p.rho, p.theta, p.phi * ePhi);
+          if (read) group.add(lineObject([origin, P], 0xffb347, 2.9, .35));
+          group.add(lineObject([origin, tip], 0x8fe3c5, 2.9, .95));
+          group.add(lineObject(arcPoints(arcRphi, 0, rad(p.phi * ePhi), 'zx', p.theta), 0x8fe3c5, 2.6, .95));
+          setLabel3D(view, used, 'phi', sphericalVector(arcRphi, p.theta, p.phi * ePhi / 2).add(new THREE.Vector3(.12, .12, .1)), eq(SYM.phi, mathAngle(p.phi * ePhi)), '#9ff0ba');
+          setLabel3D(view, used, 'rho', P.clone().multiplyScalar(.55).add(new THREE.Vector3(.16, .16, 0)), eq(SYM.rho, mathNumber(p.rho)), '#ffd28a');
+        }
+        if (pointScale > .3) {
+          group.add(dashedLineObject([P, Q], 0x73a7ff, .55));
+          setLabel3D(view, used, 'P', P.clone().add(new THREE.Vector3(.14, .14, .06)), mathml(SYM.P), '#ffffff');
+        }
+        addDot(group, P, 0xef4444, pointScale);
       }
+      hideUnusedLabels(view, used);
     }
 
-    function render3D() {
+    function draw3D() {
       const p = point3d();
-      const t = currentAnimationT();
-      update3DView(threeViews.cart, p, t);
-      update3DView(threeViews.cyl, p, t);
-      update3DView(threeViews.sph, p, t);
-      $('cart3dReadout').innerHTML = `<strong>P(x,y,z) = ${formatPair3d(p)}</strong> 세 축 방향의 좌표로 공간의 위치를 읽습니다.`;
-      $('cyl3dReadout').innerHTML = `<strong>P(r, θ, z) = (${formatNumber(p.rxy)}, ${formatAngle(p.theta)}, ${formatNumber(p.z)})</strong> 정사영 Q까지의 거리 r과 높이 z를 함께 봅니다.`;
-      $('sph3dReadout').innerHTML = `<strong>P(ρ, θ, φ) = (${formatNumber(p.rho)}, ${formatAngle(p.theta)}, ${formatAngle(p.phi)})</strong> φ는 +z축에서 OP까지 잰 각입니다.`;
+      update3DView(threeViews.cart, p);
+      update3DView(threeViews.cyl, p);
+      update3DView(threeViews.sph, p);
     }
 
-    function updateFormulaAndText() {
+    /* ---------- 설명 패널 (그래프 아래는 MathJax LaTeX) ---------- */
+
+    function formulaFor(step) {
       const p2 = point2d();
       const p3 = point3d();
-      const t = currentAnimationT();
-      let formula = '';
-      let text = '';
       if (state.mode === '2d') {
+        const [x, y, r, th] = [texNumber(p2.x), texNumber(p2.y), texNumber(p2.r), texAngle(p2.theta)];
+        const tanLine = near(p2.x, 0)
+          ? `\\theta=${th}`
+          : `\\tan\\theta=\\dfrac{y}{x}=\\dfrac{${y}}{${x}},\\qquad \\theta=${th}`;
         if (state.direction === 'read') {
-          if (t < 1) { formula = `\\[P(x,y)=${formatPair2d(p2)}\\]`; text = '먼저 직교좌표의 점 P를 확인합니다.'; }
-          else if (t < 2) { formula = `\\[r=\\sqrt{x^2+y^2}=\\sqrt{${formatNumber(p2.x)}^2+${formatNumber(p2.y)}^2}\\]`; text = '원점에서 점까지의 거리를 반지름 r로 읽습니다.'; }
-          else { formula = `\\[x=r\\cos\\theta,\\qquad y=r\\sin\\theta\\]`; text = '반지름 r인 선분을 θ만큼 회전하면 같은 점 P에 도달합니다.'; }
-        } else {
-          if (t < 1) { formula = `\\[P(r,\\theta)=(${formatNumber(p2.r)},${formatAngle(p2.theta)})\\]`; text = '극좌표는 원점에서의 거리와 방향으로 점을 찾습니다.'; }
-          else if (t < 3) { formula = `\\[x=r\\cos\\theta=${formatNumber(p2.r)}\\cos${formatAngle(p2.theta)}\\]`; text = '반지름 선분의 끝점에서 x축으로 정사영을 내립니다.'; }
-          else { formula = `\\[x=r\\cos\\theta,\\qquad y=r\\sin\\theta\\]`; text = 'x축과 y축 정사영이 직교좌표의 두 성분이 됩니다.'; }
+          return [
+            `\\[P(x,\\ y)=(${x},\\ ${y})\\]`,
+            `\\[r=\\sqrt{x^{2}+y^{2}}=\\sqrt{(${x})^{2}+(${y})^{2}}=${r}\\]`,
+            `\\[x^{2}+y^{2}=r^{2}\\qquad(r=${r})\\]`,
+            `\\[${tanLine}\\]`,
+            `\\[x=r\\cos\\theta,\\qquad y=r\\sin\\theta\\]`
+          ][step];
         }
-      } else if (state.direction === 'read') {
-        if (t < 1) { formula = `\\[P(x,y,z)=(${formatNumber(p3.x)},${formatNumber(p3.y)},${formatNumber(p3.z)})\\]`; text = '공간의 점 P를 세 축 방향의 거리로 확인합니다.'; }
-        else if (t < 2) { formula = `\\[r_{xy}=\\sqrt{x^2+y^2},\\qquad \\rho=\\sqrt{x^2+y^2+z^2}\\]`; text = 'xy평면의 정사영 Q와 원점에서 점까지의 거리를 구분합니다.'; }
-        else if (t < 3) { formula = `\\[\\theta=\\text{xy평면의 방위각}\\]`; text = 'θ는 xy평면에서 양의 x축부터 정사영까지 잰 각입니다.'; }
-        else { formula = `\\[P(r,\\theta,z)\\quad\\text{또는}\\quad P(\\rho,\\theta,\\phi)\\]`; text = '같은 점을 원기둥좌표와 구면좌표로 각각 읽을 수 있습니다.'; }
-      } else {
-        if (t < 1) { formula = `\\[P(r,\\theta,z),\\qquad P(\\rho,\\theta,\\phi)\\]`; text = '좌표를 보고 어떤 길이와 방향을 먼저 정할지 생각합니다.'; }
-        else if (t < 2) { formula = `\\[r_{xy}=\\rho\\sin\\phi\\qquad (\\rho=6\\text{인 활동 5})\\]`; text = '구면좌표에서는 먼저 원점에서의 거리 ρ를 정하고, xy평면 정사영의 크기를 봅니다.'; }
-        else if (t < 3) { formula = `\\[x=r\\cos\\theta,\\qquad y=r\\sin\\theta\\]`; text = 'xy평면에서 θ 방향을 정하면 정사영 Q가 정해집니다.'; }
-        else { formula = `\\[x=\\rho\\sin\\phi\\cos\\theta,\\ y=\\rho\\sin\\phi\\sin\\theta,\\ z=\\rho\\cos\\phi\\]`; text = '높이 또는 +z축에서 잰 φ까지 정하면 공간의 점 P가 완성됩니다.'; }
+        return [
+          `\\[P(r,\\ \\theta)=(${r},\\ ${th})\\]`,
+          `\\[x^{2}+y^{2}=r^{2}\\qquad(r=${r})\\]`,
+          `\\[\\theta=${th}\\]`,
+          `\\[x=r\\cos\\theta=${x},\\qquad y=r\\sin\\theta=${y}\\]`,
+          `\\[(x,\\ y)=(${x},\\ ${y})\\]`
+        ][step];
       }
-      $('formulaBox').innerHTML = formula;
-      $('interpretationText').textContent = text;
-      updateStepLabels();
-      if (window.MathJax?.typesetPromise) window.MathJax.typesetPromise([$(`formulaBox`)]).catch(() => {});
+      const [x, y, z] = [texNumber(p3.x), texNumber(p3.y), texNumber(p3.z)];
+      const [r, rho, th, phi] = [texNumber(p3.rxy), texNumber(p3.rho), texAngle(p3.theta), texAngle(p3.phi)];
+      const tanLine = near(p3.x, 0)
+        ? `\\theta=${th}`
+        : `\\tan\\theta=\\dfrac{y}{x}=\\dfrac{${y}}{${x}},\\qquad \\theta=${th}`;
+      if (state.direction === 'read') {
+        return [
+          `\\[P(x,\\ y,\\ z)=(${x},\\ ${y},\\ ${z})\\]`,
+          `\\[r=\\sqrt{x^{2}+y^{2}}=${r},\\qquad \\rho=\\sqrt{x^{2}+y^{2}+z^{2}}=${rho}\\]`,
+          `\\[x^{2}+y^{2}=r^{2}\\ \\text{(원기둥)},\\qquad x^{2}+y^{2}+z^{2}=\\rho^{2}\\ \\text{(구)}\\]`,
+          `\\[${tanLine}\\]`,
+          `\\[z=${z},\\qquad \\cos\\phi=\\dfrac{z}{\\rho}=\\dfrac{${z}}{${rho}},\\qquad \\phi=${phi}\\]`
+        ][step];
+      }
+      return [
+        `\\[P(r,\\ \\theta,\\ z)=(${r},\\ ${th},\\ ${z}),\\qquad P(\\rho,\\ \\theta,\\ \\phi)=(${rho},\\ ${th},\\ ${phi})\\]`,
+        `\\[r=\\rho\\sin\\phi=${rho}\\sin ${phi}=${r}\\]`,
+        `\\[x=r\\cos\\theta=${x},\\qquad y=r\\sin\\theta=${y}\\]`,
+        `\\[z=\\rho\\cos\\phi=${rho}\\cos ${phi}=${z}\\]`,
+        `\\[x=\\rho\\sin\\phi\\cos\\theta,\\quad y=\\rho\\sin\\phi\\sin\\theta,\\quad z=\\rho\\cos\\phi\\]`
+      ][step];
+    }
+
+    const INTERPRETATION = {
+      '2d-read': [
+        '평면 위의 점 P 하나만 놓여 있습니다. 아직 어떤 좌표계로 읽을지 정하지 않았습니다.',
+        '직교좌표는 x축 방향 성분을, 극좌표는 원점에서 P까지의 거리 r을 먼저 잽니다.',
+        '거리 r이 같은 점을 모두 모으면 원이 됩니다. 직교좌표에서는 두 성분이 직사각형을 만듭니다.',
+        '극좌표는 x축에서 선분을 돌려 방향각 θ를 재고, 직교좌표는 각 없이 두 성분만으로 위치를 정합니다.',
+        '같은 점 P를 (x, y)로도, (r, θ)로도 읽었습니다. 점은 그대로이고 읽는 기준만 달라졌습니다.'
+      ],
+      '2d-build': [
+        '이번에는 좌표값이 먼저 주어집니다. 원점에서 출발해 점을 찾아갑니다.',
+        '거리 r만으로는 점이 하나로 정해지지 않고, 반지름 r인 원 위 어디든 될 수 있습니다.',
+        '방향각 θ를 정하는 순간 원 위의 한 점으로 위치가 결정됩니다.',
+        '정해진 점에서 두 축으로 수선을 내리면 직교좌표 성분을 읽을 수 있습니다.',
+        '거리와 방향으로 찾은 점이 곧 (x, y)로 읽히는 그 점입니다.'
+      ],
+      '3d-read': [
+        '공간의 점 P 하나만 놓여 있습니다. 세 좌표계가 이 점을 각자 방식으로 읽어 갑니다.',
+        '직교좌표는 x축 성분을, 원기둥좌표는 정사영까지의 거리 r을, 구면좌표는 원점에서의 거리 ρ를 잽니다.',
+        'r이 일정한 자취는 원기둥, ρ가 일정한 자취는 구가 됩니다. 좌표계마다 기준 도형이 다릅니다.',
+        '원기둥·구면좌표는 xy평면에서 방향각 θ를 재고, 직교좌표는 두 성분의 직사각형으로 정사영 Q를 정합니다.',
+        '마지막 성분이 높이 z인지 각 φ인지에 따라 같은 점이 (r, θ, z)로도 (ρ, θ, φ)로도 읽힙니다.'
+      ],
+      '3d-build': [
+        '좌표값이 먼저 주어집니다. 원점에서 출발해 성분을 하나씩 놓아 갑니다.',
+        '첫 성분만으로는 점이 정해지지 않습니다. 거리 조건은 원기둥이나 구라는 자취를 만듭니다.',
+        'xy평면에서 방향각 θ를 정하면 정사영의 위치가 결정됩니다.',
+        '마지막 성분인 높이 z 또는 각 φ까지 정해야 공간의 점 P가 하나로 정해집니다.',
+        '세 좌표계가 서로 다른 순서로 같은 점에 도착했습니다.'
+      ]
+    };
+
+    let panelKey = '';
+    function updatePanels() {
+      const p2 = point2d();
+      const p3 = point3d();
+      const step = animation.step;
+      const key = `${state.mode}|${state.direction}|${step}|${state.point2d.x},${state.point2d.y}|${state.point3d.x},${state.point3d.y},${state.point3d.z}`;
+      if (key === panelKey) return;
+      panelKey = key;
+
+      $('formulaBox').innerHTML = formulaFor(step);
+      $('interpretationText').textContent = INTERPRETATION[`${state.mode}-${state.direction}`][step];
+      if (window.MathJax?.typesetPromise) window.MathJax.typesetPromise([$('formulaBox')]).catch(() => {});
+
+      const card = (id, headline, sentence) => { $(id).innerHTML = `<strong>${headline}</strong>${sentence}`; };
+      if (state.mode === '2d') {
+        card('cartesianReadout',
+          mathml(`${SYM.P}${tuple([SYM.x, SYM.y])}<mo>=</mo>${tuple([mathNumber(p2.x), mathNumber(p2.y)])}`),
+          CARD_STEPS[`cartesian-${state.direction}`][step]);
+        card('polarReadout',
+          mathml(`${SYM.P}${tuple([SYM.r, SYM.theta])}<mo>=</mo>${tuple([mathNumber(p2.r), mathAngle(p2.theta)])}`),
+          CARD_STEPS[`polar-${state.direction}`][step]);
+      } else {
+        card('cart3dReadout',
+          mathml(`${SYM.P}${tuple([SYM.x, SYM.y, SYM.z])}<mo>=</mo>${tuple([mathNumber(p3.x), mathNumber(p3.y), mathNumber(p3.z)])}`),
+          CARD_STEPS[`cart-${state.direction}`][step]);
+        card('cyl3dReadout',
+          mathml(`${SYM.P}${tuple([SYM.r, SYM.theta, SYM.z])}<mo>=</mo>${tuple([mathNumber(p3.rxy), mathAngle(p3.theta), mathNumber(p3.z)])}`),
+          CARD_STEPS[`cyl-${state.direction}`][step]);
+        card('sph3dReadout',
+          mathml(`${SYM.P}${tuple([SYM.rho, SYM.theta, SYM.phi])}<mo>=</mo>${tuple([mathNumber(p3.rho), mathAngle(p3.theta), mathAngle(p3.phi)])}`),
+          CARD_STEPS[`sph-${state.direction}`][step]);
+      }
+    }
+
+    let stepUiKey = '';
+    function updateStepUi() {
+      const key = `${state.mode}|${state.direction}|${animation.step}|${animation.mode}`;
+      if (key === stepUiKey) return;
+      stepUiKey = key;
+      $('stepLabel').textContent = STEP_NAMES[`${state.mode}-${state.direction}`][animation.step];
+      $('stepCount').textContent = `${animation.step} / ${MAX_STEP}`;
+      $('playButton').textContent = animation.mode === 'play' ? 'Ⅱ 일시정지' : '▶ 전체 재생';
     }
 
     function renderShape() {
       const shapeData = {
-        circle: { cart: '\\[x^2+y^2=R^2\\]', native: '\\[r=R\\]', label: '극좌표계', text: '중심에서의 거리가 일정한 원은 극좌표에서 r=R로 짧게 나타납니다.' },
-        cylinder: { cart: '\\[x^2+y^2=R^2\\]', native: '\\[r=R\\]', label: '원기둥좌표계', text: '원기둥 옆면은 중심축에서의 거리 r이 일정하므로 원기둥좌표가 자연스럽습니다.' },
-        sphere: { cart: '\\[x^2+y^2+z^2=R^2\\]', native: '\\[\\rho=R\\]', label: '구면좌표계', text: '구의 표면은 원점에서의 거리 ρ가 일정하므로 구면좌표에서 단순해집니다.' }
+        circle: { cart: '\\[x^{2}+y^{2}=R^{2}\\]', native: '\\[r=R\\]', label: '극좌표계', text: '중심에서의 거리가 일정한 원은 극좌표에서 r=R로 짧게 나타납니다.' },
+        cylinder: { cart: '\\[x^{2}+y^{2}=R^{2}\\]', native: '\\[r=R\\]', label: '원기둥좌표계', text: '원기둥 옆면은 중심축에서의 거리 r이 일정하므로 원기둥좌표가 자연스럽습니다.' },
+        sphere: { cart: '\\[x^{2}+y^{2}+z^{2}=R^{2}\\]', native: '\\[\\rho=R\\]', label: '구면좌표계', text: '구의 표면은 원점에서의 거리 ρ가 일정하므로 구면좌표에서 단순해집니다.' }
       }[state.shape];
       $('shapeCartesian').innerHTML = shapeData.cart;
       $('shapeNative').innerHTML = shapeData.native;
       $('shapeNativeLabel').textContent = shapeData.label;
       $('shapeExplanation').textContent = shapeData.text;
       document.querySelectorAll('.shape-button').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.shape === state.shape)));
-      if (window.MathJax?.typesetPromise) window.MathJax.typesetPromise([$(`shapeCartesian`), $(`shapeNative`)]).catch(() => {});
+      if (window.MathJax?.typesetPromise) window.MathJax.typesetPromise([$('shapeCartesian'), $('shapeNative')]).catch(() => {});
+    }
+
+    /* ---------- 조작부 ---------- */
+
+    function updateModePanels() {
+      $('mode2d').setAttribute('aria-selected', String(state.mode === '2d'));
+      $('mode3d').setAttribute('aria-selected', String(state.mode === '3d'));
+      $('twoDPanel').classList.toggle('hidden', state.mode !== '2d');
+      $('threeDPanel').classList.toggle('hidden', state.mode !== '3d');
+      $('cartesianZField').classList.toggle('hidden', state.mode !== '3d');
+    }
+
+    function updateCoordinateInputs() {
+      const point = state.mode === '2d' ? state.point2d : state.point3d;
+      $('cartesianX').value = inputNumber(point.x);
+      $('cartesianY').value = inputNumber(point.y);
+      $('cartesianZ').value = inputNumber(state.point3d.z);
+    }
+
+    function buildCaseButtons() {
+      const list = $('caseList');
+      list.replaceChildren();
+      const pair = values => mathml(tuple(values.map(mathNumber)));
+      const cases = state.mode === '2d'
+        ? [
+            { id: 'worksheet', text: '활동 2 ', math: pair([1, Math.sqrt(3)]) },
+            { id: 'threefour', text: '도입 ', math: pair([3, 4]) },
+            { id: 'custom', text: '직접 입력', math: '' }
+          ]
+        : [
+            { id: 'activity5', text: '활동 5 ', math: pair([3, 3, 3 * Math.SQRT2]) },
+            { id: 'activity4', text: '활동 4 ', math: pair([1, Math.sqrt(3), 3]) },
+            { id: 'distance', text: '활동 3 ', math: pair([2, 3, 6]) },
+            { id: 'custom', text: '직접 입력', math: '' }
+          ];
+      const current = state.mode === '2d' ? state.twoDCase : state.threeDCase;
+      cases.forEach(item => {
+        const button = document.createElement('button');
+        button.className = 'case-button';
+        button.type = 'button';
+        button.innerHTML = item.text + item.math;
+        button.setAttribute('aria-pressed', String(current === item.id));
+        button.addEventListener('click', () => selectCase(item.id));
+        list.appendChild(button);
+      });
+    }
+
+    function selectCase(id) {
+      if (state.mode === '2d') {
+        state.twoDCase = id;
+        if (id === 'worksheet') state.point2d = { x: 1, y: Math.sqrt(3) };
+        if (id === 'threefour') state.point2d = { x: 3, y: 4 };
+      } else {
+        state.threeDCase = id;
+        if (id === 'activity5') state.point3d = { x: 3, y: 3, z: 3 * Math.SQRT2 };
+        if (id === 'activity4') state.point3d = { x: 1, y: Math.sqrt(3), z: 3 };
+        if (id === 'distance') state.point3d = { x: 2, y: 3, z: 6 };
+      }
+      resetAnimation();
+      renderAll();
+    }
+
+    function applyCartesianInputs() {
+      const x = Number($('cartesianX').value);
+      const y = Number($('cartesianY').value);
+      const z = Number($('cartesianZ').value);
+      const values = state.mode === '2d' ? [x, y] : [x, y, z];
+      if (values.some(value => !Number.isFinite(value))) {
+        $('coordinateInputStatus').textContent = '모든 좌표값을 유한한 숫자로 입력하세요.';
+        return;
+      }
+      if (Math.hypot(...values) < 1e-6) {
+        $('coordinateInputStatus').textContent = '원점은 방향각을 정할 수 없습니다. 다른 점을 입력하세요.';
+        return;
+      }
+      if (state.mode === '2d') {
+        state.point2d = { x, y };
+        state.twoDCase = 'custom';
+      } else {
+        state.point3d = { x, y, z };
+        state.threeDCase = 'custom';
+      }
+      $('coordinateInputStatus').innerHTML = `직교좌표 ${mathml(tuple(values.map(mathNumber)))}를 반영했습니다.`;
+      resetAnimation();
+      renderAll();
+    }
+
+    function setDirection(direction) {
+      state.direction = direction;
+      $('directionRead').setAttribute('aria-pressed', String(direction === 'read'));
+      $('directionBuild').setAttribute('aria-pressed', String(direction === 'build'));
+      resetAnimation();
+      renderAll();
+    }
+
+    /* ---------- 렌더 ---------- */
+
+    function drawScene() {
+      if (state.mode === '2d') draw2D(); else draw3D();
+      updateStepUi();
+      updatePanels();
     }
 
     function renderAll() {
-      updateModeButtons();
-      if (state.mode === '2d') draw2D(); else render3D();
-      updateFormulaAndText();
+      updateModePanels();
+      buildCaseButtons();
+      updateCoordinateInputs();
+      drawScene();
       renderShape();
     }
 
     function renderLoop() {
-      Object.values(threeViews).forEach(view => { view.controls.update(); view.renderer.render(view.scene, view.camera); view.labels.render(view.scene, view.camera); });
+      if (state.mode === '3d') {
+        Object.values(threeViews).forEach(view => {
+          view.controls.update();
+          view.renderer.render(view.scene, view.camera);
+          view.labels.render(view.scene, view.camera);
+        });
+      }
       requestAnimationFrame(renderLoop);
     }
 
-    function setup3D() {
-      threeViews.cart = create3DView('cart3dHost', 'cart');
-      threeViews.cyl = create3DView('cyl3dHost', 'cyl');
-      threeViews.sph = create3DView('sph3dHost', 'sph');
-      renderLoop();
+    function svgPointer(event) {
+      stopTimer();
+      animation.mode = 'idle';
+      animation.progress = 1;
+      const svg = event.currentTarget;
+      const rect = svg.getBoundingClientRect();
+      const vx = (event.clientX - rect.left) / rect.width * 500;
+      const vy = (event.clientY - rect.top) / rect.height * 380;
+      const x = clamp((vx - X0) / UNIT, -5.6, 5.6);
+      const y = clamp((Y0 - vy) / UNIT, -4.4, 4.4);
+      if (Math.hypot(x, y) < .12) return;
+      state.point2d = { x, y };
+      state.twoDCase = 'custom';
+      renderAll();
     }
 
-    $('mode2d').addEventListener('click', () => { stopAnimation(); state.mode = '2d'; resetAnimation(); renderAll(); });
-    $('mode3d').addEventListener('click', () => { stopAnimation(); state.mode = '3d'; resetAnimation(); renderAll(); });
+    /* ---------- 이벤트 ---------- */
+
+    $('mode2d').addEventListener('click', () => { state.mode = '2d'; resetAnimation(); renderAll(); });
+    $('mode3d').addEventListener('click', () => { state.mode = '3d'; resetAnimation(); renderAll(); });
     $('directionRead').addEventListener('click', () => setDirection('read'));
     $('directionBuild').addEventListener('click', () => setDirection('build'));
-    $('playButton').addEventListener('click', playAnimation);
-    $('previousButton').addEventListener('click', () => advanceStep(-1));
-    $('nextButton').addEventListener('click', () => advanceStep(1));
-    $('resetButton').addEventListener('click', () => { stopAnimation(); resetAnimation(); renderAll(); });
+    $('playButton').addEventListener('click', playAll);
+    $('previousButton').addEventListener('click', previousStep);
+    $('nextButton').addEventListener('click', nextStep);
+    $('resetButton').addEventListener('click', () => { resetAnimation(); drawScene(); });
     $('applyCartesianButton').addEventListener('click', applyCartesianInputs);
     document.querySelectorAll('.coordinate-inputs input').forEach(input => input.addEventListener('keydown', event => {
       if (event.key === 'Enter') applyCartesianInputs();
@@ -852,12 +1332,16 @@
       $(id).addEventListener('pointermove', event => { if (event.buttons) svgPointer(event); });
     });
     window.addEventListener('keydown', event => {
-      if (event.key === 'ArrowRight') advanceStep(1);
-      if (event.key === 'ArrowLeft') advanceStep(-1);
-      if (event.key === ' ') { event.preventDefault(); playAnimation(); }
+      if (event.target instanceof HTMLInputElement) return;
+      if (event.key === 'ArrowRight') { event.preventDefault(); nextStep(); }
+      if (event.key === 'ArrowLeft') { event.preventDefault(); previousStep(); }
+      if (event.key === ' ') { event.preventDefault(); playAll(); }
     });
 
-    setup3D();
+    threeViews.cart = create3DView('cart3dHost', 'cart');
+    threeViews.cyl = create3DView('cyl3dHost', 'cyl');
+    threeViews.sph = create3DView('sph3dHost', 'sph');
+    renderLoop();
     renderAll();
   </script>
 </body>
