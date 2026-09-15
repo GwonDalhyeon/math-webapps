@@ -207,3 +207,26 @@ details.attempt-details summary { cursor: pointer; color: var(--muted); font-siz
   .card { box-shadow: none; break-inside: avoid; }
   @page { size: A4; margin: 15mm; }
 }
+
+/* 점자 자모 이름 줄 (N2) */
+.cell-labels { display: flex; flex-wrap: wrap; gap: 12px; }
+.cell-label { width: 53px; text-align: center; font-size: 13px; color: #6b6558; }
+
+/* 질문 설계판 번호 블록 (N15) */
+.number-palette { display: flex; flex-wrap: wrap; gap: 8px; }
+.number-chip { min-width: 44px; min-height: 44px; padding: 0 12px; border: 1px solid #c8c2b4; border-radius: 12px; background: #fff; font-size: 16px; font-weight: 700; color: #2c3440; cursor: grab; }
+.number-chip.selected { border-color: #2f6fed; box-shadow: 0 0 0 2px rgba(47,111,237,.2); background: #eef3ff; }
+.number-chip.in-box { min-width: 0; min-height: 36px; font-weight: 600; cursor: pointer; }
+.question-box { display: grid; gap: 8px; padding: 14px; border: 2px dashed #c8c2b4; border-radius: 16px; background: #fbfaf5; }
+.question-box h3 { margin: 0; font-size: 1rem; }
+.question-box.drop-target { border-color: #2f6fed; background: #eef3ff; }
+.chip-row { display: flex; flex-wrap: wrap; gap: 6px; min-height: 44px; align-items: center; }
+
+/* 조립판 블록 끌어 옮기기 */
+.circuit-node[draggable="true"] { cursor: grab; }
+.circuit-node.dragging { opacity: .5; }
+.circuit-node.drop-target { outline: 2px solid #2f6fed; outline-offset: 2px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .circuit-node.dragging { opacity: 1; }
+}
