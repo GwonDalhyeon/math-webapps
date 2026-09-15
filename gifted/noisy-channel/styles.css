@@ -348,3 +348,31 @@ input[type="range"] { min-height:44px; }
 .mascot-bubble { position:absolute; bottom:calc(100% + 14px); left:0; width:300px; max-width:calc(100vw - 120px); }
 .matrix-scroll-help { display:none; margin:0; }
 @media (max-width:700px) { .matrix-scroll-help { display:block; } .mascot-bubble { left:-40px; } }
+
+/* 블록이 무엇을 하는지 카드와 팔레트에 한 줄로 적는다(명세서 §17-6 ①). */
+.node-role { color: var(--muted); font-size: 12px; font-weight: 600; line-height: 1.35; }
+.palette button { display: grid; gap: 2px; text-align: left; }
+.palette-name { font-weight: 800; }
+.palette-role { color: var(--muted); font-size: 12px; font-weight: 600; }
+
+/* 한 번의 전송이 블록을 지나며 어떻게 바뀌는지 보여준다(명세서 §17-6 ②). */
+.trace-box { display: grid; gap: 8px; padding: 14px; border: 1px solid var(--line); border-radius: 12px; background: #fbfaf6; }
+.trace-box h3 { margin: 0; font-size: 1rem; }
+.trace { display: grid; gap: 6px; overflow-x: auto; }
+.trace-row { display: grid; grid-template-columns: 116px minmax(0, 1fr); gap: 4px 10px; align-items: center; animation: trace-in .28s ease both; animation-delay: calc(var(--i) * .18s); }
+.trace-label { color: var(--ink); font-size: 13px; font-weight: 800; }
+.trace-bits { display: flex; flex-wrap: nowrap; gap: 2px; }
+.trace-bit { display: inline-grid; place-items: center; min-width: 17px; height: 22px; border-radius: 4px; background: #eeebe3; font-size: 12px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.trace-bit.gap { margin-left: 7px; }
+.trace-bit.flip { color: #fff; background: var(--red); }
+.trace-bit.fixed { color: #fff; background: #1f9254; }
+.trace-note { grid-column: 2; color: var(--muted); font-size: 12px; }
+.trace-verdict { margin: 0; font-size: 13px; font-weight: 800; }
+.trace-verdict.ok { color: #1f9254; }
+.trace-verdict.fail { color: var(--red); }
+@keyframes trace-in { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .trace-row { animation: none; } }
+@media (max-width: 700px) {
+  .trace-row { grid-template-columns: minmax(0, 1fr); }
+  .trace-note { grid-column: 1; }
+}

@@ -836,9 +836,24 @@ function circuitBlockLabel(type) {
   return ({ message: '메시지 8비트', repeat3: '3번 반복', repeat5: '5번 반복', noise: '잡음 구간', majority: '다수결', parityEncode: '검사 비트 붙이기', parityCheck: '검사 비트 확인', receiver: '받은 메시지' })[type] || type;
 }
 
+/* 팔레트에 이름만 놓여 있어 블록이 무엇을 하는 것인지 알 수 없었다(명세서 §17-6 ①).
+   각 블록이 하는 일만 한 줄로 적는다. 정답 순서는 적지 않는다(§13). */
+const BLOCK_ROLE = {
+  message: '보낼 8비트',
+  repeat3: '같은 신호를 3번 보낸다',
+  repeat5: '같은 신호를 5번 보낸다',
+  noise: '여기를 지나며 일부 비트가 뒤집힌다',
+  majority: '여러 번 받은 것 중 많은 쪽을 고른다',
+  parityEncode: '1의 개수가 짝수가 되도록 검사 비트 1개를 붙인다',
+  parityCheck: '1의 개수가 홀수면 오류가 있다고 알린다',
+  receiver: '받는 쪽에 도착한 신호'
+};
+
+function circuitBlockRole(type) { return BLOCK_ROLE[type] || ''; }
+
 function circuitNode(type, index, selected, fixed = false) {
   return `<div class="circuit-node ${fixed ? 'fixed' : ''} ${selected === index ? 'selected' : ''}" data-node-index="${index}" ${fixed ? '' : 'draggable="true"'} tabindex="0" role="button" aria-label="${esc(circuitBlockLabel(type))} 블록${fixed ? ', 고정' : ', 끌어서 순서를 바꿀 수 있습니다'}">
-    <strong>${esc(circuitBlockLabel(type))}</strong><span class="muted small">${fixed ? '고정 블록' : '설계 블록'}</span>
+    <strong>${esc(circuitBlockLabel(type))}</strong><span class="node-role">${esc(circuitBlockRole(type))}</span>
     ${!fixed ? `<div class="node-actions"><button type="button" data-node-action="up" data-node-index="${index}" aria-label="앞으로 이동">←</button><button type="button" data-node-action="down" data-node-index="${index}" aria-label="뒤로 이동">→</button><button type="button" data-node-action="remove" data-node-index="${index}" aria-label="블록 삭제">삭제</button></div>` : ''}
   </div>`;
 }
@@ -888,20 +903,36 @@ function analyzeCircuit(nodes) {
 }
 
 /* 파이프라인 1회 실행. mode 'noise'는 각 비트를 NOISE_RATE로, 'one'은 정확히 한 비트를 뒤집는다. */
-function runPipelineOnce(nodes, mode) {
+/* 잡음이 없었다면 있어야 할 값과 어긋난 자리를 찾는다. */
+function wrongIndexes(signal, origin) {
+  const out = [];
+  for (let i = 0; i < signal.length; i += 1) if (signal[i] !== origin[i]) out.push(i);
+  return out;
+}
+
+/* steps 배열을 넘기면 한 번의 전송이 블록을 지나며 어떻게 바뀌는지 기록한다
+   (명세서 §17-6 ②). 시뮬레이션과 같은 함수를 쓰므로 표시와 계산이 갈라지지
+   않는다. 1000회 시행에서는 steps를 넘기지 않아 기록 비용이 들지 않는다. */
+function runPipelineOnce(nodes, mode, steps = null) {
   let signal = SOURCE.slice();
+  let origin = steps ? SOURCE.slice() : null;
   let groupSize = 1;
   let parityAttached = 0;
   let detected = false;
+  if (steps) steps.push({ label: '보낼 신호', type: 'start', signal: signal.slice(), wrong: [], fixed: [], groupSize: 1 });
   for (const type of nodes) {
+    let fixedHere = [];
     if (type === 'repeat3' || type === 'repeat5') {
       const k = type === 'repeat3' ? 3 : 5;
       const next = [];
-      for (const bit of signal) for (let i = 0; i < k; i += 1) next.push(bit);
+      const nextOrigin = steps ? [] : null;
+      for (let i = 0; i < signal.length; i += 1) for (let j = 0; j < k; j += 1) { next.push(signal[i]); if (steps) nextOrigin.push(origin[i]); }
       signal = next;
+      if (steps) origin = nextOrigin;
       groupSize *= k;
     } else if (type === 'parityEncode') {
       signal = signal.concat([signal.reduce((sum, bit) => sum + bit, 0) % 2]);
+      if (steps) origin = origin.concat([origin.reduce((sum, bit) => sum + bit, 0) % 2]);
       parityAttached += 1;
     } else if (type === 'noise') {
       if (mode === 'one') {
@@ -913,22 +944,73 @@ function runPipelineOnce(nodes, mode) {
     } else if (type === 'majority') {
       if (groupSize <= 1) continue;
       const next = [];
+      const nextOrigin = steps ? [] : null;
       for (let i = 0; i + groupSize <= signal.length; i += groupSize) {
         let ones = 0;
         for (let j = 0; j < groupSize; j += 1) ones += signal[i + j];
         /* 짝수 반복은 동점이 생긴다. 다수결로 정할 수 없으므로 한쪽을 무작위로 고른다. */
         next.push(ones * 2 === groupSize ? (Math.random() < 0.5 ? 1 : 0) : (ones * 2 > groupSize ? 1 : 0));
+        if (steps) {
+          let hadError = false;
+          for (let j = 0; j < groupSize; j += 1) if (signal[i + j] !== origin[i + j]) { hadError = true; break; }
+          /* 묶음 안에 뒤집힌 비트가 있었는데 원래 값으로 돌아온 자리 = 다수결이 고친 자리 */
+          if (hadError && next.at(-1) === origin[i]) fixedHere.push(next.length - 1);
+          nextOrigin.push(origin[i]);
+        }
       }
       signal = next;
+      if (steps) origin = nextOrigin;
       groupSize = 1;
     } else if (type === 'parityCheck') {
       if (!parityAttached) continue;
       detected = signal.reduce((sum, bit) => sum + bit, 0) % 2 !== 0;
       signal = signal.slice(0, -1);
+      if (steps) origin = origin.slice(0, -1);
       parityAttached -= 1;
+    } else {
+      continue;
     }
+    if (steps) steps.push({ label: circuitBlockLabel(type), type, signal: signal.slice(), wrong: wrongIndexes(signal, origin), fixed: fixedHere, groupSize, detected: type === 'parityCheck' ? detected : undefined });
   }
   return { signal, detected };
+}
+
+/* 표본 한 번을 기록한다. 너무 길면 화면에 담을 수 없으므로 기록하지 않는다. */
+const TRACE_MAX_BITS = 120;
+
+function capturePipelineTrace(nodes, mode) {
+  const steps = [];
+  runPipelineOnce(nodes, mode, steps);
+  if (steps.some(step => step.signal.length > TRACE_MAX_BITS)) return null;
+  return steps;
+}
+
+function traceHtml(steps) {
+  if (!Array.isArray(steps) || steps.length < 2) return '';
+  const last = steps.at(-1);
+  const same = last.signal.length === SOURCE_BITS && last.wrong.length === 0;
+  const rows = steps.map((step, index) => {
+    const bits = step.signal.map((bit, i) => {
+      const cls = step.fixed.includes(i) ? ' fixed' : step.wrong.includes(i) ? ' flip' : '';
+      const gap = step.groupSize > 1 && i > 0 && i % step.groupSize === 0 ? ' gap' : '';
+      return `<span class="trace-bit${cls}${gap}">${bit}</span>`;
+    }).join('');
+    const notes = [`${step.signal.length}비트`];
+    if (step.type === 'noise') notes.push(step.wrong.length ? `뒤집힌 자리 ${step.wrong.length}개` : '이번에는 뒤집히지 않았습니다');
+    if (step.fixed.length) notes.push(`고친 자리 ${step.fixed.length}개`);
+    if (step.type === 'parityCheck') notes.push(step.detected ? '홀수 · 오류 있음' : '짝수 · 이상 없음');
+    return `<div class="trace-row" style="--i:${index}">
+      <span class="trace-label">${index === 0 ? '' : '<span aria-hidden="true">↓ </span>'}${esc(step.label)}</span>
+      <span class="trace-bits">${bits}</span>
+      <span class="trace-note">${esc(notes.join(' · '))}</span>
+    </div>`;
+  }).join('');
+  return `<div class="trace-box">
+    <h3>한 번 보내 본 예</h3>
+    <div class="trace">${rows}</div>
+    <p class="trace-verdict ${same ? 'ok' : 'fail'}">${same ? '✓ 원본 8비트와 같습니다.' : '! 원본과 다릅니다.'}</p>
+    <p class="muted small" style="margin:0">이건 <strong>한 번</strong> 보낸 예입니다. 위의 성공률은 ${TRIALS}번 보낸 결과이므로, 이 한 번이 성공해도 성공률은 낮을 수 있습니다.</p>
+  </div>`;
 }
 
 /* 1000회 시행의 상대도수를 낸다. N10은 한 비트 오류를 강제로 넣어 탐지율을 본다. */
@@ -1049,7 +1131,7 @@ function renderCircuitScreen(id) {
   }).join('');
 
   const palette = ['repeat3', 'repeat5', 'majority', 'parityEncode', 'parityCheck']
-    .map(type => `<button type="button" data-add-block="${type}">+ ${circuitBlockLabel(type)}</button>`).join('');
+    .map(type => `<button type="button" data-add-block="${type}"><span class="palette-name">+ ${esc(circuitBlockLabel(type))}</span><span class="palette-role">${esc(circuitBlockRole(type))}</span></button>`).join('');
 
   const warnBox = info.warnings.length
     ? `<div class="result fail" role="status">${resultIcon('fail')} ${info.warnings.map(esc).join('<br>')}</div>`
@@ -1082,6 +1164,7 @@ function renderCircuitScreen(id) {
     </div>
     ${warnBox}
     <div>${resultBox}</div>
+    ${last && !stale && last.trace ? traceHtml(last.trace) : ''}
     <div class="button-row">
       <button id="run-circuit" class="primary-button" type="button">${esc(runLabel)}</button>
       <button id="open-circuit-guide" class="secondary-button" type="button">조작 안내</button>
@@ -1575,7 +1658,8 @@ function bindCircuit(stage) {
     const metric = simulateCircuit(circuit.nodes, stage);
     const verdict = judgeCircuit(metric, stage);
     const detail = circuitDetail(metric, stage);
-    circuit.lastResult = { version: circuit.version, verdict, detail, metric, blocks: circuit.nodes.slice() };
+    const trace = capturePipelineTrace(circuit.nodes, stage === 'N10' ? 'one' : 'noise');
+    circuit.lastResult = { version: circuit.version, verdict, detail, metric, blocks: circuit.nodes.slice(), trace };
     logEvent('attempt', viewId, { detail, attempt: { blocks: circuit.nodes.slice(), order: circuit.nodes.join(' > '), metric: { ...metric }, goal: STAGE_COPY[stage][2], version: circuit.version } }, verdict);
     if (verdict === 'ok') {
       mascotState = { mood: 'cheer', text: '목표 조건을 만족했어요. 다른 구성과도 비교해 보세요.', open: true };
