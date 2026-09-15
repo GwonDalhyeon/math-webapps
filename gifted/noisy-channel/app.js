@@ -98,7 +98,7 @@ const HINTS = {
 const ACTIVITY_SECTIONS = {
   N0: '0 시작', N1: '1 보내면 망가진다', N2_operate: '1 보내면 망가진다', N2_write: '1 보내면 망가진다', N3: '1 보내면 망가진다',
   N4: '2 다수결', N5_operate: '2 다수결', N5_write: '2 다수결', N6_predict: '3 통신로 설계', N6_operate: '3 통신로 설계', N7: '3 통신로 설계', N8: '3 통신로 설계', N9: '3 통신로 설계',
-  N10: '4 어디가 틀렸나', N11: '4 어디가 틀렸나', N12: '4 어디가 틀렸나', N13_observe: '4 어디가 틀렸나', N13_write: '4 어디가 틀렸나', N14: '5 질문 세 번', N15_operate: '5 질문 세 번', N15_write: '5 질문 세 번', N16: '5 질문 세 번',
+  N10: '4 어디가 틀렸나', N11: '4 어디가 틀렸나', N12: '4 어디가 틀렸나', N13_observe: '4 어디가 틀렸나', N13_write: '4 어디가 틀렸나', N14: '5 질문으로 찾기', N15_operate: '5 질문 세 번', N15_write: '5 질문 세 번', N16: '5 질문 세 번',
   N17: '6 얼마나 멀어야', N18: '6 얼마나 멀어야', N19: '7 닫기', N20: '7 닫기', N21: '7 닫기'
 };
 
@@ -109,7 +109,6 @@ const uid = () => `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 
 function defaultCircuit(stage = 'N6') {
   const fixed = ['message', 'receiver'];
-  if (stage === 'N10') return { nodes: ['message', 'parityEncode', 'noise', 'parityCheck', 'receiver'], selected: null, version: 0, lastResult: null };
   return { nodes: ['message', 'noise', 'receiver'], selected: null, version: 0, lastResult: null, fixed };
 }
 
@@ -182,6 +181,18 @@ function brailleLabelRow(cells) {
   return `<div class="cell-labels" aria-hidden="true">${cells.map(cell => `<span class="cell-label">${esc(cell.sym)}</span>`).join('')}</div>`;
 }
 
+// One real six-dot cell, prefixed with two zero padding bits, forms the 8-bit example.
+const MAJORITY_SOURCE = [0, 0, ...dotsToBits(BRAILLE.medial['ㅜ'])];
+const MAJORITY_ROWS = [[0,3,6],[1,4,7],[2,5]].map(errors => MAJORITY_SOURCE.map((bit,index) => errors.includes(index) ? bit ^ 1 : bit));
+function majoritySource(activity = 'N4') { return state.screens[activity].exampleVersion === 1 ? [1,0,1,0,1,activity === 'N4' ? 1 : 0,1,1] : MAJORITY_SOURCE; }
+
+function restoredBraille(answer, success) {
+  if (state.screens.N4.exampleVersion === 1) return `<div class="evidence">이전 예제의 복원 신호: ${answer.map(value => value === null ? '·' : value).join(' ')} · ${success ? '복원 완료' : '판단 중'}</div>`;
+  const ready = answer.length === 8 && answer.every(value => value !== null);
+  const bits = Array.from({length:6}, (_,i) => answer[i+2] ?? 0);
+  return `<div class="braille-card"><strong>복원 점자</strong><span class="muted small">8비트 중 앞 2비트는 0으로 채운 여백이고, 뒤 6비트가 점 번호 1~6입니다.</span>${brailleHtml([{type:'medial',sym:success?'ㅜ':'선택한 점형',bits}])}<output>${!ready ? '아직 고르지 않은 칸이 있습니다.' : success ? '✓ 복원된 글자: ㅜ' : '아직 원래 점형을 복원하지 못했습니다.'}</output></div>`;
+}
+
 /* 6×6 정보 칸은 실제 한글 점자 여섯 자모다(명세서 §18).
    각 행이 한 자모의 점형(6비트), 각 열이 점 번호 1~6번이다.
    이전에는 (r*5+c*3+r+c)%2 로 채웠는데 이 식은 항상 0이라 격자가 통째로
@@ -208,19 +219,22 @@ function initialState() {
     screens: {
       N2: { rate: 10, sends: 0, word: '', cells: null },
       N3: { prediction: '', locked: false, reason: '' },
-      N4: { answer: Array(8).fill(null), checked: false },
-      N5: { count: 3, answer: [], checked: false, ties: [] },
+      N4: { answer: Array(8).fill(null), checked: false, exampleVersion: 2 },
+      N5: { count: 3, answer: [], checked: false, ties: [], observedCounts: [], exampleVersion: 2 },
       N6: { predictionLocked: false },
       N12: { round: 0, guesses: [], board: null },
       N14: { prediction: '', confirmed: false },
       N15: { groups: [[], [], []], selected: null, checked: false },
       N16: { round: 0, guesses: [], cases: [] },
-      N17: { codes: ['000000', '011011', '101101', '110110'], query: null, guess: '', tested: false }
+      N17: { codes: ['000000', '000000', '000000', '000000'], query: null, guess: '', tested: false }
     },
     circuits: { N6: defaultCircuit('N6'), N7: defaultCircuit('N7'), N8: defaultCircuit('N8'), N10: defaultCircuit('N10') },
     parity: createParityGrid(),
     submitted: { at: 0, code: '', status: '' },
     log: [],
+    attemptStats: {},
+    writeMeta: {},
+    predicts: {},
     lastSavedAt: 0
   };
 }
@@ -228,6 +242,10 @@ function initialState() {
 let state = loadState();
 let saveTimer = null;
 let mascotState = { mood: 'idle', text: '조작할 곳을 찾았다면, 네 방법으로 먼저 시험해 보세요.', open: false };
+let submissionInFlight = false;
+let resumeView = state.screenId;
+let feedbackPending = null;
+if (resumeView !== 'N0') state.screenId = 'N0';
 
 function loadState() {
   try {
@@ -237,6 +255,21 @@ function loadState() {
     const fresh = initialState();
     const merged = { ...fresh, ...parsed, student: { ...fresh.student, ...(parsed.student || {}) }, screens: { ...fresh.screens, ...(parsed.screens || {}) }, circuits: { ...fresh.circuits, ...(parsed.circuits || {}) }, submitted: { ...fresh.submitted, ...(parsed.submitted || {}) } };
     merged.log = Array.isArray(parsed.log) ? parsed.log : [];
+    Object.keys(fresh.screens).forEach(key => { merged.screens[key] = { ...fresh.screens[key], ...(parsed.screens?.[key] || {}) }; });
+    for (const key of ['N4','N5']) if (parsed.screens?.[key] && !parsed.screens[key].exampleVersion) merged.screens[key].exampleVersion = 1;
+    merged.views = parsed.views || {};
+    merged.guideSeen = parsed.guideSeen || {};
+    merged.attemptStats = parsed.attemptStats || {};
+    for (const screen of new Set(merged.log.map(item => item.screen))) {
+      if (merged.attemptStats[screen]) continue;
+      const attempts = merged.log.filter(item => item.screen === screen && item.kind === 'attempt');
+      const firstSuccess = attempts.findIndex(item => item.result === 'ok');
+      merged.attemptStats[screen] = { count: attempts.length, failures: attempts.filter(item => ['fail','partial'].includes(item.result)).length, firstSuccess: firstSuccess < 0 ? null : firstSuccess + 1 };
+    }
+    merged.writeMeta = parsed.writeMeta || {};
+    merged.predicts = parsed.predicts || {};
+    if (!SCREEN_ORDER.some(screen => screen.id === merged.screenId)) merged.screenId = 'N0';
+    if (merged.submitted.status === '준비 중') merged.submitted = { ...merged.submitted, at: 0, status: '전송이 중단되었습니다. 확인 후 다시 제출하세요.', result: 'fail' };
     merged.writes = parsed.writes || {};
     merged.hints = parsed.hints || {};
     merged.parity = parsed.parity && parsed.parity.data ? parsed.parity : fresh.parity;
@@ -246,12 +279,32 @@ function loadState() {
   }
 }
 
+function validateProgress(data) {
+  const object = value => value && typeof value === 'object' && !Array.isArray(value);
+  const bit = value => value === 0 || value === 1;
+  const matrix = (value, size, cell) => Array.isArray(value) && value.length === size && value.every(row => Array.isArray(row) && row.length === size && row.every(cell));
+  if (!object(data) || data.v !== 1 || !object(data.student) || typeof data.student.sid !== 'string' || typeof data.student.name !== 'string' || !object(data.screens) || !object(data.circuits) || !Array.isArray(data.log) || !SCREEN_ORDER.some(screen => screen.id === data.screenId)) return false;
+  if (!object(data.parity) || !matrix(data.parity.data, 6, bit) || !matrix(data.parity.values, 7, value => value === null || bit(value)) || !Array.isArray(data.parity.placed)) return false;
+  const fresh = initialState();
+  if (!Object.keys(fresh.screens).every(key => object(data.screens[key]))) return false;
+  if (!['N4','N5'].every(key => Array.isArray(data.screens[key].answer) && data.screens[key].answer.length <= 8 && data.screens[key].answer.every(value => value === null || bit(value)))) return false;
+  if (data.screens.N4.answer.length !== 8 || ![3,4,5].includes(data.screens.N5.count)) return false;
+  if (!['N12','N16'].every(key => Array.isArray(data.screens[key].guesses) && Number.isInteger(data.screens[key].round) && data.screens[key].round >= 0 && data.screens[key].round < 3)) return false;
+  if (!Array.isArray(data.screens.N16.cases) || !data.screens.N16.cases.every(value => Number.isInteger(value) && value >= 0 && value <= 7)) return false;
+  if (!Array.isArray(data.screens.N15.groups) || data.screens.N15.groups.length < 2 || data.screens.N15.groups.length > 4 || !data.screens.N15.groups.every(group => Array.isArray(group) && group.every(value => Number.isInteger(value) && value >= 1 && value <= 7))) return false;
+  if (!Array.isArray(data.screens.N17.codes) || data.screens.N17.codes.length !== 4 || !data.screens.N17.codes.every(code => /^[01]{6}$/.test(code))) return false;
+  return Object.keys(fresh.circuits).every(key => {
+    const nodes = data.circuits[key]?.nodes;
+    return Array.isArray(nodes) && nodes[0] === 'message' && nodes.at(-1) === 'receiver' && nodes.filter(type => type === 'noise').length === 1 && nodes.every(type => ['message','noise','receiver','repeat3','repeat5','majority','parityEncode','parityCheck'].includes(type));
+  });
+}
+
 function persist(immediate = false) {
   clearTimeout(saveTimer);
   const action = () => {
     try {
       state.lastSavedAt = Date.now();
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...state, screenId: state.screenId === 'N0' ? resumeView : state.screenId }));
       localStorage.setItem(LOG_KEY, JSON.stringify(state.log));
       const save = $('#save-state');
       if (save) save.textContent = `자동 저장됨 ${new Date(state.lastSavedAt).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}`;
@@ -263,9 +316,41 @@ function persist(immediate = false) {
   if (immediate) action(); else saveTimer = setTimeout(action, 300);
 }
 
+function protectedLogEntries(logs) {
+  const kept = new Set();
+  const first = new Set();
+  const success = new Set();
+  const latest = new Map();
+  for (const entry of logs) {
+    if (entry.kind !== 'attempt') continue;
+    if (!first.has(entry.screen)) { first.add(entry.screen); kept.add(entry); }
+    if (entry.result === 'ok' && !success.has(entry.screen)) { success.add(entry.screen); kept.add(entry); }
+    latest.set(entry.screen, entry);
+  }
+  latest.forEach(entry => kept.add(entry));
+  return kept;
+}
+
+function trimLogs(logs, limit = 2000) {
+  if (logs.length <= limit) return logs;
+  const keep = protectedLogEntries(logs);
+  for (let i = logs.length - 1; i >= 0 && keep.size < limit; i -= 1) keep.add(logs[i]);
+  return logs.filter(entry => keep.has(entry));
+}
+
 function logEvent(kind, screen, detail = {}, result = '') {
-  state.log.push({ t: Date.now(), screen, kind, ...detail, result, hintLevel: state.hints[screen] || 0 });
-  if (state.log.length > 2000) state.log = state.log.slice(-2000);
+  const entry = { t: Date.now(), screen, kind, ...detail, result, hintLevel: state.hints[screen] || 0 };
+  if (kind === 'attempt') {
+    const stats = state.attemptStats[screen] || { count: 0, failures: 0, firstSuccess: null };
+    stats.count += 1;
+    if (result === 'fail' || result === 'partial') stats.failures += 1;
+    if (result === 'ok' && stats.firstSuccess === null) stats.firstSuccess = stats.count;
+    state.attemptStats[screen] = stats;
+    entry.number = stats.count;
+    if (HINTS[screen] && ['ok','fail','partial'].includes(result)) feedbackPending = {screen,result};
+  }
+  state.log.push(entry);
+  state.log = trimLogs(state.log);
   persist();
 }
 
@@ -308,10 +393,12 @@ function navTo(id, { log = true } = {}) {
   if (!target) return;
   if (log && state.screenId !== id) logEvent('nav', state.screenId, { to: id });
   state.screenId = id;
+  if (id !== 'N0') resumeView = id;
   state.hintOpen = false;
   mascotState = { mood: 'idle', text: '', open: false };
   recordView(id);
   render();
+  $('#main-content')?.focus({ preventScroll: true });
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
@@ -329,15 +416,33 @@ function navigate(delta) {
 }
 
 function render() {
-  const info = screenInfo();
+  const focused = document.activeElement;
+  const focusId = focused?.id;
+  const focusData = focused?.dataset ? Object.entries(focused.dataset).map(([key, value]) => [key, value]) : [];
   currentIndex();
+  const info = screenInfo();
   recordView(info.id);
   $('#section-label').textContent = ACTIVITY_SECTIONS[info.id] || '';
   $('#screen-root').innerHTML = renderScreen(info.id);
   bindScreen(info.id);
   updateNavigation();
   renderActivityMenu();
+  if (feedbackPending && feedbackPending.screen===state.screenId) {
+    const {screen,result}=feedbackPending;
+    feedbackPending=null;
+    const level=advanceHint(screen);
+    const stage=screen==='N6_operate'?'N6':screen;
+    const metric=state.circuits[stage]?.lastResult?.metric;
+    const message=result==='ok' ? '목표 조건을 만족했습니다. 결과를 근거로 생각을 정리해 보세요.' : state.circuits[stage] ? circuitHint(stage,level,metric) : hintTextFor(screen,Math.max(1,level));
+    const key=`feedback:${screen}`;
+    const isNew=state.guideSeen[key]!==message;
+    mascotState={mood:result==='ok'?'cheer':hintMood(level),text:message,open:isNew};
+    state.guideSeen[key]=message;
+  }
+  showFirstGuide(info.id);
   renderMascot();
+  if (focusId) document.getElementById(focusId)?.focus({ preventScroll: true });
+  else if (focusData.length) $$('button, [tabindex]').find(element => focusData.every(([key, value]) => element.dataset[key] === value))?.focus({ preventScroll: true });
 }
 
 function updateNavigation() {
@@ -393,6 +498,7 @@ function writeBox(id, prompt, kind = 'explain', options = {}) {
   return `<div class="write-item">
     <label for="write-${esc(id)}">${esc(prompt)}</label>
     ${options.hint ? `<small>${esc(options.hint)}</small>` : ''}
+    ${state.writeMeta[id] && state.log.some(item => item.kind === 'attempt' && item.t > state.writeMeta[id].at && evidenceScreens(id).includes(item.screen)) ? '<small>이후 실험 결과가 추가되었습니다. 기존 설명과 비교해 보세요.</small>' : ''}
     <textarea id="write-${esc(id)}" data-write="${esc(id)}" data-kind="${esc(kind)}" ${locked ? 'disabled' : ''} placeholder="실험 결과를 근거로 적어 보세요.">${esc(value)}</textarea>
     ${locked ? '<small class="muted">확정한 예측은 원 기록으로 보존됩니다.</small>' : ''}
   </div>`;
@@ -401,8 +507,15 @@ function writeBox(id, prompt, kind = 'explain', options = {}) {
 function evidenceFor(ids = []) {
   const logs = state.log.filter(item => item.kind === 'attempt' && ids.includes(item.screen));
   if (!logs.length) return '<div class="evidence muted">아직 실행 기록이 없습니다.</div>';
-  const rows = logs.slice(-8).map((item, index) => `<div>${index + 1}차 — ${esc(item.detail || item.result || '실행 기록')} ${item.result === 'ok' ? '✓' : ''}</div>`).join('');
-  return `<details class="attempt-details"><summary>이 섹션의 시도 이력 ${logs.length}회</summary><div class="evidence">${rows}</div></details>`;
+  const rows = logs.map((item, index) => `<div>${esc(screenInfo(item.screen).label)} ${item.number || index + 1}차 — ${esc(item.detail || item.result || '실행 기록')} ${item.result === 'ok' ? '✓' : ''}</div>`).join('');
+  return `<div class="evidence"><strong>최근 실행</strong><br>${esc(logs.at(-1).detail || logs.at(-1).result)}</div><details class="attempt-details"><summary>이 섹션의 시도 이력 ${logs.length}회</summary><div class="evidence">${rows}</div></details>`;
+}
+
+function evidenceScreens(field) {
+  if (field.startsWith('N9') || field.startsWith('N20')) return ['N6_operate','N7','N8','N10','N11','N12','N15_operate'];
+  if (field.startsWith('N13')) return ['N12','N13_observe'];
+  if (field.startsWith('N15')) return ['N15_operate'];
+  return [field.split('_')[0] + '_operate', field.split('_')[0]];
 }
 
 function renderN0() {
@@ -437,7 +550,9 @@ function renderN2Operate() {
   const n2 = state.screens.N2;
   const word = messageWord();
   const built = messageCells(word);
-  const cells = n2.cells && n2.cells.length === built.cells.length ? n2.cells : transmitCells(built.cells, n2.rate);
+  const sourceKey = JSON.stringify(built.cells);
+  if (!n2.cells || n2.sourceKey !== sourceKey) { n2.cells = transmitCells(built.cells, n2.rate); n2.sourceKey = sourceKey; }
+  const cells = n2.cells;
   const changed = cells.reduce((count, cell) => count + (cell.received || cell.bits).reduce((acc, bit, index) => acc + (bit !== cell.bits[index] ? 1 : 0), 0), 0);
   const total = cells.length * 6;
   return `${heading('1 보내면 망가진다 · 관찰', '내 이름은 어디까지 읽을 수 있을까?', '오류율을 바꾸고 같은 낱말을 다시 보내 보세요. 같은 비율이어도 바뀌는 자리는 달라집니다.')}
@@ -465,17 +580,17 @@ function renderN3() {
 }
 
 function rowsHtml(rows, answer = [], editable = false, ties = []) {
-  return `<div class="bit-display">${rows.map((row, r) => `<div class="bit-row"><span class="row-label">${r + 1}차</span>${row.map((bit, c) => `<span class="bit" aria-label="${r + 1}차 ${c + 1}번째 ${bit}">${bit}</span>`).join('')}</div>`).join('')}${editable ? `<div class="bit-row"><span class="row-label">내 답</span>${answer.map((value, c) => `<button type="button" class="bit-button ${value === null ? 'empty' : 'selected'} ${ties.includes(c) ? 'tie' : ''}" data-majority-index="${c}" aria-label="${c + 1}번째 답 ${value === null ? '미선택' : value}">${value === null ? '·' : value}</button>`).join('')}</div>` : ''}</div>`;
+  return `<p class="matrix-scroll-help muted small">8번째 자리까지 보려면 표를 가로로 밀어 보세요.</p><div class="bit-display">${rows.map((row, r) => `<div class="bit-row"><span class="row-label">${r + 1}차</span>${row.map((bit, c) => `<span class="bit" aria-label="${r + 1}차 ${c + 1}번째 ${bit}">${bit}</span>`).join('')}</div>`).join('')}${editable ? `<div class="bit-row"><span class="row-label">내 답</span>${answer.map((value, c) => `<button type="button" class="bit-button ${value === null ? 'empty' : 'selected'} ${ties.includes(c) ? 'tie' : ''}" data-majority-index="${c}" aria-label="${c + 1}번째 답 ${value === null ? '미선택' : value}">${value === null ? '·' : value}</button>`).join('')}</div>` : ''}</div>`;
 }
 
 function renderN4() {
-  const rows = [[1,0,1,0,1,0,1,1], [1,0,0,0,1,1,1,1], [1,1,1,0,0,1,1,0]];
+  const rows = state.screens.N4.exampleVersion === 1 ? [[1,0,1,0,1,0,1,1],[1,0,0,0,1,1,1,1],[1,1,1,0,0,1,1,0]] : MAJORITY_ROWS;
   const n4 = state.screens.N4;
   const correct = rows[0].map((_, c) => rows.map(row => row[c]).filter(Boolean).length >= 2 ? 1 : 0);
   const chosen = n4.answer.every(value => value !== null);
   const success = chosen && n4.answer.every((value, i) => value === correct[i]);
-  return `${heading('2 다수결', '겹쳐 놓고, 열마다 하나를 골라 보세요.', '세 줄을 한 열씩 비교해 내 답을 정합니다. 복원된 점자는 선택에 따라 바로 바뀝니다.')}
-  <div class="card stack">${rowsHtml(rows, n4.answer, true)}<div class="result ${success ? 'ok' : chosen ? 'fail' : ''}" role="status">${!chosen ? '8칸을 모두 선택해 보세요.' : success ? '복원된 메시지가 읽힙니다.' : '아직 깨진 부분이 있습니다. 어느 열인지 직접 다시 살펴보세요.'}</div><div class="button-row"><button id="reset-n4" class="secondary-button" type="button">선택 다시 하기</button><button id="open-n4-guide" class="secondary-button" type="button">조작 안내</button></div></div>`;
+  return `${heading('2 다수결', '겹쳐 놓고, 열마다 하나를 골라 보세요.', '세 줄을 한 열씩 비교해 내 답을 정합니다. 아래 점형은 선택에 따라 바로 바뀝니다.')}
+  <div class="card stack">${rowsHtml(rows, n4.answer, true)}${restoredBraille(n4.answer, success)}<div class="result ${success ? 'ok' : chosen ? 'fail' : ''}" role="status">${!chosen ? '8칸을 모두 선택해 보세요.' : success ? '✓ 각 열의 다수 값으로 복원했습니다.' : '아직 깨진 부분이 있습니다. 어느 열인지 직접 다시 살펴보세요.'}</div><div class="button-row"><button id="reset-n4" class="secondary-button" type="button">선택 다시 하기</button><button id="open-n4-guide" class="secondary-button" type="button">조작 안내</button></div></div>`;
 }
 
 function renderN5Operate() {
@@ -487,14 +602,18 @@ function renderN5Operate() {
   const hasTie = ties.length > 0;
   const correct = majorityAnswers(rows);
   const success = complete && !hasTie && answer.every((value, i) => value === correct[i]);
-  return `${heading('2 다수결 · 조작', '반복 횟수를 내가 정하면 무엇이 달라질까?', '3·4·5줄 중 하나를 골라 같은 방식으로 답을 정합니다. 4줄의 동점은 미리 알려 주지 않습니다.')}
-  <div class="card stack"><div class="choice-grid">${[3,4,5].map(count => `<div class="choice"><input id="n5-count-${count}" name="n5-count" type="radio" value="${count}" ${n5.count === count ? 'checked' : ''}><label for="n5-count-${count}">${count}줄 보기</label></div>`).join('')}</div>${rowsHtml(rows, answer, true)}<div class="result ${hasTie ? 'partial' : success ? 'ok' : complete ? 'fail' : ''}" role="status">${hasTie ? `동점인 열이 ${ties.map(value => value + 1).join(', ')}번째에 있습니다. 한쪽을 다수라고 정하기 어렵습니다.` : !complete ? '내 답 행을 채워 보세요.' : success ? '이 반복 횟수에서는 모든 열을 정할 수 있습니다.' : '선택한 답과 각 열의 값을 다시 비교해 보세요.'}</div><div class="button-row"><button id="reset-n5" class="secondary-button" type="button">답 다시 하기</button><button id="open-n5-guide" class="secondary-button" type="button">조작 안내</button></div></div>`;
+  return `${heading('2 다수결 · 조작', '반복 횟수를 내가 정하면 무엇이 달라질까?', '3·4·5줄 중 하나를 골라 같은 방식으로 답을 정합니다. 횟수를 바꾸면 어떤 차이가 생기는지 비교해 보세요.')}
+  <div class="card stack"><div class="choice-grid">${[3,4,5].map(count => `<div class="choice"><input id="n5-count-${count}" name="n5-count" type="radio" value="${count}" ${n5.count === count ? 'checked' : ''}><label for="n5-count-${count}">${count}줄 보기</label></div>`).join('')}</div>${rowsHtml(rows, answer, true, ties)}<div class="result ${hasTie ? 'partial' : success ? 'ok' : complete ? 'fail' : ''}" role="status">${hasTie ? `동점인 열이 ${ties.map(value => value + 1).join(', ')}번째에 있습니다. 한쪽을 다수라고 정하기 어렵습니다.` : !complete ? '내 답 행을 채워 보세요.' : success ? '이 반복 횟수에서는 모든 열을 정할 수 있습니다.' : '선택한 답과 각 열의 값을 다시 비교해 보세요.'}</div><div class="button-row"><button id="reset-n5" class="secondary-button" type="button">답 다시 하기</button><button id="open-n5-guide" class="secondary-button" type="button">조작 안내</button></div></div>`;
 }
 
 function repeatedRows(count) {
-  const base = [1,0,1,0,1,0,1,1];
-  return Array.from({ length: count }, (_, r) => base.map((bit, c) => ((r + c * 2 + (r === count - 1 ? 1 : 0)) % 5 === 0 ? 1 - bit : bit)));
+  const base = majoritySource('N5');
+  const rows = Array.from({ length: count }, (_, r) => base.map((bit, c) => ((r + c * 2 + (r === count - 1 ? 1 : 0)) % 5 === 0 ? 1 - bit : bit)));
+  // Four observations deliberately include a 2:2 column; odd counts stay decisive.
+  if (count === 4) rows.forEach((row, r) => { row[2] = r < 2 ? 0 : 1; });
+  return rows;
 }
+
 
 function majorityAnswers(rows) {
   return Array.from({ length: 8 }, (_, c) => {
@@ -508,8 +627,9 @@ function columnTies(rows) { return majorityAnswers(rows).map((v, i) => v === nul
 function renderN5Write() {
   const n5 = state.screens.N5;
   const rows = repeatedRows(n5.count);
+  const observedFour = (n5.observedCounts || []).includes(4);
   return `${heading('2 다수결 · 작성', '반복 횟수와 판단 방법을 돌아보세요.', `선택한 ${n5.count}줄의 결과와 동점 여부가 근거로 남아 있습니다.`)}
-  <div class="card stack"><div class="evidence">선택한 반복: ${n5.count}줄 · 동점 열: ${columnTies(rows).length ? columnTies(rows).map(i => i + 1).join(', ') : '없음'}</div><div class="writing-list">${writeBox('N5_method', '각 열에서 어떻게 판단했나요?', 'explain')}${writeBox('N5_compare', '왜 3번, 5번은 되는데 4번은 안 될까요?', 'explain')}</div>${evidenceFor(['N5_operate'])}</div>`;
+  <div class="card stack"><div class="evidence">선택한 반복: ${n5.count}줄 · 동점 열: ${columnTies(rows).length ? columnTies(rows).map(i => i + 1).join(', ') : '없음'}</div><div class="writing-list">${writeBox('N5_method', '각 열에서 어떻게 판단했나요?', 'explain')}${observedFour ? writeBox('N5_compare', '3·5줄과 4줄의 판단에는 어떤 차이가 있었나요?', 'explain') : '<div class="notice">4줄은 미관찰입니다. 반복 횟수 정하기로 돌아가 비교해 보세요.</div>' + writeBox('N5_compare', '선택한 횟수들을 비교하여 차이를 설명해 보세요.', 'explain')}</div>${evidenceFor(['N5_operate'])}</div>`;
 }
 
 function circuitBlockLabel(type) {
@@ -531,32 +651,35 @@ function circuitConfigFor(id) { return state.circuits[id] || state.circuits.N6; 
 const TRIALS = 1000;
 const SOURCE = [1, 0, 1, 1, 0, 0, 1, 0];
 const SOURCE_BITS = SOURCE.length;
+const MAX_SIGNAL_BITS = 4096;
 
 /* 난수 없이 길이만 따라가며 최종 길이·전송량·구조 경고를 구한다. */
 function analyzeCircuit(nodes) {
   let length = SOURCE_BITS;
   let groupSize = 1;
-  let parityAttached = false;
+  let parityAttached = 0;
   let noiseBits = 0;
   const warnings = [];
   for (const type of nodes) {
     if (type === 'repeat3' || type === 'repeat5') {
       const k = type === 'repeat3' ? 3 : 5;
       length *= k;
+      if (length > MAX_SIGNAL_BITS) return { canCompare: false, finalLength: length, noiseBits, warnings: [`중간 신호가 ${MAX_SIGNAL_BITS}비트를 넘습니다. 반복 블록을 줄여 시험해 보세요.`] };
       groupSize *= k;
     } else if (type === 'parityEncode') {
       length += 1;
-      parityAttached = true;
+      parityAttached += 1;
     } else if (type === 'noise') {
       noiseBits = length;
     } else if (type === 'majority') {
       if (groupSize <= 1) { warnings.push('다수결할 대상이 없습니다. 앞쪽에 반복 블록이 필요합니다.'); continue; }
+      if (length % groupSize !== 0) return { canCompare: false, finalLength: length, noiseBits, warnings: ['반복 묶음의 크기와 신호 길이가 맞지 않습니다. 블록 순서를 확인해 보세요.'] };
       length = Math.floor(length / groupSize);
       groupSize = 1;
     } else if (type === 'parityCheck') {
       if (!parityAttached) { warnings.push('검사할 검사 비트가 없습니다. 앞쪽에 패리티 붙이기가 필요합니다.'); continue; }
       length -= 1;
-      parityAttached = false;
+      parityAttached -= 1;
     }
   }
   const canCompare = length === SOURCE_BITS;
@@ -568,7 +691,7 @@ function analyzeCircuit(nodes) {
 function runPipelineOnce(nodes, mode) {
   let signal = SOURCE.slice();
   let groupSize = 1;
-  let parityAttached = false;
+  let parityAttached = 0;
   let detected = false;
   for (const type of nodes) {
     if (type === 'repeat3' || type === 'repeat5') {
@@ -579,7 +702,7 @@ function runPipelineOnce(nodes, mode) {
       groupSize *= k;
     } else if (type === 'parityEncode') {
       signal = signal.concat([signal.reduce((sum, bit) => sum + bit, 0) % 2]);
-      parityAttached = true;
+      parityAttached += 1;
     } else if (type === 'noise') {
       if (mode === 'one') {
         const at = Math.floor(Math.random() * signal.length);
@@ -602,7 +725,7 @@ function runPipelineOnce(nodes, mode) {
       if (!parityAttached) continue;
       detected = signal.reduce((sum, bit) => sum + bit, 0) % 2 !== 0;
       signal = signal.slice(0, -1);
-      parityAttached = false;
+      parityAttached -= 1;
     }
   }
   return { signal, detected };
@@ -777,7 +900,7 @@ function renderN9() {
   const n6 = state.writes.N6_predict || '미작성';
   const circuitLogs = state.log.filter(item => ['N6_operate','N7','N8'].includes(item.screen) && item.kind === 'attempt');
   return `${heading('3 통신로 설계 · 비교', '가장 정확한 방법과 가장 합리적인 방법은 같은가?', '예측과 실제 실행을 나란히 보고, 정확성과 전송량 사이의 선택을 자신의 말로 설명합니다.')}
-  <div class="card stack"><div class="two-column"><div class="evidence"><strong>처음 예측</strong><br>${esc(n3.prediction || '미작성')}<br><span class="muted">${esc(state.writes.N3_reason || '이유 미작성')}</span></div><div class="evidence"><strong>N6 통신로 예측</strong><br>${esc(n6)}</div></div>${evidenceFor(['N6_operate','N7','N8'])}<div class="writing-list">${writeBox('N9_reflect', '가장 정확한 방법과 가장 합리적인 방법은 같은가? 오늘 실험에서 예를 들어 쓰시오.', 'reflect')}</div>${circuitLogs.length ? `<details class="attempt-details"><summary>최근 실행 구성 ${circuitLogs.length}회</summary><div class="evidence">${circuitLogs.slice(-6).map(item => `<div>${esc(item.detail || '')}</div>`).join('')}</div></details>` : ''}</div>`;
+  <div class="card stack"><div class="two-column"><div class="evidence"><strong>${predictionEvidence('N3')}</strong><br>${esc(n3.prediction || '미작성')}<br><span class="muted">${esc(state.writes.N3_reason || '이유 미작성')}</span></div><div class="evidence"><strong>통신로 · ${predictionEvidence('N6')}</strong><br>${esc(n6)}</div></div>${evidenceFor(['N6_operate','N7','N8'])}<div class="writing-list">${writeBox('N9_reflect', '가장 정확한 방법과 가장 합리적인 방법은 같은가? 오늘 실험에서 예를 들어 쓰시오.', 'reflect')}</div>${circuitLogs.length ? `<details class="attempt-details"><summary>최근 실행 구성 ${circuitLogs.length}회</summary><div class="evidence">${circuitLogs.slice(-6).map(item => `<div>${esc(item.detail || '')}</div>`).join('')}</div></details>` : ''}</div>`;
 }
 
 function resultIcon(result) { return result === 'ok' ? '✓' : result === 'partial' ? '△' : result === 'fail' ? '!' : '·'; }
@@ -801,21 +924,16 @@ function parityExpected() {
 
 function checkParityGrid() {
   const grid = state.parity;
+  const full = grid.values.map((row,r) => row.map((value,c) => r === 0 || c === 0 ? value : grid.data[r-1][c-1]));
+  const even = values => values.every(value => value !== null) && values.reduce((a,b)=>a+b,0) % 2 === 0;
+  const rowStatus = full.map(even);
+  const colStatus = Array.from({length:7}, (_,c)=>even(full.map(row=>row[c])));
   const expected = parityExpected();
-  const rowStatus = Array.from({ length: 7 }, (_, r) => {
-    if (r === 0) return grid.values[0].slice(1).every(v => v !== null);
-    return grid.values[r][0] !== null && (grid.data[r - 1].reduce((sum, bit) => sum + bit, 0) + grid.values[r][0]) % 2 === 0;
-  });
-  const colStatus = Array.from({ length: 7 }, (_, c) => {
-    if (c === 0) return grid.values.slice(1).every(row => row[0] !== null);
-    return grid.values[0][c] !== null && (grid.data.reduce((sum, row) => sum + row[c - 1], 0) + grid.values[0][c]) % 2 === 0;
-  });
-  const ok = grid.placed.length === 13 && rowStatus.every(Boolean) && colStatus.every(Boolean);
   const badCells = [];
-  for (let c = 1; c < 7; c += 1) if (grid.values[0][c] !== null && grid.values[0][c] !== expected[0][c]) badCells.push([0, c]);
-  for (let r = 1; r < 7; r += 1) if (grid.values[r][0] !== null && grid.values[r][0] !== expected[r][0]) badCells.push([r, 0]);
-  return { rowStatus, colStatus, ok, badCells };
+  for(let r=0;r<7;r++) for(let c=0;c<7;c++) if((r===0||c===0) && grid.values[r][c] !== null && grid.values[r][c] !== expected[r][c]) badCells.push([r,c]);
+  return { rowStatus, colStatus, ok: rowStatus.every(Boolean) && colStatus.every(Boolean), badCells };
 }
+
 
 function randomErrorBoard(errorCount = 1) {
   const base = state.parity.data.map(row => row.slice());
@@ -825,14 +943,26 @@ function randomErrorBoard(errorCount = 1) {
   return { base, cells };
 }
 
+function parityBoardHtml(board, chosen = null, correct = false, interactive = false) {
+  const checks = parityExpected();
+  return `<div class="parity-grid" data-parity-board><span class="sr-only">파란 가장자리는 보낼 때 붙인 검사 비트입니다. 검사 비트를 포함하여 각 줄의 1을 세어 보세요.</span>${Array.from({length:7}, (_,r)=>Array.from({length:7}, (_,c)=>{
+    const edge = r===0 || c===0;
+    const bit = edge ? checks[r][c] : board[r-1][c-1];
+    const selected = chosen && chosen[0]===r-1 && chosen[1]===c-1;
+    const label = edge ? `검사 비트 ${r===0 ? (c===0 ? '모서리' : c+'열') : r+'행'}, ${bit}` : `${r}행 ${c}열 ${bit}`;
+    const cls = `grid-cell ${edge ? 'parity' : ''} ${selected ? (correct ? 'good' : 'bad') : ''}`;
+    return interactive && !edge ? `<button type="button" class="${cls}" data-find-cell="${r-1},${c-1}" aria-label="${label}">${bit}</button>` : `<span class="${cls}" aria-label="${label}">${bit}</span>`;
+  }).join('')).join('')}</div>`;
+}
+
 function renderN12() {
   const n12 = state.screens.N12;
   if (!n12.board) n12.board = randomErrorBoard(1);
-  const board = n12.board;
   const chosen = n12.guesses[n12.round];
-  const correct = chosen && chosen[0] === board.cells[0][0] && chosen[1] === board.cells[0][1];
-  return `${heading('4 어디가 틀렸나 · 한 칸 찾기', `뒤집힌 칸을 찾아 보세요 · ${n12.round + 1}/3판`, '한 칸이 바뀌었을 때 행과 열의 이상 신호를 이용해 위치를 추측합니다.')}<div class="card stack"><div class="parity-grid">${Array.from({ length: 7 }, (_, r) => Array.from({ length: 7 }, (_, c) => { const editable = r > 0 && c > 0; const bit = editable ? board.base[r - 1][c - 1] : r === 0 || c === 0 ? '' : ''; const selected = chosen && chosen[0] === r - 1 && chosen[1] === c - 1; return `<button type="button" class="grid-cell ${selected ? (correct ? 'good' : 'bad') : ''}" data-find-cell="${r - 1},${c - 1}" ${editable ? '' : 'disabled'} aria-label="${r === 0 || c === 0 ? '검사 줄' : `${r}행 ${c}열 ${bit}`}">${r === 0 || c === 0 ? (r === 0 && c === 0 ? '·' : r === 0 ? '↓' : '→') : bit}</button>`; }).join('')).join('')}</div><div class="result ${chosen ? (correct ? 'ok' : 'fail') : ''}" role="status">${chosen ? (correct ? '찾았습니다. 다음 판도 같은 방법으로 생각해 보세요.' : '아직 아닙니다. 어느 가로줄과 세로줄이 이상한지 다시 살펴보세요.') : '검사할 칸을 하나 골라 보세요.'}</div>${correct && n12.round < 2 ? '<button id="next-n12-round" class="primary-button" type="button">다음 판</button>' : ''}<button id="reset-n12" class="secondary-button" type="button">이 판 다시 만들기</button></div>`;
+  const correct = chosen && chosen[0]===n12.board.cells[0][0] && chosen[1]===n12.board.cells[0][1];
+  return `${heading('4 어디가 틀렸나 · 한 칸 찾기', `뒤집힌 칸을 찾아 보세요 · ${n12.round+1}/3판`, '파란 가장자리의 검사 비트를 포함하여 가로와 세로의 1을 세어 보세요. 홀수인 줄을 찾아 바뀐 정보 칸을 고릅니다.')}<div class="card stack">${parityBoardHtml(n12.board.base, chosen, correct, true)}<div class="result ${chosen ? (correct ? 'ok' : 'fail') : ''}" role="status">${chosen ? (correct ? '✓ 찾았습니다.' : '! 아직 아닙니다. 가로와 세로를 다시 살펴보세요.') : '검사할 칸을 하나 골라 보세요.'}</div>${correct && n12.round<2 ? '<button id="next-n12-round" class="primary-button" type="button">다음 판</button>' : ''}<button id="reset-n12" class="secondary-button" type="button">이 판 다시 만들기</button></div>`;
 }
+
 
 /* 두 칸이 뒤집히면 이상한 가로줄·세로줄이 각각 둘이 되어 교차점이 넷이 된다.
    그래서 한 곳을 확정할 수 없다. 학생이 직접 보도록 실제 줄 번호를 보여 준다. */
@@ -859,7 +989,7 @@ function renderN13Observe() {
   const crossings = off.rows.length * off.cols.length;
   return `${heading('4 어디가 틀렸나 · 두 칸 오류', '두 칸이 뒤집히면 어떤 일이 생길까?', '이번에는 두 칸을 바꾼 상태를 관찰합니다. 하나의 위치를 확정하기 어려운 이유를 다음 보기에서 설명합니다.')}
   <div class="card stack">
-    <div class="parity-grid">${board.base.map(row => row.map(bit => `<span class="grid-cell">${bit}</span>`).join('')).join('')}</div>
+    ${parityBoardHtml(board.base)}
     <div class="axis-status">
       ${off.rows.length ? off.rows.map(n => `<span class="axis-pill bad">가로 ${n} 이상</span>`).join('') : '<span class="axis-pill">이상한 가로줄 없음</span>'}
       ${off.cols.length ? off.cols.map(n => `<span class="axis-pill bad">세로 ${n} 이상</span>`).join('') : '<span class="axis-pill">이상한 세로줄 없음</span>'}
@@ -877,8 +1007,8 @@ function renderN13Write() {
 
 function renderN14() {
   const n14 = state.screens.N14;
-  return `${heading('5 질문 세 번 · 예측', '7자리 중 하나가 틀렸다면, 몇 번 물어야 할까?', '예 또는 아니오로만 답하는 질문으로 위치를 알아낸다고 생각해 봅니다. 지금은 예측만 받습니다.')}
-  <div class="card stack"><p>가능한 답은 1번부터 7번, 그리고 틀린 곳 없음까지 모두 8가지입니다.</p><div class="choice-grid">${[2,3,4,7].map(value => `<div class="choice"><input id="n14-${value}" name="n14" type="radio" value="${value}" ${n14.prediction === String(value) ? 'checked' : ''}><label for="n14-${value}">${value}번</label></div>`).join('')}</div><div class="button-row"><button id="confirm-n14" class="primary-button" type="button">예측 기록</button>${n14.confirmed ? '<span class="result ok">예측이 기록되었습니다.</span>' : ''}</div></div>`;
+  return `${heading('5 질문으로 찾기 · 예측', '7자리 중 하나가 틀렸다면, 몇 번 물어야 할까?', '예 또는 아니오로만 답하는 질문으로 위치를 알아낸다고 생각해 봅니다. 지금은 예측만 받습니다.')}
+  <div class="card stack">${state.predicts.N14 ? `<div class="evidence">최초 응답: ${esc(state.predicts.N14.first.value)}번 · ${state.predicts.N14.first.beforeExperiment ? '실험 전 예측' : '실험을 본 뒤 기록'}</div>` : ''}<p>가능한 답은 1번부터 7번, 그리고 틀린 곳 없음까지 모두 8가지입니다.</p><div class="choice-grid">${[2,3,4,7].map(value => `<div class="choice"><input id="n14-${value}" name="n14" type="radio" value="${value}" ${n14.prediction === String(value) ? 'checked' : ''}><label for="n14-${value}">${value}번</label></div>`).join('')}</div><div class="button-row"><button id="confirm-n14" class="primary-button" type="button">예측 기록</button>${n14.confirmed ? '<span class="result ok">예측이 기록되었습니다.</span>' : ''}</div></div>`;
 }
 
 /* 질문 개수는 학생이 2~4개 사이에서 바꾼다(명세서 §19). */
@@ -923,7 +1053,7 @@ function renderN15Operate() {
 
 function renderN15Write() {
   return `${heading('5 질문 세 번 · 작성', '질문 수를 바꾼 이유를 설명해 보세요.', '방금 만든 답 패턴 표와 실제 설계 변화가 근거로 남아 있습니다.')}
-  <div class="card stack"><div class="evidence">현재 질문 묶음: ${state.screens.N15.groups.map((group, i) => `질문 ${i + 1} = ${group.length ? group.join(', ') : '없음'}`).join(' · ')}</div><div class="writing-list">${writeBox('N15_change', '질문을 몇 개로 시작했고, 왜 바꾸었나요?', 'reflect')}${writeBox('N15_binary', '예/아니오를 1/0으로 읽어 붙이면 무엇이 되나요?', 'explain')}</div></div>`;
+  <div class="card stack">${evidenceFor(['N15_operate'])}<div class="evidence">현재 질문 묶음: ${state.screens.N15.groups.map((group, i) => `질문 ${i + 1} = ${group.length ? group.join(', ') : '없음'}`).join(' · ')}</div><div class="writing-list">${writeBox('N15_change', '질문을 몇 개로 시작했고, 왜 바꾸었나요?', 'reflect')}${writeBox('N15_binary', '예/아니오를 1/0으로 읽어 붙이면 무엇이 되나요?', 'explain')}</div></div>`;
 }
 
 function renderN16() {
@@ -931,9 +1061,11 @@ function renderN16() {
   if (!n16.cases.length) n16.cases = [randomQuestionCase(), randomQuestionCase(), randomQuestionCase()];
   const target = n16.cases[n16.round];
   const guess = n16.guesses[n16.round];
-  const ok = guess !== undefined && Number(guess) === target;
-  return `${heading('5 질문 세 번 · 선택 활동', `내 질문으로 오류 위치 찾기 · ${n16.round + 1}/3판`, 'N15에서 만든 질문 묶음의 답 패턴을 보고 실제 위치를 골라 봅니다.')}
-  <div class="card stack"><div class="notice">이번 답 패턴: <strong>${questionPatternFor(target)}</strong></div><div class="choice-grid">${['없음',1,2,3,4,5,6,7].map((label, i) => { const value = i === 0 ? 0 : i; return `<div class="choice"><input id="n16-${value}" name="n16" type="radio" value="${value}" ${guess !== undefined && Number(guess) === value ? 'checked' : ''}><label for="n16-${value}">${label === '없음' ? '틀린 곳 없음' : `${label}번`}</label></div>`; }).join('')}</div><div class="result ${guess === undefined ? '' : ok ? 'ok' : 'fail'}" role="status">${guess === undefined ? '답을 하나 골라 보세요.' : ok ? '맞았습니다.' : '다른 경우의 패턴과 비교해 보세요.'}</div>${ok && n16.round < 2 ? '<button id="next-n16" class="primary-button" type="button">다음 판</button>' : ''}</div>`;
+  const matches=n15Patterns().filter(item=>item.pattern===questionPatternFor(target));
+  const ambiguous=matches.length>1;
+  const ok = !ambiguous && guess !== undefined && Number(guess) === target;
+  return `${heading('5 질문 세 번 · 선택 활동', `내 질문으로 오류 위치 찾기 · ${n16.round + 1}/3판`, '앞에서 만든 질문 묶음의 답 패턴을 보고 실제 위치를 골라 봅니다.')}
+  <div class="card stack"><div class="notice">이번 답 패턴: <strong>${questionPatternFor(target)}</strong></div><div class="choice-grid">${['없음',1,2,3,4,5,6,7].map((label, i) => { const value = i === 0 ? 0 : i; return `<div class="choice"><input id="n16-${value}" name="n16" type="radio" value="${value}" ${guess !== undefined && Number(guess) === value ? 'checked' : ''}><label for="n16-${value}">${label === '없음' ? '틀린 곳 없음' : `${label}번`}</label></div>`; }).join('')}</div><div class="result ${guess === undefined ? '' : ok ? 'ok' : 'fail'}" role="status">${ambiguous ? `이 패턴에 해당하는 경우가 ${matches.length}개여서 위치를 확정할 수 없습니다. 질문 설계로 돌아가 묶음을 바꾸어 보세요.` : guess === undefined ? '답을 하나 골라 보세요.' : ok ? '맞았습니다.' : '다른 경우의 패턴과 비교해 보세요.'}</div>${ok && n16.round < 2 ? '<button id="next-n16" class="primary-button" type="button">다음 판</button>' : ''}</div>`;
 }
 
 function randomQuestionCase() { return Math.floor(Math.random() * 8); }
@@ -969,7 +1101,8 @@ function closestPanel(n17) {
   const best = Math.min(...rows.map(row => row.distance));
   const nearest = rows.filter(row => row.distance === best);
   const decided = n17.guess !== '' && n17.guess !== null && n17.guess !== undefined;
-  const ok = decided && Number(n17.guess) === sent;
+  const canCorrect = nearest.length === 1 && nearest[0].i === sent;
+  const ok = decided && canCorrect && Number(n17.guess) === sent;
   return `<div class="evidence">
     <strong>받은 값 ${esc(received)}</strong><br>
     <span class="muted small">어느 신호를 보냈는지는 알려주지 않습니다. 거리를 보고 판단해 보세요.</span>
@@ -978,32 +1111,36 @@ function closestPanel(n17) {
   </div>
   <p class="muted small" style="margin:0">원래 보낸 신호는 무엇이었을까요?</p>
   <div class="choice-grid">${n17.codes.map((code, i) => `<div class="choice"><input id="n17-guess-${i}" name="n17-guess" type="radio" value="${i}" ${decided && Number(n17.guess) === i ? 'checked' : ''}><label for="n17-guess-${i}">신호 ${i + 1}</label></div>`).join('')}</div>
-  ${decided ? `<div class="result ${ok ? 'ok' : 'fail'}" role="status">${resultIcon(ok ? 'ok' : 'fail')} ${ok ? '맞았습니다. 가장 가까운 부호로 되돌리면 원래 신호가 나옵니다.' : '보낸 신호와 다릅니다. 거리 표를 다시 보세요.'}</div>` : ''}`;
+  ${decided ? `<div class="result ${ok ? 'ok' : 'fail'}" role="status">${resultIcon(ok ? 'ok' : 'fail')} ${ok ? '맞았습니다. 가장 가까운 부호로 되돌리면 원래 신호가 나옵니다.' : !canCorrect ? '이 설계에서는 가장 가까운 부호만으로 원래 신호를 확정할 수 없습니다. 부호 사이의 거리를 늘려 보세요.' : '보낸 신호와 다릅니다. 거리 표를 다시 보세요.'}</div>` : ''}`;
 }
 
 function renderN18() {
-  return `${heading('6 얼마나 멀어야 · 선택 활동', '거리와 오류 정정 능력을 연결해 보세요.', 'N17에서 만든 부호와 다음 표를 보고, 최소 거리가 왜 중요한지 설명합니다.')}
+  return `${heading('6 얼마나 멀어야 · 선택 활동', '거리와 오류 정정 능력을 연결해 보세요.', '앞에서 만든 부호와 다음 표를 보고, 최소 거리가 왜 중요한지 설명합니다.')}
   <div class="card stack"><div class="table-wrap"><table><thead><tr><th>최소 거리</th><th>탐지할 수 있는 오류</th><th>정정할 수 있는 오류</th></tr></thead><tbody><tr><td>1</td><td>없음</td><td>없음</td></tr><tr><td>2</td><td>1개</td><td>없음</td></tr><tr><td>3</td><td>2개</td><td>1개</td></tr></tbody></table></div><div class="writing-list">${writeBox('N18_reason', '거리가 3이면 왜 한 개의 오류를 고칠 수 있는지 쓰시오.', 'explain')}</div></div>`;
 }
 
 function renderN19() {
   return `${heading('7 닫기 · 선택 활동', '다시 보내기 어려운 곳에서는 무엇을 선택할까?', '마리너 9호의 사례를 읽고, 우리가 만든 통신로와 비교해 봅니다.')}
-  <div class="card stack"><div class="reading"><p>1972년 화성 궤도에 들어간 마리너 9호는 흑백 사진을 보내려고 6비트를 32비트로 부풀려 보냈습니다. 다시 보내 달라고 요청하기 어려운 곳에서는 전송량보다 오류를 견디는 힘이 더 중요할 수 있습니다.</p><p style="margin-bottom:0">점자도 한 번 보낸 뒤 다시 확인하기 어려운 상황과 닮아 있습니다.</p></div>${writeBox('N19_mariner', '우리가 만든 통신로 중 마리너 9호에 가장 가까운 것은 어느 것인가요? 왜 그렇게 극단적으로 만들었을까요?', 'reflect')}</div>`;
+  <div class="card stack"><div class="reading"><p>1971년 화성 궤도에 들어간 마리너 9호는 흑백 사진을 보내려고 6비트를 32비트로 부풀려 보냈습니다. 다시 보내 달라고 요청하기 어려운 곳에서는 전송량보다 오류를 견디는 힘이 더 중요할 수 있습니다.</p><p style="margin-bottom:0">점자도 한 번 보낸 뒤 다시 확인하기 어려운 상황과 닮아 있습니다.</p></div>${writeBox('N19_mariner', '우리가 만든 통신로 중 마리너 9호에 가장 가까운 것은 어느 것인가요? 왜 그렇게 극단적으로 만들었을까요?', 'reflect')}</div>`;
 }
 
 /* 8비트 정보를 보내고 오류 1개를 고친다는 조건으로 환산한다(명세서 §6-3).
    활동에서 쓴 크기(6×6 격자, 7비트)와 다르므로 화면에 환산 사실을 적는다. */
 function compareRows() {
-  const logs = state.log.filter(item => item.kind === 'attempt');
-  const real = (screen, fallback) => { const item = [...logs].reverse().find(log => log.screen === screen); return item && item.detail ? item.detail : fallback; };
+  const logs = state.log.filter(item => item.kind === 'attempt' && item.attempt?.blocks);
+  const real = (nodes, one = false) => {
+    const item = [...logs].reverse().find(log => JSON.stringify(log.attempt.blocks) === JSON.stringify(nodes) && (one ? log.screen==='N10' : log.screen!=='N10'));
+    return item?.detail || '미실행';
+  };
   return [
-    ['그냥 보내기', '8비트', '✗', '✗', '1', real('N6_operate', '미실행')],
-    ['패리티 1비트', '9비트', '1개', '✗', '2', real('N10', '미실행')],
-    ['해밍 (질문 4개)', '12비트', '○', '1개', '3', state.screens.N15.checked ? '질문 설계 완료' : '미실행'],
-    ['2×4 격자 패리티', '15비트', '○', '1개', '4', state.parity.check && state.parity.check.ok ? '검사 칸 배치 완료' : '미실행'],
-    ['3번 반복 + 다수결', '24비트', '○', '1개', '3', real('N8', '미실행')]
+    ['그냥 보내기','8비트','✗','✗','1',real(['message','noise','receiver'])],
+    ['패리티 1비트','9비트','1개','✗','2',real(['message','parityEncode','noise','parityCheck','receiver'],true)],
+    ['해밍 (질문 4개)','12비트','○','1개','3',state.screens.N15.checked ? '질문 패턴 구별 완료 (7자리 활동)' : state.views.N15_operate ? '미해결' : '미실행'],
+    ['2×4 격자 패리티','15비트','○','1개','4',checkParityGrid().ok ? '검사 칸 배치 완료 (6×6 활동)' : state.views.N11 ? '미해결' : '미실행'],
+    ['3번 반복 + 다수결','24비트','○','1개','3',real(['message','repeat3','noise','majority','receiver'])]
   ];
 }
+
 
 function renderN20() {
   const questionCount = state.screens.N15.groups.length;
@@ -1011,32 +1148,55 @@ function renderN20() {
   <div class="card stack">
     <div class="notice">활동에서는 6×6 격자와 7비트로 해 봤지만, 아래 표는 모두 <strong>8비트 정보를 지키고 오류 1개를 고치는 경우</strong>로 맞춰 비교합니다.</div>
     <div class="table-wrap"><table><thead><tr><th>방식</th><th>전송 비트</th><th>탐지</th><th>정정</th><th>최소 거리</th><th>내 기록</th></tr></thead><tbody>${compareRows().map(row => `<tr>${row.map(cell => `<td>${esc(cell)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>
-    <div class="reading"><p style="margin:0">질문 설계판에서는 정보 4비트에 질문 ${questionCount}개를 썼습니다. 정보를 8비트로 늘리면 질문이 <strong>4개</strong> 필요합니다(2<sup>4</sup> = 16 ≥ 8 + 4 + 1). 정보가 두 배가 되어도 질문은 하나만 늘어납니다.</p></div>
+    <div class="reading"><p style="margin:0">질문 설계판의 7자리와 오류 없음, 총 8가지를 구별하는 데 필요한 최소 질문은 3개입니다. 내 현재 설계는 질문 ${questionCount}개입니다. 해밍 부호에서는 정보 4비트에 검사 비트 3개를 붙입니다. 정보를 8비트로 늘리면 질문이 <strong>4개</strong> 필요합니다(2<sup>4</sup> = 16 ≥ 8 + 4 + 1). 정보가 두 배가 되어도 질문은 하나만 늘어납니다.</p></div>
     ${writeBox('N20_reflect', '나라면 점자에 어느 방법을 쓰겠는가? 다시 보낼 수 없다는 점을 생각해서 쓰시오.', 'reflect')}
     ${evidenceFor(['N6_operate','N7','N8','N10','N11','N12','N15_operate'])}
   </div>`;
 }
 
 function submissionSummary() {
-  const statuses = [];
-  for (const screen of SCREEN_ORDER) {
-    if (screen.optional && !state.includeOptional) continue;
-    if (screen.id === 'N0') continue;
-    const viewed = state.views[screen.id]?.visited;
-    statuses.push({ id: screen.id, label: screen.label, status: viewed ? '방문' : '미방문' });
-  }
-  const expected = WRITE_FIELDS.filter(([key]) => state.includeOptional || !['N18_reason', 'N19_mariner'].includes(key));
-  const unfilled = expected.filter(([key]) => !String(state.writes[key] || '').trim()).map(([key]) => key);
-  const unresolved = state.log.filter(item => item.kind === 'attempt' && item.result === 'fail').length;
-  return { statuses, unfilled, unresolved };
+  const expected = WRITE_FIELDS.filter(([key])=>state.includeOptional || !['N18_reason','N19_mariner'].includes(key));
+  const unfilled = expected.filter(([key])=>!String(state.writes[key]||'').trim()).map(([key])=>key);
+  const statuses = SCREEN_ORDER.filter(screen=>!['N0','N21'].includes(screen.id)).map(screen=>{
+    const logs = state.log.filter(item=>item.screen===screen.id && item.kind==='attempt');
+    const stats = state.attemptStats[screen.id];
+    let status = !state.views[screen.id]?.visited ? '미실행' : '관찰';
+    const fields = expected.filter(([key])=>key.startsWith(screen.id.split('_')[0]+'_')).map(([key])=>key);
+    const writing = screen.id.endsWith('_write') || ['N1','N3','N6_predict','N9','N18','N19','N20'].includes(screen.id);
+    if(writing) status = fields.some(key=>unfilled.includes(key)) ? '미작성' : '작성';
+    if(['N6_operate','N7','N8','N10'].includes(screen.id)) {
+      const circuit=state.circuits[screen.id==='N6_operate'?'N6':screen.id];
+      status=!circuit.lastResult ? '미실행' : circuit.lastResult.version!==circuit.version ? '변경 후 미실행' : circuit.lastResult.verdict==='ok' ? '해결' : '미해결';
+    }
+    if(screen.id==='N11') status=checkParityGrid().ok ? '해결' : state.parity.placed.length ? '미해결' : '미실행';
+    if(screen.id==='N15_operate') status=state.screens.N15.checked ? '해결' : logs.length ? '미해결' : '미실행';
+    if(screen.id==='N4') status=state.screens.N4.checked ? state.screens.N4.answer.join('')===majoritySource().join('') ? '해결' : '미해결' : '미실행';
+    if(screen.id==='N5_operate') status=state.screens.N5.checked ? state.screens.N5.ties.length ? '관찰' : state.screens.N5.answer.every((v,i)=>v===majorityAnswers(repeatedRows(state.screens.N5.count))[i]) ? '해결' : '미해결' : '미실행';
+    if(['N12','N16'].includes(screen.id)) {
+      const game=state.screens[screen.id];
+      const guess=game.guesses[game.round];
+      const correct=screen.id==='N12' ? guess && game.board && guess[0]===game.board.cells[0][0] && guess[1]===game.board.cells[0][1] : guess!==undefined && Number(guess)===game.cases[game.round] && n15Patterns().filter(item=>item.pattern===questionPatternFor(game.cases[game.round])).length===1;
+      status=game.round===2 && correct ? '해결 (3판)' : logs.length ? `미해결 (${game.round+1}/3판)` : '미실행';
+    }
+    if(screen.id==='N17') {
+      const codes=state.screens.N17.codes;
+      const min=Math.min(...codes.flatMap((a,i)=>codes.slice(i+1).map(b=>hammingDistance(a,b))));
+      status=logs.length ? min>=3 && state.screens.N17.guess!=='' && Number(state.screens.N17.guess)===state.screens.N17.query?.codeIndex ? '해결' : '미해결' : '미실행';
+    }
+    if(screen.optional && !state.includeOptional) status='건너뜀';
+    return {id:screen.id,label:screen.label,status,attempts:stats?.count ?? logs.length,firstSuccess:stats?.firstSuccess ?? (logs.findIndex(item=>item.result==='ok')<0 ? null : logs.findIndex(item=>item.result==='ok')+1),hintLevel:state.hints[screen.id]||0};
+  });
+  return { statuses, unfilled, unresolved:statuses.filter(item=>item.status.startsWith('미해결') || item.status==='변경 후 미실행').length };
 }
 
+
 function renderN21() {
-  const summary = submissionSummary();
-  const submitted = state.submitted.at > 0;
-  return `${heading('7 닫기 · 제출', '오늘의 탐구 기록을 제출하세요.', '미작성·미해결·건너뛴 활동도 숨기지 않고 기록합니다. 제출은 한 번으로 시도하고, 실패하면 파일로 저장할 수 있습니다.')}
-  <div class="card stack"><div class="two-column"><div class="evidence"><strong>미작성 문항</strong><br>${summary.unfilled.length ? `${summary.unfilled.length}개` : '없음'}</div><div class="evidence"><strong>실패로 기록된 실행</strong><br>${summary.unresolved}회</div></div><details class="attempt-details"><summary>활동별 방문 기록 보기</summary><div class="evidence">${summary.statuses.map(item => `<div>${esc(item.id)} · ${esc(item.label)} · ${item.status}</div>`).join('')}</div></details><div id="submit-result" class="result ${submitted ? 'ok' : ''}" role="status">${submitted ? `제출 상태: ${esc(state.submitted.status)} · 확인 코드 ${esc(state.submitted.code)}` : '제출 버튼을 누르면 화면 기록 HTML이 만들어집니다.'}</div><div class="button-row"><button id="submit-button" class="primary-button" type="button" ${submitted ? 'disabled' : ''}>${submitted ? '이미 제출했습니다' : '제출'}</button>${state.submitted.status.indexOf('실패') >= 0 ? '<button id="download-button" class="secondary-button" type="button">파일로 저장</button>' : ''}</div></div>`;
+  const summary=submissionSummary();
+  const sent=state.submitted.result==='ok' || state.submitted.result==='sent' || (state.submitted.at>0 && !state.submitted.result && !/실패|중단/.test(state.submitted.status));
+  const failed=state.submitted.result==='fail' || /실패|중단/.test(state.submitted.status);
+  return `${heading('7 닫기 · 제출','오늘의 탐구 기록을 제출하세요.','작성한 설명과 실제 실험 결과를 함께 제출합니다. 미작성·미해결 활동도 그대로 기록됩니다.')}<div class="card stack"><div class="two-column"><div class="evidence">미작성 문항 <strong>${summary.unfilled.length}개</strong></div><div class="evidence">미해결 활동 <strong>${summary.unresolved}개</strong></div></div><details class="attempt-details"><summary>활동별 상태 보기</summary><div class="evidence">${summary.statuses.map(item=>`<div>${esc(item.label)} · ${esc(item.status)}</div>`).join('')}</div></details><div id="submit-result" class="result ${failed?'fail':sent?'ok':''}" role="status">${esc(state.submitted.status || '제출 버튼을 누르면 탐구 기록 HTML이 만들어집니다.')}${state.submitted.code ? ` · 확인 코드 ${esc(state.submitted.code)}` : ''}</div><div class="button-row"><button id="submit-button" class="primary-button" type="button" ${submissionInFlight||sent?'disabled':''}>${submissionInFlight?'전송 중':sent?'이미 보냈습니다':failed?'다시 제출':'제출'}</button>${sent?'<button id="resubmit-button" class="secondary-button" type="button">다시 제출하기</button>':''}${failed?'<button id="download-button" class="secondary-button" type="button">파일로 저장</button>':''}</div></div>`;
 }
+
 
 function bindScreen(id) {
   bindCommonWrites();
@@ -1065,20 +1225,58 @@ function bindScreen(id) {
 }
 
 function bindCommonWrites() {
-  $$('[data-write]').forEach(input => input.addEventListener('input', event => { state.writes[event.target.dataset.write] = event.target.value; logEvent('write', state.screenId, { field: event.target.dataset.write }); persist(); }));
+  $$('[data-write]').forEach(input => input.addEventListener('input', event => {
+    const field = event.target.dataset.write;
+    if (field==='N3_reason' && state.screens.N3.locked || field==='N6_predict' && state.screens.N6.predictionLocked) return;
+    state.writes[field] = event.target.value;
+    state.writeMeta[field] = { at: Date.now(), runs: state.log.filter(item=>item.kind==='attempt' && evidenceScreens(field).includes(item.screen)).map(item=>({screen:item.screen, number:item.number, at:item.t})) };
+    if (field==='N3_reason' || field==='N6_predict') recordPrediction(field==='N3_reason'?'N3':'N6', false);
+    logEvent('write', state.screenId, { field });
+  }));
 }
+
+function predictionIsPrior(key) {
+  const screens = key==='N3' ? ['N4','N5_operate','N6_operate','N7','N8'] : key==='N6' ? ['N6_operate','N7','N8'] : ['N15_operate','N16'];
+  return !screens.some(id=>state.views[id]?.visited);
+}
+
+function recordPrediction(key, confirmed = false) {
+  const value = key==='N6' ? state.writes.N6_predict || '' : state.screens[key].prediction || '';
+  const reason = key==='N3' ? state.writes.N3_reason || '' : '';
+  const previous = state.predicts[key];
+  const record = { value, reason, at:Date.now(), beforeExperiment: predictionIsPrior(key) };
+  if (!previous) state.predicts[key] = { first: record };
+  if (confirmed && !state.predicts[key].confirmed) state.predicts[key].confirmed = record;
+  state.predicts[key].latest = record;
+  return record;
+}
+
+function predictionEvidence(key) {
+  const prediction = state.predicts[key];
+  const record = prediction?.confirmed || prediction?.latest || prediction?.first;
+  if (!record) return '기록 시점 미확인';
+  return (prediction?.confirmed ? '' : '미확정 · ') + (record.beforeExperiment ? '실험 전 예측' : '실험을 본 뒤 기록');
+}
+
 
 function bindN0() {
   $('#student-sid')?.addEventListener('input', e => updateStudentField('sid', e.target.value));
   $('#student-name')?.addEventListener('input', e => updateStudentField('name', e.target.value));
   $('#include-optional')?.addEventListener('change', e => { state.includeOptional = e.target.checked; persist(true); updateNavigation(); renderActivityMenu(); });
-  $('#resume-button')?.addEventListener('click', () => { const target = state.screenId === 'N0' ? 'N1' : state.screenId; navTo(target); });
-  $('#new-button')?.addEventListener('click', () => { const student = { ...state.student }; state = initialState(); state.student = student; persist(true); render(); });
+  $('#resume-button')?.addEventListener('click', () => { const target = resumeView === 'N0' ? 'N1' : resumeView; navTo(target); });
+  $('#new-button')?.addEventListener('click', () => { if (hasResumeData() && !window.confirm('저장된 활동 기록을 지우고 새로 시작할까요?')) return; const student = { ...state.student }; resumeView = 'N0'; state = initialState(); state.student = student; persist(true); render(); });
+}
+
+function updateNoiseDisplay() {
+  const holder = document.createElement('div');
+  holder.innerHTML = renderN2Operate();
+  $$('.braille-card').forEach((card,index)=>{ card.innerHTML = $$('.braille-card',holder)[index].innerHTML; });
+  $('#noise-rate-value').textContent = `${state.screens.N2.rate}%`;
 }
 
 function bindN2() {
-  $('#braille-word')?.addEventListener('change', event => { state.screens.N2.word = event.target.value; state.screens.N2.cells = null; persist(); render(); });
-  $('#noise-rate')?.addEventListener('input', event => { const n2 = state.screens.N2; n2.rate = Number(event.target.value); n2.cells = transmitCells(messageCells(messageWord()).cells, n2.rate); persist(); render(); });
+  $('#braille-word')?.addEventListener('change', event => { state.screens.N2.word = event.target.value; state.screens.N2.cells = null; state.screens.N2.sourceKey = ''; persist(); render(); });
+  $('#noise-rate')?.addEventListener('input', event => { const n2 = state.screens.N2; n2.rate = Number(event.target.value); n2.cells = transmitCells(messageCells(messageWord()).cells, n2.rate); persist(); updateNoiseDisplay(); });
   $('#resend-noise')?.addEventListener('click', () => {
     const n2 = state.screens.N2;
     n2.sends += 1;
@@ -1093,31 +1291,31 @@ function bindN2() {
 }
 
 function bindN3() {
-  $$('input[name="n3"]').forEach(input => input.addEventListener('change', e => { state.screens.N3.prediction = e.target.value; persist(); }));
-  $('#confirm-n3')?.addEventListener('click', () => { state.screens.N3.locked = true; logEvent('attempt', 'N3', { detail: `예측 ${state.screens.N3.prediction || '미선택'}` }, 'predict'); persist(true); render(); });
+  $$('input[name="n3"]').forEach(input => input.addEventListener('change', e => { if (state.screens.N3.locked) return; state.screens.N3.prediction = e.target.value; recordPrediction('N3'); persist(); }));
+  $('#confirm-n3')?.addEventListener('click', () => { if (!state.screens.N3.prediction) return; recordPrediction('N3', true); state.screens.N3.locked = true; logEvent('attempt', 'N3', { detail: `예측 ${state.screens.N3.prediction || '미선택'}` }, 'predict'); persist(true); render(); });
 }
 
 function bindN4() {
-  $$('[data-majority-index]').forEach(button => button.addEventListener('click', () => { const i = Number(button.dataset.majorityIndex); const answer = state.screens.N4.answer; answer[i] = answer[i] === null ? 0 : answer[i] === 0 ? 1 : null; state.screens.N4.checked = answer.every(value => value !== null); if (state.screens.N4.checked) logEvent('attempt', 'N4', { detail: `다수결 답 ${answer.join('')}` }, answer.join('') === '10101111' ? 'ok' : 'fail'); persist(); render(); }));
+  $$('[data-majority-index]').forEach(button => button.addEventListener('click', () => { const i = Number(button.dataset.majorityIndex); const answer = state.screens.N4.answer; answer[i] = answer[i] === null ? 0 : 1 - answer[i]; state.screens.N4.checked = answer.every(value => value !== null); if (state.screens.N4.checked) logEvent('attempt', 'N4', { detail: `다수결 답 ${answer.join('')}` }, answer.join('') === majoritySource().join('') ? 'ok' : 'fail'); persist(); render(); }));
   $('#reset-n4')?.addEventListener('click', () => { state.screens.N4.answer = Array(8).fill(null); state.screens.N4.checked = false; persist(); render(); });
   $('#open-n4-guide')?.addEventListener('click', () => openGuide('N4', '내 답 행의 각 칸을 눌러 0, 1을 번갈아 선택할 수 있습니다.'));
 }
 
 function bindN5() {
-  $$('input[name="n5-count"]').forEach(input => input.addEventListener('change', e => { state.screens.N5.count = Number(e.target.value); state.screens.N5.answer = Array(8).fill(null); state.screens.N5.ties = columnTies(repeatedRows(state.screens.N5.count)); persist(); render(); }));
-  $$('[data-majority-index]').forEach(button => button.addEventListener('click', () => { const i = Number(button.dataset.majorityIndex); const answer = state.screens.N5.answer.length === 8 ? state.screens.N5.answer : Array(8).fill(null); answer[i] = answer[i] === null ? 0 : answer[i] === 0 ? 1 : null; state.screens.N5.answer = answer; state.screens.N5.checked = answer.every(value => value !== null); state.screens.N5.ties = columnTies(repeatedRows(state.screens.N5.count)); if (state.screens.N5.checked) logEvent('attempt', 'N5_operate', { detail: `${state.screens.N5.count}줄, 답 ${answer.join('')}` }, state.screens.N5.ties.length ? 'partial' : 'attempt'); persist(); render(); }));
+  $$('input[name="n5-count"]').forEach(input => input.addEventListener('change', e => { state.screens.N5.count = Number(e.target.value); state.screens.N5.observedCounts = [...new Set([...(state.screens.N5.observedCounts || []), state.screens.N5.count])]; logEvent('attempt', 'N5_operate', {detail: `${state.screens.N5.count}줄 관찰`, attempt: {count: state.screens.N5.count}}, 'observe'); state.screens.N5.answer = Array(8).fill(null); state.screens.N5.ties = columnTies(repeatedRows(state.screens.N5.count)); persist(); render(); }));
+  $$('[data-majority-index]').forEach(button => button.addEventListener('click', () => { const i = Number(button.dataset.majorityIndex); const answer = state.screens.N5.answer.length === 8 ? state.screens.N5.answer : Array(8).fill(null); answer[i] = answer[i] === null ? 0 : 1 - answer[i]; state.screens.N5.answer = answer; state.screens.N5.checked = answer.every(value => value !== null); state.screens.N5.ties = columnTies(repeatedRows(state.screens.N5.count)); if (state.screens.N5.checked) logEvent('attempt', 'N5_operate', { detail: `${state.screens.N5.count}줄, 답 ${answer.join('')}` }, state.screens.N5.ties.length ? 'partial' : answer.every((value,i)=>value===majorityAnswers(repeatedRows(state.screens.N5.count))[i]) ? 'ok' : 'fail'); persist(); render(); }));
   $('#reset-n5')?.addEventListener('click', () => { state.screens.N5.answer = Array(8).fill(null); state.screens.N5.checked = false; persist(); render(); });
   $('#open-n5-guide')?.addEventListener('click', () => openGuide('N5_operate', '먼저 반복 횟수를 고르고, 내 답 행의 각 열을 눌러 정하세요.'));
 }
 
-function bindN6Predict() { $('#confirm-n6-predict')?.addEventListener('click', () => { state.screens.N6.predictionLocked = true; logEvent('attempt', 'N6_predict', { detail: '통신로 예측 확정' }, 'predict'); persist(true); render(); }); }
+function bindN6Predict() { $('#confirm-n6-predict')?.addEventListener('click', () => { if (!String(state.writes.N6_predict || '').trim()) return; recordPrediction('N6', true); state.screens.N6.predictionLocked = true; logEvent('attempt', 'N6_predict', { detail: '통신로 예측 확정' }, 'predict'); persist(true); render(); }); }
 
 function bindCircuit(stage) {
   const circuit = circuitConfigFor(stage);
   $$('[data-add-block]').forEach(button => button.addEventListener('click', () => { const type = button.dataset.addBlock; if (!circuit.nodes.includes(type) || type === 'majority') circuit.nodes.splice(Math.max(1, circuit.nodes.length - 1), 0, type); else circuit.nodes.splice(Math.max(1, circuit.nodes.length - 1), 0, type); circuit.version += 1; persist(); render(); }));
   $$('[data-node-index]').forEach(node => node.addEventListener('click', event => { if (event.target.closest('[data-node-action]')) return; circuit.selected = Number(node.dataset.nodeIndex); persist(); render(); }));
   $$('[data-node-action]').forEach(button => button.addEventListener('click', () => { const index = Number(button.dataset.nodeIndex); const action = button.dataset.nodeAction; if (action === 'remove' && !['message','receiver'].includes(circuit.nodes[index])) circuit.nodes.splice(index, 1); if (action === 'up' && index > 1) [circuit.nodes[index - 1], circuit.nodes[index]] = [circuit.nodes[index], circuit.nodes[index - 1]]; if (action === 'down' && index < circuit.nodes.length - 2) [circuit.nodes[index + 1], circuit.nodes[index]] = [circuit.nodes[index], circuit.nodes[index + 1]]; circuit.version += 1; persist(); render(); }));
-  $$('[data-node-index]').forEach(node => node.addEventListener('keydown', event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); node.click(); } }));
+  $$('.circuit-node').forEach(node => node.addEventListener('keydown', event => { if (event.target !== node) return; if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); node.click(); } }));
   /* 끌어서 순서 바꾸기. 터치·키보드에서는 ← → 버튼이 같은 일을 한다(명세서 §13). */
   let dragFrom = null;
   $$('.circuit-node[draggable="true"]').forEach(node => {
@@ -1154,7 +1352,7 @@ function bindCircuit(stage) {
     const verdict = judgeCircuit(metric, stage);
     const detail = circuitDetail(metric, stage);
     circuit.lastResult = { version: circuit.version, verdict, detail, metric, blocks: circuit.nodes.slice() };
-    logEvent('attempt', viewId, { detail, attempt: { blocks: circuit.nodes.slice(), order: circuit.nodes.join(' > ') } }, verdict === 'ok' ? 'ok' : 'fail');
+    logEvent('attempt', viewId, { detail, attempt: { blocks: circuit.nodes.slice(), order: circuit.nodes.join(' > '), metric: { ...metric }, goal: STAGE_COPY[stage][2], version: circuit.version } }, verdict);
     if (verdict === 'ok') {
       mascotState = { mood: 'cheer', text: '목표 조건을 만족했어요. 다른 구성과도 비교해 보세요.', open: true };
     } else {
@@ -1168,11 +1366,11 @@ function bindCircuit(stage) {
   $('#open-circuit-guide')?.addEventListener('click', () => openGuide(stage, '팔레트에서 블록을 고르면 통신로에 들어갑니다. 블록을 끌어 옮기거나 ← → 버튼으로 순서를 바꿔 보세요. 실행 후에도 다시 구성할 수 있습니다.'));
 }
 
-function bindN11() { $$('[data-parity-cell]').forEach(button => button.addEventListener('click', () => { const [r, c] = button.dataset.parityCell.split(',').map(Number); if (!(r === 0 || c === 0)) return; const current = state.parity.values[r][c]; state.parity.values[r][c] = current === null ? 0 : current === 0 ? 1 : null; if (!state.parity.placed.some(cell => cell[0] === r && cell[1] === c) && state.parity.values[r][c] !== null) state.parity.placed.push([r,c]); if (state.parity.values[r][c] === null) state.parity.placed = state.parity.placed.filter(cell => cell[0] !== r || cell[1] !== c); state.parity.check = checkParityGrid(); if (state.parity.check.ok) logEvent('attempt', 'N11', { detail: '13개 검사 칸 배치 완료' }, 'ok'); persist(); render(); })); $('#reset-parity')?.addEventListener('click', () => { state.parity = createParityGrid(); persist(); render(); }); }
+function bindN11() { $$('[data-parity-cell]').forEach(button => button.addEventListener('click', () => { const [r, c] = button.dataset.parityCell.split(',').map(Number); if (!(r === 0 || c === 0)) return; const current = state.parity.values[r][c]; state.parity.values[r][c] = current === null ? 0 : 1 - current; if (!state.parity.placed.some(cell => cell[0] === r && cell[1] === c) && state.parity.values[r][c] !== null) state.parity.placed.push([r,c]); if (state.parity.values[r][c] === null) state.parity.placed = state.parity.placed.filter(cell => cell[0] !== r || cell[1] !== c); state.parity.check = checkParityGrid(); if (state.parity.placed.length===13) logEvent('attempt', 'N11', { detail: state.parity.check.ok?'13개 검사 칸 배치 완료':'검사 칸의 행·열 짝수가 맞지 않음' }, state.parity.check.ok?'ok':'fail'); persist(); render(); })); $('#reset-parity')?.addEventListener('click', () => { state.parity = createParityGrid(); persist(); render(); }); }
 
 function bindN12() { $$('[data-find-cell]').forEach(button => button.addEventListener('click', () => { const [r,c] = button.dataset.findCell.split(',').map(Number); if (r < 0 || c < 0) return; const n12 = state.screens.N12; const target = n12.board.cells[0]; const ok = r === target[0] && c === target[1]; n12.guesses[n12.round] = [r,c]; logEvent('attempt', 'N12', { detail: `${n12.round + 1}판 · 선택 ${r + 1}행 ${c + 1}열 · 실제 ${target[0] + 1}행 ${target[1] + 1}열 · ${ok ? '맞음' : '틀림'} · 힌트 ${state.hints.N12 || 0}단계`, attempt: { round: n12.round + 1, selected: [r + 1, c + 1], actual: [target[0] + 1, target[1] + 1], correct: ok, hintLevel: state.hints.N12 || 0 } }, ok ? 'ok' : 'fail'); if (!ok) advanceHint('N12'); mascotState = { mood: ok ? 'cheer' : (state.hints.N12 >= 2 ? 'worry' : 'tilt'), text: ok ? '찾았습니다. 같은 방법이 두 칸 오류에도 통할지 생각해 보세요.' : (HINTS.N12[state.hints.N12 - 1] || HINTS.N12[0]), open: true }; persist(); render(); })); $('#next-n12-round')?.addEventListener('click', () => { state.screens.N12.round += 1; state.screens.N12.board = randomErrorBoard(1); persist(); render(); }); $('#reset-n12')?.addEventListener('click', () => { state.screens.N12.board = randomErrorBoard(1); state.screens.N12.guesses[state.screens.N12.round] = undefined; persist(); render(); }); }
 
-function bindN14() { $$('input[name="n14"]').forEach(input => input.addEventListener('change', e => { state.screens.N14.prediction = e.target.value; persist(); })); $('#confirm-n14')?.addEventListener('click', () => { state.screens.N14.confirmed = true; logEvent('attempt', 'N14', { detail: `질문 수 예측 ${state.screens.N14.prediction || '미선택'}` }, 'predict'); persist(); render(); }); }
+function bindN14() { $$('input[name="n14"]').forEach(input => input.addEventListener('change', e => { state.screens.N14.prediction = e.target.value; recordPrediction('N14'); persist(); })); $('#confirm-n14')?.addEventListener('click', () => { if (!state.screens.N14.prediction) return; recordPrediction('N14', true); state.screens.N14.confirmed = true; logEvent('attempt', 'N14', { detail: `질문 수 예측 ${state.screens.N14.prediction || '미선택'}` }, 'predict'); persist(); render(); }); }
 
 function bindN15() {
   const n15 = state.screens.N15;
@@ -1194,7 +1392,7 @@ function bindN15() {
     box.addEventListener('dragleave', () => box.classList.remove('drop-target'));
     box.addEventListener('drop', event => { event.preventDefault(); box.classList.remove('drop-target'); const number = Number(event.dataTransfer.getData('text/plain')); if (number >= 1 && number <= 7) addNumber(boxIndex, number); });
     box.addEventListener('click', event => { if (event.target.closest('[data-remove]')) return; if (n15.selected) addNumber(boxIndex, n15.selected); });
-    box.addEventListener('keydown', event => { if ((event.key === 'Enter' || event.key === ' ') && n15.selected) { event.preventDefault(); addNumber(boxIndex, n15.selected); } });
+    box.addEventListener('keydown', event => { if (event.target === box && (event.key === 'Enter' || event.key === ' ') && n15.selected) { event.preventDefault(); addNumber(boxIndex, n15.selected); } });
   });
   $$('[data-remove]').forEach(chip => chip.addEventListener('click', event => {
     event.stopPropagation();
@@ -1220,7 +1418,7 @@ function bindN15() {
   $('#open-n15-guide')?.addEventListener('click', () => openGuide('N15_operate', '번호 블록을 끌어다 질문 상자에 넣거나, 번호를 누른 뒤 상자를 누르세요. 상자 안의 번호를 누르면 빠집니다. 질문 개수도 바꿀 수 있습니다.'));
 }
 
-function bindN16() { $$('input[name="n16"]').forEach(input => input.addEventListener('change', event => { const n16 = state.screens.N16; const target = n16.cases[n16.round]; const guess = Number(event.target.value); n16.guesses[n16.round] = guess; const ok = guess === target; logEvent('attempt', 'N16', { detail: `${n16.round + 1}판 · 답 패턴 ${questionPatternFor(target)} · 선택 ${guess === 0 ? '오류 없음' : `${guess}번`} · 실제 ${target === 0 ? '오류 없음' : `${target}번`} · ${ok ? '맞음' : '틀림'}`, attempt: { round: n16.round + 1, pattern: questionPatternFor(target), guess, actual: target, correct: ok } }, ok ? 'ok' : 'fail'); persist(); render(); })); $('#next-n16')?.addEventListener('click', () => { state.screens.N16.round += 1; persist(); render(); }); }
+function bindN16() { $$('input[name="n16"]').forEach(input => input.addEventListener('change', event => { const n16 = state.screens.N16; const target = n16.cases[n16.round]; const guess = Number(event.target.value); n16.guesses[n16.round] = guess; const ambiguous=n15Patterns().filter(item=>item.pattern===questionPatternFor(target)).length>1; const ok = !ambiguous && guess === target; logEvent('attempt', 'N16', { detail: `${n16.round + 1}판 · 답 패턴 ${questionPatternFor(target)} · 선택 ${guess === 0 ? '오류 없음' : `${guess}번`} · 실제 ${target === 0 ? '오류 없음' : `${target}번`} · ${ok ? '맞음' : '틀림'}`, attempt: { round: n16.round + 1, pattern: questionPatternFor(target), groups: state.screens.N15.groups.map(group=>group.slice()), guess, actual: target, correct: ok } }, ok ? 'ok' : 'fail'); persist(); render(); })); $('#next-n16')?.addEventListener('click', () => { state.screens.N16.round += 1; persist(); render(); }); }
 
 function bindN17() {
   $$('[data-code-cell]').forEach(button => button.addEventListener('click', () => {
@@ -1247,8 +1445,11 @@ function bindN17() {
   $$('input[name="n17-guess"]').forEach(input => input.addEventListener('change', event => {
     const n17 = state.screens.N17;
     n17.guess = event.target.value;
-    const ok = Number(n17.guess) === n17.query.codeIndex;
     const received = flipBit(n17.codes[n17.query.codeIndex], n17.query.error);
+    const distances = n17.codes.map(code => hammingDistance(code, received));
+    const best = Math.min(...distances);
+    const canCorrect = distances.filter(distance => distance === best).length === 1 && distances[n17.query.codeIndex] === best;
+    const ok = canCorrect && Number(n17.guess) === n17.query.codeIndex;
     logEvent('attempt', 'N17', { detail: `받은 값 ${received} · 신호 ${Number(n17.guess) + 1} 선택 · 실제 신호 ${n17.query.codeIndex + 1}`, attempt: { received, guess: Number(n17.guess) + 1, actual: n17.query.codeIndex + 1 } }, ok ? 'ok' : 'fail');
     if (!ok) advanceHint('N17');
     mascotState = { mood: ok ? 'cheer' : 'tilt', text: ok ? '가장 가까운 부호로 되돌리면 원래 신호가 나옵니다.' : (HINTS.N17[(state.hints.N17 || 1) - 1] || HINTS.N17[0]), open: true };
@@ -1257,20 +1458,50 @@ function bindN17() {
   }));
 }
 
-function bindN21() { $('#submit-button')?.addEventListener('click', submitWork); $('#download-button')?.addEventListener('click', () => downloadSubmission()); }
+function bindN21() {
+  $('#submit-button')?.addEventListener('click', submitWork);
+  $('#download-button')?.addEventListener('click', downloadSubmission);
+  $('#resubmit-button')?.addEventListener('click',()=>{ if(window.confirm('이미 보낸 기록이 있습니다. 현재 기록을 다시 제출할까요?')) { state.submitted={at:0,code:'',status:''}; submitWork(); } });
+}
+
 
 function openGuide(screen, text) { state.guideSeen[screen] = true; mascotState = { mood: 'idle', text, open: true }; logEvent('hint', screen, { detail: '조작 안내 열기' }, 'guide'); persist(); renderMascot(); }
 
-function advanceHint(screen) { const current = state.hints[screen] || 0; const attempts = state.log.filter(item => item.screen === screen && item.kind === 'attempt' && item.result === 'fail').length; const desired = attempts >= 5 ? 3 : attempts >= 3 ? 2 : attempts >= 1 ? 1 : current; if (desired > current) { state.hints[screen] = desired; logEvent('hint', screen, { detail: `힌트 ${desired}단계` }, 'hint'); } return state.hints[screen] || 0; }
+function advanceHint(screen) {
+  const current=state.hints[screen]||0;
+  const attempts=state.attemptStats[screen]?.failures ?? state.log.filter(item=>item.screen===screen && item.kind==='attempt' && ['fail','partial'].includes(item.result)).length;
+  const desired=attempts>=5?3:attempts>=3?2:attempts>=1?1:current;
+  if(desired>current) { state.hints[screen]=desired; logEvent('hint',screen,{detail:`힌트 ${desired}단계`},'hint'); }
+  return state.hints[screen]||0;
+}
+
+function hintMood(level) { return level>=3?'explain':level>=2?'worry':level>=1?'tilt':'idle'; }
+
+function hintTextFor(screen, level) {
+  if(screen==='N5_operate' && !(state.screens.N5.observedCounts||[]).includes(4)) return ['각 열의 0과 1 개수를 세어 보세요.','반복 횟수를 바꾸고 같은 방법으로 판단해 보세요.','여러 횟수에서 많은 쪽을 항상 하나로 고를 수 있는지 비교해 보세요.'][level-1];
+  return (HINTS[screen]||[])[level-1] || '지금 필요한 조작을 찾아 보세요.';
+}
+
+function showFirstGuide(screen) {
+  const guides={N4:['bits','.bit-display','내 답의 빈칸을 눌러 0 또는 1을 정하세요.'],N6_operate:['pipeline','.palette','팔레트에서 블록을 추가하고, 화살표로 순서를 바꾸어 시험해 보세요.'],N7:['pipeline','.palette','팔레트에서 블록을 추가하고 화살표로 순서를 바꾸어 보세요.'],N10:['pipeline','.palette','팔레트에서 블록을 추가하고 화살표로 순서를 바꾸어 보세요.'],N11:['parity','.parity-grid','가장자리 검사 칸을 눌러 0 또는 1을 정하세요.'],N15_operate:['questions','.number-palette','번호를 고른 뒤 질문 상자를 누르세요. 상자 안의 번호를 누르면 빠집니다.']};
+  const guide=guides[screen];
+  if(!guide || state.guideSeen[`mode:${guide[0]}`]) return;
+  state.guideSeen[`mode:${guide[0]}`]=true;
+  $(guide[1])?.classList.add('guide-target');
+  mascotState={mood:'idle',text:guide[2],open:true};
+  logEvent('guide',screen,{detail:guide[2]},'guide');
+}
+
 
 function renderMascot() {
   let slot = $('.mascot-slot');
-  if (!slot) { slot = document.createElement('div'); slot.className = 'mascot-slot'; document.body.appendChild(slot); }
-  const mood = mascotState.mood || 'idle';
+  if (!slot) { slot = document.createElement('div'); slot.className = 'mascot-slot'; $('.bottom-bar').insertBefore(slot, $('#screen-count')); }
+  const last = [...state.log].reverse().find(item=>item.screen===state.screenId && item.kind==='attempt');
+  const mood = mascotState.text ? mascotState.mood : last?.result==='ok' ? 'cheer' : hintMood(state.hints[state.screenId]||0);
   const level = state.hints[state.screenId] || 0;
-  const fallback = level && HINTS[state.screenId] ? HINTS[state.screenId][level - 1] : '지금 필요한 조작을 찾아 보세요.';
+  const fallback = hintTextFor(state.screenId, Math.max(1,level));
   const hintText = mascotState.text || fallback;
-  slot.innerHTML = `<div class="mascot-bubble" aria-live="polite" ${mascotState.open ? '' : 'hidden'}><p>${esc(hintText)}</p><div class="mascot-actions">${level && level < 3 ? '<button id="next-hint" type="button">다음 힌트</button>' : ''}<button id="close-mascot" type="button">닫기</button></div></div><button id="mascot-button" class="mascot-button" type="button" aria-label="${mascotState.open ? '힌트 닫기' : '힌트 열기'}"><img src="../../assets/mascot-${esc(mood)}.png" alt="" aria-hidden="true" onerror="if (!this.dataset.fallback) { this.dataset.fallback='1'; this.src='assets/mascot-${esc(mood)}.png'; } else { this.style.display='none'; }"></button>`;
+  slot.innerHTML = `<div class="mascot-bubble" aria-live="polite" ${mascotState.open ? '' : 'hidden'}><p>${esc(hintText)}</p><div class="mascot-actions">${HINTS[state.screenId] && level < 3 ? '<button id="next-hint" type="button">다음 힌트</button>' : ''}<button id="close-mascot" type="button">닫기</button></div></div><button id="mascot-button" class="mascot-button" type="button" aria-label="${mascotState.open ? '힌트 닫기' : '힌트 열기'}"><span aria-hidden="true" class="mascot-fallback" hidden>?</span><img src="../../assets/mascot-${esc(mood)}.png" alt="" aria-hidden="true" onerror="this.hidden=true;this.previousElementSibling.hidden=false"></button>`;
   $('#mascot-button')?.addEventListener('click', () => { mascotState.open = !mascotState.open; renderMascot(); });
   /* 글을 쓰기 시작하면 말풍선을 닫는다. 오른쪽 아래에 고정이라 입력칸을 가린다. */
   if (!window.__mascotAutoClose) {
@@ -1283,63 +1514,93 @@ function renderMascot() {
       renderMascot();
     });
   }
-  $('#close-mascot')?.addEventListener('click', () => { mascotState.open = false; renderMascot(); });
-  $('#next-hint')?.addEventListener('click', () => { const current = state.hints[state.screenId] || 0; const next = Math.min(3, current + 1); state.hints[state.screenId] = next; mascotState.text = (HINTS[state.screenId] || [])[next - 1] || ''; mascotState.mood = next >= 3 ? 'explain' : next >= 2 ? 'worry' : 'tilt'; logEvent('hint', state.screenId, { detail: `힌트 ${next}단계 직접 열기` }, 'hint'); persist(); renderMascot(); });
+  $('#close-mascot')?.addEventListener('click', () => { mascotState.open = false; $$('.guide-target').forEach(node=>node.classList.remove('guide-target')); renderMascot(); });
+  $('#next-hint')?.addEventListener('click', () => { const current = state.hints[state.screenId] || 0; const next = Math.min(3, current + 1); state.hints[state.screenId] = next; mascotState.text = hintTextFor(state.screenId,next); mascotState.mood = next >= 3 ? 'explain' : next >= 2 ? 'worry' : 'tilt'; logEvent('hint', state.screenId, { detail: `힌트 ${next}단계 직접 열기` }, 'hint'); persist(); renderMascot(); });
 }
 
 function createConfirmationCode() { const seed = `${state.student.sid}${state.student.name}${Date.now()}`; let hash = 0; for (const char of seed) hash = (hash * 31 + char.charCodeAt(0)) % 1000000; return String(hash).padStart(6, '0'); }
 
 function buildSubmissionHtml() {
-  const summary = submissionSummary();
-  const rows = compareRows().map(row => `<tr>${row.map(cell => `<td>${esc(cell)}</td>`).join('')}</tr>`).join('');
-  const expected = WRITE_FIELDS.filter(([key]) => state.includeOptional || !['N18_reason', 'N19_mariner'].includes(key));
-  const writeRows = expected.map(([key, label]) => `<section><h3>${esc(label)}</h3><p>${esc(state.writes[key] || '미작성')}</p></section>`).join('');
-  const logRows = state.log.map(item => `<tr><td>${new Date(item.t).toLocaleString('ko-KR')}</td><td>${esc(item.screen)}</td><td>${esc(item.kind)}</td><td>${esc(item.detail || '')}</td><td>${esc(item.result || '')}</td></tr>`).join('');
-  return `<!doctype html><html lang="ko"><head><meta charset="utf-8"><title>믿을 수 있게 보내기 제출 기록</title><style>@page{size:A4;margin:15mm}body{font-family:Arial,sans-serif;color:#202938;line-height:1.6}table{width:100%;border-collapse:collapse;margin:12px 0 24px}th,td{border:1px solid #ccc;padding:6px;text-align:left}h1{margin-bottom:4px}section{break-inside:avoid;border-top:1px solid #ddd;padding:8px 0}@media print{details{display:block}}</style></head><body><h1>믿을 수 있게 보내기</h1><p>학번: ${esc(state.student.sid)} · 이름: ${esc(state.student.name)}<br>제출 시각: ${new Date().toLocaleString('ko-KR')} · 확인 코드: ${esc(state.submitted.code || createConfirmationCode())}</p><h2>화면별 기록</h2>${writeRows}<h2>종합 비교표</h2><table><thead><tr><th>방식</th><th>전송량</th><th>탐지</th><th>정정</th><th>최소 거리</th><th>기록</th></tr></thead><tbody>${rows}</tbody></table><h2>시도 요약</h2><p>미작성 ${summary.unfilled.length}개 · 실패 실행 ${summary.unresolved}회</p><details><summary>전체 로그</summary><table><thead><tr><th>시각</th><th>화면</th><th>종류</th><th>상세</th><th>결과</th></tr></thead><tbody>${logRows}</tbody></table></details></body></html>`;
+  const summary=submissionSummary();
+  const writes=WRITE_FIELDS.map(([key,label])=>`<section><h3>${esc(label.replace('N3 ','반복 '))}</h3><p class="answer">${!state.includeOptional && ['N18_reason','N19_mariner'].includes(key) ? '건너뜀' : esc(state.writes[key]||'미작성')}</p></section>`).join('');
+  const records=summary.statuses.map(item=>{
+    const logs=state.log.filter(log=>log.screen===item.id && log.kind==='attempt');
+    const circuit=state.circuits[item.id==='N6_operate'?'N6':item.id];
+    const snapshot=circuit ? circuit.nodes.map(circuitBlockLabel).join(' → ') : item.id==='N15_operate' ? state.screens.N15.groups.map((group,i)=>`질문 ${i+1}: ${group.join(', ')||'없음'}`).join(' / ') : item.id==='N17' ? state.screens.N17.codes.join(' / ') : '';
+    const grid=item.id==='N11' ? `<table>${state.parity.values.map((row,r)=>'<tr>'+row.map((value,c)=>`<td>${r===0||c===0 ? value===null?'미입력':value : state.parity.data[r-1][c-1]}</td>`).join('')+'</tr>').join('')}</table>` : '';
+    return `<section><h3>${esc(item.label)} · ${esc(item.status)}</h3><p>${esc(snapshot)}</p>${grid}<p>${esc(logs.at(-1)?.detail||'실행 기록 없음')}</p></section>`;
+  }).join('');
+  const predictions=['N3','N6','N14'].map(key=>{
+    const prediction=state.predicts[key];
+    const record=prediction?.confirmed||prediction?.latest||prediction?.first;
+    return `<p>${{N3:'반복 횟수',N6:'통신로',N14:'질문 수'}[key]} · ${predictionEvidence(key)}: ${esc(record?.value||'미작성')} ${esc(record?.reason||'')}</p>`;
+  }).join('');
+  const tableRows=compareRows().map(row=>`<tr>${row.map(cell=>`<td>${esc(cell)}</td>`).join('')}</tr>`).join('');
+  const stats=summary.statuses.map(item=>`<tr><td>${esc(item.label)}</td><td>${esc(item.status)}</td><td>${item.attempts}</td><td>${item.firstSuccess??'없음'}</td><td>${item.hintLevel}</td></tr>`).join('');
+  const makeHtml=logs=>`<!doctype html><html lang="ko"><head><meta charset="utf-8"><title>믿을 수 있게 보내기 제출 기록</title><style>@page{size:A4;margin:15mm}body{font-family:Arial,sans-serif;color:#202938;line-height:1.6}table{width:100%;border-collapse:collapse;margin:12px 0 24px}th,td{border:1px solid #ccc;padding:6px;text-align:left;overflow-wrap:anywhere}section{break-inside:avoid;border-top:1px solid #ddd;padding:8px 0}.answer{white-space:pre-wrap;overflow-wrap:anywhere}@media print{table{break-inside:avoid}}</style></head><body><h1>믿을 수 있게 보내기</h1><p>학번: ${esc(state.student.sid)} · 이름: ${esc(state.student.name)}<br>제출 시각: ${new Date(state.submitted.at||Date.now()).toLocaleString('ko-KR')} · 확인 코드: ${esc(state.submitted.code)}</p><p>과목: 수학 · 관련 단원: 이진법과 오류 정정<br>학습 목표: 반복·패리티·질문 설계를 비교하고 오류를 견디는 방법을 설명한다.</p><h2>예측 기록</h2>${predictions}<h2>보기별 조작 기록</h2>${records}<h2>작성한 설명</h2>${writes}<h2>종합 비교표</h2><p>전송량은 정보 8비트 기준으로 환산한 비교값이며, 내 기록은 실제 활동에서 측정한 값입니다.</p><table><thead><tr><th>방식</th><th>전송량</th><th>탐지</th><th>정정</th><th>최소 거리</th><th>내 기록</th></tr></thead><tbody>${tableRows}</tbody></table><h2>시도 요약</h2><p>미작성 ${summary.unfilled.length}개 · 미해결 ${summary.unresolved}개</p><table><thead><tr><th>보기</th><th>상태</th><th>시도 수</th><th>첫 성공 시도</th><th>힌트 단계</th></tr></thead><tbody>${stats}</tbody></table><details><summary>전체 로그 (${logs.length}/${state.log.length}건)</summary><table><thead><tr><th>시각</th><th>활동</th><th>상세</th><th>결과</th></tr></thead><tbody>${logs.map(item=>`<tr><td>${new Date(item.t).toLocaleString('ko-KR')}</td><td>${esc(screenInfo(item.screen).label)}</td><td>${esc(item.detail||item.field||item.kind)}</td><td>${esc(item.result)}</td></tr>`).join('')}</tbody></table></details></body></html>`;
+  let logs=state.log.slice();
+  let html=makeHtml(logs);
+  while(new Blob([html]).size>500*1024 && logs.length>protectedLogEntries(logs).size) {
+    logs=trimLogs(logs,Math.max(protectedLogEntries(logs).size,Math.floor(logs.length*.7)));
+    html=makeHtml(logs);
+  }
+  return html;
 }
+
 
 function downloadSubmission() { const code = state.submitted.code || createConfirmationCode(); state.submitted.code = code; const blob = new Blob([buildSubmissionHtml()], { type: 'text/html;charset=utf-8' }); const url = URL.createObjectURL(blob); const link = document.createElement('a'); link.href = url; link.download = `${state.student.sid || '학번없음'}_${state.student.name || '이름없음'}_믿을수있게보내기.html`; link.click(); URL.revokeObjectURL(url); }
 
 async function submitWork() {
-  const button = $('#submit-button');
-  if (!button) return;
-  const code = createConfirmationCode();
-  state.submitted = { at: Date.now(), code, status: '준비 중' };
-  const html = buildSubmissionHtml();
-  if (!SCRIPT_URL) { state.submitted.status = '파일 저장 대기'; logEvent('submit', 'N21', { detail: 'Apps Script URL 미설정 · 파일 저장 가능' }, 'sent'); persist(true); render(); return; }
-  button.disabled = true;
-  const body = new URLSearchParams({ sid: state.student.sid, name: state.student.name, code, html });
-  try {
-    /* 1차: 응답을 읽어 실제로 도착했는지 확인한다. */
-    const response = await fetch(SCRIPT_URL, { method: 'POST', body });
-    const text = await response.text();
-    state.submitted.status = text.includes('ok') ? '제출되었습니다.' : '보냈지만 확인할 수 없습니다.';
-    logEvent('submit', 'N21', { detail: state.submitted.status }, text.includes('ok') ? 'ok' : 'sent');
-  } catch (error) {
+  if (submissionInFlight || ['ok','sent'].includes(state.submitted.result)) return;
+  if (!state.student.sid.trim() || !state.student.name.trim()) { navTo('N0'); return; }
+  submissionInFlight=true;
+  const submissionState=state;
+  const code=createConfirmationCode();
+  state.submitted={at:0,code,status:'준비 중',result:'pending'};
+  const html=buildSubmissionHtml();
+  const body=new URLSearchParams({sid:state.student.sid,name:state.student.name,code,html});
+  persist(true); render();
+  const post=async mode=>{
+    const controller=new AbortController();
+    const timer=setTimeout(()=>controller.abort(),20000);
     try {
-      /* 2차: 학교망에서 응답을 못 읽는 경우. 전송은 되지만 확인이 안 된다. */
-      await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body });
-      state.submitted.status = '보냈습니다. 확인 코드를 채팅에 남겨 주세요.';
-      logEvent('submit', 'N21', { detail: `no-cors 전송 · ${error.message}` }, 'sent');
-    } catch (retryError) {
-      state.submitted.status = '전송 실패 · 파일로 저장하세요.';
-      logEvent('submit', 'N21', { detail: `전송 실패 · ${retryError.message}` }, 'fail');
+      const response=await fetch(SCRIPT_URL,{method:'POST',body,signal:controller.signal,...(mode?{mode}:{})});
+      if(mode==='no-cors') return 'sent';
+      const reply=(await response.text()).trim();
+      if(!response.ok || reply!=='ok') return 'fail';
+      return 'ok';
+    } finally { clearTimeout(timer); }
+  };
+  let result='fail';
+  try {
+    if(SCRIPT_URL) {
+      try { result=await post(); }
+      catch(error) { try { result=await post('no-cors'); } catch(retryError) { result='fail'; } }
+    }
+  } finally {
+    submissionInFlight=false;
+    // A new session/import during an in-flight request must not inherit its outcome.
+    if(state===submissionState) {
+      state.submitted={at:result==='fail'?0:Date.now(),code,result,status:result==='ok'?'제출되었습니다.':result==='sent'?'보냈습니다. 확인 코드를 채팅에 남겨 주세요.':'전송에 실패했습니다. 다시 제출하거나 파일로 저장하세요.'};
+      logEvent('submit','N21',{detail:state.submitted.status},result);
+      persist(true); render();
     }
   }
-  persist(true);
-  render();
 }
+
 
 document.addEventListener('DOMContentLoaded', () => {
   $('#prev-button').addEventListener('click', () => navigate(-1));
   $('#next-button').addEventListener('click', () => navigate(1));
   $('#menu-button').addEventListener('click', () => { const menu = $('#activity-menu'); menu.hidden = !menu.hidden; $('#menu-button').setAttribute('aria-expanded', String(!menu.hidden)); });
   $('#menu-close').addEventListener('click', () => { $('#activity-menu').hidden = true; $('#menu-button').setAttribute('aria-expanded', 'false'); });
-  $('#export-code').addEventListener('click', () => { $('#progress-code').value = btoa(unescape(encodeURIComponent(JSON.stringify(state)))); });
-  $('#import-code').addEventListener('click', () => { try { const imported = JSON.parse(decodeURIComponent(escape(atob($('#progress-code').value.trim())))); localStorage.setItem(STORAGE_KEY, JSON.stringify(imported)); state = loadState(); render(); } catch (error) { $('#progress-code').value = '코드를 읽지 못했습니다.'; } });
+  $('#export-code').addEventListener('click', () => { $('#progress-code').value = btoa(unescape(encodeURIComponent(JSON.stringify({...state,screenId:state.screenId==='N0'?resumeView:state.screenId})))); });
+  $('#import-code').addEventListener('click', () => { try { const imported = JSON.parse(decodeURIComponent(escape(atob($('#progress-code').value.trim())))); if (!validateProgress(imported)) throw new Error('invalid state'); localStorage.setItem(STORAGE_KEY, JSON.stringify(imported)); state = loadState(); resumeView = state.screenId; $('#activity-menu').hidden = true; $('#menu-button').setAttribute('aria-expanded','false'); persist(true); render(); } catch (error) { $('#progress-code').value = '코드를 읽지 못했습니다.'; } });
   window.addEventListener('beforeunload', () => persist(true));
+  window.addEventListener('pagehide', () => persist(true));
+  document.addEventListener('visibilitychange', () => { if(document.visibilityState==='hidden') persist(true); });
   render();
 });
 
 window.SCREEN_ORDER = SCREEN_ORDER;
-window.giftedNoisy = { getState: () => state, reset: () => { localStorage.removeItem(STORAGE_KEY); localStorage.removeItem(LOG_KEY); state = initialState(); render(); } };
+window.giftedNoisy = { getState: () => state, reset: () => { localStorage.removeItem(STORAGE_KEY); localStorage.removeItem(LOG_KEY); state = initialState(); resumeView = 'N0'; render(); } };

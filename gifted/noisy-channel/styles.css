@@ -24,7 +24,7 @@ html { min-width: 320px; background: var(--canvas); }
 body { margin: 0; color: var(--ink); background: var(--canvas); line-height: 1.55; }
 button, input, textarea, select { font: inherit; }
 button { cursor: pointer; }
-button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible, summary:focus-visible {
+button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible, summary:focus-visible, [tabindex]:focus-visible {
   outline: 3px solid #6ca4ff;
   outline-offset: 2px;
 }
@@ -237,3 +237,44 @@ details.attempt-details summary { cursor: pointer; color: var(--muted); font-siz
   .node-actions { gap: 6px; }
   .node-actions button { min-height: 44px; min-width: 44px; font-size: .9rem; }
 }
+/* Keep matrix columns aligned: every observation and answer shares the same tracks. */
+.bit-row { display:grid; grid-template-columns:48px repeat(8,44px); gap:7px; }
+.bit-row .bit { width:44px; height:44px; }
+.bit-display { overflow-x:auto; }
+.sr-only { position:absolute; width:1px; height:1px; padding:0; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; }
+.number-chip.in-box, .mascot-actions button, .node-actions button { min-width:44px; min-height:44px; font-size:14px; }
+input[type="range"] { min-height:44px; }
+.eyebrow, .section-label, .small, .save-state, .axis-pill, .cell-label { font-size:14px; }
+.guide-target { outline:3px solid #2563eb; outline-offset:5px; }
+@media (max-width:700px) {
+  .parity-grid { width:calc(100% + 24px); margin-inline:-12px; grid-template-columns:repeat(7,minmax(0,1fr)); }
+  .grid-cell { min-height:44px; }
+  .save-state { display:block; max-width:110px; font-size:12px; }
+  .topbar-actions { max-width:55%; }
+  .bit-display { display:flex; flex-wrap:wrap; gap:10px; }
+  .bit-row { display:flex; flex-direction:column; gap:5px; }
+  .bit-row .row-label { width:44px; min-height:28px; text-align:center; }
+  .bit-row .bit, .bit-row .bit-button { width:44px; height:44px; min-width:44px; flex-shrink:0; }
+  .card, .evidence, .reading { min-width:0; overflow-wrap:anywhere; }
+}
+@media (prefers-reduced-motion:reduce) { *, *::before, *::after { animation:none !important; transition:none !important; } }
+/* A 7×7 board stays in view on classroom tablets without shrinking touch targets. */
+.parity-grid { max-width:350px; }
+.mascot-button img[hidden] { display:none; }
+.mascot-fallback { display:grid; place-items:center; width:100%; height:100%; background:#fff; border:2px solid #667085; border-radius:12px; font-weight:800; }
+.mascot-fallback[hidden] { display:none; }
+@media (max-width:700px) {
+  .topbar-actions { max-width:none; }
+  #menu-button { white-space:nowrap; }
+  .bit-display { display:grid; overflow-x:auto; }
+  .bit-row { display:grid; grid-template-columns:48px repeat(8,44px); gap:7px; }
+  .bit-row .row-label { width:48px; min-height:0; }
+}
+/* Put the hint control in reserved navigation space so it cannot cover the board. */
+.bottom-bar { grid-template-columns:auto 56px 1fr auto; gap:10px; }
+.screen-count { text-align:center; }
+.mascot-slot { position:relative; inset:auto; width:56px; max-width:none; display:block; }
+.mascot-button { width:56px; height:56px; }
+.mascot-bubble { position:absolute; bottom:calc(100% + 14px); left:0; width:300px; max-width:calc(100vw - 120px); }
+.matrix-scroll-help { display:none; margin:0; }
+@media (max-width:700px) { .matrix-scroll-help { display:block; } .mascot-bubble { left:-40px; } }
