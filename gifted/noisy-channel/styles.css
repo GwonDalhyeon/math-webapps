@@ -171,6 +171,22 @@ details.attempt-details summary { cursor: pointer; color: var(--muted); font-siz
 .distance-bad { color: var(--red); font-weight: 900; }
 .reading { padding: 20px; border-radius: 14px; background: #fbfaf5; border: 1px solid #e5e0d5; }
 
+/* 상황 만화(C1·C2): 넓은 화면에서는 그림과 옆 설명을 나란히 둔다(명세서 §35). */
+.comic-layout { align-items: start; }
+.comic-card { padding: clamp(12px, 2vw, 20px); }
+.comic-figure { display: grid; gap: 12px; margin: 0; }
+.comic-image { display: block; width: 100%; max-width: 480px; height: auto; margin-inline: auto; border: 1px solid var(--line); border-radius: 16px; background: #fff; }
+.comic-explanation { align-content: start; }
+.comic-explanation h3 { margin-bottom: 0; }
+.comic-explanation p { margin: 0; }
+.comic-script { padding-top: 12px; border-top: 1px solid var(--line); }
+.comic-script summary { cursor: pointer; font-weight: 800; }
+.comic-script ol, .comic-fallback ol { display: grid; gap: 8px; margin: 12px 0 0; padding-left: 1.4rem; }
+.comic-fallback { padding: 16px; border: 1px dashed #b9b4a7; border-radius: 14px; background: #fbfaf5; }
+@media (min-width: 1024px) {
+  .comic-layout { grid-template-columns: minmax(0, 480px) minmax(0, 1fr); }
+}
+
 /* 배치는 하단 이동 바의 예약 칸이다(아래 .bottom-bar 규칙 참조, 명세서 §26). */
 .mascot-slot { z-index: 15; pointer-events: none; }
 .mascot-button { pointer-events: auto; flex: 0 0 68px; width: 68px; height: 68px; padding: 0; border: 0; border-radius: 50%; background: transparent; }
@@ -287,6 +303,46 @@ input[type="range"] { min-height:44px; }
 .bit-button.alt.empty { background:#f2efe7; }
 .bit-row.answer { margin-top:6px; padding-top:8px; border-top:2px solid var(--line); }
 .bit-row.answer .row-label { color:var(--ink); }
+
+/* N2: 받은 점형, 되읽기, 다이얼을 한 조작 영역에 둔다. */
+.noise-workspace { padding:18px 22px; gap:12px; }
+.noise-signals { display:grid; gap:10px; }
+.noise-signals .braille-card { padding:10px 12px; gap:6px; }
+.noise-signals .braille-cells { gap:8px; }
+.noise-cell { display:grid; gap:3px; justify-items:center; font-size:.8rem; }
+.braille-dot.flipped { outline:2px dashed #ffd86a; outline-offset:2px; }
+.noise-reading { display:grid; gap:3px; padding:10px 12px; background:var(--blue-soft); border-radius:10px; }
+.noise-reading output { font-size:1.35rem; letter-spacing:.08em; }
+.noise-reading span, .noise-changes { font-size:.82rem; }
+.noise-changes { margin-top:6px; }
+.noise-changes summary { cursor:pointer; }
+.noise-changes p { margin:6px 0; overflow-wrap:anywhere; }
+#noise-display { display:grid; gap:8px; }
+#noise-question textarea { min-height:76px; }
+.question-steps { margin:0; padding-left:1.6em; }
+.question-steps + p { margin:0; }
+.bit-row { grid-template-columns:104px repeat(8,44px); }
+.bit-row .row-label { width:104px; line-height:1.35; }
+@media (min-width:1000px) {
+  .noise-signals .braille-card { grid-template-columns:90px minmax(0,1fr); align-items:center; }
+  .noise-signals .cell-labels { grid-column:2; }
+  .main-content:has(.noise-workspace), .main-content:has(.question-layout) { padding-top:18px; }
+  .screen:has(.noise-workspace) .screen-heading, .screen:has(.question-layout) .screen-heading { margin-bottom:14px; }
+  .screen:has(.noise-workspace) .screen-heading h2, .screen:has(.question-layout) .screen-heading h2 { font-size:2rem; }
+  .noise-word-field { grid-template-columns:140px minmax(0,1fr); align-items:center; }
+  .question-layout { display:grid; grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr); gap:22px; }
+  .question-controls, .question-results { min-width:0; }
+  .question-controls { display:grid; align-content:start; gap:12px; }
+  .question-controls > .three-column { grid-template-columns:1fr; }
+  .question-controls .question-box { padding:10px 12px; display:grid; grid-template-columns:70px minmax(0,1fr); align-items:center; gap:6px; }
+  .question-controls .question-box h3 { margin:0; }
+  .question-results > p { margin-top:0; }
+  .question-results .pattern-table th, .question-results .pattern-table td { padding:8px 6px; }
+  .question-results .button-row { margin-top:10px; }
+}
+@media (max-width:599px) {
+  .noise-workspace { padding:14px; }
+}
 .mascot-slot { position:relative; inset:auto; width:56px; max-width:none; display:block; }
 .mascot-button { width:56px; height:56px; }
 .mascot-bubble { position:absolute; bottom:calc(100% + 14px); left:0; width:300px; max-width:calc(100vw - 120px); }

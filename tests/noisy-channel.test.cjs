@@ -4,6 +4,72 @@ const fs = require('node:fs');
 const vm = require('node:vm');
 const path = require('node:path');
 
+test('noise decoder round-trips every supported syllable including omitted initial ieung', () => {
+  const run = app();
+  assert.equal(run(`(() => {
+    for (const initial of Object.keys(BRAILLE.initial)) for (const medial of Object.keys(BRAILLE.medial)) for (const final of ['', ...Object.keys(BRAILLE.final)]) {
+      const word = String.fromCharCode(0xac00 + CHO_LIST.indexOf(initial)*588 + JUNG_LIST.indexOf(medial)*28 + JONG_LIST.indexOf(final));
+      if (readBrailleWord(word, transmitCells(messageCells(word).cells, 0)).text !== word) return false;
+    }
+    return true;
+  })()`), true);
+});
+
+test('decoding uses received dots, preserves syllable boundaries and exposes unreadable cells', () => {
+  const run = app();
+  run(`testCells = transmitCells(messageCells('수학').cells, 0); testCells[0].received = dotsToBits(BRAILLE.initial['ㄴ'])`);
+  assert.equal(run(`readBrailleWord('수학', testCells).text`), '누학');
+  run(`testCells[0].received = [1,1,1,1,1,1]`);
+  assert.equal(run(`readBrailleWord('수학', testCells).text`), '?학');
+  assert.match(run(`readBrailleWord('수학', testCells).failures.join()`), /1번 칸: 읽을 수 없는 점형/);
+  run(`testCells = transmitCells(messageCells('수학').cells, 0); testCells[0].received = [0,0,0,0,0,0]`);
+  assert.equal(run(`readBrailleWord('수학', testCells).text`), '우학');
+  assert.equal(run(`readBrailleWord('수과학', transmitCells(messageCells('수과학').cells,0)).text`), '수?학');
+});
+
+test('N2 keeps two experiments and opens question only after three explicit resends at ten percent', () => {
+  const run = app();
+  run(`state.screenId='N2_operate'; state.screens.N2.word='수학'; noiseSession()`);
+  assert.doesNotMatch(run('renderN2Operate()'), /data-write=/);
+  run(`recordNoiseSample('rate'); recordNoiseSample('resend'); recordNoiseSample('resend')`);
+  assert.doesNotMatch(run('renderN2Operate()'), /data-write=/);
+  run(`noiseSession().rate=20; recordNoiseSample('resend')`);
+  assert.equal(run('noiseSession().atTen'), 2);
+  run(`noiseSession().rate=10; recordNoiseSample('resend')`);
+  assert.match(run('renderN2Operate()'), /data-write="N2_observe"/);
+  assert.doesNotMatch(run('renderN2Operate()'), /data-write="N2_explain"/);
+  run(`savedNoise=JSON.stringify(noiseSession()); state.screenId='N2_write'`);
+  assert.equal(run('noiseSession().rate'), 0);
+  assert.match(run('renderN2Write()'), /id="noise-rate"/);
+  assert.match(run('renderN2Write()'), /data-write="N2_explain"/);
+  run(`noiseSession().rate=25; recordNoiseSample('rate'); state.screenId='N2_operate'`);
+  assert.equal(run('JSON.stringify(noiseSession()) === savedNoise'), true);
+  run(`state.screens.N2.word='우주'; noiseSession()`);
+  assert.equal(run('noiseSession().atTen'), 0);
+});
+
+test('legacy N2 samples and writing survive migration without invented observation counts', () => {
+  const run = app();
+  run(`state.screens.N2={word:'수학',rate:15,sends:9,cells:transmitCells(messageCells('수학').cells,0).map(({charIndex,...cell})=>cell)}; state.writes.N2_observe='기존 답'; legacyDots=JSON.stringify(state.screens.N2.cells.map(c=>c.received)); state.screenId='N2_operate'`);
+  assert.equal(run('noiseSession().rate'), 15);
+  assert.equal(run('noiseSession().atTen'), 0);
+  assert.equal(run('JSON.stringify(noiseSession().cells.map(c=>c.received)) === legacyDots'), true);
+  assert.equal(run('readBrailleWord(noiseSession().word,noiseSession().cells).text'), '수학');
+  assert.match(run('renderN2Operate()'), /기존 답/);
+});
+
+test('N2 logs each experiment and submission maps each answer to its own page', () => {
+  const run = app();
+  run(`state.screens.N2.word='수학'; state.screenId='N2_operate'; recordNoiseSample('resend'); state.writes.N2_observe='같은 확률도 결과는 다르다'; state.screenId='N2_write'; recordNoiseSample('rate')`);
+  assert.equal(run(`state.log.at(-1).noise.reading`), '수학');
+  assert.equal(run(`state.log.at(-1).screen`), 'N2_write');
+  assert.equal(run(`submissionSummary().statuses.find(s=>s.id==='N2_operate').status`), '작성');
+  assert.equal(run(`submissionSummary().statuses.find(s=>s.id==='N2_write').status`), '미작성');
+  assert.match(run('buildSubmissionHtml()'), /받은 점형:/);
+  assert.match(run('buildSubmissionHtml()'), /되읽기 수학/);
+  assert.equal(run('validateProgress(JSON.parse(JSON.stringify(state)))'), true);
+});
+
 function app() {
   const storage = new Map();
   const context = vm.createContext({
@@ -157,4 +223,27 @@ test('submission escapes student writing and retains multiline text and activity
   assert.ok(html.includes('white-space:pre-wrap'));
   assert.ok(html.includes('건너뜀'));
   assert.ok(html.includes('첫 성공 시도'));
+});
+
+
+test('noise failure totals count samples once and reject malformed saved experiments', () => {
+  const run = app();
+  run(`state.screenId='N2_operate'; state.screens.N2.word='수학'; Math.random=()=>0; recordNoiseSample('resend')`);
+  assert.equal(run('state.screens.N2.readFailures'), 1);
+  run('renderN2Operate(); renderN2Operate()');
+  assert.equal(run('state.screens.N2.readFailures'), 1);
+  assert.equal(run('validateProgress(JSON.parse(JSON.stringify(state)))'), true);
+  run('state.screens.N2.sessions.a.cells[0].received=[0]');
+  assert.equal(run('validateProgress(JSON.parse(JSON.stringify(state)))'), false);
+});
+
+test('comic intro views use local assets and preserve readable fallback scripts', () => {
+  const run = app();
+  const c1 = run('renderComic("C1")');
+  const c2 = run('renderComic("C2")');
+  assert.match(c1, /\.\/assets\/comic-1\.png/);
+  assert.match(c2, /\.\/assets\/comic-2\.png/);
+  assert.match(c1, /그림을 불러오지 못했습니다/);
+  assert.match(c1, /점자 편지를 손끝으로 읽으며 웃습니다/);
+  assert.match(c2, /1시·2시·3시/);
 });
