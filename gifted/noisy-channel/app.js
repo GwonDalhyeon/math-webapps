@@ -27,16 +27,20 @@ const SCREEN_ORDER = [
   { id: 'N7', activity: '통신로 설계', label: '조립 S2' },
   { id: 'N8', activity: '통신로 설계', label: '조립 S3' },
   { id: 'N9', activity: '통신로 설계', label: '비교 · 성찰' },
+  { id: 'C3', activity: '어디가 뒤집혔나', label: '만화 ③ · 검사 점 붙이기' },
   { id: 'N10', activity: '어디가 뒤집혔나', label: '조립 S4' },
   { id: 'N11a', activity: '어디가 뒤집혔나', label: '검사 점 (가) · 한 줄' },
   { id: 'N11b', activity: '어디가 뒤집혔나', label: '검사 점 (나) · 7×7' },
   { id: 'N12', activity: '어디가 뒤집혔나', label: '한 칸 찾기' },
   { id: 'N13_observe', activity: '어디가 뒤집혔나', label: '두 칸 오류 · 관찰' },
   { id: 'N13_write', activity: '어디가 뒤집혔나', label: '두 칸 오류 · 작성' },
-  { id: 'N14', activity: '질문 세 번', label: '질문 수 예측', optional: false },
-  { id: 'N15_operate', activity: '질문 세 번', label: '질문 설계' },
-  { id: 'N15_write', activity: '질문 세 번', label: '질문 설계 · 작성' },
-  { id: 'N16', activity: '질문 세 번', label: '내 질문 시험', optional: true },
+  { id: 'N14', activity: '질문으로 찾기', label: '질문 수 예측', optional: false },
+  /* 만화가 「세 번」이라는 답을 보여주므로 N14 예측보다 뒤에 둔다. 예측을
+     끝낸 뒤 N15 설계의 공통 참조로 쓴다(명세서 §35-1). */
+  { id: 'C4', activity: '질문으로 찾기', label: '만화 ④ · 스무고개' },
+  { id: 'N15_operate', activity: '질문으로 찾기', label: '질문 설계' },
+  { id: 'N15_write', activity: '질문으로 찾기', label: '질문 설계 · 작성' },
+  { id: 'N16', activity: '질문으로 찾기', label: '내 질문 시험', optional: true },
   { id: 'N17', activity: '얼마나 멀어야', label: '부호 설계', optional: true },
   { id: 'N18', activity: '얼마나 멀어야', label: '거리 해석', optional: true },
   { id: 'N19', activity: '닫기', label: '마리너 9호', optional: true },
@@ -110,7 +114,7 @@ const HINTS = {
 const ACTIVITY_SECTIONS = {
   N0: '0 시작', C1: '1 보내면 망가진다', N1: '1 보내면 망가진다', N2_operate: '1 보내면 망가진다', N2_write: '1 보내면 망가진다', C2: '1 보내면 망가진다', N3: '1 보내면 망가진다',
   N4: '2 다수결', N5_operate: '2 다수결', N5_write: '2 다수결', N6_operate: '3 통신로 설계', N7: '3 통신로 설계', N8: '3 통신로 설계', N9: '3 통신로 설계',
-  N10: '4 어디가 뒤집혔나', N11a: '4 어디가 뒤집혔나', N11b: '4 어디가 뒤집혔나', N12: '4 어디가 뒤집혔나', N13_observe: '4 어디가 뒤집혔나', N13_write: '4 어디가 뒤집혔나', N14: '5 질문으로 찾기', N15_operate: '5 질문 세 번', N15_write: '5 질문 세 번', N16: '5 질문 세 번',
+  C3: '4 어디가 뒤집혔나', N10: '4 어디가 뒤집혔나', N11a: '4 어디가 뒤집혔나', N11b: '4 어디가 뒤집혔나', N12: '4 어디가 뒤집혔나', N13_observe: '4 어디가 뒤집혔나', N13_write: '4 어디가 뒤집혔나', C4: '5 질문으로 찾기', N14: '5 질문으로 찾기', N15_operate: '5 질문으로 찾기', N15_write: '5 질문으로 찾기', N16: '5 질문으로 찾기',
   N17: '6 얼마나 멀어야', N18: '6 얼마나 멀어야', N19: '7 닫기', N20: '7 닫기', N21: '7 닫기'
 };
 
@@ -118,6 +122,40 @@ const $ = (selector, root = document) => root.querySelector(selector);
 const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
 const esc = (value = '') => String(value).replace(/[&<>'"]/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[char]));
 const uid = () => `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+
+/* ── 학생마다 다른 문제 (명세서 §36) ──────────────────────────────────────
+   순수 난수를 쓰면 교사가 학생 화면을 재현할 수 없고, 새로고침할 때마다
+   문제가 바뀌어 이어하기와 충돌한다. 학번을 시드로 쓰면 학생마다 다르면서
+   같은 학번은 언제 열어도 같은 문제를 본다.
+
+   만들어진 문제는 state에 저장한다. 시드만 저장하고 매번 다시 만들면,
+   나중에 이 알고리즘을 고쳤을 때 과거 제출물을 재현할 수 없게 된다.
+
+   §6-2의 1000회 시뮬레이션과 N2의 잡음에는 쓰지 않는다. 거기서는 실행할
+   때마다 값이 달라지는 것 자체가 학습 내용이다. */
+function hashSeed(text) {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < text.length; i += 1) { h ^= text.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; }
+  return h >>> 0;
+}
+
+function seededRandom(...parts) {
+  let a = hashSeed(parts.join('|'));
+  return function next() {
+    a = (a + 0x6D2B79F5) >>> 0;
+    let t = a;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function studentId() { return String(state.student.sid || '').trim(); }
+function hasStudentId() { return studentId().length > 0; }
+function studentRandom(...parts) { return seededRandom(studentId(), ...parts); }
+
+/* 시드로 문제를 만드는 화면은 학번이 없으면 문제를 만들지 않는다(§36-2). */
+const SEEDED_SCREENS = new Set(['N4', 'N5_operate', 'N5_write', 'N11a', 'N11b', 'N12', 'N13_observe', 'N13_write', 'N16', 'N17']);
 
 function defaultCircuit(stage = 'N6') {
   const fixed = ['message', 'receiver'];
@@ -236,22 +274,34 @@ function restoredBraille(answer, success) {
    각 행이 한 자모의 점형(6비트), 각 열이 점 번호 1~6번이다.
    이전에는 (r*5+c*3+r+c)%2 로 채웠는데 이 식은 항상 0이라 격자가 통째로
    비어 있었고, 그래서 패리티 활동이 성립하지 않았다. */
-function createParityGrid() {
-  const source = messageCells('수학공부').cells.slice(0, 6);
+/* 겹자모가 없어 이 앱의 점자표 안에서 온전히 표현되는 낱말만 쓴다.
+   표에 없는 점형을 지어내지 않는다(명세서 §36-3). */
+const PARITY_WORDS = ['수학공부', '나비하늘', '노트정리', '바다구름', '거리시간', '소리모아', '고구마', '파도소리', '비바람', '스스로', '토마토', '초코우유'];
+
+/* initialState()는 state가 아직 만들어지기 전에 돌기 때문에 학번을 읽을 수
+   없다. 그래서 시드를 인자로 받는다. */
+function parityWord(sid = '') {
+  const rand = seededRandom(sid, 'N11');
+  return PARITY_WORDS[Math.floor(rand() * PARITY_WORDS.length)];
+}
+
+function createParityGrid(sid = '') {
+  const source = messageCells(parityWord(sid)).cells.slice(0, 6);
   const data = source.map(cell => cell.bits.slice());
   const labels = source.map(cell => cell.sym);
   while (data.length < 6) { data.push([0, 0, 0, 0, 0, 0]); labels.push('·'); }
+  const word = parityWord(sid);
   const values = Array.from({ length: 7 }, () => Array(7).fill(null));
   /* 13칸이 전부 빈 상태로 시작하면 막막하다. 첫 세로줄의 검사 칸 하나를
      예시로 채워 둔다(명세서 §18-1). 이 칸은 학생이 고치지 않는다. */
   values[0][1] = data.reduce((sum, row) => sum + row[0], 0) % 2;
-  return { data, labels, values, placed: [[0, 1]], check: null, checked: false };
+  return { word, data, labels, values, placed: [[0, 1]], check: null, checked: false };
 }
 
 const PARITY_GIVEN = [0, 1];
 function isParityGiven(r, c) { return r === PARITY_GIVEN[0] && c === PARITY_GIVEN[1]; }
 
-function initialState() {
+function initialState(sid = '') {
   return {
     v: 1,
     student: { sid: '', name: '' },
@@ -275,7 +325,7 @@ function initialState() {
       N17: { codes: ['000000', '000000', '000000', '000000'], query: null, guess: '', tested: false }
     },
     circuits: { N6: defaultCircuit('N6'), N7: defaultCircuit('N7'), N8: defaultCircuit('N8'), N10: defaultCircuit('N10') },
-    parity: createParityGrid(),
+    parity: createParityGrid(sid),
     submitted: { at: 0, code: '', status: '' },
     log: [],
     attemptStats: {},
@@ -424,7 +474,23 @@ function screenInfo(id = state.screenId) { return SCREEN_ORDER.find(screen => sc
 
 function updateStudentField(key, value) {
   state.student[key] = value;
+  if (key === 'sid') reseedUntouchedProblems();
   persist();
+}
+
+/* 학번을 넣기 전에 만들어 둔 문제는 그 학생의 문제가 아니다. 아직 손대지
+   않은 것만 새 학번으로 다시 만든다. 이미 푼 문제는 건드리지 않는다(§36-2). */
+function reseedUntouchedProblems() {
+  const sid = studentId();
+  const screens = state.screens;
+  if (screens.N4.answer.every(value => value === null)) screens.N4.rows = null;
+  const answered = screens.N5.answers && Object.values(screens.N5.answers).some(list => Array.isArray(list) && list.some(value => value !== null));
+  if (!answered) screens.N5.rows = {};
+  if (state.parity.placed.length <= 1) state.parity = createParityGrid(sid);
+  if (screens.N12 && !screens.N12.guesses.some(guess => guess)) screens.N12.board = null;
+  if (screens.N13 && !String(state.writes.N13_one || '').trim() && !String(state.writes.N13_two || '').trim()) screens.N13 = null;
+  if (screens.N16 && !screens.N16.guesses.some(guess => guess !== undefined)) screens.N16.cases = [];
+  if (screens.N17) screens.N17.query = null;
 }
 
 function hasResumeData() {
@@ -530,12 +596,24 @@ function renderActivityMenu() {
   }));
 }
 
+/* 학번이 없으면 문제를 만들지 않는다(명세서 §36-2). 임의 시드로 대신
+   만들어 두면 나중에 학번을 넣어도 그 문제가 그대로 남는다. */
+function seedNotice(id) {
+  const info = screenInfo(id);
+  return `${heading(ACTIVITY_SECTIONS[id] || '', '학번을 먼저 입력하세요.', '이 활동은 학생마다 다른 문제가 나옵니다. 학번을 넣어야 내 문제를 만들 수 있습니다.')}
+  <div class="card stack">
+    <div class="notice">시작 화면에서 학번을 입력하면 「${esc(info.label)}」 문제가 만들어집니다. 같은 학번이면 언제 열어도 같은 문제가 나옵니다.</div>
+    <div class="button-row"><button id="go-enter-sid" class="primary-button" type="button">시작 화면으로</button></div>
+  </div>`;
+}
+
 function renderScreen(id) {
+  if (SEEDED_SCREENS.has(id) && !hasStudentId()) return `<section class="screen">${seedNotice(id)}</section>`;
   const renderers = {
     N0: renderN0, C1: renderComic, N1: renderN1, N2_operate: renderN2Operate, N2_write: renderN2Write, C2: renderComic, N3: renderN3, N4: renderN4,
     N5_operate: renderN5Operate, N5_write: renderN5Write, N6_operate: renderCircuitScreen,
-    N7: renderCircuitScreen, N8: renderCircuitScreen, N9: renderN9, N10: renderCircuitScreen, N11a: renderN11a, N11b: renderN11b, N12: renderN12,
-    N13_observe: renderN13Observe, N13_write: renderN13Write, N14: renderN14, N15_operate: renderN15Operate, N15_write: renderN15Write,
+    N7: renderCircuitScreen, N8: renderCircuitScreen, N9: renderN9, C3: renderComic, N10: renderCircuitScreen, N11a: renderN11a, N11b: renderN11b, N12: renderN12,
+    N13_observe: renderN13Observe, N13_write: renderN13Write, C4: renderComic, N14: renderN14, N15_operate: renderN15Operate, N15_write: renderN15Write,
     N16: renderN16, N17: renderN17, N18: renderN18, N19: renderN19, N20: renderN20, N21: renderN21
   };
   return `<section class="screen">${(renderers[id] || renderN1)(id)}</section>`;
@@ -602,13 +680,41 @@ const COMIC_DATA = {
       'B가 1시·2시·3시라고 적힌 세 종이를 비교하며 “2시? 3시?”라고 생각합니다.'
     ],
     explanation: '같은 신호를 여러 번 보내면 받는 쪽에 비교할 근거가 생깁니다. 하지만 세 번 보내면 보낼 양도 세 배가 됩니다. 정확함과 비용 중 무엇을 택할지가 오늘의 문제입니다.'
+  },
+  C3: {
+    src: './assets/comic-3.png',
+    section: '4 어디가 뒤집혔나',
+    title: '검사 점 붙이기',
+    intro: '점 하나를 더 붙이는 것만으로 오류가 있는지 알 수 있습니다. 그 대신 어느 점인지는 알 수 없습니다.',
+    alt: ['보내는 사람이 「검은 점은 항상 짝수 개」라는 규칙을 적어 둡니다.', '점이 홀수일 때 다른 색 점 하나를 더 찍어 짝수로 맞춥니다. 이 점을 검사 점이라고 합니다.', '받는 사람이 점을 세어 짝수인 것을 확인하고 고개를 끄덕입니다.', '다른 편지에서 점이 홀수인 것을 세고 눈을 크게 뜨며 어딘가 잘못됐다는 것을 알아챕니다.'],
+    frames: [
+      '보내는 사람이 규칙을 정합니다. “검은 점의 개수는 항상 짝수.”',
+      '점이 홀수면 점 하나를 더 붙여 짝수로 맞춥니다. 이 점을 검사 점이라고 합니다.',
+      '받는 사람이 세어 봅니다. “짝수네. 괜찮아.”',
+      '다른 편지는 홀수입니다. “홀수야! 어딘가 잘못됐어.”'
+    ],
+    explanation: '점 하나를 더 붙이는 것만으로 오류가 있는지 알 수 있습니다. 대신 어느 점이 뒤집혔는지는 알 수 없습니다. 틀렸다는 사실만 알 수 있는 것입니다. 위치까지 알아내려면 무엇이 더 필요할까요?'
+  },
+  C4: {
+    src: './assets/comic-4.png',
+    section: '5 질문으로 찾기',
+    title: '스무고개',
+    intro: '여덟 가지 중 하나를 고르는 문제입니다. 예·아니오 질문을 몇 번 하면 될까요?',
+    alt: ['두 사람이 마주 앉아 카드 여덟 장을 뒤집어 놓습니다. 그중 한 장이 뽑혔습니다.', '“왼쪽 네 장 안에 있어?”라고 묻자 상대가 고개를 끄덕이고 카드 네 장이 남습니다.', '“그중 위 두 장 안에 있어?”라고 묻자 고개를 젓고 카드 두 장이 남습니다.', '“둘 중 왼쪽?”이라고 묻자 끄덕이고 카드 한 장만 남아 빛납니다.'],
+    frames: [
+      '여덟 장 중 한 장이 뽑혔습니다. 어느 것일까요?',
+      '“왼쪽 네 장 안에 있어?” — 예. 네 장이 남습니다.',
+      '“그중 위 두 장 안에 있어?” — 아니오. 두 장이 남습니다.',
+      '“둘 중 왼쪽?” — 예. 한 장이 남습니다. 8 = 2 × 2 × 2'
+    ],
+    explanation: '신호에서 어느 자리가 뒤집혔는지 알아내는 것도 같은 문제입니다. 일곱 자리와 「아무 곳도 안 뒤집힘」까지 여덟 가지 중 하나를 고르는 것이니, 좋은 질문 세 번이면 됩니다. 어떤 질문을 해야 할지는 여러분이 직접 설계합니다.'
   }
 };
 
 function renderComic(id) {
   const comic = COMIC_DATA[id] || COMIC_DATA.C1;
   const script = comic.frames.map(frame => `<li>${esc(frame)}</li>`).join('');
-  return `${heading('1 보내면 망가진다', comic.title, comic.intro)}
+  return `${heading(comic.section || '1 보내면 망가진다', comic.title, comic.intro)}
   <div class="screen-layout comic-layout">
     <div class="card comic-card">
       <figure class="comic-figure">
@@ -758,7 +864,25 @@ function setResult(id, className, text) {
   node.textContent = text;
 }
 
-function n4Rows() { return state.screens.N4.exampleVersion === 1 ? [[1,0,1,0,1,0,1,1],[1,0,0,0,1,1,1,1],[1,1,1,0,0,1,1,0]] : MAJORITY_ROWS; }
+/* 3줄은 열마다 다수가 반드시 확정되어야 한다. 한 열에서 많아야 한 줄만
+   뒤집는다. 동점은 N5의 몫이다(명세서 §36-3). */
+function buildN4Rows() {
+  const rand = studentRandom('N4');
+  const base = MAJORITY_SOURCE;
+  const rows = [base.slice(), base.slice(), base.slice()];
+  base.forEach((_, c) => {
+    const pick = Math.floor(rand() * 4);
+    if (pick < 3) rows[pick][c] = 1 - rows[pick][c];
+  });
+  return rows;
+}
+
+function n4Rows() {
+  const n4 = state.screens.N4;
+  if (n4.exampleVersion === 1) return [[1,0,1,0,1,0,1,1],[1,0,0,0,1,1,1,1],[1,1,1,0,0,1,1,0]];
+  if (!Array.isArray(n4.rows) || n4.rows.length !== 3) { n4.rows = buildN4Rows(); persist(); }
+  return n4.rows;
+}
 
 function n4Verdict() {
   const rows = n4Rows();
@@ -825,12 +949,31 @@ function renderN5Operate() {
   <div class="card stack"><div class="choice-grid">${[3,4,5].map(count => `<div class="choice"><input id="n5-count-${count}" name="n5-count" type="radio" value="${count}" ${n5.count === count ? 'checked' : ''}><label for="n5-count-${count}">${count}번 받았을 때</label></div>`).join('')}</div>${rowsHtml(rows, answer, true, ties)}<div id="n5-result" class="result ${hasTie ? 'partial' : success ? 'ok' : complete ? 'fail' : ''}" role="status">${hasTie ? `동점인 열이 ${ties.map(value => value + 1).join(', ')}번째에 있습니다. 한쪽을 다수라고 정하기 어렵습니다.` : !complete ? '내 답 행을 채워 보세요.' : success ? '이 반복 횟수에서는 모든 열을 정할 수 있습니다.' : '선택한 답과 각 열의 값을 다시 비교해 보세요.'}</div><div class="button-row"><button id="reset-n5" class="secondary-button" type="button">답 다시 하기</button><button id="open-n5-guide" class="secondary-button" type="button">조작 안내</button></div></div>`;
 }
 
-function repeatedRows(count) {
+/* 홀수 횟수에서는 절반 미만만 뒤집어 다수결이 항상 하나로 정해지게 하고,
+   4번 받았을 때는 2:2 동점 열을 반드시 하나 만든다(명세서 §36-3). */
+function buildRepeatedRows(count) {
+  const rand = studentRandom('N5', count);
   const base = majoritySource('N5');
-  const rows = Array.from({ length: count }, (_, r) => base.map((bit, c) => ((r + c * 2 + (r === count - 1 ? 1 : 0)) % 5 === 0 ? 1 - bit : bit)));
-  // Four observations deliberately include a 2:2 column; odd counts stay decisive.
-  if (count === 4) rows.forEach((row, r) => { row[2] = r < 2 ? 0 : 1; });
+  const rows = Array.from({ length: count }, () => base.slice());
+  const maxFlip = Math.floor((count - 1) / 2);
+  base.forEach((_, c) => {
+    const flips = Math.floor(rand() * (maxFlip + 1));
+    const order = Array.from({ length: count }, (_, r) => r);
+    for (let i = order.length - 1; i > 0; i -= 1) { const j = Math.floor(rand() * (i + 1)); [order[i], order[j]] = [order[j], order[i]]; }
+    for (let i = 0; i < flips; i += 1) rows[order[i]][c] = 1 - rows[order[i]][c];
+  });
+  if (count === 4) {
+    const tieCol = Math.floor(rand() * base.length);
+    for (let r = 0; r < 4; r += 1) rows[r][tieCol] = r < 2 ? 0 : 1;
+  }
   return rows;
+}
+
+function repeatedRows(count) {
+  const n5 = state.screens.N5;
+  if (!n5.rows || typeof n5.rows !== 'object') n5.rows = {};
+  if (!Array.isArray(n5.rows[count]) || n5.rows[count].length !== count) { n5.rows[count] = buildRepeatedRows(count); persist(); }
+  return n5.rows[count];
 }
 
 
@@ -1266,10 +1409,22 @@ function checkParityGrid() {
 }
 
 
-function randomErrorBoard(errorCount = 1) {
+/* seedKey를 주면 학번으로 정해진 위치를 쓴다. 같은 학생은 새로고침해도
+   같은 문제를 보고, 교사는 학번만으로 재현할 수 있다(명세서 §36). */
+function randomErrorBoard(errorCount = 1, seedKey = null) {
+  const rand = seedKey ? studentRandom(seedKey) : Math.random;
   const base = state.parity.data.map(row => row.slice());
   const cells = [];
-  while (cells.length < errorCount) { const r = Math.floor(Math.random() * 6); const c = Math.floor(Math.random() * 6); if (!cells.some(cell => cell[0] === r && cell[1] === c)) cells.push([r, c]); }
+  let guard = 0;
+  while (cells.length < errorCount && guard < 500) {
+    guard += 1;
+    const r = Math.floor(rand() * 6);
+    const c = Math.floor(rand() * 6);
+    if (cells.some(cell => cell[0] === r && cell[1] === c)) continue;
+    /* 두 칸 오류는 행도 열도 겹치지 않아야 교차점이 넷이 된다(명세서 §36-3). */
+    if (errorCount > 1 && cells.some(cell => cell[0] === r || cell[1] === c)) continue;
+    cells.push([r, c]);
+  }
   cells.forEach(([r, c]) => { base[r][c] = 1 - base[r][c]; });
   return { base, cells };
 }
@@ -1288,7 +1443,7 @@ function parityBoardHtml(board, chosen = null, correct = false, interactive = fa
 
 function renderN12() {
   const n12 = state.screens.N12;
-  if (!n12.board) n12.board = randomErrorBoard(1);
+  if (!n12.board) n12.board = randomErrorBoard(1, `N12:${n12.round}`);
   const chosen = n12.guesses[n12.round];
   const correct = chosen && chosen[0]===n12.board.cells[0][0] && chosen[1]===n12.board.cells[0][1];
   return `${heading('4 어디가 뒤집혔나 · 한 칸 찾기', `뒤집힌 칸을 찾아 보세요 · ${n12.round+1}/3판`, '보내는 쪽은 검사 비트를 포함한 가로·세로의 1이 모두 짝수 개가 되도록 맞춰서 보냈습니다. 오는 길에 한 칸이 뒤집혔습니다. 어느 칸인지 찾아 누르세요.')}<div class="card stack">${parityBoardHtml(n12.board.base, chosen, correct, true)}<div class="result ${chosen ? (correct ? 'ok' : 'fail') : ''}" role="status">${chosen ? (correct ? '✓ 찾았습니다.' : '! 아직 아닙니다. 가로와 세로를 다시 살펴보세요.') : '검사할 칸을 하나 골라 보세요.'}</div>${correct && n12.round<2 ? '<button id="next-n12-round" class="primary-button" type="button">다음 판</button>' : ''}<button id="reset-n12" class="secondary-button" type="button">이 판 다시 만들기</button></div>`;
@@ -1314,8 +1469,8 @@ function parityOffLines(board) {
 }
 
 function renderN13Observe() {
-  if (!state.screens.N13) state.screens.N13 = { board: randomErrorBoard(2) };
-  const board = state.screens.N13.board || randomErrorBoard(2);
+  if (!state.screens.N13) state.screens.N13 = { board: randomErrorBoard(2, 'N13:0'), shuffles: 0 };
+  const board = state.screens.N13.board || randomErrorBoard(2, 'N13:0');
   const off = parityOffLines(board.base);
   const crossings = off.rows.length * off.cols.length;
   return `${heading('4 어디가 뒤집혔나 · 두 칸 오류', '두 칸이 뒤집히면 어떤 일이 생길까?', '이번에는 두 칸이 뒤집혔습니다. 아까와 같은 방법으로 찾을 수 있는지 확인해 보세요.')}
@@ -1361,7 +1516,7 @@ function renderN15Operate() {
   const duplicated = new Set(Object.keys(counts).filter(pattern => counts[pattern] > 1));
   const unique = duplicated.size === 0;
   const selected = n15.selected;
-  return `${heading('5 질문 세 번 · 설계', '질문 묶음을 직접 만들어 보세요.', '어느 자리가 뒤집혔는지 알아내려면 무엇을 함께 검사해야 할까요? 번호를 묶어 질문을 만들고 여덟 가지 일을 구별해 보세요.')}
+  return `${heading('5 질문으로 찾기 · 설계', '질문 묶음을 직접 만들어 보세요.', '어느 자리가 뒤집혔는지 알아내려면 무엇을 함께 검사해야 할까요? 번호를 묶어 질문을 만들고 여덟 가지 일을 구별해 보세요.')}
   <div class="card stack">
     <div class="question-layout"><div class="question-controls"><ol class="question-steps"><li>질문 상자에 번호를 넣어 첫 질문을 만드세요.</li><li>「구별할 수 있나?」를 눌러 답 패턴 표를 보세요.</li><li>똑같은 답 패턴이 있으면 질문을 고치거나 더 만드세요.</li></ol>
     <p class="muted small">각 질문은 “이 묶음에서 1의 개수를 세면 짝수 규칙이 깨졌나요?”입니다. 예는 1, 아니오는 0으로 적습니다. 한 번호를 여러 질문에 넣을 수 있습니다.</p>
@@ -1385,23 +1540,23 @@ function renderN15Operate() {
 }
 
 function renderN15Write() {
-  return `${heading('5 질문 세 번 · 작성', '질문 수를 바꾼 이유를 설명해 보세요.', '방금 만든 답 패턴 표와 실제 설계 변화가 근거로 남아 있습니다.')}
+  return `${heading('5 질문으로 찾기 · 작성', '질문 수를 바꾼 이유를 설명해 보세요.', '방금 만든 답 패턴 표와 실제 설계 변화가 근거로 남아 있습니다.')}
   <div class="card stack">${evidenceFor(['N15_operate'])}<div class="evidence">현재 질문 묶음: ${state.screens.N15.groups.map((group, i) => `질문 ${i + 1} = ${group.length ? group.join(', ') : '없음'}`).join(' · ')}</div><div class="writing-list">${writeBox('N15_change', '질문을 몇 개로 시작했고, 왜 바꾸었나요?', 'reflect')}${writeBox('N15_binary', '예/아니오를 1/0으로 읽어 붙이면 무엇이 되나요?', 'explain')}</div></div>`;
 }
 
 function renderN16() {
   const n16 = state.screens.N16;
-  if (!n16.cases.length) n16.cases = [randomQuestionCase(), randomQuestionCase(), randomQuestionCase()];
+  if (!n16.cases.length) n16.cases = [0, 1, 2].map(round => randomQuestionCase(`N16:${round}`));
   const target = n16.cases[n16.round];
   const guess = n16.guesses[n16.round];
   const matches=n15Patterns().filter(item=>item.pattern===questionPatternFor(target));
   const ambiguous=matches.length>1;
   const ok = !ambiguous && guess !== undefined && Number(guess) === target;
-  return `${heading('5 질문 세 번 · 선택 활동', `내 질문으로 오류 위치 찾기 · ${n16.round + 1}/3판`, '앞에서 만든 질문 묶음의 답 패턴을 보고 실제 위치를 골라 봅니다.')}
+  return `${heading('5 질문으로 찾기 · 선택 활동', `내 질문으로 오류 위치 찾기 · ${n16.round + 1}/3판`, '앞에서 만든 질문 묶음의 답 패턴을 보고 실제 위치를 골라 봅니다.')}
   <div class="card stack"><div class="notice">이번 답 패턴: <strong>${questionPatternFor(target)}</strong></div><div class="choice-grid">${['없음',1,2,3,4,5,6,7].map((label, i) => { const value = i === 0 ? 0 : i; return `<div class="choice"><input id="n16-${value}" name="n16" type="radio" value="${value}" ${guess !== undefined && Number(guess) === value ? 'checked' : ''}><label for="n16-${value}">${label === '없음' ? '아무 곳도 안 뒤집힘' : `${label}번째 뒤집힘`}</label></div>`; }).join('')}</div><div class="result ${guess === undefined ? '' : ok ? 'ok' : 'fail'}" role="status">${ambiguous ? `이 패턴에 해당하는 일이 ${matches.length}개여서 위치를 확정할 수 없습니다. 질문 설계로 돌아가 묶음을 바꾸어 보세요.` : guess === undefined ? '답을 하나 골라 보세요.' : ok ? '맞았습니다.' : '다른 일의 답 패턴과 비교해 보세요.'}</div>${ok && n16.round < 2 ? '<button id="next-n16" class="primary-button" type="button">다음 판</button>' : ''}</div>`;
 }
 
-function randomQuestionCase() { return Math.floor(Math.random() * 8); }
+function randomQuestionCase(seedKey = null) { return Math.floor((seedKey ? studentRandom(seedKey) : Math.random)() * 8); }
 function questionPatternFor(errorCase) { return n15PatternsFor(errorCase).join(''); }
 function n15PatternsFor(errorCase) { return state.screens.N15.groups.map(group => errorCase === 0 ? 0 : group.includes(errorCase) ? 1 : 0); }
 
@@ -1544,12 +1699,14 @@ function bindScreen(id) {
   if (id === 'N4') bindN4();
   if (id === 'N5_operate') bindN5();
   if (['N6_operate','N7','N8','N10'].includes(id)) bindCircuit(id === 'N6_operate' ? 'N6' : id);
+  $('#go-enter-sid')?.addEventListener('click', () => navTo('N0'));
   if (id === 'N11a') bindN11a();
   if (id === 'N11b') bindN11b();
   if (id === 'N12') bindN12();
-  if (id === 'N13_observe' && !state.screens.N13) { state.screens.N13 = { board: randomErrorBoard(2) }; persist(); }
+  if (id === 'N13_observe' && !state.screens.N13) { state.screens.N13 = { board: randomErrorBoard(2, 'N13:0'), shuffles: 0 }; persist(); }
   $('#reshuffle-n13')?.addEventListener('click', () => {
-    state.screens.N13.board = randomErrorBoard(2);
+    state.screens.N13.shuffles = (state.screens.N13.shuffles || 0) + 1;
+    state.screens.N13.board = randomErrorBoard(2, `N13:${state.screens.N13.shuffles}`);
     const off = parityOffLines(state.screens.N13.board.base);
     logEvent('attempt', 'N13_observe', { detail: `두 칸 오류 · 이상한 가로줄 ${off.rows.length}개, 세로줄 ${off.cols.length}개` }, 'observe');
     persist();
@@ -1602,7 +1759,7 @@ function bindN0() {
   $('#student-name')?.addEventListener('input', e => updateStudentField('name', e.target.value));
   $('#include-optional')?.addEventListener('change', e => { state.includeOptional = e.target.checked; persist(true); updateNavigation(); renderActivityMenu(); });
   $('#resume-button')?.addEventListener('click', () => { const target = resumeView === 'N0' ? 'N1' : resumeView; navTo(target); });
-  $('#new-button')?.addEventListener('click', () => { if (hasResumeData() && !window.confirm('저장된 활동 기록을 지우고 새로 시작할까요?')) return; const student = { ...state.student }; resumeView = 'N0'; state = initialState(); state.student = student; persist(true); render(); });
+  $('#new-button')?.addEventListener('click', () => { if (hasResumeData() && !window.confirm('저장된 활동 기록을 지우고 새로 시작할까요?')) return; const student = { ...state.student }; resumeView = 'N0'; state = initialState(student.sid); state.student = student; persist(true); render(); });
 }
 
 function recordNoiseSample(action) {
@@ -1769,10 +1926,11 @@ function bindN11b() {
     persist();
     render();
   });
-  $('#reset-parity')?.addEventListener('click', () => { state.parity = createParityGrid(); persist(); render(); });
+  $('#reset-parity')?.addEventListener('click', () => { state.parity = createParityGrid(studentId()); persist(); render(); });
 }
 
-function bindN12() { $$('[data-find-cell]').forEach(button => button.addEventListener('click', () => { const [r,c] = button.dataset.findCell.split(',').map(Number); if (r < 0 || c < 0) return; const n12 = state.screens.N12; const target = n12.board.cells[0]; const ok = r === target[0] && c === target[1]; n12.guesses[n12.round] = [r,c]; logEvent('attempt', 'N12', { detail: `${n12.round + 1}판 · 선택 ${r + 1}행 ${c + 1}열 · 실제 ${target[0] + 1}행 ${target[1] + 1}열 · ${ok ? '맞음' : '틀림'} · 힌트 ${state.hints.N12 || 0}단계`, attempt: { round: n12.round + 1, selected: [r + 1, c + 1], actual: [target[0] + 1, target[1] + 1], correct: ok, hintLevel: state.hints.N12 || 0 } }, ok ? 'ok' : 'fail'); if (!ok) advanceHint('N12'); mascotState = { mood: ok ? 'cheer' : (state.hints.N12 >= 2 ? 'worry' : 'tilt'), text: ok ? '찾았습니다. 같은 방법이 두 칸 오류에도 통할지 생각해 보세요.' : (HINTS.N12[state.hints.N12 - 1] || HINTS.N12[0]), open: true }; persist(); render(); })); $('#next-n12-round')?.addEventListener('click', () => { state.screens.N12.round += 1; state.screens.N12.board = randomErrorBoard(1); persist(); render(); }); $('#reset-n12')?.addEventListener('click', () => { state.screens.N12.board = randomErrorBoard(1); state.screens.N12.guesses[state.screens.N12.round] = undefined; persist(); render(); }); }
+function bindN12() { $$('[data-find-cell]').forEach(button => button.addEventListener('click', () => { const [r,c] = button.dataset.findCell.split(',').map(Number); if (r < 0 || c < 0) return; const n12 = state.screens.N12; const target = n12.board.cells[0]; const ok = r === target[0] && c === target[1]; n12.guesses[n12.round] = [r,c]; logEvent('attempt', 'N12', { detail: `${n12.round + 1}판 · 선택 ${r + 1}행 ${c + 1}열 · 실제 ${target[0] + 1}행 ${target[1] + 1}열 · ${ok ? '맞음' : '틀림'} · 힌트 ${state.hints.N12 || 0}단계`, attempt: { round: n12.round + 1, selected: [r + 1, c + 1], actual: [target[0] + 1, target[1] + 1], correct: ok, hintLevel: state.hints.N12 || 0 } }, ok ? 'ok' : 'fail'); if (!ok) advanceHint('N12'); mascotState = { mood: ok ? 'cheer' : (state.hints.N12 >= 2 ? 'worry' : 'tilt'), text: ok ? '찾았습니다. 같은 방법이 두 칸 오류에도 통할지 생각해 보세요.' : (HINTS.N12[state.hints.N12 - 1] || HINTS.N12[0]), open: true }; persist(); render(); })); $('#next-n12-round')?.addEventListener('click', () => { state.screens.N12.round += 1; state.screens.N12.board = randomErrorBoard(1, `N12:${state.screens.N12.round}`); persist(); render(); }); /* 같은 판을 다시 푸는 것이므로 문제는 그대로 두고 답만 비운다. */
+  $('#reset-n12')?.addEventListener('click', () => { state.screens.N12.guesses[state.screens.N12.round] = undefined; persist(); render(); }); }
 
 function bindN14() { $$('input[name="n14"]').forEach(input => input.addEventListener('change', e => { state.screens.N14.prediction = e.target.value; recordPrediction('N14'); persist(); })); $('#confirm-n14')?.addEventListener('click', () => { if (!state.screens.N14.prediction) return; recordPrediction('N14', true); state.screens.N14.confirmed = true; logEvent('attempt', 'N14', { detail: `질문 수 예측 ${state.screens.N14.prediction || '미선택'}` }, 'predict'); persist(); render(); }); }
 
@@ -1837,7 +1995,8 @@ function bindN17() {
   }));
   $('#test-code-error')?.addEventListener('click', () => {
     const n17 = state.screens.N17;
-    n17.query = { codeIndex: Math.floor(Math.random() * n17.codes.length), error: Math.floor(Math.random() * 6) };
+    const rand = studentRandom('N17', n17.codes.join(''));
+    n17.query = { codeIndex: Math.floor(rand() * n17.codes.length), error: Math.floor(rand() * 6) };
     n17.tested = true;
     n17.guess = '';
     const distances = [];
@@ -1945,8 +2104,14 @@ function buildSubmissionHtml() {
     const noisePartId = item.id === 'N2_operate' ? 'a' : item.id === 'N2_write' ? 'b' : null;
     const noise = noisePartId && state.screens.N2.sessions?.[noisePartId];
     const noiseRecord = noise ? `<p>낱말 ${esc(noise.word)} · 오류율 ${noise.rate}% · 다시 보내기 ${noise.sends}회 · 10%에서 다시 보내기 ${noise.atTen}회 · 되읽기 ${esc(readBrailleWord(noise.word, noise.cells || []).text)} · 되읽기 실패 누적 ${state.screens.N2.readFailures || 0}회</p><p>보낸 점형: ${esc((noise.cells || []).map(cell => cell.bits.join('')).join(' / '))}<br>받은 점형: ${esc((noise.cells || []).map(cell => (cell.received || cell.bits).join('')).join(' / '))}</p>` : '';
+    const bits=rows=>rows.map(row=>row.join('')).join(' / ');
+    /* 학생마다 문제가 다르므로 제출물만 보고 채점할 수 있어야 한다(명세서 §36-2). */
+    const problem=item.id==='N4' ? `<p>받은 신호: ${esc(bits(n4Rows()))}</p><p>내 답: ${esc(state.screens.N4.answer.map(v=>v===null?'·':v).join(''))}</p>`
+      : item.id==='N5_operate' ? [3,4,5].map(count=>`<p>${count}번 받았을 때: ${esc(bits(repeatedRows(count)))}<br>내 답: ${esc(n5Answer(count).map(v=>v===null?'·':v).join(''))}</p>`).join('')
+      : item.id==='N11a' ? `<p>내 줄: ${esc(n11aRows().mine.join(''))} · 검사 점: ${state.screens.N11a.answer===null?'미입력':state.screens.N11a.answer}</p>`
+      : item.id==='N11b' ? `<p>격자 낱말: ${esc(state.parity.word||'수학공부')}</p>` : '';
     const grid=item.id==='N11b' ? `<table>${state.parity.values.map((row,r)=>'<tr>'+row.map((value,c)=>`<td>${r===0||c===0 ? value===null?'미입력':value : state.parity.data[r-1][c-1]}</td>`).join('')+'</tr>').join('')}</table>` : '';
-    return `<section><h3>${esc(item.label)} · ${esc(item.status)}</h3><p>${esc(snapshot)}</p>${grid}${noiseRecord}<p>${esc(logs.at(-1)?.detail||'실행 기록 없음')}</p></section>`;
+    return `<section><h3>${esc(item.label)} · ${esc(item.status)}</h3><p>${esc(snapshot)}</p>${problem}${grid}${noiseRecord}<p>${esc(logs.at(-1)?.detail||'실행 기록 없음')}</p></section>`;
   }).join('');
   const predictions=['N3','N14'].map(key=>{
     const prediction=state.predicts[key];
