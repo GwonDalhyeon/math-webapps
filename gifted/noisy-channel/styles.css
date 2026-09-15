@@ -376,3 +376,16 @@ input[type="range"] { min-height:44px; }
   .trace-row { grid-template-columns: minmax(0, 1fr); }
   .trace-note { grid-column: 1; }
 }
+
+/* 한 줄로 먼저 연습하는 화면 (명세서 §18-1). */
+.parity-row-box { display: grid; gap: 6px; padding: 12px; border: 1px solid var(--line); border-radius: 12px; background: #fbfaf6; }
+.parity-row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.prow-label { width: 56px; color: var(--muted); font-size: 13px; font-weight: 800; }
+.prow-arrow { color: var(--muted); font-weight: 800; }
+.pbit { display: inline-grid; place-items: center; width: 44px; height: 44px; border: 1px solid #c7c4ba; border-radius: 10px; background: #fff; font-weight: 900; }
+.pbit.check { border-style: dashed; border-color: var(--blue); background: var(--blue-soft); }
+.pbit.check.given { border-style: solid; }
+.pbit.editable { cursor: pointer; }
+.pbit.empty { color: #a6a39a; }
+/* 예시로 채워 둔 칸은 학생이 고치지 않는다. */
+.grid-cell.given { background: #efece4; color: var(--muted); cursor: default; }

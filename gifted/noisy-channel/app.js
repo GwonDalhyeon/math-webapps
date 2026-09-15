@@ -28,7 +28,8 @@ const SCREEN_ORDER = [
   { id: 'N8', activity: '통신로 설계', label: '조립 S3' },
   { id: 'N9', activity: '통신로 설계', label: '비교 · 성찰' },
   { id: 'N10', activity: '어디가 뒤집혔나', label: '조립 S4' },
-  { id: 'N11', activity: '어디가 뒤집혔나', label: '검사 점 놓기' },
+  { id: 'N11a', activity: '어디가 뒤집혔나', label: '검사 점 (가) · 한 줄' },
+  { id: 'N11b', activity: '어디가 뒤집혔나', label: '검사 점 (나) · 7×7' },
   { id: 'N12', activity: '어디가 뒤집혔나', label: '한 칸 찾기' },
   { id: 'N13_observe', activity: '어디가 뒤집혔나', label: '두 칸 오류 · 관찰' },
   { id: 'N13_write', activity: '어디가 뒤집혔나', label: '두 칸 오류 · 작성' },
@@ -79,6 +80,16 @@ const HINTS = {
     '검사 비트는 메시지를 고치는 대신 이상이 있다는 사실만 알려 주는 장치입니다.',
     '전체 1의 개수가 짝수가 되도록 한 비트를 붙이면, 한 비트가 뒤집혔을 때 홀수가 됩니다.'
   ],
+  N11a: [
+    '이 줄의 1을 하나씩 세어 보세요.',
+    '1의 개수가 짝수인가요, 홀수인가요?',
+    '홀수라면 검사 점을 하나 붙여 짝수로 만들 수 있습니다.'
+  ],
+  N11b: [
+    '아직 짝수가 아닌 줄이 있습니다. 가로줄부터 하나씩 세어 보세요.',
+    '가로줄 여섯 개와 세로줄 여섯 개를 각각 맞춰야 합니다. 둘 다 확인했나요?',
+    '맨 오른쪽 아래 한 칸은 가로줄에도 속하고 세로줄에도 속합니다. 두 조건을 같이 만족하나요?'
+  ],
   N12: [
     '아직 아닙니다. 어느 가로·세로에서 1의 개수가 홀수인지 먼저 찾아보세요.',
     '가로줄을 하나씩 세어 보세요. 볼록한 점이 홀수인 줄이 있습니다.',
@@ -99,7 +110,7 @@ const HINTS = {
 const ACTIVITY_SECTIONS = {
   N0: '0 시작', C1: '1 보내면 망가진다', N1: '1 보내면 망가진다', N2_operate: '1 보내면 망가진다', N2_write: '1 보내면 망가진다', C2: '1 보내면 망가진다', N3: '1 보내면 망가진다',
   N4: '2 다수결', N5_operate: '2 다수결', N5_write: '2 다수결', N6_operate: '3 통신로 설계', N7: '3 통신로 설계', N8: '3 통신로 설계', N9: '3 통신로 설계',
-  N10: '4 어디가 뒤집혔나', N11: '4 어디가 뒤집혔나', N12: '4 어디가 뒤집혔나', N13_observe: '4 어디가 뒤집혔나', N13_write: '4 어디가 뒤집혔나', N14: '5 질문으로 찾기', N15_operate: '5 질문 세 번', N15_write: '5 질문 세 번', N16: '5 질문 세 번',
+  N10: '4 어디가 뒤집혔나', N11a: '4 어디가 뒤집혔나', N11b: '4 어디가 뒤집혔나', N12: '4 어디가 뒤집혔나', N13_observe: '4 어디가 뒤집혔나', N13_write: '4 어디가 뒤집혔나', N14: '5 질문으로 찾기', N15_operate: '5 질문 세 번', N15_write: '5 질문 세 번', N16: '5 질문 세 번',
   N17: '6 얼마나 멀어야', N18: '6 얼마나 멀어야', N19: '7 닫기', N20: '7 닫기', N21: '7 닫기'
 };
 
@@ -230,8 +241,15 @@ function createParityGrid() {
   const data = source.map(cell => cell.bits.slice());
   const labels = source.map(cell => cell.sym);
   while (data.length < 6) { data.push([0, 0, 0, 0, 0, 0]); labels.push('·'); }
-  return { data, labels, values: Array.from({ length: 7 }, () => Array(7).fill(null)), placed: [], check: null };
+  const values = Array.from({ length: 7 }, () => Array(7).fill(null));
+  /* 13칸이 전부 빈 상태로 시작하면 막막하다. 첫 세로줄의 검사 칸 하나를
+     예시로 채워 둔다(명세서 §18-1). 이 칸은 학생이 고치지 않는다. */
+  values[0][1] = data.reduce((sum, row) => sum + row[0], 0) % 2;
+  return { data, labels, values, placed: [[0, 1]], check: null, checked: false };
 }
+
+const PARITY_GIVEN = [0, 1];
+function isParityGiven(r, c) { return r === PARITY_GIVEN[0] && c === PARITY_GIVEN[1]; }
 
 function initialState() {
   return {
@@ -248,6 +266,7 @@ function initialState() {
       N2: { rate: 10, sends: 0, word: '', cells: null },
       N3: { prediction: '', locked: false, reason: '' },
       N4: { answer: Array(8).fill(null), checked: false, exampleVersion: 2 },
+      N11a: { answer: null, checked: false, tries: 0 },
       N5: { count: 3, answers: { 3: [], 4: [], 5: [] }, checked: false, ties: [], observedCounts: [], exampleVersion: 2 },
       N12: { round: 0, guesses: [], board: null },
       N14: { prediction: '', confirmed: false },
@@ -515,7 +534,7 @@ function renderScreen(id) {
   const renderers = {
     N0: renderN0, C1: renderComic, N1: renderN1, N2_operate: renderN2Operate, N2_write: renderN2Write, C2: renderComic, N3: renderN3, N4: renderN4,
     N5_operate: renderN5Operate, N5_write: renderN5Write, N6_operate: renderCircuitScreen,
-    N7: renderCircuitScreen, N8: renderCircuitScreen, N9: renderN9, N10: renderCircuitScreen, N11: renderN11, N12: renderN12,
+    N7: renderCircuitScreen, N8: renderCircuitScreen, N9: renderN9, N10: renderCircuitScreen, N11a: renderN11a, N11b: renderN11b, N12: renderN12,
     N13_observe: renderN13Observe, N13_write: renderN13Write, N14: renderN14, N15_operate: renderN15Operate, N15_write: renderN15Write,
     N16: renderN16, N17: renderN17, N18: renderN18, N19: renderN19, N20: renderN20, N21: renderN21
   };
@@ -550,7 +569,7 @@ function evidenceFor(ids = []) {
 }
 
 function evidenceScreens(field) {
-  if (field.startsWith('N9') || field.startsWith('N20')) return ['N6_operate','N7','N8','N10','N11','N12','N15_operate'];
+  if (field.startsWith('N9') || field.startsWith('N20')) return ['N6_operate','N7','N8','N10','N11b','N12','N15_operate'];
   if (field.startsWith('N2_')) return [field === 'N2_observe' ? 'N2_operate' : 'N2_write'];
   if (field.startsWith('N13')) return ['N12','N13_observe'];
   if (field.startsWith('N15')) return ['N15_operate'];
@@ -1181,11 +1200,47 @@ function renderN9() {
 
 function resultIcon(result) { return result === 'ok' ? '✓' : result === 'partial' ? '△' : result === 'fail' ? '!' : '·'; }
 
-function renderN11() {
+/* 처음 보는 규칙으로 13칸을 한 번에 채우게 한 것이 무리였다. 한 줄로 먼저
+   연습한 뒤 7×7로 간다(명세서 §18-1). */
+function n11aRows() { return { example: state.parity.data[0], mine: state.parity.data[1] }; }
+
+function parityOf(bits) { return bits.reduce((sum, bit) => sum + bit, 0) % 2; }
+
+function n11aCorrect() {
+  const answer = state.screens.N11a.answer;
+  return answer !== null && answer === parityOf(n11aRows().mine);
+}
+
+function renderN11a() {
+  const n11a = state.screens.N11a;
+  const rows = n11aRows();
+  const exampleOnes = rows.example.reduce((sum, bit) => sum + bit, 0);
+  const mineOnes = rows.mine.reduce((sum, bit) => sum + bit, 0);
+  const cell = (bit, extra = '') => `<span class="pbit${extra}">${bit}</span>`;
+  const correct = n11aCorrect();
+  return `${heading('4 어디가 뒤집혔나 · 검사 점 (가)', '검사 점 하나를 붙여 보세요.', '보내는 쪽은 「1의 개수가 항상 짝수」라는 규칙을 정했습니다. 홀수면 검사 점을 하나 붙여 짝수로 맞춥니다.')}
+  <div class="card stack">
+    <div class="parity-row-box">
+      <div class="parity-row"><span class="prow-label">예시</span>${rows.example.map(bit => cell(bit)).join('')}<span class="prow-arrow" aria-hidden="true">→</span>${cell(parityOf(rows.example), ' check given')}</div>
+      <p class="muted small" style="margin:0">1이 ${exampleOnes}개라 ${exampleOnes % 2 === 0 ? '이미 짝수입니다. 검사 점은 0' : '홀수입니다. 검사 점을 1로 붙여 짝수로 맞춥'}니다.</p>
+    </div>
+    <div class="parity-row-box">
+      <div class="parity-row"><span class="prow-label">내 차례</span>${rows.mine.map(bit => cell(bit)).join('')}<span class="prow-arrow" aria-hidden="true">→</span><button type="button" id="n11a-cell" class="pbit check editable ${n11a.answer === null ? 'empty' : ''}" aria-label="검사 점 ${n11a.answer === null ? '미입력' : n11a.answer}">${n11a.answer === null ? '·' : n11a.answer}</button></div>
+      <p class="muted small" style="margin:0">이 줄의 1을 세어 보고, 검사 점을 눌러 0 또는 1을 정하세요.</p>
+    </div>
+    <div id="n11a-result" class="result ${n11a.checked ? (correct ? 'ok' : 'fail') : ''}" role="status">${!n11a.checked ? '검사 점을 정하면 바로 확인합니다.' : correct ? `✓ 1이 ${mineOnes + n11a.answer}개, 짝수가 되었습니다.` : '아직 짝수가 아닙니다. 이 줄의 1을 다시 세어 보세요.'}</div>
+  </div>`;
+}
+
+function renderN11b() {
   const grid = state.parity;
   const placedCount = grid.placed.length;
   const check = checkParityGrid();
-  return `${heading('4 어디가 뒤집혔나 · 검사 점 놓기', '검사 칸을 직접 채워 보세요.', '가장자리 검사 칸을 포함하여 각 가로·세로의 1이 짝수 개가 되도록 채우세요. 이렇게 짝수를 맞춰 검사하는 방법을 패리티라고 합니다.')}<div class="card stack"><div class="parity-grid" role="grid" aria-label="7 곱하기 7 검사 점 격자">${grid.values.map((row, r) => row.map((value, c) => { const editable = r === 0 || c === 0; const shown = editable ? value : grid.data[r - 1]?.[c - 1]; return `<button type="button" class="grid-cell ${editable ? 'parity editable' : ''} ${shown === null ? 'empty' : ''} ${check.badCells?.some(cell => cell[0] === r && cell[1] === c) ? 'bad' : ''} ${check.ok && editable ? 'good' : ''}" data-parity-cell="${r},${c}" aria-label="${r + 1}행 ${c + 1}열 ${shown === null ? '미입력' : shown}">${shown === null ? '·' : shown}</button>`; }).join('')).join('')}</div><div class="axis-status">${check.rowStatus.map((good, i) => `<span class="axis-pill ${good ? 'good' : 'bad'}">가로 ${i + 1} ${good ? '✓' : '확인'}</span>`).join('')}${check.colStatus.map((good, i) => `<span class="axis-pill ${good ? 'good' : 'bad'}">세로 ${i + 1} ${good ? '✓' : '확인'}</span>`).join('')}</div><div class="result ${check.ok ? 'ok' : placedCount === 13 ? 'fail' : ''}" role="status">${check.ok ? '행과 열의 상태가 모두 맞습니다.' : `검사 칸 ${placedCount}/13개를 정했습니다. 색보다 행·열 문구를 함께 확인하세요.`}</div><button id="reset-parity" class="secondary-button" type="button">검사 칸 다시 비우기</button></div>`;
+  const badLines = grid.checked ? check.rowStatus.filter(good => !good).length + check.colStatus.filter(good => !good).length : 0;
+  const ready = placedCount === 13;
+  /* 「가로 1 확인」 칩이 입력할 때마다 알려 주어 학생이 세어 볼 이유가 없었다.
+     「검사」를 누를 때만, 그것도 이상한 줄의 개수만 알려준다(명세서 §18-1). */
+  return `${heading('4 어디가 뒤집혔나 · 검사 점 (나)', '격자 전체에 검사 점을 놓아 보세요.', '가로 6줄과 세로 6줄 모두 1이 짝수 개가 되도록 가장자리 13칸을 채웁니다. 맨 윗줄 한 칸은 예시로 채워 두었습니다. 다 채우면 「검사」를 누르세요.')}<div class="card stack"><div class="parity-grid" role="grid" aria-label="7 곱하기 7 검사 점 격자">${grid.values.map((row, r) => row.map((value, c) => { const edge = r === 0 || c === 0; const given = isParityGiven(r, c); const editable = edge && !given; const shown = edge ? value : grid.data[r - 1]?.[c - 1]; return `<button type="button" class="grid-cell ${editable ? 'parity editable' : ''} ${given ? 'given' : ''} ${shown === null ? 'empty' : ''} ${grid.checked && check.ok && edge ? 'good' : ''}" data-parity-cell="${r},${c}" aria-label="${r + 1}행 ${c + 1}열 ${shown === null ? '미입력' : shown}${given ? ', 예시' : ''}">${shown === null ? '·' : shown}</button>`; }).join('')).join('')}</div><div id="n11b-result" class="result ${grid.checked ? (check.ok ? 'ok' : 'fail') : ''}" role="status">${grid.checked ? (check.ok ? '✓ 가로와 세로가 모두 짝수입니다. 통과!' : `이상한 줄이 ${badLines}개 있습니다. 어느 줄인지는 직접 세어 찾아 보세요.`) : `검사 칸 ${placedCount}/13개를 정했습니다.${ready ? ' 「검사」를 눌러 확인하세요.' : ''}`}</div><div class="button-row"><button id="check-parity" class="primary-button" type="button" ${ready ? '' : 'disabled'}>검사</button><button id="reset-parity" class="secondary-button" type="button">전부 지우기</button></div></div>`;
 }
 
 function parityExpected() {
@@ -1428,7 +1483,7 @@ function renderN20() {
     <div class="table-wrap"><table><thead><tr><th>방식</th><th>전송 비트</th><th>탐지</th><th>정정</th><th>최소 거리</th><th>내 기록</th></tr></thead><tbody>${compareRows().map(row => `<tr>${row.map(cell => `<td>${esc(cell)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>
     <div class="reading"><p style="margin:0">질문 설계판의 7자리와 오류 없음, 총 8가지를 구별하는 데 필요한 최소 질문은 3개입니다. 내 현재 설계는 질문 ${questionCount}개입니다. 해밍 부호에서는 정보 4비트에 검사 비트 3개를 붙입니다. 정보를 8비트로 늘리면 질문이 <strong>4개</strong> 필요합니다(2<sup>4</sup> = 16 ≥ 8 + 4 + 1). 정보가 두 배가 되어도 질문은 하나만 늘어납니다.</p></div>
     ${writeBox('N20_reflect', '나라면 점자에 어느 방법을 쓰겠는가? 다시 보낼 수 없다는 점을 생각해서 쓰시오.', 'reflect')}
-    ${evidenceFor(['N6_operate','N7','N8','N10','N11','N12','N15_operate'])}
+    ${evidenceFor(['N6_operate','N7','N8','N10','N11b','N12','N15_operate'])}
   </div>`;
 }
 
@@ -1450,7 +1505,8 @@ function submissionSummary() {
       const circuit=state.circuits[screen.id==='N6_operate'?'N6':screen.id];
       status=!circuit.lastResult ? '미실행' : circuit.lastResult.version!==circuit.version ? '변경 후 미실행' : circuit.lastResult.verdict==='ok' ? '해결' : '미해결';
     }
-    if(screen.id==='N11') status=checkParityGrid().ok ? '해결' : state.parity.placed.length ? '미해결' : '미실행';
+    if(screen.id==='N11a') status=state.screens.N11a.checked ? (n11aCorrect() ? '해결' : '미해결') : '미실행';
+    if(screen.id==='N11b') status=state.parity.checked ? (checkParityGrid().ok ? '해결' : '미해결') : state.parity.placed.length > 1 ? '미제출' : '미실행';
     if(screen.id==='N15_operate') status=state.screens.N15.checked ? '해결' : logs.length ? '미해결' : '미실행';
     if(screen.id==='N4') status=state.screens.N4.checked ? state.screens.N4.answer.join('')===majoritySource().join('') ? '해결' : '미해결' : '미실행';
     if(screen.id==='N5_operate') status=state.screens.N5.checked ? state.screens.N5.ties.length ? '관찰' : n5Answer().every((v,i)=>v===majorityAnswers(repeatedRows(state.screens.N5.count))[i]) ? '해결' : '미해결' : '미실행';
@@ -1488,7 +1544,8 @@ function bindScreen(id) {
   if (id === 'N4') bindN4();
   if (id === 'N5_operate') bindN5();
   if (['N6_operate','N7','N8','N10'].includes(id)) bindCircuit(id === 'N6_operate' ? 'N6' : id);
-  if (id === 'N11') bindN11();
+  if (id === 'N11a') bindN11a();
+  if (id === 'N11b') bindN11b();
   if (id === 'N12') bindN12();
   if (id === 'N13_observe' && !state.screens.N13) { state.screens.N13 = { board: randomErrorBoard(2) }; persist(); }
   $('#reshuffle-n13')?.addEventListener('click', () => {
@@ -1674,7 +1731,46 @@ function bindCircuit(stage) {
   $('#open-circuit-guide')?.addEventListener('click', () => openGuide(stage, '팔레트에서 블록을 고르면 통신로에 들어갑니다. 블록을 끌어 옮기거나 ← → 버튼으로 순서를 바꿔 보세요. 실행 후에도 다시 구성할 수 있습니다.'));
 }
 
-function bindN11() { $$('[data-parity-cell]').forEach(button => button.addEventListener('click', () => { const [r, c] = button.dataset.parityCell.split(',').map(Number); if (!(r === 0 || c === 0)) return; const current = state.parity.values[r][c]; state.parity.values[r][c] = current === null ? 0 : 1 - current; if (!state.parity.placed.some(cell => cell[0] === r && cell[1] === c) && state.parity.values[r][c] !== null) state.parity.placed.push([r,c]); if (state.parity.values[r][c] === null) state.parity.placed = state.parity.placed.filter(cell => cell[0] !== r || cell[1] !== c); state.parity.check = checkParityGrid(); if (state.parity.placed.length===13) logEvent('attempt', 'N11', { detail: state.parity.check.ok?'13개 검사 칸 배치 완료':'검사 칸의 행·열 짝수가 맞지 않음' }, state.parity.check.ok?'ok':'fail'); persist(); render(); })); $('#reset-parity')?.addEventListener('click', () => { state.parity = createParityGrid(); persist(); render(); }); }
+function bindN11a() {
+  $('#n11a-cell')?.addEventListener('click', () => {
+    const n11a = state.screens.N11a;
+    n11a.answer = n11a.answer === null ? 0 : 1 - n11a.answer;
+    n11a.checked = true;
+    n11a.tries += 1;
+    const ok = n11aCorrect();
+    logEvent('attempt', 'N11a', { detail: `한 줄 검사 점 ${n11a.answer} · ${ok ? '짝수' : '홀수'}`, attempt: { answer: n11a.answer, correct: ok } }, ok ? 'ok' : 'fail');
+    if (!ok) advanceHint('N11a');
+    persist();
+    render();
+  });
+}
+
+function bindN11b() {
+  $$('[data-parity-cell]').forEach(button => button.addEventListener('click', () => {
+    const [r, c] = button.dataset.parityCell.split(',').map(Number);
+    if (!(r === 0 || c === 0) || isParityGiven(r, c)) return;
+    const grid = state.parity;
+    const current = grid.values[r][c];
+    grid.values[r][c] = current === null ? 0 : 1 - current;
+    if (!grid.placed.some(cell => cell[0] === r && cell[1] === c) && grid.values[r][c] !== null) grid.placed.push([r, c]);
+    if (grid.values[r][c] === null) grid.placed = grid.placed.filter(cell => cell[0] !== r || cell[1] !== c);
+    /* 칸을 고치면 이전 검사 결과는 더 이상 이 배치의 결과가 아니다(명세서 §14). */
+    grid.checked = false;
+    persist();
+    render();
+  }));
+  $('#check-parity')?.addEventListener('click', () => {
+    const grid = state.parity;
+    grid.check = checkParityGrid();
+    grid.checked = true;
+    const bad = grid.check.rowStatus.filter(good => !good).length + grid.check.colStatus.filter(good => !good).length;
+    logEvent('attempt', 'N11b', { detail: grid.check.ok ? '13개 검사 칸 배치 완료 · 가로 세로 모두 짝수' : `이상한 줄 ${bad}개`, attempt: { badLines: bad } }, grid.check.ok ? 'ok' : 'fail');
+    if (!grid.check.ok) advanceHint('N11b');
+    persist();
+    render();
+  });
+  $('#reset-parity')?.addEventListener('click', () => { state.parity = createParityGrid(); persist(); render(); });
+}
 
 function bindN12() { $$('[data-find-cell]').forEach(button => button.addEventListener('click', () => { const [r,c] = button.dataset.findCell.split(',').map(Number); if (r < 0 || c < 0) return; const n12 = state.screens.N12; const target = n12.board.cells[0]; const ok = r === target[0] && c === target[1]; n12.guesses[n12.round] = [r,c]; logEvent('attempt', 'N12', { detail: `${n12.round + 1}판 · 선택 ${r + 1}행 ${c + 1}열 · 실제 ${target[0] + 1}행 ${target[1] + 1}열 · ${ok ? '맞음' : '틀림'} · 힌트 ${state.hints.N12 || 0}단계`, attempt: { round: n12.round + 1, selected: [r + 1, c + 1], actual: [target[0] + 1, target[1] + 1], correct: ok, hintLevel: state.hints.N12 || 0 } }, ok ? 'ok' : 'fail'); if (!ok) advanceHint('N12'); mascotState = { mood: ok ? 'cheer' : (state.hints.N12 >= 2 ? 'worry' : 'tilt'), text: ok ? '찾았습니다. 같은 방법이 두 칸 오류에도 통할지 생각해 보세요.' : (HINTS.N12[state.hints.N12 - 1] || HINTS.N12[0]), open: true }; persist(); render(); })); $('#next-n12-round')?.addEventListener('click', () => { state.screens.N12.round += 1; state.screens.N12.board = randomErrorBoard(1); persist(); render(); }); $('#reset-n12')?.addEventListener('click', () => { state.screens.N12.board = randomErrorBoard(1); state.screens.N12.guesses[state.screens.N12.round] = undefined; persist(); render(); }); }
 
@@ -1791,7 +1887,7 @@ function hintTextFor(screen, level) {
 }
 
 function showFirstGuide(screen) {
-  const guides={N4:['bits','.bit-display','내 답의 빈칸을 눌러 0 또는 1을 정하세요.'],N6_operate:['pipeline','.palette','팔레트에서 블록을 추가하고, 화살표로 순서를 바꾸어 시험해 보세요.'],N7:['pipeline','.palette','팔레트에서 블록을 추가하고 화살표로 순서를 바꾸어 보세요.'],N10:['pipeline','.palette','팔레트에서 블록을 추가하고 화살표로 순서를 바꾸어 보세요.'],N11:['parity','.parity-grid','가장자리 검사 칸을 눌러 0 또는 1을 정하세요.'],N15_operate:['questions','.number-palette','번호를 고른 뒤 질문 상자를 누르세요. 상자 안의 번호를 누르면 빠집니다.']};
+  const guides={N4:['bits','.bit-display','내 답의 빈칸을 눌러 0 또는 1을 정하세요.'],N6_operate:['pipeline','.palette','팔레트에서 블록을 추가하고, 화살표로 순서를 바꾸어 시험해 보세요.'],N7:['pipeline','.palette','팔레트에서 블록을 추가하고 화살표로 순서를 바꾸어 보세요.'],N10:['pipeline','.palette','팔레트에서 블록을 추가하고 화살표로 순서를 바꾸어 보세요.'],N11b:['parity','.parity-grid','가장자리 검사 칸을 눌러 0 또는 1을 정하세요.'],N15_operate:['questions','.number-palette','번호를 고른 뒤 질문 상자를 누르세요. 상자 안의 번호를 누르면 빠집니다.']};
   const guide=guides[screen];
   if(!guide || state.guideSeen[`mode:${guide[0]}`]) return;
   state.guideSeen[`mode:${guide[0]}`]=true;
@@ -1849,7 +1945,7 @@ function buildSubmissionHtml() {
     const noisePartId = item.id === 'N2_operate' ? 'a' : item.id === 'N2_write' ? 'b' : null;
     const noise = noisePartId && state.screens.N2.sessions?.[noisePartId];
     const noiseRecord = noise ? `<p>낱말 ${esc(noise.word)} · 오류율 ${noise.rate}% · 다시 보내기 ${noise.sends}회 · 10%에서 다시 보내기 ${noise.atTen}회 · 되읽기 ${esc(readBrailleWord(noise.word, noise.cells || []).text)} · 되읽기 실패 누적 ${state.screens.N2.readFailures || 0}회</p><p>보낸 점형: ${esc((noise.cells || []).map(cell => cell.bits.join('')).join(' / '))}<br>받은 점형: ${esc((noise.cells || []).map(cell => (cell.received || cell.bits).join('')).join(' / '))}</p>` : '';
-    const grid=item.id==='N11' ? `<table>${state.parity.values.map((row,r)=>'<tr>'+row.map((value,c)=>`<td>${r===0||c===0 ? value===null?'미입력':value : state.parity.data[r-1][c-1]}</td>`).join('')+'</tr>').join('')}</table>` : '';
+    const grid=item.id==='N11b' ? `<table>${state.parity.values.map((row,r)=>'<tr>'+row.map((value,c)=>`<td>${r===0||c===0 ? value===null?'미입력':value : state.parity.data[r-1][c-1]}</td>`).join('')+'</tr>').join('')}</table>` : '';
     return `<section><h3>${esc(item.label)} · ${esc(item.status)}</h3><p>${esc(snapshot)}</p>${grid}${noiseRecord}<p>${esc(logs.at(-1)?.detail||'실행 기록 없음')}</p></section>`;
   }).join('');
   const predictions=['N3','N14'].map(key=>{
