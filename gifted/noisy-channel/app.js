@@ -59,24 +59,24 @@ const HINTS = {
     '다수결이 항상 하나로 정해지려면 관찰 횟수의 홀짝도 살펴야 합니다.'
   ],
   N6_operate: [
-    '성공률이 낮다면 잡음 구간 뒤에 정보가 하나만 남아 있는지 보세요.',
-    '같은 비트를 여러 개 보내면 받는 쪽에서 비교할 근거가 생깁니다.',
-    '여러 개가 도착했을 때 많은 쪽을 고르려면 반복과 다수결을 함께 생각해 보세요.'
+    '8비트 중 절반도 제대로 도착하지 못했습니다.',
+    '신호가 잡음 구간을 한 번 지납니다. 받는 쪽에 값이 하나만 도착하면, 그 값이 맞는지 판단할 근거가 있을까요?',
+    '여러 개가 도착하면 그중 많은 쪽을 고를 수 있습니다. 그러려면 최소 몇 개가 필요할까요?'
   ],
   N7: [
-    '목표는 정확성입니다. 보내기 전과 받은 뒤의 비트 수를 비교해 보세요.',
-    '잡음 뒤에 같은 비트가 여러 개 도착하도록 회로를 바꾸어 보세요.',
-    '반복한 묶음에서 다수인 값을 고르는 구조가 잡음의 영향을 줄입니다.'
+    '아직 4분의 3에 못 미칩니다.',
+    '블록이 놓인 순서를 보세요. 복제가 잡음을 만나기 전에 일어나고 있나요?',
+    '여러 개를 받은 쪽에서 무엇을 해야 하나요? 앞에서 손으로 해 본 그것입니다.'
   ],
   N8: [
-    '정확성은 충분하지만 전송량도 함께 확인해야 합니다.',
-    '8비트를 24비트로 보낸다는 것은 비트 하나를 몇 개로 늘린 것인지 생각해 보세요.',
-    '다수결이 가능한 가장 작은 홀수 반복을 선택할 수 있는지 살펴보세요.'
+    '성공률 조건은 만족했습니다. 전송량도 확인해 보세요.',
+    '8비트를 24비트로 보낸다는 것은 한 비트당 몇 개를 쓴다는 뜻일까요?',
+    '다수결이 가능한 가장 작은 홀수를 생각해 보세요. 앞에서 만난 것입니다.'
   ],
   N10: [
-    '받은 비트의 개수와 1의 개수를 함께 확인해 보세요.',
-    '검사 비트는 메시지를 고치는 대신 이상 신호를 알려 주는 장치입니다.',
-    '전체 1의 개수가 일정한지 확인하면 한 비트 오류를 알아챌 수 있습니다.'
+    '검사 비트가 붙어 있고, 검사를 잡음 구간 뒤에 하고 있나요?',
+    '검사 비트는 메시지를 고치는 대신 이상이 있다는 사실만 알려 주는 장치입니다.',
+    '전체 1의 개수가 짝수가 되도록 한 비트를 붙이면, 한 비트가 뒤집혔을 때 홀수가 됩니다.'
   ],
   N12: [
     '아직 아닙니다. 어느 줄이 이상한지 먼저 찾아보세요.',
@@ -233,7 +233,7 @@ function navTo(id, { log = true } = {}) {
   if (log && state.screenId !== id) logEvent('nav', state.screenId, { to: id });
   state.screenId = id;
   state.hintOpen = false;
-  mascotState.open = false;
+  mascotState = { mood: 'idle', text: '', open: false };
   recordView(id);
   render();
   window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -467,38 +467,245 @@ function circuitNode(type, index, selected, fixed = false) {
 
 function circuitConfigFor(id) { return state.circuits[id] || state.circuits.N6; }
 
-function circuitMetrics(nodes, stage) {
-  const hasRepeat3 = nodes.includes('repeat3');
-  const hasRepeat5 = nodes.includes('repeat5');
-  const hasMajority = nodes.includes('majority');
-  const repeat = hasRepeat5 ? 5 : hasRepeat3 ? 3 : 1;
-  const bits = 8 * repeat;
-  let bitRecovery = 90;
-  if (hasMajority && repeat === 3) bitRecovery = 97.2;
-  else if (hasMajority && repeat === 5) bitRecovery = 99.1;
-  else if (stage === 'N10' && nodes.includes('parityEncode') && nodes.includes('parityCheck')) bitRecovery = 90;
-  else if (!hasRepeat3 && !hasRepeat5) bitRecovery = 90;
-  const parityReady = stage === 'N10' && nodes.includes('parityEncode') && nodes.includes('parityCheck') && bits + 1 <= 9;
-  let passed = false;
-  if (stage === 'N6') passed = nodes.includes('message') && nodes.includes('noise') && nodes.includes('receiver');
-  if (stage === 'N7') passed = bitRecovery >= 90 && hasRepeat3 && hasMajority;
-  if (stage === 'N8') passed = bitRecovery >= 90 && bits <= 24 && hasRepeat3 && hasMajority;
-  if (stage === 'N10') passed = parityReady;
-  return { bitRecovery, messageSuccess: (bitRecovery / 100) ** 8 * 100, bits, repeat, passed, parityReady, hasRepeat3, hasRepeat5, hasMajority };
+/* ── 통신로 시뮬레이션 (명세서 §6-2, §17-2) ───────────────────────────────
+   블록을 왼쪽에서 오른쪽 순서로 신호 배열에 적용한다. 순서가 결과를 바꾼다.
+   화면에 쓰는 모든 수치는 실제 난수 시행의 상대도수이며 상수를 쓰지 않는다. */
+const TRIALS = 1000;
+const SOURCE = [1, 0, 1, 1, 0, 0, 1, 0];
+const SOURCE_BITS = SOURCE.length;
+
+/* 난수 없이 길이만 따라가며 최종 길이·전송량·구조 경고를 구한다. */
+function analyzeCircuit(nodes) {
+  let length = SOURCE_BITS;
+  let groupSize = 1;
+  let parityAttached = false;
+  let noiseBits = 0;
+  const warnings = [];
+  for (const type of nodes) {
+    if (type === 'repeat3' || type === 'repeat5') {
+      const k = type === 'repeat3' ? 3 : 5;
+      length *= k;
+      groupSize *= k;
+    } else if (type === 'parityEncode') {
+      length += 1;
+      parityAttached = true;
+    } else if (type === 'noise') {
+      noiseBits = length;
+    } else if (type === 'majority') {
+      if (groupSize <= 1) { warnings.push('다수결할 대상이 없습니다. 앞쪽에 반복 블록이 필요합니다.'); continue; }
+      length = Math.floor(length / groupSize);
+      groupSize = 1;
+    } else if (type === 'parityCheck') {
+      if (!parityAttached) { warnings.push('검사할 검사 비트가 없습니다. 앞쪽에 패리티 붙이기가 필요합니다.'); continue; }
+      length -= 1;
+      parityAttached = false;
+    }
+  }
+  const canCompare = length === SOURCE_BITS;
+  if (!canCompare) warnings.push(`최종 신호가 ${length}비트입니다. 원본 ${SOURCE_BITS}비트와 나란히 비교할 수 없습니다.`);
+  return { canCompare, finalLength: length, noiseBits, warnings };
+}
+
+/* 파이프라인 1회 실행. mode 'noise'는 각 비트를 NOISE_RATE로, 'one'은 정확히 한 비트를 뒤집는다. */
+function runPipelineOnce(nodes, mode) {
+  let signal = SOURCE.slice();
+  let groupSize = 1;
+  let parityAttached = false;
+  let detected = false;
+  for (const type of nodes) {
+    if (type === 'repeat3' || type === 'repeat5') {
+      const k = type === 'repeat3' ? 3 : 5;
+      const next = [];
+      for (const bit of signal) for (let i = 0; i < k; i += 1) next.push(bit);
+      signal = next;
+      groupSize *= k;
+    } else if (type === 'parityEncode') {
+      signal = signal.concat([signal.reduce((sum, bit) => sum + bit, 0) % 2]);
+      parityAttached = true;
+    } else if (type === 'noise') {
+      if (mode === 'one') {
+        const at = Math.floor(Math.random() * signal.length);
+        signal = signal.map((bit, index) => (index === at ? bit ^ 1 : bit));
+      } else {
+        signal = signal.map(bit => (Math.random() < NOISE_RATE ? bit ^ 1 : bit));
+      }
+    } else if (type === 'majority') {
+      if (groupSize <= 1) continue;
+      const next = [];
+      for (let i = 0; i + groupSize <= signal.length; i += groupSize) {
+        let ones = 0;
+        for (let j = 0; j < groupSize; j += 1) ones += signal[i + j];
+        /* 짝수 반복은 동점이 생긴다. 다수결로 정할 수 없으므로 한쪽을 무작위로 고른다. */
+        next.push(ones * 2 === groupSize ? (Math.random() < 0.5 ? 1 : 0) : (ones * 2 > groupSize ? 1 : 0));
+      }
+      signal = next;
+      groupSize = 1;
+    } else if (type === 'parityCheck') {
+      if (!parityAttached) continue;
+      detected = signal.reduce((sum, bit) => sum + bit, 0) % 2 !== 0;
+      signal = signal.slice(0, -1);
+      parityAttached = false;
+    }
+  }
+  return { signal, detected };
+}
+
+/* 1000회 시행의 상대도수를 낸다. N10은 한 비트 오류를 강제로 넣어 탐지율을 본다. */
+function simulateCircuit(nodes, stage) {
+  const info = analyzeCircuit(nodes);
+  if (!info.canCompare) return { ...info, ran: false };
+  const mode = stage === 'N10' ? 'one' : 'noise';
+  let exact = 0;
+  let bitHits = 0;
+  let detectHits = 0;
+  for (let t = 0; t < TRIALS; t += 1) {
+    const out = runPipelineOnce(nodes, mode);
+    let same = 0;
+    for (let i = 0; i < SOURCE_BITS; i += 1) if (out.signal[i] === SOURCE[i]) same += 1;
+    bitHits += same;
+    if (same === SOURCE_BITS) exact += 1;
+    if (out.detected) detectHits += 1;
+  }
+  return {
+    ...info,
+    ran: true,
+    trials: TRIALS,
+    messageSuccess: (exact / TRIALS) * 100,
+    bitRecovery: (bitHits / (TRIALS * SOURCE_BITS)) * 100,
+    detectRate: (detectHits / TRIALS) * 100,
+    bits: info.noiseBits
+  };
+}
+
+/* 판정은 측정값만으로 한다(명세서 §17-4). 블록 구성을 조건에 넣지 않는다 —
+   5번 반복으로 푼 학생이 탈락해서는 안 된다. */
+const MESSAGE_GOAL = 75;
+
+function judgeCircuit(metric, stage) {
+  if (!metric || !metric.ran) return 'blocked';
+  if (stage === 'N6') return 'ok';
+  if (stage === 'N7') return metric.messageSuccess >= MESSAGE_GOAL ? 'ok' : 'fail';
+  if (stage === 'N8') {
+    const accurate = metric.messageSuccess >= MESSAGE_GOAL;
+    const cheap = metric.bits <= 24;
+    return accurate && cheap ? 'ok' : (accurate || cheap ? 'partial' : 'fail');
+  }
+  if (stage === 'N10') {
+    const cheap = metric.bits <= 9;
+    const detects = metric.detectRate >= 100;
+    return cheap && detects ? 'ok' : (cheap || detects ? 'partial' : 'fail');
+  }
+  return 'fail';
+}
+
+/* 1단계 힌트는 학생이 방금 만든 결과에 맞춰 고른다(명세서 §24).
+   2·3단계는 HINTS의 고정 문구를 그대로 쓴다. */
+function circuitHint(stage, level, metric) {
+  const fixed = (HINTS[stage === 'N6' ? 'N6_operate' : stage] || [])[Math.max(0, level - 1)];
+  if (level !== 1 || !metric || !metric.ran) return fixed;
+  if (stage === 'N8') {
+    const accurate = metric.messageSuccess >= MESSAGE_GOAL;
+    const cheap = metric.bits <= 24;
+    if (accurate && !cheap) return '성공률 조건은 만족했습니다. 전송량도 확인해 보세요.';
+    if (!accurate && cheap) return '전송량은 넉넉합니다. 8비트가 모두 맞을 확률을 4분의 3까지 올려 보세요.';
+    return '성공률과 전송량이 아직 둘 다 조건에 못 미칩니다.';
+  }
+  if (stage === 'N10') {
+    const cheap = metric.bits <= 9;
+    const detects = metric.detectRate >= 100;
+    if (cheap && !detects) return '전송량은 조건 안에 있습니다. 오류를 알아채지 못한 까닭을 살펴보세요.';
+    if (!cheap && detects) return '오류는 알아챘습니다. 전송량이 9비트를 넘었습니다.';
+  }
+  return fixed;
+}
+
+function circuitDetail(metric, stage) {
+  if (stage === 'N10') return `전송량 ${metric.bits}비트 · 한 비트 오류 탐지율 ${metric.detectRate.toFixed(1)}% · ${metric.trials}회 시행`;
+  return `메시지 전체 성공률 ${metric.messageSuccess.toFixed(1)}% · 비트 복원률 ${metric.bitRecovery.toFixed(1)}% · 전송량 ${metric.bits}비트 · ${metric.trials}회 시행`;
+}
+
+const STAGE_COPY = {
+  N6: ['조립 S1 · 시험', '일단 보내 보고, 잡음이 얼마나 남는지 확인합니다.', '메시지 → 잡음 → 받은 메시지가 이어진 상태에서 실행해 보세요.'],
+  N7: ['조립 S2', '정확하게 보내는 통신로를 설계해 보세요.', '목표는 8비트가 모두 맞을 확률 4분의 3(75%) 이상입니다.'],
+  N8: ['조립 S3', '정확하고 싸게 보내 보세요.', '8비트가 모두 맞을 확률 75% 이상이면서, 잡음 구간을 지나는 비트가 24개 이하여야 합니다.'],
+  N10: ['조립 S4', '9비트로 보내되, 오류를 알아채는 방법을 설계해 보세요.', '잡음 구간을 지나는 비트 9개 이하에서 한 비트 오류를 100% 알아채는 구조를 만들어 봅니다.']
+};
+
+const VERDICT_TEXT = {
+  ok: '목표 조건을 만족했습니다.',
+  partial: '조건 하나는 만족했습니다. 남은 조건을 확인해 보세요.',
+  fail: '아직 조건을 만족하지 않습니다. 다른 구성을 시험해 보세요.',
+  blocked: '지금 구성으로는 결과를 낼 수 없습니다.'
+};
+
+/* N8은 N7의 설계를 이어받는다(명세서 §9). 학생이 손대지 않은 경우에만 복사한다. */
+function inheritCircuit(stage) {
+  if (stage !== 'N8') return;
+  const target = state.circuits.N8;
+  const source = state.circuits.N7;
+  if (!target || !source || target.inherited) return;
+  /* 첫 진입에서 한 번만 물려받는다. 매 렌더마다 돌면 방금 낸 실행 결과를 지운다. */
+  if (target.version === 0 && source.version > 0) {
+    target.nodes = source.nodes.slice();
+    target.selected = null;
+    target.lastResult = null;
+  }
+  target.inherited = true;
 }
 
 function renderCircuitScreen(id) {
   const stage = id === 'N6_operate' ? 'N6' : id;
+  inheritCircuit(stage);
   const circuit = circuitConfigFor(stage);
-  const metric = circuitMetrics(circuit.nodes, stage);
-  const stageCopy = {
-    N6: ['조립 S1 · 시험', '일단 보내 보고, 잡음이 얼마나 남는지 확인합니다.', '메시지 → 잡음 → 받은 메시지가 이어진 상태에서 실행해 보세요.'],
-    N7: ['조립 S2', '정확성을 높이는 통신로를 설계해 보세요.', '비트 복원률 90% 이상을 목표로 합니다. 전송량 제한은 아직 보이지 않습니다.'],
-    N8: ['조립 S3', '정확성과 전송량을 함께 맞춰 보세요.', '비트 복원률 90% 이상이면서 전송량 24비트 이하인지 확인합니다.'],
-    N10: ['조립 S4', '9비트로 보내되, 오류를 알아채는 방법을 설계해 보세요.', '전송량 9비트 이하에서 한 비트 오류 탐지 구조를 만들어 봅니다.']
-  }[stage] || ['통신로 조립', '블록을 골라 통신로를 바꾸어 보세요.', ''];
-  return `${heading(stageCopy[0], stageCopy[1], stageCopy[2])}
-  <div class="card stack"><div class="circuit-board"><div class="circuit-flow">${circuit.nodes.map((node, index) => `${circuitNode(node, index, circuit.selected, node === 'message' || node === 'receiver')}${index < circuit.nodes.length - 1 ? '<span class="circuit-arrow" aria-hidden="true">→</span>' : ''}`).join('')}</div><p class="muted small" style="margin:0">블록을 추가한 뒤 순서를 바꾸어 보세요. 연결은 왼쪽에서 오른쪽으로 읽습니다.</p><div><h3 style="font-size:1rem">블록 팔레트</h3><div class="palette">${['repeat3','repeat5','majority','parityEncode','parityCheck'].map(type => `<button type="button" data-add-block="${type}">+ ${circuitBlockLabel(type)}</button>`).join('')}</div></div></div><div class="status-line"><span class="result ${metric.passed ? 'ok' : metric.bitRecovery >= 90 ? 'partial' : 'fail'}" role="status">${resultIcon(metric.passed ? 'ok' : metric.bitRecovery >= 90 ? 'partial' : 'fail')} ${metric.passed ? '목표 조건을 만족했습니다.' : stage === 'N6' ? '이제 실행해 결과를 확인하세요.' : '아직 조건을 모두 만족하지 않습니다. 다른 구성을 시험해 보세요.'}</span></div><div class="two-column"><div class="evidence"><strong>${stage === 'N6' ? '메시지 전체 성공률' : '비트 복원률'}</strong><br>${stage === 'N6' ? `${metric.messageSuccess.toFixed(1)}%` : `${metric.bitRecovery.toFixed(1)}%`}<br><span class="muted small">${stage === 'N6' ? '8비트 메시지 전체가 원래대로 도착한 비율' : '비트 하나가 원래 값으로 돌아온 비율'}</span></div><div class="evidence"><strong>전송량</strong><br>${metric.bits}${stage === 'N10' && metric.parityReady ? ' + 검사 비트 1' : ''}비트<br><span class="muted small">실행할 때 실제 구성을 기준으로 표시</span></div></div><div class="button-row"><button id="run-circuit" class="primary-button" type="button">${circuit.lastResult ? '다시 보내기' : stage === 'N10' ? '오류를 넣어 시험하기' : '1000번 보내기'}</button><button id="open-circuit-guide" class="secondary-button" type="button">조작 안내</button></div>${circuit.lastResult ? `<div class="result ${circuit.lastResult.result === 'ok' ? 'ok' : 'fail'}">${esc(circuit.lastResult.detail)}</div>` : ''}</div>`;
+  const info = analyzeCircuit(circuit.nodes);
+  const last = circuit.lastResult;
+  const stale = Boolean(last) && last.version !== circuit.version;
+  const copy = STAGE_COPY[stage] || ['통신로 조립', '블록을 골라 통신로를 바꾸어 보세요.', ''];
+
+  const flow = circuit.nodes.map((node, index) => {
+    const fixed = node === 'message' || node === 'noise' || node === 'receiver';
+    return `${circuitNode(node, index, circuit.selected, fixed)}${index < circuit.nodes.length - 1 ? '<span class="circuit-arrow" aria-hidden="true">→</span>' : ''}`;
+  }).join('');
+
+  const palette = ['repeat3', 'repeat5', 'majority', 'parityEncode', 'parityCheck']
+    .map(type => `<button type="button" data-add-block="${type}">+ ${circuitBlockLabel(type)}</button>`).join('');
+
+  const warnBox = info.warnings.length
+    ? `<div class="result fail" role="status">${resultIcon('fail')} ${info.warnings.map(esc).join('<br>')}</div>`
+    : '';
+
+  let resultBox = '<p class="muted small" style="margin:0">아직 실행하지 않았습니다. 설계한 통신로를 시험해 보세요.</p>';
+  if (last) {
+    const m = last.metric;
+    const headline = stage === 'N10'
+      ? { label: '한 비트 오류 탐지율', value: `${m.detectRate.toFixed(1)}%`, sub: `전송량 ${m.bits}비트 · ${m.trials}회 시행` }
+      : { label: '메시지 전체 성공률', value: `${m.messageSuccess.toFixed(1)}%`, sub: `비트 복원률 ${m.bitRecovery.toFixed(1)}% · 전송량 ${m.bits}비트 · ${m.trials}회 시행` };
+    resultBox = `<div class="evidence">
+      ${stale ? '<span class="muted small">이전 구성의 결과</span><br>' : ''}
+      <strong>${headline.label}</strong><br>${headline.value}<br>
+      <span class="muted small">${esc(headline.sub)}</span>
+    </div>
+    <div class="status-line"><span class="result ${last.verdict}" role="status">${resultIcon(last.verdict)} ${esc(VERDICT_TEXT[last.verdict] || '')}</span></div>
+    ${stale ? '<p class="muted small" style="margin:6px 0 0">구성이 바뀌었습니다. 다시 시험해 보세요.</p>' : ''}`;
+  }
+
+  let runLabel = stage === 'N10' ? '오류를 넣어 시험하기' : `${TRIALS}번 보내기`;
+  if (last && !stale) runLabel = stage === 'N10' ? '다시 시험하기' : '다시 보내기';
+
+  return `${heading(copy[0], copy[1], copy[2])}
+  <div class="card stack">
+    <div class="circuit-board">
+      <div class="circuit-flow">${flow}</div>
+      <p class="muted small" style="margin:0">블록을 추가한 뒤 ↑ ↓ 로 순서를 바꿔 보세요. 연결은 왼쪽에서 오른쪽으로 읽습니다. 놓는 순서에 따라 결과가 달라집니다.</p>
+      <div><h3 style="font-size:1rem">블록 팔레트</h3><div class="palette">${palette}</div></div>
+    </div>
+    ${warnBox}
+    <div>${resultBox}</div>
+    <div class="button-row">
+      <button id="run-circuit" class="primary-button" type="button">${esc(runLabel)}</button>
+      <button id="open-circuit-guide" class="secondary-button" type="button">조작 안내</button>
+    </div>
+  </div>`;
 }
 
 function renderN6Predict() {
@@ -748,11 +955,36 @@ function bindN6Predict() { $('#confirm-n6-predict')?.addEventListener('click', (
 
 function bindCircuit(stage) {
   const circuit = circuitConfigFor(stage);
-  $$('[data-add-block]').forEach(button => button.addEventListener('click', () => { const type = button.dataset.addBlock; if (!circuit.nodes.includes(type) || type === 'majority') circuit.nodes.splice(Math.max(1, circuit.nodes.length - 1), 0, type); else circuit.nodes.splice(Math.max(1, circuit.nodes.length - 1), 0, type); circuit.version += 1; circuit.lastResult = null; persist(); render(); }));
+  $$('[data-add-block]').forEach(button => button.addEventListener('click', () => { const type = button.dataset.addBlock; if (!circuit.nodes.includes(type) || type === 'majority') circuit.nodes.splice(Math.max(1, circuit.nodes.length - 1), 0, type); else circuit.nodes.splice(Math.max(1, circuit.nodes.length - 1), 0, type); circuit.version += 1; persist(); render(); }));
   $$('[data-node-index]').forEach(node => node.addEventListener('click', event => { if (event.target.closest('[data-node-action]')) return; circuit.selected = Number(node.dataset.nodeIndex); persist(); render(); }));
-  $$('[data-node-action]').forEach(button => button.addEventListener('click', () => { const index = Number(button.dataset.nodeIndex); const action = button.dataset.nodeAction; if (action === 'remove' && !['message','receiver'].includes(circuit.nodes[index])) circuit.nodes.splice(index, 1); if (action === 'up' && index > 1) [circuit.nodes[index - 1], circuit.nodes[index]] = [circuit.nodes[index], circuit.nodes[index - 1]]; if (action === 'down' && index < circuit.nodes.length - 2) [circuit.nodes[index + 1], circuit.nodes[index]] = [circuit.nodes[index], circuit.nodes[index + 1]]; circuit.version += 1; circuit.lastResult = null; persist(); render(); }));
+  $$('[data-node-action]').forEach(button => button.addEventListener('click', () => { const index = Number(button.dataset.nodeIndex); const action = button.dataset.nodeAction; if (action === 'remove' && !['message','receiver'].includes(circuit.nodes[index])) circuit.nodes.splice(index, 1); if (action === 'up' && index > 1) [circuit.nodes[index - 1], circuit.nodes[index]] = [circuit.nodes[index], circuit.nodes[index - 1]]; if (action === 'down' && index < circuit.nodes.length - 2) [circuit.nodes[index + 1], circuit.nodes[index]] = [circuit.nodes[index], circuit.nodes[index + 1]]; circuit.version += 1; persist(); render(); }));
   $$('[data-node-index]').forEach(node => node.addEventListener('keydown', event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); node.click(); } }));
-  $('#run-circuit')?.addEventListener('click', () => { const metric = circuitMetrics(circuit.nodes, stage); const detail = stage === 'N10' ? `전송량 ${metric.bits + (metric.parityReady ? 1 : 0)}비트 · 한 비트 오류 탐지 ${metric.parityReady ? '가능' : '불가능'}` : stage === 'N6' ? `메시지 전체 성공률 ${metric.messageSuccess.toFixed(1)}% · 비트 복원률 ${metric.bitRecovery.toFixed(1)}% · 전송 ${metric.bits}비트` : `비트 복원률 ${metric.bitRecovery.toFixed(1)}% · 전송 ${metric.bits}비트`; const result = metric.passed ? 'ok' : stage === 'N6' ? 'fail' : 'fail'; circuit.lastResult = { result, detail: metric.passed ? `실행 결과: ${detail} · 목표 조건을 확인했습니다.` : `실행 결과: ${detail} · 목표 조건을 아직 만족하지 않습니다.` }; logEvent('attempt', stage === 'N6' ? 'N6_operate' : stage, { detail, attempt: { blocks: circuit.nodes.slice(), wires: Math.max(0, circuit.nodes.length - 1) } }, result); const mood = metric.passed ? 'cheer' : ((state.hints[stage] || 0) >= 2 ? 'worry' : 'tilt'); mascotState = { mood, text: metric.passed ? '구성이 조건을 만족했어요. 다른 구성과도 비교해 보세요.' : (HINTS[stage]?.[0] || '구성을 바꾸고 다시 시험해 보세요.'), open: true }; if (!metric.passed && HINTS[stage]) advanceHint(stage); persist(); render(); });
+  $('#run-circuit')?.addEventListener('click', () => {
+    const viewId = stage === 'N6' ? 'N6_operate' : stage;
+    const info = analyzeCircuit(circuit.nodes);
+    if (!info.canCompare) {
+      /* 실행 불가능한 구조와 실패로 결론 낼 수 있는 설계를 구분한다(명세서 §14).
+         이 경우는 수학적 실패 횟수에 넣지 않는다. */
+      mascotState = { mood: 'idle', text: info.warnings[0] || '아직 실행할 수 없는 구성입니다.', open: true };
+      logEvent('guide', viewId, { detail: `실행 불가 구성 · ${info.warnings.join(' / ')}` }, 'blocked');
+      render();
+      return;
+    }
+    const metric = simulateCircuit(circuit.nodes, stage);
+    const verdict = judgeCircuit(metric, stage);
+    const detail = circuitDetail(metric, stage);
+    circuit.lastResult = { version: circuit.version, verdict, detail, metric, blocks: circuit.nodes.slice() };
+    logEvent('attempt', viewId, { detail, attempt: { blocks: circuit.nodes.slice(), order: circuit.nodes.join(' > ') } }, verdict === 'ok' ? 'ok' : 'fail');
+    if (verdict === 'ok') {
+      mascotState = { mood: 'cheer', text: '목표 조건을 만족했어요. 다른 구성과도 비교해 보세요.', open: true };
+    } else {
+      const level = advanceHint(viewId);
+      const mood = level >= 3 ? 'explain' : level >= 2 ? 'worry' : 'tilt';
+      mascotState = { mood, text: circuitHint(stage, level, metric) || '구성을 바꾸고 다시 시험해 보세요.', open: true };
+    }
+    persist();
+    render();
+  });
   $('#open-circuit-guide')?.addEventListener('click', () => openGuide(stage, '팔레트에서 블록을 추가하고, 블록의 화살표 버튼으로 순서를 바꿔 보세요. 실행 후에도 다시 구성할 수 있습니다.'));
 }
 
@@ -778,13 +1010,13 @@ function renderMascot() {
   let slot = $('.mascot-slot');
   if (!slot) { slot = document.createElement('div'); slot.className = 'mascot-slot'; document.body.appendChild(slot); }
   const mood = mascotState.mood || 'idle';
-  const text = mascotState.text || '지금 필요한 조작을 찾아 보세요.';
   const level = state.hints[state.screenId] || 0;
-  const hintText = level && HINTS[state.screenId] ? HINTS[state.screenId][level - 1] : text;
+  const fallback = level && HINTS[state.screenId] ? HINTS[state.screenId][level - 1] : '지금 필요한 조작을 찾아 보세요.';
+  const hintText = mascotState.text || fallback;
   slot.innerHTML = `<div class="mascot-bubble" aria-live="polite" ${mascotState.open ? '' : 'hidden'}><p>${esc(hintText)}</p><div class="mascot-actions">${level && level < 3 ? '<button id="next-hint" type="button">다음 힌트</button>' : ''}<button id="close-mascot" type="button">닫기</button></div></div><button id="mascot-button" class="mascot-button" type="button" aria-label="${mascotState.open ? '힌트 닫기' : '힌트 열기'}"><img src="../../assets/mascot-${esc(mood)}.png" alt="" aria-hidden="true" onerror="if (!this.dataset.fallback) { this.dataset.fallback='1'; this.src='assets/mascot-${esc(mood)}.png'; } else { this.style.display='none'; }"></button>`;
   $('#mascot-button')?.addEventListener('click', () => { mascotState.open = !mascotState.open; renderMascot(); });
   $('#close-mascot')?.addEventListener('click', () => { mascotState.open = false; renderMascot(); });
-  $('#next-hint')?.addEventListener('click', () => { const current = state.hints[state.screenId] || 0; state.hints[state.screenId] = Math.min(3, current + 1); logEvent('hint', state.screenId, { detail: `힌트 ${state.hints[state.screenId]}단계 직접 열기` }, 'hint'); persist(); renderMascot(); });
+  $('#next-hint')?.addEventListener('click', () => { const current = state.hints[state.screenId] || 0; const next = Math.min(3, current + 1); state.hints[state.screenId] = next; mascotState.text = (HINTS[state.screenId] || [])[next - 1] || ''; mascotState.mood = next >= 3 ? 'explain' : next >= 2 ? 'worry' : 'tilt'; logEvent('hint', state.screenId, { detail: `힌트 ${next}단계 직접 열기` }, 'hint'); persist(); renderMascot(); });
 }
 
 function createConfirmationCode() { const seed = `${state.student.sid}${state.student.name}${Date.now()}`; let hash = 0; for (const char of seed) hash = (hash * 31 + char.charCodeAt(0)) % 1000000; return String(hash).padStart(6, '0'); }
