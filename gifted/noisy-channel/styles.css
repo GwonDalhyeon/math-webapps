@@ -39,7 +39,7 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .progress-track { clear: both; height: 6px; margin-top: 14px; overflow: hidden; border-radius: 999px; background: #e8e4da; }
 .progress-track span { display: block; width: 0; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #82aaff, var(--blue)); transition: width .25s ease; }
 
-.main-content { width: min(1080px, calc(100% - 32px)); margin: 0 auto; padding: 34px 0 30px; }
+.main-content { width: min(1080px, calc(100% - 32px)); margin: 0 auto; padding: 34px 0 130px; }
 .section-label { margin-bottom: 12px; text-transform: uppercase; }
 .screen { animation: appear .22s ease both; }
 @keyframes appear { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
@@ -151,7 +151,7 @@ th { color: var(--muted); font-size: .82rem; font-weight: 900; background: #faf9
 details.attempt-details { margin-top: 12px; }
 details.attempt-details summary { cursor: pointer; color: var(--muted); font-size: .9rem; font-weight: 800; }
 
-.parity-grid { display: grid; grid-template-columns: repeat(7, minmax(34px, 1fr)); gap: 5px; max-width: 560px; margin: 0 auto; }
+.parity-grid { display: grid; grid-template-columns: repeat(7, minmax(34px, 1fr)); gap: 5px; width: 100%; max-width: 560px; margin-inline: auto; }
 .grid-cell { display: grid; place-items: center; aspect-ratio: 1; min-width: 38px; border: 1px solid #c8c5bb; border-radius: 8px; background: #fff; font-weight: 900; }
 .grid-cell.parity { background: #eef4ff; }
 .grid-cell.editable { cursor: pointer; }
@@ -193,7 +193,7 @@ details.attempt-details summary { cursor: pointer; color: var(--muted); font-siz
   .card { padding: 18px; border-radius: 17px; }
   .screen-heading h2 { font-size: 1.85rem; }
   .bottom-bar { padding-inline: 12px; min-height: 72px; }
-  .parity-grid { gap: 3px; }
+  .parity-grid { gap: 2px; margin-inline: -6px; }
   .grid-cell { min-width: 0; border-radius: 6px; font-size: .86rem; }
   .mascot-slot { right: 10px; bottom: 82px; }
   .mascot-button { flex-basis: 58px; width: 58px; height: 58px; }
@@ -229,4 +229,11 @@ details.attempt-details summary { cursor: pointer; color: var(--muted); font-siz
 
 @media (prefers-reduced-motion: reduce) {
   .circuit-node.dragging { opacity: 1; }
+}
+
+/* 터치 기기에서는 블록 이동 버튼이 유일한 순서 변경 수단이다.
+   HTML5 드래그는 터치에서 동작하지 않으므로 목표 크기를 키운다(명세서 §12). */
+@media (pointer: coarse), (max-width: 900px) {
+  .node-actions { gap: 6px; }
+  .node-actions button { min-height: 44px; min-width: 44px; font-size: .9rem; }
 }

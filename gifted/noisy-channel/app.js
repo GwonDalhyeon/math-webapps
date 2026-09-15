@@ -113,9 +113,85 @@ function defaultCircuit(stage = 'N6') {
   return { nodes: ['message', 'noise', 'receiver'], selected: null, version: 0, lastResult: null, fixed };
 }
 
+/* ── 한글 점자 (명세서 §15) ──────────────────────────────────────────────
+   braille-codec / braille-design과 같은 표를 쓴다. 점 번호는 1~6이고,
+   비트는 1번 점을 맨 앞자리로 하여 1번부터 6번까지 순서대로 읽는다. */
+const BRAILLE = {
+  initial: { 'ㄱ': [4], 'ㄴ': [1,4], 'ㄷ': [2,4], 'ㄹ': [5], 'ㅁ': [1,5], 'ㅂ': [4,5], 'ㅅ': [6], 'ㅇ': [], 'ㅈ': [4,6], 'ㅊ': [5,6], 'ㅋ': [1,2,4], 'ㅌ': [1,2,5], 'ㅍ': [1,4,5], 'ㅎ': [2,4,5] },
+  medial: { 'ㅏ': [1,2,6], 'ㅑ': [3,4,5], 'ㅓ': [2,3,4], 'ㅕ': [1,5,6], 'ㅗ': [1,3,6], 'ㅛ': [3,4,6], 'ㅜ': [1,3,4], 'ㅠ': [1,4,6], 'ㅡ': [2,4,6], 'ㅣ': [1,3,5] },
+  final: { 'ㄱ': [1], 'ㄴ': [3,4], 'ㄷ': [3,5], 'ㄹ': [2], 'ㅁ': [3,6], 'ㅂ': [3], 'ㅅ': [4], 'ㅇ': [3,4,6] }
+};
+const CHO_LIST = ['ㄱ','ㄲ','ㄴ','ㄷ','ㄸ','ㄹ','ㅁ','ㅂ','ㅃ','ㅅ','ㅆ','ㅇ','ㅈ','ㅉ','ㅊ','ㅋ','ㅌ','ㅍ','ㅎ'];
+const JUNG_LIST = ['ㅏ','ㅐ','ㅑ','ㅒ','ㅓ','ㅔ','ㅕ','ㅖ','ㅗ','ㅘ','ㅙ','ㅚ','ㅛ','ㅜ','ㅝ','ㅞ','ㅟ','ㅠ','ㅡ','ㅢ','ㅣ'];
+const JONG_LIST = ['','ㄱ','ㄲ','ㄳ','ㄴ','ㄵ','ㄶ','ㄷ','ㄹ','ㄺ','ㄻ','ㄼ','ㄽ','ㄾ','ㄿ','ㅀ','ㅁ','ㅂ','ㅄ','ㅅ','ㅆ','ㅇ','ㅈ','ㅊ','ㅋ','ㅌ','ㅍ','ㅎ'];
+const JAMO_TYPE_LABEL = { initial: '초성', medial: '중성', final: '종성' };
+const DOT_VIEW_ORDER = [0, 3, 1, 4, 2, 5];   /* 화면에는 1,4,2,5,3,6 순서로 그린다 */
+
+function dotsToBits(dots) {
+  const bits = [0, 0, 0, 0, 0, 0];
+  dots.forEach(n => { bits[n - 1] = 1; });
+  return bits;
+}
+
+function dotLabel(bits) {
+  const on = bits.map((bit, index) => (bit ? index + 1 : 0)).filter(Boolean);
+  return on.length ? `${on.join('-')}점` : '점 없음';
+}
+
+/* 한 글자를 초성·중성·종성으로 풀어 점형 칸을 만든다. 점자표에 없는 겹자모
+   (ㅘ, ㅐ 등)는 임의로 지어내지 않고 화면에 그대로 알린다. */
+function messageCells(text) {
+  const cells = [];
+  const skipped = [];
+  for (const char of text) {
+    const code = char.codePointAt(0) - 0xac00;
+    if (code < 0 || code > 11171) { if (char.trim()) skipped.push(char); continue; }
+    const parts = [
+      ['initial', CHO_LIST[Math.floor(code / 588)]],
+      ['medial', JUNG_LIST[Math.floor((code % 588) / 28)]],
+      ['final', JONG_LIST[code % 28]]
+    ];
+    for (const [type, sym] of parts) {
+      if (!sym) continue;
+      if (type === 'initial' && sym === 'ㅇ') continue;   /* 초성 ㅇ은 규칙에 따라 만들지 않는다 */
+      const dots = BRAILLE[type][sym];
+      if (!dots) { skipped.push(sym); continue; }
+      cells.push({ type, sym, bits: dotsToBits(dots) });
+    }
+  }
+  return { cells, skipped };
+}
+
+function messageWord() { return (state.screens.N2.word || state.student.name || '수학').trim() || '수학'; }
+
+/* 각 점을 오류율만큼 무작위로 뒤집는다. 고정된 식이 아니므로 누를 때마다 달라진다. */
+function transmitCells(cells, ratePercent) {
+  return cells.map(cell => ({ ...cell, received: cell.bits.map(bit => (Math.random() * 100 < ratePercent ? bit ^ 1 : bit)) }));
+}
+
+function brailleHtml(cells, useReceived = false) {
+  if (!cells.length) return '<p class="muted small" style="margin:0">보낼 점형이 없습니다. 위 칸에 한글 낱말을 넣어 주세요.</p>';
+  return `<div class="braille-cells">${cells.map(cell => {
+    const bits = useReceived && cell.received ? cell.received : cell.bits;
+    return `<div class="braille-cell" role="img" aria-label="${esc(JAMO_TYPE_LABEL[cell.type])} ${esc(cell.sym)}, ${dotLabel(bits)}">${DOT_VIEW_ORDER.map(index => `<span class="braille-dot ${bits[index] ? 'on' : ''}"></span>`).join('')}</div>`;
+  }).join('')}</div>`;
+}
+
+function brailleLabelRow(cells) {
+  if (!cells.length) return '';
+  return `<div class="cell-labels" aria-hidden="true">${cells.map(cell => `<span class="cell-label">${esc(cell.sym)}</span>`).join('')}</div>`;
+}
+
+/* 6×6 정보 칸은 실제 한글 점자 여섯 자모다(명세서 §18).
+   각 행이 한 자모의 점형(6비트), 각 열이 점 번호 1~6번이다.
+   이전에는 (r*5+c*3+r+c)%2 로 채웠는데 이 식은 항상 0이라 격자가 통째로
+   비어 있었고, 그래서 패리티 활동이 성립하지 않았다. */
 function createParityGrid() {
-  const data = Array.from({ length: 7 }, (_, r) => Array.from({ length: 7 }, (_, c) => ((r * 5 + c * 3 + r + c) % 2)));
-  return { data, values: Array.from({ length: 7 }, () => Array(7).fill(null)), placed: [], check: null };
+  const source = messageCells('수학공부').cells.slice(0, 6);
+  const data = source.map(cell => cell.bits.slice());
+  const labels = source.map(cell => cell.sym);
+  while (data.length < 6) { data.push([0, 0, 0, 0, 0, 0]); labels.push('·'); }
+  return { data, labels, values: Array.from({ length: 7 }, () => Array(7).fill(null)), placed: [], check: null };
 }
 
 function initialState() {
@@ -355,75 +431,6 @@ function renderN0() {
 function renderN1() {
   return `${heading('1 보내면 망가진다', '짝에게 보낸 암호문에 점 하나가 눌렸다면?', '받는 사람이 원래 메시지를 알아볼 수 있도록 하려면, 보내는 쪽에서 무엇을 바꿀 수 있을까요?')}
   <div class="card stack"><div class="notice">오늘은 오류를 없애는 것이 아니라, 오류가 있어도 원래 뜻을 추측할 수 있는 방법을 설계합니다.</div><div class="writing-list">${writeBox('N1_thought', '지금 떠오르는 방법을 한 가지 적어 보세요.', 'reflect')}</div></div>`;
-}
-
-/* ── 한글 점자 (명세서 §15) ──────────────────────────────────────────────
-   braille-codec / braille-design과 같은 표를 쓴다. 점 번호는 1~6이고,
-   비트는 1번 점을 맨 앞자리로 하여 1번부터 6번까지 순서대로 읽는다. */
-const BRAILLE = {
-  initial: { 'ㄱ': [4], 'ㄴ': [1,4], 'ㄷ': [2,4], 'ㄹ': [5], 'ㅁ': [1,5], 'ㅂ': [4,5], 'ㅅ': [6], 'ㅇ': [], 'ㅈ': [4,6], 'ㅊ': [5,6], 'ㅋ': [1,2,4], 'ㅌ': [1,2,5], 'ㅍ': [1,4,5], 'ㅎ': [2,4,5] },
-  medial: { 'ㅏ': [1,2,6], 'ㅑ': [3,4,5], 'ㅓ': [2,3,4], 'ㅕ': [1,5,6], 'ㅗ': [1,3,6], 'ㅛ': [3,4,6], 'ㅜ': [1,3,4], 'ㅠ': [1,4,6], 'ㅡ': [2,4,6], 'ㅣ': [1,3,5] },
-  final: { 'ㄱ': [1], 'ㄴ': [3,4], 'ㄷ': [3,5], 'ㄹ': [2], 'ㅁ': [3,6], 'ㅂ': [3], 'ㅅ': [4], 'ㅇ': [3,4,6] }
-};
-const CHO_LIST = ['ㄱ','ㄲ','ㄴ','ㄷ','ㄸ','ㄹ','ㅁ','ㅂ','ㅃ','ㅅ','ㅆ','ㅇ','ㅈ','ㅉ','ㅊ','ㅋ','ㅌ','ㅍ','ㅎ'];
-const JUNG_LIST = ['ㅏ','ㅐ','ㅑ','ㅒ','ㅓ','ㅔ','ㅕ','ㅖ','ㅗ','ㅘ','ㅙ','ㅚ','ㅛ','ㅜ','ㅝ','ㅞ','ㅟ','ㅠ','ㅡ','ㅢ','ㅣ'];
-const JONG_LIST = ['','ㄱ','ㄲ','ㄳ','ㄴ','ㄵ','ㄶ','ㄷ','ㄹ','ㄺ','ㄻ','ㄼ','ㄽ','ㄾ','ㄿ','ㅀ','ㅁ','ㅂ','ㅄ','ㅅ','ㅆ','ㅇ','ㅈ','ㅊ','ㅋ','ㅌ','ㅍ','ㅎ'];
-const JAMO_TYPE_LABEL = { initial: '초성', medial: '중성', final: '종성' };
-const DOT_VIEW_ORDER = [0, 3, 1, 4, 2, 5];   /* 화면에는 1,4,2,5,3,6 순서로 그린다 */
-
-function dotsToBits(dots) {
-  const bits = [0, 0, 0, 0, 0, 0];
-  dots.forEach(n => { bits[n - 1] = 1; });
-  return bits;
-}
-
-function dotLabel(bits) {
-  const on = bits.map((bit, index) => (bit ? index + 1 : 0)).filter(Boolean);
-  return on.length ? `${on.join('-')}점` : '점 없음';
-}
-
-/* 한 글자를 초성·중성·종성으로 풀어 점형 칸을 만든다. 점자표에 없는 겹자모
-   (ㅘ, ㅐ 등)는 임의로 지어내지 않고 화면에 그대로 알린다. */
-function messageCells(text) {
-  const cells = [];
-  const skipped = [];
-  for (const char of text) {
-    const code = char.codePointAt(0) - 0xac00;
-    if (code < 0 || code > 11171) { if (char.trim()) skipped.push(char); continue; }
-    const parts = [
-      ['initial', CHO_LIST[Math.floor(code / 588)]],
-      ['medial', JUNG_LIST[Math.floor((code % 588) / 28)]],
-      ['final', JONG_LIST[code % 28]]
-    ];
-    for (const [type, sym] of parts) {
-      if (!sym) continue;
-      if (type === 'initial' && sym === 'ㅇ') continue;   /* 초성 ㅇ은 규칙에 따라 만들지 않는다 */
-      const dots = BRAILLE[type][sym];
-      if (!dots) { skipped.push(sym); continue; }
-      cells.push({ type, sym, bits: dotsToBits(dots) });
-    }
-  }
-  return { cells, skipped };
-}
-
-function messageWord() { return (state.screens.N2.word || state.student.name || '수학').trim() || '수학'; }
-
-/* 각 점을 오류율만큼 무작위로 뒤집는다. 고정된 식이 아니므로 누를 때마다 달라진다. */
-function transmitCells(cells, ratePercent) {
-  return cells.map(cell => ({ ...cell, received: cell.bits.map(bit => (Math.random() * 100 < ratePercent ? bit ^ 1 : bit)) }));
-}
-
-function brailleHtml(cells, useReceived = false) {
-  if (!cells.length) return '<p class="muted small" style="margin:0">보낼 점형이 없습니다. 위 칸에 한글 낱말을 넣어 주세요.</p>';
-  return `<div class="braille-cells">${cells.map(cell => {
-    const bits = useReceived && cell.received ? cell.received : cell.bits;
-    return `<div class="braille-cell" role="img" aria-label="${esc(JAMO_TYPE_LABEL[cell.type])} ${esc(cell.sym)}, ${dotLabel(bits)}">${DOT_VIEW_ORDER.map(index => `<span class="braille-dot ${bits[index] ? 'on' : ''}"></span>`).join('')}</div>`;
-  }).join('')}</div>`;
-}
-
-function brailleLabelRow(cells) {
-  if (!cells.length) return '';
-  return `<div class="cell-labels" aria-hidden="true">${cells.map(cell => `<span class="cell-label">${esc(cell.sym)}</span>`).join('')}</div>`;
 }
 
 function renderN2Operate() {
@@ -787,7 +794,8 @@ function parityExpected() {
   const expected = Array.from({ length: 7 }, () => Array(7).fill(null));
   for (let c = 1; c < 7; c += 1) expected[0][c] = grid.data.reduce((sum, row) => sum + row[c - 1], 0) % 2;
   for (let r = 1; r < 7; r += 1) expected[r][0] = grid.data[r - 1].reduce((sum, bit) => sum + bit, 0) % 2;
-  expected[0][0] = 0;
+  /* 모서리는 전체 1의 개수와 짝이 맞아야 행·열 검사줄이 둘 다 짝수가 된다. */
+  expected[0][0] = grid.data.reduce((sum, row) => sum + row.reduce((a, b) => a + b, 0), 0) % 2;
   return expected;
 }
 
@@ -796,11 +804,11 @@ function checkParityGrid() {
   const expected = parityExpected();
   const rowStatus = Array.from({ length: 7 }, (_, r) => {
     if (r === 0) return grid.values[0].slice(1).every(v => v !== null);
-    return grid.values[r][0] !== null && grid.data[r - 1].reduce((sum, bit) => sum + bit, 0) + grid.values[r][0] % 2 === 0;
+    return grid.values[r][0] !== null && (grid.data[r - 1].reduce((sum, bit) => sum + bit, 0) + grid.values[r][0]) % 2 === 0;
   });
   const colStatus = Array.from({ length: 7 }, (_, c) => {
     if (c === 0) return grid.values.slice(1).every(row => row[0] !== null);
-    return grid.values[0][c] !== null && grid.data.reduce((sum, row) => sum + row[c - 1], 0) + grid.values[0][c] % 2 === 0;
+    return grid.values[0][c] !== null && (grid.data.reduce((sum, row) => sum + row[c - 1], 0) + grid.values[0][c]) % 2 === 0;
   });
   const ok = grid.placed.length === 13 && rowStatus.every(Boolean) && colStatus.every(Boolean);
   const badCells = [];
@@ -826,11 +834,40 @@ function renderN12() {
   return `${heading('4 어디가 틀렸나 · 한 칸 찾기', `뒤집힌 칸을 찾아 보세요 · ${n12.round + 1}/3판`, '한 칸이 바뀌었을 때 행과 열의 이상 신호를 이용해 위치를 추측합니다.')}<div class="card stack"><div class="parity-grid">${Array.from({ length: 7 }, (_, r) => Array.from({ length: 7 }, (_, c) => { const editable = r > 0 && c > 0; const bit = editable ? board.base[r - 1][c - 1] : r === 0 || c === 0 ? '' : ''; const selected = chosen && chosen[0] === r - 1 && chosen[1] === c - 1; return `<button type="button" class="grid-cell ${selected ? (correct ? 'good' : 'bad') : ''}" data-find-cell="${r - 1},${c - 1}" ${editable ? '' : 'disabled'} aria-label="${r === 0 || c === 0 ? '검사 줄' : `${r}행 ${c}열 ${bit}`}">${r === 0 || c === 0 ? (r === 0 && c === 0 ? '·' : r === 0 ? '↓' : '→') : bit}</button>`; }).join('')).join('')}</div><div class="result ${chosen ? (correct ? 'ok' : 'fail') : ''}" role="status">${chosen ? (correct ? '찾았습니다. 다음 판도 같은 방법으로 생각해 보세요.' : '아직 아닙니다. 어느 가로줄과 세로줄이 이상한지 다시 살펴보세요.') : '검사할 칸을 하나 골라 보세요.'}</div>${correct && n12.round < 2 ? '<button id="next-n12-round" class="primary-button" type="button">다음 판</button>' : ''}<button id="reset-n12" class="secondary-button" type="button">이 판 다시 만들기</button></div>`;
 }
 
+/* 두 칸이 뒤집히면 이상한 가로줄·세로줄이 각각 둘이 되어 교차점이 넷이 된다.
+   그래서 한 곳을 확정할 수 없다. 학생이 직접 보도록 실제 줄 번호를 보여 준다. */
+function parityOffLines(board) {
+  const rows = [];
+  const cols = [];
+  for (let r = 0; r < 6; r += 1) {
+    const base = state.parity.data[r].reduce((sum, bit) => sum + bit, 0) % 2;
+    const now = board[r].reduce((sum, bit) => sum + bit, 0) % 2;
+    if (base !== now) rows.push(r + 1);
+  }
+  for (let c = 0; c < 6; c += 1) {
+    const base = state.parity.data.reduce((sum, row) => sum + row[c], 0) % 2;
+    const now = board.reduce((sum, row) => sum + row[c], 0) % 2;
+    if (base !== now) cols.push(c + 1);
+  }
+  return { rows, cols };
+}
+
 function renderN13Observe() {
   if (!state.screens.N13) state.screens.N13 = { board: randomErrorBoard(2) };
   const board = state.screens.N13.board || randomErrorBoard(2);
+  const off = parityOffLines(board.base);
+  const crossings = off.rows.length * off.cols.length;
   return `${heading('4 어디가 틀렸나 · 두 칸 오류', '두 칸이 뒤집히면 어떤 일이 생길까?', '이번에는 두 칸을 바꾼 상태를 관찰합니다. 하나의 위치를 확정하기 어려운 이유를 다음 보기에서 설명합니다.')}
-  <div class="card stack"><div class="parity-grid">${board.base.map((row, r) => row.map((bit, c) => `<span class="grid-cell">${bit}</span>`).join('')).join('')}</div><div class="axis-status"><span class="axis-pill bad">이상 신호가 여러 줄에 나타남</span><span class="axis-pill">두 곳의 조합을 더 비교해야 함</span></div><div class="notice">색이나 위치가 정답을 알려 주는 화면이 아닙니다. 지금 본 반응을 근거로 다음 작성 보기에서 설명해 보세요.</div></div>`;
+  <div class="card stack">
+    <div class="parity-grid">${board.base.map(row => row.map(bit => `<span class="grid-cell">${bit}</span>`).join('')).join('')}</div>
+    <div class="axis-status">
+      ${off.rows.length ? off.rows.map(n => `<span class="axis-pill bad">가로 ${n} 이상</span>`).join('') : '<span class="axis-pill">이상한 가로줄 없음</span>'}
+      ${off.cols.length ? off.cols.map(n => `<span class="axis-pill bad">세로 ${n} 이상</span>`).join('') : '<span class="axis-pill">이상한 세로줄 없음</span>'}
+    </div>
+    <div class="evidence">이상한 가로줄 ${off.rows.length}개, 세로줄 ${off.cols.length}개 → 두 줄이 만나는 곳이 <strong>${crossings}군데</strong>입니다.</div>
+    <div class="notice">색이나 위치가 정답을 알려 주는 화면이 아닙니다. 지금 본 반응을 근거로 다음 작성 보기에서 설명해 보세요.</div>
+    <div class="button-row"><button id="reshuffle-n13" class="secondary-button" type="button">다른 두 칸으로 다시</button></div>
+  </div>`;
 }
 
 function renderN13Write() {
@@ -1013,6 +1050,13 @@ function bindScreen(id) {
   if (id === 'N11') bindN11();
   if (id === 'N12') bindN12();
   if (id === 'N13_observe' && !state.screens.N13) { state.screens.N13 = { board: randomErrorBoard(2) }; persist(); }
+  $('#reshuffle-n13')?.addEventListener('click', () => {
+    state.screens.N13.board = randomErrorBoard(2);
+    const off = parityOffLines(state.screens.N13.board.base);
+    logEvent('attempt', 'N13_observe', { detail: `두 칸 오류 · 이상한 가로줄 ${off.rows.length}개, 세로줄 ${off.cols.length}개` }, 'observe');
+    persist();
+    render();
+  });
   if (id === 'N14') bindN14();
   if (id === 'N15_operate') bindN15();
   if (id === 'N16') bindN16();
@@ -1228,6 +1272,17 @@ function renderMascot() {
   const hintText = mascotState.text || fallback;
   slot.innerHTML = `<div class="mascot-bubble" aria-live="polite" ${mascotState.open ? '' : 'hidden'}><p>${esc(hintText)}</p><div class="mascot-actions">${level && level < 3 ? '<button id="next-hint" type="button">다음 힌트</button>' : ''}<button id="close-mascot" type="button">닫기</button></div></div><button id="mascot-button" class="mascot-button" type="button" aria-label="${mascotState.open ? '힌트 닫기' : '힌트 열기'}"><img src="../../assets/mascot-${esc(mood)}.png" alt="" aria-hidden="true" onerror="if (!this.dataset.fallback) { this.dataset.fallback='1'; this.src='assets/mascot-${esc(mood)}.png'; } else { this.style.display='none'; }"></button>`;
   $('#mascot-button')?.addEventListener('click', () => { mascotState.open = !mascotState.open; renderMascot(); });
+  /* 글을 쓰기 시작하면 말풍선을 닫는다. 오른쪽 아래에 고정이라 입력칸을 가린다. */
+  if (!window.__mascotAutoClose) {
+    window.__mascotAutoClose = true;
+    document.addEventListener('focusin', event => {
+      if (!mascotState.open) return;
+      if (!event.target.closest('.main-content')) return;
+      if (!event.target.matches('input, textarea')) return;
+      mascotState.open = false;
+      renderMascot();
+    });
+  }
   $('#close-mascot')?.addEventListener('click', () => { mascotState.open = false; renderMascot(); });
   $('#next-hint')?.addEventListener('click', () => { const current = state.hints[state.screenId] || 0; const next = Math.min(3, current + 1); state.hints[state.screenId] = next; mascotState.text = (HINTS[state.screenId] || [])[next - 1] || ''; mascotState.mood = next >= 3 ? 'explain' : next >= 2 ? 'worry' : 'tilt'; logEvent('hint', state.screenId, { detail: `힌트 ${next}단계 직접 열기` }, 'hint'); persist(); renderMascot(); });
 }
