@@ -7,7 +7,7 @@ const NOISE_RATE = 0.1;
 const OPTIONAL_IDS = new Set(['N16', 'N17', 'N18', 'N19']);
 const WRITE_FIELDS = [
   ['N1_thought', '도입 생각'], ['N2_observe', '잡음 관찰'], ['N2_explain', '읽기 한계'], ['N3_reason', 'N3 예측 이유'],
-  ['N5_method', '다수결 판단 방법'], ['N5_compare', '반복 횟수 비교'], ['N6_predict', '통신로 예측'], ['N9_reflect', '통신로 비교 성찰'],
+  ['N5_method', '다수결 판단 방법'], ['N5_compare', '반복 횟수 비교'], ['N9_reflect', '통신로 비교 성찰'],
   ['N13_one', '한 칸 찾기 절차'], ['N13_two', '두 칸 오류의 한계'], ['N15_change', '질문 수를 바꾼 이유'], ['N15_binary', '이진 표현 해석'],
   ['N18_reason', '거리와 정정'], ['N19_mariner', '마리너 9호 비교'], ['N20_reflect', '종합 선택']
 ];
@@ -21,7 +21,6 @@ const SCREEN_ORDER = [
   { id: 'N4', activity: '다수결', label: '겹쳐 놓고 고르기' },
   { id: 'N5_operate', activity: '다수결', label: '반복 횟수 정하기' },
   { id: 'N5_write', activity: '다수결', label: '반복 횟수 · 작성' },
-  { id: 'N6_predict', activity: '통신로 설계', label: '조립 S1 · 예측' },
   { id: 'N6_operate', activity: '통신로 설계', label: '조립 S1 · 시험' },
   { id: 'N7', activity: '통신로 설계', label: '조립 S2' },
   { id: 'N8', activity: '통신로 설계', label: '조립 S3' },
@@ -97,7 +96,7 @@ const HINTS = {
 
 const ACTIVITY_SECTIONS = {
   N0: '0 시작', N1: '1 보내면 망가진다', N2_operate: '1 보내면 망가진다', N2_write: '1 보내면 망가진다', N3: '1 보내면 망가진다',
-  N4: '2 다수결', N5_operate: '2 다수결', N5_write: '2 다수결', N6_predict: '3 통신로 설계', N6_operate: '3 통신로 설계', N7: '3 통신로 설계', N8: '3 통신로 설계', N9: '3 통신로 설계',
+  N4: '2 다수결', N5_operate: '2 다수결', N5_write: '2 다수결', N6_operate: '3 통신로 설계', N7: '3 통신로 설계', N8: '3 통신로 설계', N9: '3 통신로 설계',
   N10: '4 어디가 틀렸나', N11: '4 어디가 틀렸나', N12: '4 어디가 틀렸나', N13_observe: '4 어디가 틀렸나', N13_write: '4 어디가 틀렸나', N14: '5 질문으로 찾기', N15_operate: '5 질문 세 번', N15_write: '5 질문 세 번', N16: '5 질문 세 번',
   N17: '6 얼마나 멀어야', N18: '6 얼마나 멀어야', N19: '7 닫기', N20: '7 닫기', N21: '7 닫기'
 };
@@ -161,7 +160,9 @@ function messageCells(text) {
   return { cells, skipped };
 }
 
-function messageWord() { return (state.screens.N2.word || state.student.name || '수학').trim() || '수학'; }
+/* 기본값은 빈칸이다(명세서 §15). 이름을 자동으로 채우면 학생이 입력할 것이
+   없어 보여서 이 화면이 무엇을 하는 곳인지 드러나지 않는다. */
+function messageWord() { return String(state.screens.N2.word || '').trim(); }
 
 /* 각 점을 오류율만큼 무작위로 뒤집는다. 고정된 식이 아니므로 누를 때마다 달라진다. */
 function transmitCells(cells, ratePercent) {
@@ -220,8 +221,7 @@ function initialState() {
       N2: { rate: 10, sends: 0, word: '', cells: null },
       N3: { prediction: '', locked: false, reason: '' },
       N4: { answer: Array(8).fill(null), checked: false, exampleVersion: 2 },
-      N5: { count: 3, answer: [], checked: false, ties: [], observedCounts: [], exampleVersion: 2 },
-      N6: { predictionLocked: false },
+      N5: { count: 3, answers: { 3: [], 4: [], 5: [] }, checked: false, ties: [], observedCounts: [], exampleVersion: 2 },
       N12: { round: 0, guesses: [], board: null },
       N14: { prediction: '', confirmed: false },
       N15: { groups: [[], [], []], selected: null, checked: false },
@@ -287,8 +287,11 @@ function validateProgress(data) {
   if (!object(data.parity) || !matrix(data.parity.data, 6, bit) || !matrix(data.parity.values, 7, value => value === null || bit(value)) || !Array.isArray(data.parity.placed)) return false;
   const fresh = initialState();
   if (!Object.keys(fresh.screens).every(key => object(data.screens[key]))) return false;
-  if (!['N4','N5'].every(key => Array.isArray(data.screens[key].answer) && data.screens[key].answer.length <= 8 && data.screens[key].answer.every(value => value === null || bit(value)))) return false;
-  if (data.screens.N4.answer.length !== 8 || ![3,4,5].includes(data.screens.N5.count)) return false;
+  if (!Array.isArray(data.screens.N4.answer) || data.screens.N4.answer.length !== 8 || !data.screens.N4.answer.every(value => value === null || bit(value))) return false;
+  /* N5는 3·4·5번 받았을 때의 답을 따로 보관한다(명세서 §16). 옛 구조(answer 하나)도 받는다. */
+  const n5Lists = object(data.screens.N5.answers) ? Object.values(data.screens.N5.answers) : [data.screens.N5.answer];
+  if (![3,4,5].includes(data.screens.N5.count)) return false;
+  if (!n5Lists.every(list => Array.isArray(list) && list.length <= 8 && list.every(value => value === null || bit(value)))) return false;
   if (!['N12','N16'].every(key => Array.isArray(data.screens[key].guesses) && Number.isInteger(data.screens[key].round) && data.screens[key].round >= 0 && data.screens[key].round < 3)) return false;
   if (!Array.isArray(data.screens.N16.cases) || !data.screens.N16.cases.every(value => Number.isInteger(value) && value >= 0 && value <= 7)) return false;
   if (!Array.isArray(data.screens.N15.groups) || data.screens.N15.groups.length < 2 || data.screens.N15.groups.length > 4 || !data.screens.N15.groups.every(group => Array.isArray(group) && group.every(value => Number.isInteger(value) && value >= 1 && value <= 7))) return false;
@@ -480,7 +483,7 @@ function renderActivityMenu() {
 function renderScreen(id) {
   const renderers = {
     N0: renderN0, N1: renderN1, N2_operate: renderN2Operate, N2_write: renderN2Write, N3: renderN3, N4: renderN4,
-    N5_operate: renderN5Operate, N5_write: renderN5Write, N6_predict: renderN6Predict, N6_operate: renderCircuitScreen,
+    N5_operate: renderN5Operate, N5_write: renderN5Write, N6_operate: renderCircuitScreen,
     N7: renderCircuitScreen, N8: renderCircuitScreen, N9: renderN9, N10: renderCircuitScreen, N11: renderN11, N12: renderN12,
     N13_observe: renderN13Observe, N13_write: renderN13Write, N14: renderN14, N15_operate: renderN15Operate, N15_write: renderN15Write,
     N16: renderN16, N17: renderN17, N18: renderN18, N19: renderN19, N20: renderN20, N21: renderN21
@@ -488,8 +491,12 @@ function renderScreen(id) {
   return `<section class="screen">${(renderers[id] || renderN1)(id)}</section>`;
 }
 
+/* 상단 띠가 이미 단원을 적고 있으므로 머리말에서 같은 문구를 반복하지 않는다(명세서 §12).
+   「2 다수결 · 조작」처럼 뒤에 붙은 말만 남긴다. */
 function heading(kicker, title, text) {
-  return `<div class="screen-heading"><span class="eyebrow">${esc(kicker)}</span><h2>${esc(title)}</h2><p>${esc(text)}</p></div>`;
+  const section = ACTIVITY_SECTIONS[state.screenId] || '';
+  const rest = section && kicker.startsWith(section) ? kicker.slice(section.length).replace(/^\s*·\s*/, '') : kicker;
+  return `<div class="screen-heading">${rest ? `<span class="eyebrow">${esc(rest)}</span>` : ''}<h2>${esc(title)}</h2><p>${esc(text)}</p></div>`;
 }
 
 function writeBox(id, prompt, kind = 'explain', options = {}) {
@@ -549,6 +556,11 @@ function renderN1() {
 function renderN2Operate() {
   const n2 = state.screens.N2;
   const word = messageWord();
+  if (!word) return `${heading('1 보내면 망가진다 · 관찰', '보낼 낱말을 먼저 정하세요.', '내가 정한 낱말을 점자로 바꾸어 보냅니다. 오는 길에 점이 몇 개 뒤집히는지 관찰합니다.')}
+  <div class="card stack">
+    <div class="field"><label for="braille-word">점자로 보낼 낱말</label><input id="braille-word" type="text" maxlength="6" value="" placeholder="이름이나 짧은 한글 낱말"></div>
+    <div class="notice">낱말을 입력하면 점자와 오류율 조절 막대가 나타납니다.</div>
+  </div>`;
   const built = messageCells(word);
   const sourceKey = JSON.stringify(built.cells);
   if (!n2.cells || n2.sourceKey !== sourceKey) { n2.cells = transmitCells(built.cells, n2.rate); n2.sourceKey = sourceKey; }
@@ -579,31 +591,105 @@ function renderN3() {
   <div class="card stack"><div class="choice-grid">${['1회', '3회', '5회'].map(option => `<div class="choice"><input id="n3-${option}" name="n3" type="radio" value="${option}" ${n3.prediction === option ? 'checked' : ''} ${n3.locked ? 'disabled' : ''}><label for="n3-${option}">${option}</label></div>`).join('')}</div>${writeBox('N3_reason', '왜 그렇게 예상했나요?', 'predict', { locked: n3.locked })}<div class="button-row"><button id="confirm-n3" class="primary-button" type="button" ${n3.locked ? 'disabled' : ''}>예측 확정</button>${n3.locked ? '<span class="result ok">예측이 잠겼습니다.</span>' : ''}</div></div>`;
 }
 
+/* 신호 줄과 「내 답」 줄은 픽셀 단위로는 이미 맞아 있었지만, 열 번호가 없어
+   어느 자리를 답하는 중인지 알 수 없었다. 375px에서는 8칸 중 5칸만 보이고
+   가로로 밀어야 하므로 더 그렇다. 열 머리와 세로 줄무늬를 넣는다(명세서 §16). */
+function colClass(index) { return index % 2 === 1 ? ' alt' : ''; }
+
 function rowsHtml(rows, answer = [], editable = false, ties = []) {
-  return `<p class="matrix-scroll-help muted small">8번째 자리까지 보려면 표를 가로로 밀어 보세요.</p><div class="bit-display">${rows.map((row, r) => `<div class="bit-row"><span class="row-label">${r + 1}차</span>${row.map((bit, c) => `<span class="bit" aria-label="${r + 1}차 ${c + 1}번째 ${bit}">${bit}</span>`).join('')}</div>`).join('')}${editable ? `<div class="bit-row"><span class="row-label">내 답</span>${answer.map((value, c) => `<button type="button" class="bit-button ${value === null ? 'empty' : 'selected'} ${ties.includes(c) ? 'tie' : ''}" data-majority-index="${c}" aria-label="${c + 1}번째 답 ${value === null ? '미선택' : value}">${value === null ? '·' : value}</button>`).join('')}</div>` : ''}</div>`;
+  const width = (rows[0] || answer).length || 8;
+  const head = `<div class="bit-row heads"><span class="row-label">자리</span>${Array.from({ length: width }, (_, c) => `<span class="col-head${colClass(c)}">${c + 1}</span>`).join('')}</div>`;
+  const signals = rows.map((row, r) => `<div class="bit-row"><span class="row-label">${r + 1}차</span>${row.map((bit, c) => `<span class="bit${colClass(c)}" aria-label="${r + 1}차 ${c + 1}번째 ${bit}">${bit}</span>`).join('')}</div>`).join('');
+  const mine = editable ? `<div class="bit-row answer"><span class="row-label">내 답</span>${answer.map((value, c) => `<button type="button" class="bit-button${colClass(c)} ${value === null ? 'empty' : 'selected'} ${ties.includes(c) ? 'tie' : ''}" data-majority-index="${c}" aria-label="${c + 1}번째 답 ${value === null ? '미선택' : value}">${value === null ? '·' : value}</button>`).join('')}</div>` : '';
+  return `<p class="matrix-scroll-help muted small">8번째 자리까지 보려면 표를 가로로 밀어 보세요.</p><div class="bit-display">${head}${signals}${mine}</div>`;
+}
+
+/* 부분 갱신(명세서 §37) — 칸 하나를 눌렀다고 본문 전체를 다시 그리지 않는다.
+   전체 render()는 보기가 바뀔 때만 부른다. */
+function paintAnswerRow(answer, ties = []) {
+  answer.forEach((value, index) => {
+    const button = document.querySelector(`[data-majority-index="${index}"]`);
+    if (!button) return;
+    button.textContent = value === null ? '·' : String(value);
+    button.classList.toggle('empty', value === null);
+    button.classList.toggle('selected', value !== null);
+    button.classList.toggle('tie', ties.includes(index));
+    button.setAttribute('aria-label', `${index + 1}번째 답 ${value === null ? '미선택' : value}`);
+  });
+}
+
+function setResult(id, className, text) {
+  const node = document.getElementById(id);
+  if (!node) return;
+  node.className = `result ${className}`;
+  node.textContent = text;
+}
+
+function n4Rows() { return state.screens.N4.exampleVersion === 1 ? [[1,0,1,0,1,0,1,1],[1,0,0,0,1,1,1,1],[1,1,1,0,0,1,1,0]] : MAJORITY_ROWS; }
+
+function n4Verdict() {
+  const rows = n4Rows();
+  const answer = state.screens.N4.answer;
+  const correct = rows[0].map((_, c) => rows.map(row => row[c]).filter(Boolean).length >= 2 ? 1 : 0);
+  const chosen = answer.every(value => value !== null);
+  return { chosen, success: chosen && answer.every((value, i) => value === correct[i]) };
+}
+
+function updateN4View() {
+  const answer = state.screens.N4.answer;
+  const { chosen, success } = n4Verdict();
+  paintAnswerRow(answer);
+  const restored = document.getElementById('n4-restored');
+  if (restored) restored.innerHTML = restoredBraille(answer, success);
+  setResult('n4-result', success ? 'ok' : chosen ? 'fail' : '',
+    !chosen ? '8칸을 모두 선택해 보세요.' : success ? '✓ 각 열의 다수 값으로 복원했습니다.' : '아직 깨진 부분이 있습니다. 어느 열인지 직접 다시 살펴보세요.');
+}
+
+function updateN5View() {
+  const n5 = state.screens.N5;
+  const rows = repeatedRows(n5.count);
+  const ties = columnTies(rows);
+  const answer = n5Answer();
+  const complete = answer.every(value => value !== null);
+  const correct = majorityAnswers(rows);
+  const success = complete && !ties.length && answer.every((value, i) => value === correct[i]);
+  paintAnswerRow(answer, ties);
+  setResult('n5-result', ties.length ? 'partial' : success ? 'ok' : complete ? 'fail' : '',
+    ties.length ? `동점인 열이 ${ties.map(value => value + 1).join(', ')}번째에 있습니다. 한쪽을 다수라고 정하기 어렵습니다.`
+      : !complete ? '내 답 행을 채워 보세요.'
+      : success ? '이 반복 횟수에서는 모든 열을 정할 수 있습니다.'
+      : '선택한 답과 각 열의 값을 다시 비교해 보세요.');
+}
+
+/* 횟수를 바꾸면 이전 답이 지워지던 것을 고친다(명세서 §16).
+   3·4·5번 받았을 때의 답을 따로 보관하고, 돌아오면 그대로 되살린다. */
+function n5Answer(count = state.screens.N5.count) {
+  const n5 = state.screens.N5;
+  if (!n5.answers || typeof n5.answers !== 'object') n5.answers = {};
+  if (Array.isArray(n5.answer) && n5.answer.length === 8 && !n5.answers[n5.count]) n5.answers[n5.count] = n5.answer;
+  if (!Array.isArray(n5.answers[count]) || n5.answers[count].length !== 8) n5.answers[count] = Array(8).fill(null);
+  return n5.answers[count];
 }
 
 function renderN4() {
-  const rows = state.screens.N4.exampleVersion === 1 ? [[1,0,1,0,1,0,1,1],[1,0,0,0,1,1,1,1],[1,1,1,0,0,1,1,0]] : MAJORITY_ROWS;
+  const rows = n4Rows();
   const n4 = state.screens.N4;
-  const correct = rows[0].map((_, c) => rows.map(row => row[c]).filter(Boolean).length >= 2 ? 1 : 0);
-  const chosen = n4.answer.every(value => value !== null);
-  const success = chosen && n4.answer.every((value, i) => value === correct[i]);
+  const { chosen, success } = n4Verdict();
   return `${heading('2 다수결', '겹쳐 놓고, 열마다 하나를 골라 보세요.', '세 줄을 한 열씩 비교해 내 답을 정합니다. 아래 점형은 선택에 따라 바로 바뀝니다.')}
-  <div class="card stack">${rowsHtml(rows, n4.answer, true)}${restoredBraille(n4.answer, success)}<div class="result ${success ? 'ok' : chosen ? 'fail' : ''}" role="status">${!chosen ? '8칸을 모두 선택해 보세요.' : success ? '✓ 각 열의 다수 값으로 복원했습니다.' : '아직 깨진 부분이 있습니다. 어느 열인지 직접 다시 살펴보세요.'}</div><div class="button-row"><button id="reset-n4" class="secondary-button" type="button">선택 다시 하기</button><button id="open-n4-guide" class="secondary-button" type="button">조작 안내</button></div></div>`;
+  <div class="card stack">${rowsHtml(rows, n4.answer, true)}<div id="n4-restored">${restoredBraille(n4.answer, success)}</div><div id="n4-result" class="result ${success ? 'ok' : chosen ? 'fail' : ''}" role="status">${!chosen ? '8칸을 모두 선택해 보세요.' : success ? '✓ 각 열의 다수 값으로 복원했습니다.' : '아직 깨진 부분이 있습니다. 어느 열인지 직접 다시 살펴보세요.'}</div><div class="button-row"><button id="reset-n4" class="secondary-button" type="button">선택 다시 하기</button><button id="open-n4-guide" class="secondary-button" type="button">조작 안내</button></div></div>`;
 }
 
 function renderN5Operate() {
   const n5 = state.screens.N5;
   const rows = repeatedRows(n5.count);
   const ties = columnTies(rows);
-  const answer = n5.answer.length === 8 ? n5.answer : Array(8).fill(null);
+  const answer = n5Answer();
   const complete = answer.every(value => value !== null);
   const hasTie = ties.length > 0;
   const correct = majorityAnswers(rows);
   const success = complete && !hasTie && answer.every((value, i) => value === correct[i]);
   return `${heading('2 다수결 · 조작', '반복 횟수를 내가 정하면 무엇이 달라질까?', '3·4·5줄 중 하나를 골라 같은 방식으로 답을 정합니다. 횟수를 바꾸면 어떤 차이가 생기는지 비교해 보세요.')}
-  <div class="card stack"><div class="choice-grid">${[3,4,5].map(count => `<div class="choice"><input id="n5-count-${count}" name="n5-count" type="radio" value="${count}" ${n5.count === count ? 'checked' : ''}><label for="n5-count-${count}">${count}줄 보기</label></div>`).join('')}</div>${rowsHtml(rows, answer, true, ties)}<div class="result ${hasTie ? 'partial' : success ? 'ok' : complete ? 'fail' : ''}" role="status">${hasTie ? `동점인 열이 ${ties.map(value => value + 1).join(', ')}번째에 있습니다. 한쪽을 다수라고 정하기 어렵습니다.` : !complete ? '내 답 행을 채워 보세요.' : success ? '이 반복 횟수에서는 모든 열을 정할 수 있습니다.' : '선택한 답과 각 열의 값을 다시 비교해 보세요.'}</div><div class="button-row"><button id="reset-n5" class="secondary-button" type="button">답 다시 하기</button><button id="open-n5-guide" class="secondary-button" type="button">조작 안내</button></div></div>`;
+  <div class="card stack"><div class="choice-grid">${[3,4,5].map(count => `<div class="choice"><input id="n5-count-${count}" name="n5-count" type="radio" value="${count}" ${n5.count === count ? 'checked' : ''}><label for="n5-count-${count}">${count}줄 보기</label></div>`).join('')}</div>${rowsHtml(rows, answer, true, ties)}<div id="n5-result" class="result ${hasTie ? 'partial' : success ? 'ok' : complete ? 'fail' : ''}" role="status">${hasTie ? `동점인 열이 ${ties.map(value => value + 1).join(', ')}번째에 있습니다. 한쪽을 다수라고 정하기 어렵습니다.` : !complete ? '내 답 행을 채워 보세요.' : success ? '이 반복 횟수에서는 모든 열을 정할 수 있습니다.' : '선택한 답과 각 열의 값을 다시 비교해 보세요.'}</div><div class="button-row"><button id="reset-n5" class="secondary-button" type="button">답 다시 하기</button><button id="open-n5-guide" class="secondary-button" type="button">조작 안내</button></div></div>`;
 }
 
 function repeatedRows(count) {
@@ -889,18 +975,11 @@ function renderCircuitScreen(id) {
   </div>`;
 }
 
-function renderN6Predict() {
-  const locked = state.screens.N6.predictionLocked;
-  return `${heading('3 통신로 설계 · 예측', '블록을 어떻게 이으면 성공률이 올라갈까?', '아직 회로를 보지 않고 먼저 생각합니다. 확정한 예측은 실험 뒤에도 원문 그대로 남습니다.')}
-  <div class="card stack">${writeBox('N6_predict', '예상하는 통신로와 이유를 적어 보세요.', 'predict', { locked })}<div class="button-row"><button id="confirm-n6-predict" class="primary-button" type="button" ${locked ? 'disabled' : ''}>${locked ? '예측 확정됨' : '예측 확정'}</button></div></div>`;
-}
-
 function renderN9() {
   const n3 = state.screens.N3;
-  const n6 = state.writes.N6_predict || '미작성';
   const circuitLogs = state.log.filter(item => ['N6_operate','N7','N8'].includes(item.screen) && item.kind === 'attempt');
   return `${heading('3 통신로 설계 · 비교', '가장 정확한 방법과 가장 합리적인 방법은 같은가?', '예측과 실제 실행을 나란히 보고, 정확성과 전송량 사이의 선택을 자신의 말로 설명합니다.')}
-  <div class="card stack"><div class="two-column"><div class="evidence"><strong>${predictionEvidence('N3')}</strong><br>${esc(n3.prediction || '미작성')}<br><span class="muted">${esc(state.writes.N3_reason || '이유 미작성')}</span></div><div class="evidence"><strong>통신로 · ${predictionEvidence('N6')}</strong><br>${esc(n6)}</div></div>${evidenceFor(['N6_operate','N7','N8'])}<div class="writing-list">${writeBox('N9_reflect', '가장 정확한 방법과 가장 합리적인 방법은 같은가? 오늘 실험에서 예를 들어 쓰시오.', 'reflect')}</div>${circuitLogs.length ? `<details class="attempt-details"><summary>최근 실행 구성 ${circuitLogs.length}회</summary><div class="evidence">${circuitLogs.slice(-6).map(item => `<div>${esc(item.detail || '')}</div>`).join('')}</div></details>` : ''}</div>`;
+  <div class="card stack"><div class="evidence"><strong>${predictionEvidence('N3')}</strong><br>${esc(n3.prediction || '미작성')}<br><span class="muted">${esc(state.writes.N3_reason || '이유 미작성')}</span></div>${evidenceFor(['N6_operate','N7','N8'])}<div class="writing-list">${writeBox('N9_reflect', '가장 정확한 방법과 가장 합리적인 방법은 같은가? 오늘 실험에서 예를 들어 쓰시오.', 'reflect')}</div>${circuitLogs.length ? `<details class="attempt-details"><summary>최근 실행 구성 ${circuitLogs.length}회</summary><div class="evidence">${circuitLogs.slice(-6).map(item => `<div>${esc(item.detail || '')}</div>`).join('')}</div></details>` : ''}</div>`;
 }
 
 function resultIcon(result) { return result === 'ok' ? '✓' : result === 'partial' ? '△' : result === 'fail' ? '!' : '·'; }
@@ -1162,7 +1241,7 @@ function submissionSummary() {
     const stats = state.attemptStats[screen.id];
     let status = !state.views[screen.id]?.visited ? '미실행' : '관찰';
     const fields = expected.filter(([key])=>key.startsWith(screen.id.split('_')[0]+'_')).map(([key])=>key);
-    const writing = screen.id.endsWith('_write') || ['N1','N3','N6_predict','N9','N18','N19','N20'].includes(screen.id);
+    const writing = screen.id.endsWith('_write') || ['N1','N3','N9','N18','N19','N20'].includes(screen.id);
     if(writing) status = fields.some(key=>unfilled.includes(key)) ? '미작성' : '작성';
     if(['N6_operate','N7','N8','N10'].includes(screen.id)) {
       const circuit=state.circuits[screen.id==='N6_operate'?'N6':screen.id];
@@ -1171,7 +1250,7 @@ function submissionSummary() {
     if(screen.id==='N11') status=checkParityGrid().ok ? '해결' : state.parity.placed.length ? '미해결' : '미실행';
     if(screen.id==='N15_operate') status=state.screens.N15.checked ? '해결' : logs.length ? '미해결' : '미실행';
     if(screen.id==='N4') status=state.screens.N4.checked ? state.screens.N4.answer.join('')===majoritySource().join('') ? '해결' : '미해결' : '미실행';
-    if(screen.id==='N5_operate') status=state.screens.N5.checked ? state.screens.N5.ties.length ? '관찰' : state.screens.N5.answer.every((v,i)=>v===majorityAnswers(repeatedRows(state.screens.N5.count))[i]) ? '해결' : '미해결' : '미실행';
+    if(screen.id==='N5_operate') status=state.screens.N5.checked ? state.screens.N5.ties.length ? '관찰' : n5Answer().every((v,i)=>v===majorityAnswers(repeatedRows(state.screens.N5.count))[i]) ? '해결' : '미해결' : '미실행';
     if(['N12','N16'].includes(screen.id)) {
       const game=state.screens[screen.id];
       const guess=game.guesses[game.round];
@@ -1205,7 +1284,6 @@ function bindScreen(id) {
   if (id === 'N3') bindN3();
   if (id === 'N4') bindN4();
   if (id === 'N5_operate') bindN5();
-  if (id === 'N6_predict') bindN6Predict();
   if (['N6_operate','N7','N8','N10'].includes(id)) bindCircuit(id === 'N6_operate' ? 'N6' : id);
   if (id === 'N11') bindN11();
   if (id === 'N12') bindN12();
@@ -1227,10 +1305,10 @@ function bindScreen(id) {
 function bindCommonWrites() {
   $$('[data-write]').forEach(input => input.addEventListener('input', event => {
     const field = event.target.dataset.write;
-    if (field==='N3_reason' && state.screens.N3.locked || field==='N6_predict' && state.screens.N6.predictionLocked) return;
+    if (field==='N3_reason' && state.screens.N3.locked) return;
     state.writes[field] = event.target.value;
     state.writeMeta[field] = { at: Date.now(), runs: state.log.filter(item=>item.kind==='attempt' && evidenceScreens(field).includes(item.screen)).map(item=>({screen:item.screen, number:item.number, at:item.t})) };
-    if (field==='N3_reason' || field==='N6_predict') recordPrediction(field==='N3_reason'?'N3':'N6', false);
+    if (field==='N3_reason') recordPrediction('N3', false);
     logEvent('write', state.screenId, { field });
   }));
 }
@@ -1241,7 +1319,7 @@ function predictionIsPrior(key) {
 }
 
 function recordPrediction(key, confirmed = false) {
-  const value = key==='N6' ? state.writes.N6_predict || '' : state.screens[key].prediction || '';
+  const value = state.screens[key].prediction || '';
   const reason = key==='N3' ? state.writes.N3_reason || '' : '';
   const previous = state.predicts[key];
   const record = { value, reason, at:Date.now(), beforeExperiment: predictionIsPrior(key) };
@@ -1296,19 +1374,18 @@ function bindN3() {
 }
 
 function bindN4() {
-  $$('[data-majority-index]').forEach(button => button.addEventListener('click', () => { const i = Number(button.dataset.majorityIndex); const answer = state.screens.N4.answer; answer[i] = answer[i] === null ? 0 : 1 - answer[i]; state.screens.N4.checked = answer.every(value => value !== null); if (state.screens.N4.checked) logEvent('attempt', 'N4', { detail: `다수결 답 ${answer.join('')}` }, answer.join('') === majoritySource().join('') ? 'ok' : 'fail'); persist(); render(); }));
-  $('#reset-n4')?.addEventListener('click', () => { state.screens.N4.answer = Array(8).fill(null); state.screens.N4.checked = false; persist(); render(); });
+  $$('[data-majority-index]').forEach(button => button.addEventListener('click', () => { const i = Number(button.dataset.majorityIndex); const answer = state.screens.N4.answer; answer[i] = answer[i] === null ? 0 : 1 - answer[i]; state.screens.N4.checked = answer.every(value => value !== null); if (state.screens.N4.checked) logEvent('attempt', 'N4', { detail: `다수결 답 ${answer.join('')}` }, answer.join('') === majoritySource().join('') ? 'ok' : 'fail'); persist(); updateN4View(); }));
+  $('#reset-n4')?.addEventListener('click', () => { state.screens.N4.answer = Array(8).fill(null); state.screens.N4.checked = false; persist(); updateN4View(); });
   $('#open-n4-guide')?.addEventListener('click', () => openGuide('N4', '내 답 행의 각 칸을 눌러 0, 1을 번갈아 선택할 수 있습니다.'));
 }
 
 function bindN5() {
-  $$('input[name="n5-count"]').forEach(input => input.addEventListener('change', e => { state.screens.N5.count = Number(e.target.value); state.screens.N5.observedCounts = [...new Set([...(state.screens.N5.observedCounts || []), state.screens.N5.count])]; logEvent('attempt', 'N5_operate', {detail: `${state.screens.N5.count}줄 관찰`, attempt: {count: state.screens.N5.count}}, 'observe'); state.screens.N5.answer = Array(8).fill(null); state.screens.N5.ties = columnTies(repeatedRows(state.screens.N5.count)); persist(); render(); }));
-  $$('[data-majority-index]').forEach(button => button.addEventListener('click', () => { const i = Number(button.dataset.majorityIndex); const answer = state.screens.N5.answer.length === 8 ? state.screens.N5.answer : Array(8).fill(null); answer[i] = answer[i] === null ? 0 : 1 - answer[i]; state.screens.N5.answer = answer; state.screens.N5.checked = answer.every(value => value !== null); state.screens.N5.ties = columnTies(repeatedRows(state.screens.N5.count)); if (state.screens.N5.checked) logEvent('attempt', 'N5_operate', { detail: `${state.screens.N5.count}줄, 답 ${answer.join('')}` }, state.screens.N5.ties.length ? 'partial' : answer.every((value,i)=>value===majorityAnswers(repeatedRows(state.screens.N5.count))[i]) ? 'ok' : 'fail'); persist(); render(); }));
-  $('#reset-n5')?.addEventListener('click', () => { state.screens.N5.answer = Array(8).fill(null); state.screens.N5.checked = false; persist(); render(); });
+  /* 횟수를 바꾸면 그 횟수의 답을 되살린다. 이전 답을 지우지 않는다(명세서 §16). */
+  $$('input[name="n5-count"]').forEach(input => input.addEventListener('change', e => { const n5 = state.screens.N5; n5.count = Number(e.target.value); n5.observedCounts = [...new Set([...(n5.observedCounts || []), n5.count])]; logEvent('attempt', 'N5_operate', {detail: `${n5.count}번 받았을 때 관찰`, attempt: {count: n5.count}}, 'observe'); n5.ties = columnTies(repeatedRows(n5.count)); n5.checked = n5Answer().every(value => value !== null); persist(); render(); }));
+  $$('[data-majority-index]').forEach(button => button.addEventListener('click', () => { const i = Number(button.dataset.majorityIndex); const n5 = state.screens.N5; const answer = n5Answer(); answer[i] = answer[i] === null ? 0 : 1 - answer[i]; n5.checked = answer.every(value => value !== null); n5.ties = columnTies(repeatedRows(n5.count)); if (n5.checked) logEvent('attempt', 'N5_operate', { detail: `${n5.count}번 받았을 때, 답 ${answer.join('')}` }, n5.ties.length ? 'partial' : answer.every((value,index)=>value===majorityAnswers(repeatedRows(n5.count))[index]) ? 'ok' : 'fail'); persist(); updateN5View(); }));
+  $('#reset-n5')?.addEventListener('click', () => { const n5 = state.screens.N5; n5.answers[n5.count] = Array(8).fill(null); n5.checked = false; persist(); updateN5View(); });
   $('#open-n5-guide')?.addEventListener('click', () => openGuide('N5_operate', '먼저 반복 횟수를 고르고, 내 답 행의 각 열을 눌러 정하세요.'));
 }
-
-function bindN6Predict() { $('#confirm-n6-predict')?.addEventListener('click', () => { if (!String(state.writes.N6_predict || '').trim()) return; recordPrediction('N6', true); state.screens.N6.predictionLocked = true; logEvent('attempt', 'N6_predict', { detail: '통신로 예측 확정' }, 'predict'); persist(true); render(); }); }
 
 function bindCircuit(stage) {
   const circuit = circuitConfigFor(stage);
@@ -1501,8 +1578,17 @@ function renderMascot() {
   const level = state.hints[state.screenId] || 0;
   const fallback = hintTextFor(state.screenId, Math.max(1,level));
   const hintText = mascotState.text || fallback;
-  slot.innerHTML = `<div class="mascot-bubble" aria-live="polite" ${mascotState.open ? '' : 'hidden'}><p>${esc(hintText)}</p><div class="mascot-actions">${HINTS[state.screenId] && level < 3 ? '<button id="next-hint" type="button">다음 힌트</button>' : ''}<button id="close-mascot" type="button">닫기</button></div></div><button id="mascot-button" class="mascot-button" type="button" aria-label="${mascotState.open ? '힌트 닫기' : '힌트 열기'}"><span aria-hidden="true" class="mascot-fallback" hidden>?</span><img src="../../assets/mascot-${esc(mood)}.png" alt="" aria-hidden="true" onerror="this.hidden=true;this.previousElementSibling.hidden=false"></button>`;
-  $('#mascot-button')?.addEventListener('click', () => { mascotState.open = !mascotState.open; renderMascot(); });
+  /* 칸을 누를 때마다 이 자리를 다시 그리면 <img>가 새로 만들어져 화면 아래가
+     번쩍인다. 내용이 실제로 바뀌었을 때만 다시 그린다(명세서 §37). */
+  const signature = JSON.stringify([mood, hintText, state.screenId, level, Boolean(HINTS[state.screenId])]);
+  if (slot.dataset.mascotSig !== signature) {
+    slot.dataset.mascotSig = signature;
+    slot.innerHTML = `<div class="mascot-bubble" aria-live="polite" hidden><p>${esc(hintText)}</p><div class="mascot-actions">${HINTS[state.screenId] && level < 3 ? '<button id="next-hint" type="button">다음 힌트</button>' : ''}<button id="close-mascot" type="button">닫기</button></div></div><button id="mascot-button" class="mascot-button" type="button"><span aria-hidden="true" class="mascot-fallback" hidden>?</span><img src="../../assets/mascot-${esc(mood)}.png" alt="" aria-hidden="true" onerror="this.hidden=true;this.previousElementSibling.hidden=false"></button>`;
+    $('#mascot-button')?.addEventListener('click', () => { mascotState.open = !mascotState.open; renderMascot(); });
+  }
+  const bubble = slot.querySelector('.mascot-bubble');
+  if (bubble) bubble.hidden = !mascotState.open;
+  $('#mascot-button')?.setAttribute('aria-label', mascotState.open ? '힌트 닫기' : '힌트 열기');
   /* 말풍선은 하단 바에서 위로 펼쳐지므로 조작판·입력칸을 덮는다.
      학생이 본문을 만지기 시작하면 닫는다. 힌트는 캐릭터를 눌러 다시 연다. */
   if (!window.__mascotAutoClose) {
@@ -1532,7 +1618,7 @@ function buildSubmissionHtml() {
     const grid=item.id==='N11' ? `<table>${state.parity.values.map((row,r)=>'<tr>'+row.map((value,c)=>`<td>${r===0||c===0 ? value===null?'미입력':value : state.parity.data[r-1][c-1]}</td>`).join('')+'</tr>').join('')}</table>` : '';
     return `<section><h3>${esc(item.label)} · ${esc(item.status)}</h3><p>${esc(snapshot)}</p>${grid}<p>${esc(logs.at(-1)?.detail||'실행 기록 없음')}</p></section>`;
   }).join('');
-  const predictions=['N3','N6','N14'].map(key=>{
+  const predictions=['N3','N14'].map(key=>{
     const prediction=state.predicts[key];
     const record=prediction?.confirmed||prediction?.latest||prediction?.first;
     return `<p>${{N3:'반복 횟수',N6:'통신로',N14:'질문 수'}[key]} · ${predictionEvidence(key)}: ${esc(record?.value||'미작성')} ${esc(record?.reason||'')}</p>`;

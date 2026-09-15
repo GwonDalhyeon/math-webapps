@@ -271,8 +271,22 @@ input[type="range"] { min-height:44px; }
   .bit-row .row-label { width:48px; min-height:0; }
 }
 /* Put the hint control in reserved navigation space so it cannot cover the board. */
-.bottom-bar { grid-template-columns:auto 56px 1fr auto; gap:10px; }
-.screen-count { text-align:center; }
+/* 이전·다음 버튼의 크기를 맞추고, 쪽 번호를 그 3배 폭으로 가운데 둔다(명세서 §40). */
+.bottom-bar { grid-template-columns:96px 56px minmax(0,1fr) 96px; gap:10px; }
+.bottom-bar #prev-button, .bottom-bar #next-button { width:96px; min-width:96px; justify-self:stretch; padding-inline:8px; }
+.screen-count { display:block; justify-self:center; width:100%; max-width:288px; text-align:center; }
+@media (max-width:360px) {
+  .bottom-bar { grid-template-columns:84px 56px minmax(0,1fr) 84px; }
+  .bottom-bar #prev-button, .bottom-bar #next-button { width:84px; min-width:84px; }
+}
+
+/* 열 머리와 세로 줄무늬 — 어느 자리를 답하는 중인지 눈으로 따라갈 수 있게 한다(명세서 §16). */
+.bit-row.heads .col-head { display:inline-grid; place-items:center; width:44px; height:26px; border-radius:8px 8px 0 0; color:var(--muted); font-size:.78rem; font-weight:800; }
+.bit-row.heads { margin-bottom:-4px; }
+.bit.alt, .col-head.alt { background:#f2efe7; }
+.bit-button.alt.empty { background:#f2efe7; }
+.bit-row.answer { margin-top:6px; padding-top:8px; border-top:2px solid var(--line); }
+.bit-row.answer .row-label { color:var(--ink); }
 .mascot-slot { position:relative; inset:auto; width:56px; max-width:none; display:block; }
 .mascot-button { width:56px; height:56px; }
 .mascot-bubble { position:absolute; bottom:calc(100% + 14px); left:0; width:300px; max-width:calc(100vw - 120px); }
