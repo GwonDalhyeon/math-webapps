@@ -2,7 +2,7 @@
 
 const STORAGE_KEY = 'gifted26_noisy_state';
 const LOG_KEY = 'gifted26_noisy_log';
-const SCRIPT_URL = ''; // 배포한 Apps Script URL을 이곳에 넣으면 직접 제출할 수 있습니다.
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyJkUruf0Y8waxOJokJxrq6Rk5o4JrwLcgY51NmsFdHPD2oKQja5E0-5SBtCNjOV665/exec';
 const NOISE_RATE = 0.1;
 const OPTIONAL_IDS = new Set(['N16', 'N17', 'N18', 'N19']);
 const WRITE_FIELDS = [
@@ -998,7 +998,7 @@ function renderN21() {
   const summary = submissionSummary();
   const submitted = state.submitted.at > 0;
   return `${heading('7 닫기 · 제출', '오늘의 탐구 기록을 제출하세요.', '미작성·미해결·건너뛴 활동도 숨기지 않고 기록합니다. 제출은 한 번으로 시도하고, 실패하면 파일로 저장할 수 있습니다.')}
-  <div class="card stack"><div class="two-column"><div class="evidence"><strong>미작성 문항</strong><br>${summary.unfilled.length ? `${summary.unfilled.length}개` : '없음'}</div><div class="evidence"><strong>실패로 기록된 실행</strong><br>${summary.unresolved}회</div></div><details class="attempt-details"><summary>활동별 방문 기록 보기</summary><div class="evidence">${summary.statuses.map(item => `<div>${esc(item.id)} · ${esc(item.label)} · ${item.status}</div>`).join('')}</div></details><div id="submit-result" class="result ${submitted ? 'ok' : ''}" role="status">${submitted ? `제출 상태: ${esc(state.submitted.status)} · 확인 코드 ${esc(state.submitted.code)}` : '제출 버튼을 누르면 화면 기록 HTML이 만들어집니다.'}</div><div class="button-row"><button id="submit-button" class="primary-button" type="button" ${submitted ? 'disabled' : ''}>${submitted ? '이미 제출했습니다' : '제출'}</button><button id="download-button" class="secondary-button" type="button" ${submitted && state.submitted.status === 'ok' ? 'disabled' : ''}>파일로 저장</button></div></div>`;
+  <div class="card stack"><div class="two-column"><div class="evidence"><strong>미작성 문항</strong><br>${summary.unfilled.length ? `${summary.unfilled.length}개` : '없음'}</div><div class="evidence"><strong>실패로 기록된 실행</strong><br>${summary.unresolved}회</div></div><details class="attempt-details"><summary>활동별 방문 기록 보기</summary><div class="evidence">${summary.statuses.map(item => `<div>${esc(item.id)} · ${esc(item.label)} · ${item.status}</div>`).join('')}</div></details><div id="submit-result" class="result ${submitted ? 'ok' : ''}" role="status">${submitted ? `제출 상태: ${esc(state.submitted.status)} · 확인 코드 ${esc(state.submitted.code)}` : '제출 버튼을 누르면 화면 기록 HTML이 만들어집니다.'}</div><div class="button-row"><button id="submit-button" class="primary-button" type="button" ${submitted ? 'disabled' : ''}>${submitted ? '이미 제출했습니다' : '제출'}</button>${state.submitted.status.indexOf('실패') >= 0 ? '<button id="download-button" class="secondary-button" type="button">파일로 저장</button>' : ''}</div></div>`;
 }
 
 function bindScreen(id) {
@@ -1253,15 +1253,23 @@ async function submitWork() {
   const html = buildSubmissionHtml();
   if (!SCRIPT_URL) { state.submitted.status = '파일 저장 대기'; logEvent('submit', 'N21', { detail: 'Apps Script URL 미설정 · 파일 저장 가능' }, 'sent'); persist(true); render(); return; }
   button.disabled = true;
+  const body = new URLSearchParams({ sid: state.student.sid, name: state.student.name, code, html });
   try {
-    const body = new URLSearchParams({ sid: state.student.sid, name: state.student.name, code, html });
+    /* 1차: 응답을 읽어 실제로 도착했는지 확인한다. */
     const response = await fetch(SCRIPT_URL, { method: 'POST', body });
     const text = await response.text();
     state.submitted.status = text.includes('ok') ? '제출되었습니다.' : '보냈지만 확인할 수 없습니다.';
     logEvent('submit', 'N21', { detail: state.submitted.status }, text.includes('ok') ? 'ok' : 'sent');
   } catch (error) {
-    state.submitted.status = '전송 실패 · 파일로 저장하세요.';
-    logEvent('submit', 'N21', { detail: '전송 실패' }, 'fail');
+    try {
+      /* 2차: 학교망에서 응답을 못 읽는 경우. 전송은 되지만 확인이 안 된다. */
+      await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body });
+      state.submitted.status = '보냈습니다. 확인 코드를 채팅에 남겨 주세요.';
+      logEvent('submit', 'N21', { detail: `no-cors 전송 · ${error.message}` }, 'sent');
+    } catch (retryError) {
+      state.submitted.status = '전송 실패 · 파일로 저장하세요.';
+      logEvent('submit', 'N21', { detail: `전송 실패 · ${retryError.message}` }, 'fail');
+    }
   }
   persist(true);
   render();
