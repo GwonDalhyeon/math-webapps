@@ -1503,16 +1503,18 @@ function renderMascot() {
   const hintText = mascotState.text || fallback;
   slot.innerHTML = `<div class="mascot-bubble" aria-live="polite" ${mascotState.open ? '' : 'hidden'}><p>${esc(hintText)}</p><div class="mascot-actions">${HINTS[state.screenId] && level < 3 ? '<button id="next-hint" type="button">다음 힌트</button>' : ''}<button id="close-mascot" type="button">닫기</button></div></div><button id="mascot-button" class="mascot-button" type="button" aria-label="${mascotState.open ? '힌트 닫기' : '힌트 열기'}"><span aria-hidden="true" class="mascot-fallback" hidden>?</span><img src="../../assets/mascot-${esc(mood)}.png" alt="" aria-hidden="true" onerror="this.hidden=true;this.previousElementSibling.hidden=false"></button>`;
   $('#mascot-button')?.addEventListener('click', () => { mascotState.open = !mascotState.open; renderMascot(); });
-  /* 글을 쓰기 시작하면 말풍선을 닫는다. 오른쪽 아래에 고정이라 입력칸을 가린다. */
+  /* 말풍선은 하단 바에서 위로 펼쳐지므로 조작판·입력칸을 덮는다.
+     학생이 본문을 만지기 시작하면 닫는다. 힌트는 캐릭터를 눌러 다시 연다. */
   if (!window.__mascotAutoClose) {
     window.__mascotAutoClose = true;
-    document.addEventListener('focusin', event => {
+    const closeOnMainContent = event => {
       if (!mascotState.open) return;
-      if (!event.target.closest('.main-content')) return;
-      if (!event.target.matches('input, textarea')) return;
+      if (!event.target.closest || !event.target.closest('.main-content')) return;
       mascotState.open = false;
       renderMascot();
-    });
+    };
+    document.addEventListener('focusin', closeOnMainContent);
+    document.addEventListener('pointerdown', closeOnMainContent, true);
   }
   $('#close-mascot')?.addEventListener('click', () => { mascotState.open = false; $$('.guide-target').forEach(node=>node.classList.remove('guide-target')); renderMascot(); });
   $('#next-hint')?.addEventListener('click', () => { const current = state.hints[state.screenId] || 0; const next = Math.min(3, current + 1); state.hints[state.screenId] = next; mascotState.text = hintTextFor(state.screenId,next); mascotState.mood = next >= 3 ? 'explain' : next >= 2 ? 'worry' : 'tilt'; logEvent('hint', state.screenId, { detail: `힌트 ${next}단계 직접 열기` }, 'hint'); persist(); renderMascot(); });
