@@ -171,7 +171,8 @@ details.attempt-details summary { cursor: pointer; color: var(--muted); font-siz
 .distance-bad { color: var(--red); font-weight: 900; }
 .reading { padding: 20px; border-radius: 14px; background: #fbfaf5; border: 1px solid #e5e0d5; }
 
-.mascot-slot { position: fixed; right: 18px; bottom: 94px; z-index: 15; display: flex; flex-direction: row-reverse; align-items: flex-end; gap: 8px; max-width: min(390px, calc(100vw - 28px)); pointer-events: none; }
+/* 배치는 하단 이동 바의 예약 칸이다(아래 .bottom-bar 규칙 참조, 명세서 §26). */
+.mascot-slot { z-index: 15; pointer-events: none; }
 .mascot-button { pointer-events: auto; flex: 0 0 68px; width: 68px; height: 68px; padding: 0; border: 0; border-radius: 50%; background: transparent; }
 .mascot-button img { display: block; width: 100%; height: 100%; object-fit: contain; }
 .mascot-bubble { pointer-events: auto; position: relative; max-width: 300px; padding: 11px 13px; border: 1px solid #d8d4c9; border-radius: 14px 14px 3px 14px; background: #fff; box-shadow: 0 10px 25px rgba(0,0,0,.12); font-size: .88rem; }
@@ -195,7 +196,6 @@ details.attempt-details summary { cursor: pointer; color: var(--muted); font-siz
   .bottom-bar { padding-inline: 12px; min-height: 72px; }
   .parity-grid { gap: 2px; margin-inline: -6px; }
   .grid-cell { min-width: 0; border-radius: 6px; font-size: .86rem; }
-  .mascot-slot { right: 10px; bottom: 82px; }
   .mascot-button { flex-basis: 58px; width: 58px; height: 58px; }
   .mascot-bubble { max-width: calc(100vw - 90px); }
 }
