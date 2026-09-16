@@ -315,7 +315,7 @@ function isParityGiven(r, c) { return r === PARITY_GIVEN[0] && c === PARITY_GIVE
 function initialState(sid = '') {
   return {
     v: 1,
-    student: { sid: '', name: '' },
+    student: { school: '', sid: '', name: '' },
     screenId: 'N0',
     includeOptional: false,
     views: {},
@@ -536,10 +536,10 @@ function navTo(id, { log = true } = {}) {
 function navigate(delta) {
   const screens = activeScreens();
   const index = currentIndex();
-  if (delta > 0 && state.screenId === 'N0' && (!state.student.sid.trim() || !state.student.name.trim())) {
+  if (delta > 0 && state.screenId === 'N0' && (!String(state.student.school || '').trim() || !state.student.sid.trim() || !state.student.name.trim())) {
     const note = $('#n0-validation');
-    if (note) { note.textContent = '학번과 이름을 입력하면 이어서 진행할 수 있어요.'; note.className = 'result fail'; }
-    $('#student-sid')?.focus();
+    if (note) { note.textContent = '학교·학번·이름을 입력하면 이어서 진행할 수 있어요.'; note.className = 'result fail'; }
+    (!String(state.student.school || '').trim() ? $('#student-school') : !state.student.sid.trim() ? $('#student-sid') : $('#student-name'))?.focus();
     return;
   }
   const next = screens[index + delta];
@@ -749,8 +749,9 @@ function renderN0() {
   <div class="screen-layout">
     <div class="card stack">
       <h3>학생 정보</h3>
+      <div class="field"><label for="student-school">학교</label><input id="student-school" type="text" autocomplete="off" value="${esc(state.student.school || '')}" placeholder="예: ○○중학교"></div>
       <div class="two-column">
-        <div class="field"><label for="student-sid">학번</label><input id="student-sid" type="text" autocomplete="off" value="${esc(state.student.sid)}" placeholder="예: 20101"></div>
+        <div class="field"><label for="student-sid">학번</label><input id="student-sid" type="text" autocomplete="off" value="${esc(state.student.sid)}" placeholder="예: 2101"></div>
         <div class="field"><label for="student-name">이름</label><input id="student-name" type="text" autocomplete="name" value="${esc(state.student.name)}" placeholder="이름을 입력하세요"></div>
       </div>
       <label class="choice" style="display:flex;align-items:center;gap:9px"><input id="include-optional" type="checkbox" ${state.includeOptional ? 'checked' : ''}><span>선택 활동도 포함하기</span></label>
@@ -2271,6 +2272,7 @@ function predictionEvidence(key) {
 
 
 function bindN0() {
+  $('#student-school')?.addEventListener('input', e => updateStudentField('school', e.target.value));
   $('#student-sid')?.addEventListener('input', e => updateStudentField('sid', e.target.value));
   $('#student-name')?.addEventListener('input', e => updateStudentField('name', e.target.value));
   $('#include-optional')?.addEventListener('change', e => { state.includeOptional = e.target.checked; persist(true); updateNavigation(); renderActivityMenu(); });
@@ -2629,7 +2631,7 @@ function renderMascot() {
   $('#next-hint')?.addEventListener('click', () => { const current = state.hints[state.screenId] || 0; const next = Math.min(3, current + 1); state.hints[state.screenId] = next; mascotState.text = hintTextFor(state.screenId,next); mascotState.mood = next >= 3 ? 'explain' : next >= 2 ? 'worry' : 'tilt'; logEvent('hint', state.screenId, { detail: `힌트 ${next}단계 직접 열기` }, 'hint'); persist(); renderMascot(); });
 }
 
-function createConfirmationCode() { const seed = `${state.student.sid}${state.student.name}${Date.now()}`; let hash = 0; for (const char of seed) hash = (hash * 31 + char.charCodeAt(0)) % 1000000; return String(hash).padStart(6, '0'); }
+function createConfirmationCode() { const seed = `${state.student.school || ''}${state.student.sid}${state.student.name}${Date.now()}`; let hash = 0; for (const char of seed) hash = (hash * 31 + char.charCodeAt(0)) % 1000000; return String(hash).padStart(6, '0'); }
 
 /* 출력물이 둘이다(명세서 §30-1). 제출본은 시도 요약과 전체 로그까지,
    학생 다운로드본은 자기가 쓴 것과 조작 결과만. 같은 생성기에서 섹션만
@@ -2660,7 +2662,7 @@ function buildSubmissionHtml(forStudent = false) {
   }).join('');
   const tableRows=compareRows().map(row=>`<tr>${row.map(cell=>`<td>${esc(cell)}</td>`).join('')}</tr>`).join('');
   const stats=summary.statuses.map(item=>`<tr><td>${esc(item.label)}</td><td>${esc(item.status)}</td><td>${item.attempts}</td><td>${item.firstSuccess??'없음'}</td><td>${item.hintLevel}</td></tr>`).join('');
-  const makeHtml=(logs, forStudent=false)=>`<!doctype html><html lang="ko"><head><meta charset="utf-8"><title>믿을 수 있게 보내기 제출 기록</title><style>@page{size:A4;margin:15mm}body{font-family:Arial,sans-serif;color:#202938;line-height:1.6}table{width:100%;border-collapse:collapse;margin:12px 0 24px}th,td{border:1px solid #ccc;padding:6px;text-align:left;overflow-wrap:anywhere}section{break-inside:avoid;border-top:1px solid #ddd;padding:8px 0}.answer{white-space:pre-wrap;overflow-wrap:anywhere}@media print{table{break-inside:avoid}}</style></head><body><h1>믿을 수 있게 보내기</h1><p>학번: ${esc(state.student.sid)} · 이름: ${esc(state.student.name)}<br>제출 시각: ${new Date(state.submitted.at||Date.now()).toLocaleString('ko-KR')} · 확인 코드: ${esc(state.submitted.code)}</p><p>과목: 수학 · 관련 단원: 이진법과 오류 정정<br>학습 목표: 반복·검사 비트·질문 설계를 비교하고 오류를 견디는 방법을 설명한다.</p><h2>예측 기록</h2>${predictions}<h2>쪽별 조작 기록</h2>${records}<h2>작성한 설명</h2>${writes}<h2>종합 비교표</h2><p>전송량은 정보 8비트 기준으로 환산한 비교값이며, 내 기록은 실제 활동에서 측정한 값입니다.</p><table><thead><tr><th>방식</th><th>전송량</th><th>탐지</th><th>정정</th><th>최소 거리</th><th>내 기록</th></tr></thead><tbody>${tableRows}</tbody></table>${forStudent?'':`<h2>시도 요약</h2><p>미작성 ${summary.unfilled.length}개 · 미해결 ${summary.unresolved}개</p><table><thead><tr><th>쪽</th><th>상태</th><th>시도 수</th><th>첫 성공 시도</th><th>힌트 단계</th></tr></thead><tbody>${stats}</tbody></table><details><summary>전체 로그 (${logs.length}/${state.log.length}건)</summary><table><thead><tr><th>시각</th><th>활동</th><th>상세</th><th>결과</th></tr></thead><tbody>${logs.map(item=>`<tr><td>${new Date(item.t).toLocaleString('ko-KR')}</td><td>${esc(screenInfo(item.screen).label)}</td><td>${esc(item.detail||item.field||item.kind)}</td><td>${esc(item.result)}</td></tr>`).join('')}</tbody></table></details>`}</body></html>`;
+  const makeHtml=(logs, forStudent=false)=>`<!doctype html><html lang="ko"><head><meta charset="utf-8"><title>믿을 수 있게 보내기 제출 기록</title><style>@page{size:A4;margin:15mm}body{font-family:Arial,sans-serif;color:#202938;line-height:1.6}table{width:100%;border-collapse:collapse;margin:12px 0 24px}th,td{border:1px solid #ccc;padding:6px;text-align:left;overflow-wrap:anywhere}section{break-inside:avoid;border-top:1px solid #ddd;padding:8px 0}.answer{white-space:pre-wrap;overflow-wrap:anywhere}@media print{table{break-inside:avoid}}</style></head><body><h1>믿을 수 있게 보내기</h1><p>학교: ${esc(state.student.school || '')} · 학번: ${esc(state.student.sid)} · 이름: ${esc(state.student.name)}<br>제출 시각: ${new Date(state.submitted.at||Date.now()).toLocaleString('ko-KR')} · 확인 코드: ${esc(state.submitted.code)}</p><p>과목: 수학 · 관련 단원: 이진법과 오류 정정<br>학습 목표: 반복·검사 비트·질문 설계를 비교하고 오류를 견디는 방법을 설명한다.</p><h2>예측 기록</h2>${predictions}<h2>쪽별 조작 기록</h2>${records}<h2>작성한 설명</h2>${writes}<h2>종합 비교표</h2><p>전송량은 정보 8비트 기준으로 환산한 비교값이며, 내 기록은 실제 활동에서 측정한 값입니다.</p><table><thead><tr><th>방식</th><th>전송량</th><th>탐지</th><th>정정</th><th>최소 거리</th><th>내 기록</th></tr></thead><tbody>${tableRows}</tbody></table>${forStudent?'':`<h2>시도 요약</h2><p>미작성 ${summary.unfilled.length}개 · 미해결 ${summary.unresolved}개</p><table><thead><tr><th>쪽</th><th>상태</th><th>시도 수</th><th>첫 성공 시도</th><th>힌트 단계</th></tr></thead><tbody>${stats}</tbody></table><details><summary>전체 로그 (${logs.length}/${state.log.length}건)</summary><table><thead><tr><th>시각</th><th>활동</th><th>상세</th><th>결과</th></tr></thead><tbody>${logs.map(item=>`<tr><td>${new Date(item.t).toLocaleString('ko-KR')}</td><td>${esc(screenInfo(item.screen).label)}</td><td>${esc(item.detail||item.field||item.kind)}</td><td>${esc(item.result)}</td></tr>`).join('')}</tbody></table></details>`}</body></html>`;
   let logs=state.log.slice();
   let html=makeHtml(logs, forStudent);
   while(new Blob([html]).size>500*1024 && logs.length>protectedLogEntries(logs).size) {
@@ -2678,20 +2680,20 @@ function downloadSubmission(forStudent = false) {
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = url;
-  link.download = `${state.student.sid || '학번없음'}_${state.student.name || '이름없음'}_믿을수있게보내기${forStudent ? '' : '_전체기록'}.html`;
+  link.download = `${state.student.school || '학교없음'}_${state.student.sid || '학번없음'}_${state.student.name || '이름없음'}_믿을수있게보내기${forStudent ? '' : '_전체기록'}.html`;
   link.click();
   URL.revokeObjectURL(url);
 }
 
 async function submitWork() {
   if (submissionInFlight || ['ok','sent'].includes(state.submitted.result)) return;
-  if (!state.student.sid.trim() || !state.student.name.trim()) { navTo('N0'); return; }
+  if (!String(state.student.school || '').trim() || !state.student.sid.trim() || !state.student.name.trim()) { navTo('N0'); return; }
   submissionInFlight=true;
   const submissionState=state;
   const code=createConfirmationCode();
   state.submitted={at:0,code,status:'준비 중',result:'pending'};
   const html=buildSubmissionHtml();
-  const body=new URLSearchParams({sid:state.student.sid,name:state.student.name,code,html});
+  const body=new URLSearchParams({school:String(state.student.school||''),sid:state.student.sid,name:state.student.name,code,html});
   persist(true); render();
   const post=async mode=>{
     const controller=new AbortController();
