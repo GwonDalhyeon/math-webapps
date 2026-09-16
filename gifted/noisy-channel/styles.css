@@ -389,3 +389,24 @@ input[type="range"] { min-height:44px; }
 .pbit.empty { color: #a6a39a; }
 /* 예시로 채워 둔 칸은 학생이 고치지 않는다. */
 .grid-cell.given { background: #efece4; color: var(--muted); cursor: default; }
+
+/* 목표와 내 설계를 나란히 (명세서 §32-4 2번). */
+.goal-table { width:100%; border-collapse:collapse; font-size:14px; }
+.goal-table th, .goal-table td { padding:8px 10px; border-bottom:1px solid var(--line); text-align:left; }
+.goal-table thead th { color:var(--muted); font-size:12px; font-weight:800; }
+.goal-table tbody th { font-weight:800; }
+.goal-table td.met { color:#1f9254; font-weight:900; }
+.goal-table td.unmet { color:var(--red); font-weight:900; }
+.goal-table td.pending { color:var(--muted); }
+
+/* 1000번을 어떻게 세었는지 (명세서 §32-4 1번). */
+.count-table { width:100%; border-collapse:collapse; font-size:14px; }
+.count-table caption { padding-bottom:6px; color:var(--muted); font-size:12px; font-weight:800; text-align:left; }
+.count-table th, .count-table td { padding:6px 10px; border-bottom:1px solid var(--line); text-align:left; white-space:nowrap; }
+.count-table thead th { color:var(--muted); font-size:12px; font-weight:800; }
+.count-table tbody th, .count-table tfoot th { font-weight:800; }
+.count-table tr.broken td:last-child { color:var(--red); font-weight:900; }
+.count-table tr.whole td:nth-child(3) { color:#1f9254; font-weight:800; }
+.count-table tr.ellipsis td { color:var(--muted); text-align:center; }
+.count-table tfoot tr:first-child th { border-top:2px solid var(--line); }
+.count-table tfoot td { background:#fbfaf6; }

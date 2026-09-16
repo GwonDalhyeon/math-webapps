@@ -24,12 +24,15 @@ const SCREEN_ORDER = [
   { id: 'N5_operate', activity: '다수결', label: '반복 횟수 정하기' },
   { id: 'N5_write', activity: '다수결', label: '반복 횟수 · 작성' },
   { id: 'N6_operate', activity: '통신로 설계', label: '조립 S1 · 시험' },
+  { id: 'N6_read', activity: '통신로 설계', label: '결과 읽는 법' },
   { id: 'N7', activity: '통신로 설계', label: '조립 S2' },
   { id: 'N8', activity: '통신로 설계', label: '조립 S3' },
   { id: 'N9', activity: '통신로 설계', label: '비교 · 성찰' },
   { id: 'C3', activity: '어디가 뒤집혔나', label: '만화 ③ · 검사 점 붙이기' },
-  { id: 'N10', activity: '어디가 뒤집혔나', label: '조립 S4' },
+  /* 개념 → 손(1차원) → 블록(1차원) → 손(2차원). 검사 비트 블록을 만나기
+     전에 손으로 한 번 만들어 본다(명세서 §32-4 4번). */
   { id: 'N11a', activity: '어디가 뒤집혔나', label: '검사 점 (가) · 한 줄' },
+  { id: 'N10', activity: '어디가 뒤집혔나', label: '조립 S4' },
   { id: 'N11b', activity: '어디가 뒤집혔나', label: '검사 점 (나) · 7×7' },
   { id: 'N12', activity: '어디가 뒤집혔나', label: '한 칸 찾기' },
   { id: 'N13_observe', activity: '어디가 뒤집혔나', label: '두 칸 오류 · 관찰' },
@@ -113,7 +116,7 @@ const HINTS = {
 
 const ACTIVITY_SECTIONS = {
   N0: '0 시작', C1: '1 보내면 망가진다', N1: '1 보내면 망가진다', N2_operate: '1 보내면 망가진다', N2_write: '1 보내면 망가진다', C2: '1 보내면 망가진다', N3: '1 보내면 망가진다',
-  N4: '2 다수결', N5_operate: '2 다수결', N5_write: '2 다수결', N6_operate: '3 통신로 설계', N7: '3 통신로 설계', N8: '3 통신로 설계', N9: '3 통신로 설계',
+  N4: '2 다수결', N5_operate: '2 다수결', N5_write: '2 다수결', N6_operate: '3 통신로 설계', N6_read: '3 통신로 설계', N7: '3 통신로 설계', N8: '3 통신로 설계', N9: '3 통신로 설계',
   C3: '4 어디가 뒤집혔나', N10: '4 어디가 뒤집혔나', N11a: '4 어디가 뒤집혔나', N11b: '4 어디가 뒤집혔나', N12: '4 어디가 뒤집혔나', N13_observe: '4 어디가 뒤집혔나', N13_write: '4 어디가 뒤집혔나', C4: '5 질문으로 찾기', N14: '5 질문으로 찾기', N15_operate: '5 질문으로 찾기', N15_write: '5 질문으로 찾기', N16: '5 질문으로 찾기',
   N17: '6 얼마나 멀어야', N18: '6 얼마나 멀어야', N19: '7 닫기', N20: '7 닫기', N21: '7 닫기'
 };
@@ -611,7 +614,7 @@ function renderScreen(id) {
   if (SEEDED_SCREENS.has(id) && !hasStudentId()) return `<section class="screen">${seedNotice(id)}</section>`;
   const renderers = {
     N0: renderN0, C1: renderComic, N1: renderN1, N2_operate: renderN2Operate, N2_write: renderN2Write, C2: renderComic, N3: renderN3, N4: renderN4,
-    N5_operate: renderN5Operate, N5_write: renderN5Write, N6_operate: renderCircuitScreen,
+    N5_operate: renderN5Operate, N5_write: renderN5Write, N6_operate: renderCircuitScreen, N6_read: renderN6Read,
     N7: renderCircuitScreen, N8: renderCircuitScreen, N9: renderN9, C3: renderComic, N10: renderCircuitScreen, N11a: renderN11a, N11b: renderN11b, N12: renderN12,
     N13_observe: renderN13Observe, N13_write: renderN13Write, C4: renderComic, N14: renderN14, N15_operate: renderN15Operate, N15_write: renderN15Write,
     N16: renderN16, N17: renderN17, N18: renderN18, N19: renderN19, N20: renderN20, N21: renderN21
@@ -1137,15 +1140,8 @@ function runPipelineOnce(nodes, mode, steps = null) {
   return { signal, detected };
 }
 
-/* 표본 한 번을 기록한다. 너무 길면 화면에 담을 수 없으므로 기록하지 않는다. */
+/* 표본이 너무 길면 화면에 담을 수 없으므로 기록하지 않는다. */
 const TRACE_MAX_BITS = 120;
-
-function capturePipelineTrace(nodes, mode) {
-  const steps = [];
-  runPipelineOnce(nodes, mode, steps);
-  if (steps.some(step => step.signal.length > TRACE_MAX_BITS)) return null;
-  return steps;
-}
 
 function traceHtml(steps) {
   if (!Array.isArray(steps) || steps.length < 2) return '';
@@ -1176,6 +1172,11 @@ function traceHtml(steps) {
 }
 
 /* 1000회 시행의 상대도수를 낸다. N10은 한 비트 오류를 강제로 넣어 탐지율을 본다. */
+/* 「결과 읽는 법」 화면이 쓸 표본이다(명세서 §32-4 1번).
+   1번째 시행은 신호 변형 표시와 **같은 시행**이어야 한다. 따로 한 번 더
+   돌리면 「앞 화면에서 본 그 한 번」이 거짓이 된다. */
+const SAMPLE_TRIALS = 5;
+
 function simulateCircuit(nodes, stage) {
   const info = analyzeCircuit(nodes);
   if (!info.canCompare) return { ...info, ran: false };
@@ -1183,18 +1184,28 @@ function simulateCircuit(nodes, stage) {
   let exact = 0;
   let bitHits = 0;
   let detectHits = 0;
+  const samples = [];
+  let firstTrace = null;
   for (let t = 0; t < TRIALS; t += 1) {
-    const out = runPipelineOnce(nodes, mode);
+    /* 1번째 시행만 변형 과정을 함께 기록한다. 나머지는 기록 비용이 들지 않는다. */
+    const steps = t === 0 ? [] : null;
+    const out = runPipelineOnce(nodes, mode, steps);
+    if (t === 0) firstTrace = steps.some(step => step.signal.length > TRACE_MAX_BITS) ? null : steps;
     let same = 0;
     for (let i = 0; i < SOURCE_BITS; i += 1) if (out.signal[i] === SOURCE[i]) same += 1;
     bitHits += same;
     if (same === SOURCE_BITS) exact += 1;
     if (out.detected) detectHits += 1;
+    if (t < SAMPLE_TRIALS) samples.push({ signal: out.signal.slice(0, SOURCE_BITS), same });
   }
   return {
     ...info,
     ran: true,
     trials: TRIALS,
+    exact,
+    bitHits,
+    samples,
+    trace: firstTrace,
     messageSuccess: (exact / TRIALS) * 100,
     bitRecovery: (bitHits / (TRIALS * SOURCE_BITS)) * 100,
     detectRate: (detectHits / TRIALS) * 100,
@@ -1256,6 +1267,44 @@ const STAGE_COPY = {
   N10: ['조립 S4', '9비트로 보내되, 오류를 알아채는 방법을 설계해 보세요.', '전체 1의 개수가 짝수가 되도록 검사 비트를 하나 붙이고, 받은 뒤 1의 개수가 짝수인지 세어 봅니다. 이것을 검사라고 부릅니다. 9비트 이하로 보내 한 비트 오류를 알아채는 구조를 만들어 보세요.']
 };
 
+/* 목표가 안내문 한 문장으로만 지나가 실행 중에는 화면에서 사라졌다.
+   목표와 실제를 나란히 놓아야 비교가 학습이 된다(명세서 §32-4 2번).
+   N7 표에 비용 행을 넣지 않는다 — §33의 「N8의 전송량 제한을 예고하지 않는다」. */
+const STAGE_GOALS = {
+  N7: [{ key: 'accuracy', label: '정확함', goal: `${MESSAGE_GOAL}% 이상` }],
+  N8: [{ key: 'accuracy', label: '정확함', goal: `${MESSAGE_GOAL}% 이상` }, { key: 'cost', label: '비용', goal: '24비트 이하' }],
+  N10: [{ key: 'detect', label: '오류 탐지', goal: '100%' }, { key: 'cost9', label: '비용', goal: '9비트 이하' }]
+};
+
+function goalTableHtml(stage, last, stale) {
+  const rows = STAGE_GOALS[stage];
+  if (!rows) return '';
+  const m = last && !stale ? last.metric : null;
+  const cell = row => {
+    if (!last) return { text: '— 아직 시험하지 않음', ok: null };
+    if (stale) return { text: '구성이 바뀌었습니다 — 다시 시험해 보세요', ok: null };
+    if (row.key === 'accuracy') return { text: `${m.messageSuccess.toFixed(1)}%`, ok: m.messageSuccess >= MESSAGE_GOAL };
+    if (row.key === 'cost') return { text: `${m.bits}비트`, ok: m.bits <= 24 };
+    if (row.key === 'cost9') return { text: `${m.bits}비트`, ok: m.bits <= 9 };
+    return { text: `${m.detectRate.toFixed(1)}%`, ok: m.detectRate >= 100 };
+  };
+  return `<table class="goal-table"><caption class="sr-only">목표와 내 설계 비교</caption>
+    <thead><tr><th></th><th>목표</th><th>내 설계</th></tr></thead>
+    <tbody>${rows.map(row => {
+      const got = cell(row);
+      return `<tr><th scope="row">${esc(row.label)}</th><td>${esc(row.goal)}</td><td class="${got.ok === null ? 'pending' : got.ok ? 'met' : 'unmet'}">${esc(got.text)}${got.ok === null ? '' : got.ok ? ' ✓' : ' ✗'}</td></tr>`;
+    }).join('')}</tbody></table>`;
+}
+
+/* 검사 비트는 C3 만화와 N10에서 처음 배운다. 배우지 않은 블록을 팔레트에
+   놓아 두면 눌러 봐도 경고만 나온다(명세서 §32-4 3번).
+   이미 놓인 블록은 그대로 두고 추가만 막는다. */
+function paletteFor(stage) {
+  return stage === 'N10'
+    ? ['repeat3', 'repeat5', 'majority', 'parityEncode', 'parityCheck']
+    : ['repeat3', 'repeat5', 'majority'];
+}
+
 const VERDICT_TEXT = {
   ok: '목표 조건을 만족했습니다.',
   partial: '조건 하나는 만족했습니다. 남은 조건을 확인해 보세요.',
@@ -1292,7 +1341,7 @@ function renderCircuitScreen(id) {
     return `${circuitNode(node, index, circuit.selected, fixed)}${index < circuit.nodes.length - 1 ? '<span class="circuit-arrow" aria-hidden="true">→</span>' : ''}`;
   }).join('');
 
-  const palette = ['repeat3', 'repeat5', 'majority', 'parityEncode', 'parityCheck']
+  const palette = paletteFor(stage)
     .map(type => `<button type="button" data-add-block="${type}"><span class="palette-name">+ ${esc(circuitBlockLabel(type))}</span><span class="palette-role">${esc(circuitBlockRole(type))}</span></button>`).join('');
 
   const warnBox = info.warnings.length
@@ -1324,6 +1373,7 @@ function renderCircuitScreen(id) {
       <p class="muted small" style="margin:0">블록을 추가한 뒤 끌어서 옮기거나 ← → 로 순서를 바꿔 보세요. 연결은 왼쪽에서 오른쪽으로 읽습니다. 놓는 순서에 따라 결과가 달라집니다.</p>
       <div><h3 style="font-size:1rem">블록 팔레트</h3><div class="palette">${palette}</div></div>
     </div>
+    ${goalTableHtml(stage, last, stale)}
     ${warnBox}
     <div>${resultBox}</div>
     ${last && !stale && last.trace ? traceHtml(last.trace) : ''}
@@ -1331,6 +1381,63 @@ function renderCircuitScreen(id) {
       <button id="run-circuit" class="primary-button" type="button">${esc(runLabel)}</button>
       <button id="open-circuit-guide" class="secondary-button" type="button">조작 안내</button>
     </div>
+  </div>`;
+}
+
+/* 성공률과 복원률이 N6에서 처음 나오는데 뜻이 어디에도 없었다. 두 수가 왜
+   다른지도 알 수 없었다. 자기가 낸 1000번을 시행 5개와 합계 행으로 보여준다
+   (명세서 §32-4 1번). 여기서 전송량 = 비용도 못 박는다. */
+function renderN6Read() {
+  const circuit = state.circuits.N6;
+  const last = circuit?.lastResult;
+  const m = last?.metric;
+  const kicker = '3 통신로 설계 · 결과 읽는 법';
+
+  if (!m || !Array.isArray(m.samples) || !m.samples.length) {
+    return `${heading(kicker, '먼저 한 번 보내 보세요.', '앞 화면에서 통신로를 실행하면 그 결과로 수치를 어떻게 세었는지 함께 봅니다.')}
+    <div class="card stack">
+      <div class="notice">아직 실행 기록이 없습니다. 앞 화면에서 <strong>${esc(`${TRIALS}번 보내기`)}</strong>를 눌러 보세요.</div>
+      <div class="button-row"><button id="back-to-n6" class="primary-button" type="button">앞 화면으로</button></div>
+    </div>`;
+  }
+
+  const rows = m.samples.map((sample, index) => {
+    const bits = sample.signal.map((bit, i) => `<span class="trace-bit${bit === SOURCE[i] ? '' : ' flip'}">${bit}</span>`).join('');
+    const whole = sample.same === SOURCE_BITS;
+    return `<tr class="${whole ? 'whole' : 'broken'}">
+      <th scope="row">${index + 1}번째</th>
+      <td><span class="trace-bits">${bits}</span></td>
+      <td>${whole ? '전부 맞음' : `${SOURCE_BITS - sample.same}자리 틀림`}</td>
+      <td>${sample.same}/${SOURCE_BITS}</td>
+    </tr>`;
+  }).join('');
+
+  /* 두 수의 차이를 설명할 근거가 되는 줄을 찾는다. 틀린 줄이 없으면 안내를 바꾼다. */
+  const brokenIndex = m.samples.findIndex(sample => sample.same !== SOURCE_BITS);
+  const broken = brokenIndex >= 0 ? m.samples[brokenIndex] : null;
+
+  return `${heading(kicker, '이 수는 어떻게 세었을까?', `앞 화면에서 ${TRIALS}번을 보냈습니다. 그 ${TRIALS}번을 어떻게 세어 두 수를 냈는지 봅니다.`)}
+  <div class="card stack">
+    <div class="table-wrap"><table class="count-table">
+      <caption>${TRIALS}번 중 앞 ${m.samples.length}번</caption>
+      <thead><tr><th>시행</th><th>받은 8비트</th><th>메시지</th><th>맞은 비트</th></tr></thead>
+      <tbody>${rows}<tr class="ellipsis"><td colspan="4">⋮ (${TRIALS}번째까지)</td></tr></tbody>
+      <tfoot>
+        <tr><th scope="row">전부 맞은 횟수</th><td colspan="2">${m.exact}번 ÷ ${TRIALS}번</td><td><strong>${m.messageSuccess.toFixed(1)}%</strong></td></tr>
+        <tr><th scope="row">맞은 비트 합계</th><td colspan="2">${m.bitHits}개 ÷ ${TRIALS * SOURCE_BITS}개</td><td><strong>${m.bitRecovery.toFixed(1)}%</strong></td></tr>
+      </tfoot>
+    </table></div>
+    <div class="evidence">
+      <strong>메시지 전체 성공률 ${m.messageSuccess.toFixed(1)}%</strong> · <strong>비트 복원률 ${m.bitRecovery.toFixed(1)}%</strong><br>
+      ${broken
+        ? `<span class="muted">${brokenIndex + 1}번째 줄을 보세요. 성공률에서는 <strong>0번</strong>으로, 복원률에서는 <strong>${broken.same}개</strong>로 세어집니다. 한 자리만 틀려도 메시지는 실패입니다. 그래서 두 수가 다릅니다.</span>`
+        : '<span class="muted">앞 다섯 번은 모두 전부 맞았습니다. 한 자리만 틀려도 메시지는 실패로 세므로, 틀린 줄이 섞이면 성공률만 떨어집니다. 그래서 두 수가 다릅니다.</span>'}
+    </div>
+    <div class="reading">
+      <p style="margin:0"><strong>전송량 ${m.bits}비트</strong> — 잡음 구간을 지나는 비트 수입니다. 많이 보낼수록 시간·전력·통신료가 듭니다. 이것이 <strong>비용</strong>입니다.</p>
+      <p style="margin:8px 0 0">다음 화면부터 <strong>정확함(성공률)</strong>과 <strong>비용(전송량)</strong> 두 가지로 설계를 판단합니다.</p>
+    </div>
+    ${last.trace ? `<details class="attempt-details"><summary>1번째 시행을 자세히 보기</summary>${traceHtml(last.trace)}</details>` : ''}
   </div>`;
 }
 
@@ -1650,6 +1757,7 @@ function submissionSummary() {
     const stats = state.attemptStats[screen.id];
     let status = !state.views[screen.id]?.visited ? '미실행' : '관찰';
     const fields = expected.filter(([key])=>key.startsWith(screen.id.split('_')[0]+'_')).map(([key])=>key);
+    if (['C1','C2','C3','C4','N6_read'].includes(screen.id)) status = state.views[screen.id]?.visited ? '읽음' : '미실행';
     const writing = screen.id.endsWith('_write') || ['N1','N3','N9','N18','N19','N20'].includes(screen.id);
     if (screen.id.startsWith('N2_')) {
       const key = screen.id === 'N2_operate' ? 'N2_observe' : 'N2_explain';
@@ -1700,6 +1808,7 @@ function bindScreen(id) {
   if (id === 'N5_operate') bindN5();
   if (['N6_operate','N7','N8','N10'].includes(id)) bindCircuit(id === 'N6_operate' ? 'N6' : id);
   $('#go-enter-sid')?.addEventListener('click', () => navTo('N0'));
+  $('#back-to-n6')?.addEventListener('click', () => navTo('N6_operate'));
   if (id === 'N11a') bindN11a();
   if (id === 'N11b') bindN11b();
   if (id === 'N12') bindN12();
@@ -1872,8 +1981,7 @@ function bindCircuit(stage) {
     const metric = simulateCircuit(circuit.nodes, stage);
     const verdict = judgeCircuit(metric, stage);
     const detail = circuitDetail(metric, stage);
-    const trace = capturePipelineTrace(circuit.nodes, stage === 'N10' ? 'one' : 'noise');
-    circuit.lastResult = { version: circuit.version, verdict, detail, metric, blocks: circuit.nodes.slice(), trace };
+    circuit.lastResult = { version: circuit.version, verdict, detail, metric, blocks: circuit.nodes.slice(), trace: metric.trace };
     logEvent('attempt', viewId, { detail, attempt: { blocks: circuit.nodes.slice(), order: circuit.nodes.join(' > '), metric: { ...metric }, goal: STAGE_COPY[stage][2], version: circuit.version } }, verdict);
     if (verdict === 'ok') {
       mascotState = { mood: 'cheer', text: '목표 조건을 만족했어요. 다른 구성과도 비교해 보세요.', open: true };
