@@ -37,13 +37,16 @@ const SCREEN_ORDER = [
   { id: 'N12', activity: '어디가 뒤집혔나', label: '한 칸 찾기' },
   { id: 'N13_observe', activity: '어디가 뒤집혔나', label: '두 칸 오류 · 관찰' },
   { id: 'N13_write', activity: '어디가 뒤집혔나', label: '두 칸 오류 · 작성' },
-  { id: 'N14', activity: '질문으로 찾기', label: '질문 수 예측', optional: false },
-  /* 만화가 「세 번」이라는 답을 보여주므로 N14 예측보다 뒤에 둔다. 예측을
-     끝낸 뒤 N15 설계의 공통 참조로 쓴다(명세서 §35-1). */
-  { id: 'C4', activity: '질문으로 찾기', label: '만화 ④ · 스무고개' },
-  { id: 'N15_operate', activity: '질문으로 찾기', label: '질문 설계' },
-  { id: 'N15_write', activity: '질문으로 찾기', label: '질문 설계 · 작성' },
-  { id: 'N16', activity: '질문으로 찾기', label: '내 질문 시험', optional: true },
+  /* 2차원 격자에서 1차원 7자리로, 정해진 줄에서 설계한 묶음으로 두 번 뛴다.
+     그 사이를 잇는다(명세서 §32-4 9번). */
+  { id: 'N13_bridge', activity: '검사로 찾기', label: '검사도 결국 묶음이다' },
+  /* 만화는 8 → 4 → 2까지만 보여주고 「몇 번 필요할까요?」로 끝난다. 답을
+     말하지 않으므로 예측 앞에 둔다(명세서 §32-4 11번). */
+  { id: 'C4', activity: '검사로 찾기', label: '만화 ④ · 스무고개' },
+  { id: 'N14', activity: '검사로 찾기', label: '검사 횟수 예측', optional: false },
+  { id: 'N15_operate', activity: '검사로 찾기', label: '검사 설계' },
+  { id: 'N15_write', activity: '검사로 찾기', label: '검사 설계 · 작성' },
+  { id: 'N16', activity: '검사로 찾기', label: '내 검사 시험', optional: true },
   { id: 'N17', activity: '얼마나 멀어야', label: '부호 설계', optional: true },
   { id: 'N18', activity: '얼마나 멀어야', label: '거리 해석', optional: true },
   { id: 'N19', activity: '닫기', label: '마리너 9호', optional: true },
@@ -117,7 +120,7 @@ const HINTS = {
 const ACTIVITY_SECTIONS = {
   N0: '0 시작', C1: '1 보내면 망가진다', N1: '1 보내면 망가진다', N2_operate: '1 보내면 망가진다', N2_write: '1 보내면 망가진다', C2: '1 보내면 망가진다', N3: '1 보내면 망가진다',
   N4: '2 다수결', N5_operate: '2 다수결', N5_write: '2 다수결', N6_operate: '3 통신로 설계', N6_read: '3 통신로 설계', N7: '3 통신로 설계', N8: '3 통신로 설계', N9: '3 통신로 설계',
-  C3: '4 어디가 뒤집혔나', N10: '4 어디가 뒤집혔나', N11a: '4 어디가 뒤집혔나', N11b: '4 어디가 뒤집혔나', N12: '4 어디가 뒤집혔나', N13_observe: '4 어디가 뒤집혔나', N13_write: '4 어디가 뒤집혔나', C4: '5 질문으로 찾기', N14: '5 질문으로 찾기', N15_operate: '5 질문으로 찾기', N15_write: '5 질문으로 찾기', N16: '5 질문으로 찾기',
+  C3: '4 어디가 뒤집혔나', N10: '4 어디가 뒤집혔나', N11a: '4 어디가 뒤집혔나', N11b: '4 어디가 뒤집혔나', N12: '4 어디가 뒤집혔나', N13_observe: '4 어디가 뒤집혔나', N13_write: '4 어디가 뒤집혔나', N13_bridge: '5 검사로 찾기', C4: '5 검사로 찾기', N14: '5 검사로 찾기', N15_operate: '5 검사로 찾기', N15_write: '5 검사로 찾기', N16: '5 검사로 찾기',
   N17: '6 얼마나 멀어야', N18: '6 얼마나 멀어야', N19: '7 닫기', N20: '7 닫기', N21: '7 닫기'
 };
 
@@ -322,7 +325,7 @@ function initialState(sid = '') {
       N11a: { answer: null, checked: false, tries: 0 },
       N5: { count: 3, answers: { 3: [], 4: [], 5: [] }, checked: false, ties: [], observedCounts: [], exampleVersion: 2 },
       N12: { round: 0, guesses: [], board: null },
-      N14: { prediction: '', confirmed: false },
+      N14: { prediction: '', confirmed: false, signal: null, pick: [], counted: false },
       N15: { groups: [[], [], []], selected: null, checked: false },
       N16: { round: 0, guesses: [], cases: [] },
       N17: { codes: ['000000', '000000', '000000', '000000'], query: null, guess: '', tested: false }
@@ -616,7 +619,7 @@ function renderScreen(id) {
     N0: renderN0, C1: renderComic, N1: renderN1, N2_operate: renderN2Operate, N2_write: renderN2Write, C2: renderComic, N3: renderN3, N4: renderN4,
     N5_operate: renderN5Operate, N5_write: renderN5Write, N6_operate: renderCircuitScreen, N6_read: renderN6Read,
     N7: renderCircuitScreen, N8: renderCircuitScreen, N9: renderN9, C3: renderComic, N10: renderCircuitScreen, N11a: renderN11a, N11b: renderN11b, N12: renderN12,
-    N13_observe: renderN13Observe, N13_write: renderN13Write, C4: renderComic, N14: renderN14, N15_operate: renderN15Operate, N15_write: renderN15Write,
+    N13_observe: renderN13Observe, N13_write: renderN13Write, N13_bridge: renderN13Bridge, C4: renderComic, N14: renderN14, N15_operate: renderN15Operate, N15_write: renderN15Write,
     N16: renderN16, N17: renderN17, N18: renderN18, N19: renderN19, N20: renderN20, N21: renderN21
   };
   return `<section class="screen">${(renderers[id] || renderN1)(id)}</section>`;
@@ -700,7 +703,7 @@ const COMIC_DATA = {
   },
   C4: {
     src: './assets/comic-4.png',
-    section: '5 질문으로 찾기',
+    section: '5 검사로 찾기',
     title: '스무고개',
     intro: '여덟 가지 중 하나를 고르는 문제입니다. 예·아니오 질문을 몇 번 하면 될까요?',
     alt: ['두 사람이 마주 앉아 카드 여덟 장을 뒤집어 놓습니다. 그중 한 장이 뽑혔습니다.', '“왼쪽 네 장 안에 있어?”라고 묻자 상대가 고개를 끄덕이고 카드 네 장이 남습니다.', '“그중 위 두 장 안에 있어?”라고 묻자 고개를 젓고 카드 두 장이 남습니다.', '“둘 중 왼쪽?”이라고 묻자 끄덕이고 카드 한 장만 남아 빛납니다.'],
@@ -1593,18 +1596,147 @@ function renderN13Observe() {
   </div>`;
 }
 
+/* 가로줄 하나를 세는 것도 「이 묶음의 1이 짝수인가」라는 검사 한 번이었다.
+   격자에서는 묶음이 행·열로 정해져 있었을 뿐이다(명세서 §32-4 9번). */
+function renderN13Bridge() {
+  const bridge = state.screens.N13_bridge || (state.screens.N13_bridge = { picked: null });
+  const grid = state.parity;
+  const picked = bridge.picked;
+  /* 이 화면은 「보내는 쪽이 맞춰 보낸 원본」을 본다. 학생이 N11b에서 채운
+     값이 아니라 올바른 검사 값을 쓴다 — 안 채웠으면 멀쩡한 줄도 홀수로
+     보여 오류가 있는 것처럼 읽힌다. */
+  const checks = parityExpected();
+
+  const cells = Array.from({ length: 7 }, (_, r) => Array.from({ length: 7 }, (_, c) => {
+    const edge = r === 0 || c === 0;
+    const bit = edge ? checks[r][c] : grid.data[r - 1][c - 1];
+    const inPick = picked && ((picked.axis === 'row' && r === picked.index) || (picked.axis === 'col' && c === picked.index));
+    return `<span class="grid-cell ${edge ? 'parity' : ''} ${inPick ? 'picked' : ''}">${bit}</span>`;
+  }).join('')).join('');
+
+  const buttons = [
+    ...Array.from({ length: 6 }, (_, i) => ({ axis: 'row', index: i + 1, label: `가로 ${i + 1}줄` })),
+    ...Array.from({ length: 6 }, (_, i) => ({ axis: 'col', index: i + 1, label: `세로 ${i + 1}줄` }))
+  ].map(item => `<button type="button" class="axis-pick ${picked && picked.axis === item.axis && picked.index === item.index ? 'selected' : ''}" data-axis="${item.axis}" data-index="${item.index}">${item.label}</button>`).join('');
+
+  let readout = '<p class="muted small" style="margin:0">줄 하나를 눌러 보세요. 그 줄을 센다는 것이 무엇을 확인하는 것인지 보여줍니다.</p>';
+  if (picked) {
+    const values = picked.axis === 'row'
+      ? [...grid.data[picked.index - 1], checks[picked.index][0]]
+      : [...grid.data.map(row => row[picked.index - 1]), checks[0][picked.index]];
+    const ones = values.reduce((sum, bit) => sum + bit, 0);
+    const even = ones % 2 === 0;
+    readout = `<div class="evidence">
+      <strong>${picked.axis === 'row' ? '가로' : '세로'} ${picked.index}줄</strong>의 정보 6칸과 검사 칸 1개<br>
+      <span class="trace-bits">${values.map((bit, i) => `<span class="trace-bit${i === 6 ? ' fixed' : ''}">${bit}</span>`).join('')}</span><br>
+      1의 개수를 세면 <strong>${ones}개</strong> → <strong>${even ? '짝수' : '홀수'}</strong>
+      <br><span class="muted small">보내는 쪽이 모든 줄을 짝수로 맞춰 보냈으므로 여기서는 짝수가 나옵니다. 받는 쪽이 세어 <strong>홀수</strong>가 나오면 그 줄에 뒤집힌 자리가 있다는 뜻입니다.</span>
+      <br><span class="muted small">검사 한 번의 결과는 짝수 아니면 홀수, <strong>둘 중 하나</strong>입니다.</span>
+    </div>`;
+  }
+
+  return `${heading('5 검사로 찾기', '가로줄을 센다는 건 무엇을 확인하는 걸까?', '방금 쓴 격자를 다시 봅니다. 줄 하나를 세는 것이 곧 검사 한 번이었습니다.')}
+  <div class="card stack">
+    <div class="parity-grid" role="img" aria-label="7 곱하기 7 검사 점 격자">${cells}</div>
+    <div class="axis-picks">${buttons}</div>
+    ${readout}
+  </div>
+  <div class="card stack">
+    <h3 style="margin:0;font-size:1rem">여기까지 온 길</h3>
+    <ol class="bridge-steps">
+      <li><strong>검사 비트 하나를 붙여 봤습니다.</strong> 오류가 있다는 건 알았지만 <strong>어느 자리인지는 몰랐습니다.</strong></li>
+      <li><strong>그래서 격자로 갔습니다.</strong> 가로로 한 번, 세로로 한 번 묶어 교차점으로 찾았습니다. 위치를 <strong>(몇 행, 몇 열)</strong> 두 좌표로 말한 셈입니다.</li>
+      <li><strong>대신 비쌌습니다.</strong> 한 칸씩 따로 검사하면 <strong>36번</strong>, 가로·세로로 묶으니 <strong>12번</strong>. 그래도 검사 칸을 <strong>13개</strong>나 붙였습니다.</li>
+    </ol>
+    <div class="notice">가로·세로는 <strong>격자 모양에 따라 정해진 묶음</strong>입니다. <strong>묶는 방법을 새로 설계하면</strong> 검사를 더 줄일 수 있을까요? 다음 화면부터 칸이 <strong>7개</strong>인 작은 신호로 알아봅니다.</div>
+  </div>`;
+}
+
 function renderN13Write() {
   return `${heading('4 어디가 뒤집혔나 · 작성', '오류 위치를 찾는 방법과 한계를 설명해 보세요.', '한 칸을 찾았던 절차와 두 칸 오류에서 달라진 점을 구분해 적습니다.')}
   <div class="card stack"><div class="writing-list">${writeBox('N13_one', '한 칸을 찾았을 때 어떤 순서로 찾았나요?', 'explain')}${writeBox('N13_two', '두 칸이 뒤집히면 왜 하나의 위치를 확정하기 어려울까요?', 'explain')}</div>${evidenceFor(['N12'])}</div>`;
 }
 
-function renderN14() {
+/* 신호도 여덟 가지도 검사도 전부 글로만 있어 찍을 수밖에 없었다.
+   상황을 보여주고, 검사 한 번을 직접 해보게 한다(명세서 §32-4 10번).
+   정답 묶음(1·3·5·7 등)은 여기에 적지 않는다 — N15에서 학생이 찾는다. */
+const N14_BITS = 7;
+
+function n14Signal() {
   const n14 = state.screens.N14;
-  return `${heading('5 질문으로 찾기 · 예측', '일어난 일을 항상 알아내려면 몇 번 물어야 할까?', '신호 7자리를 보냈습니다. 정확히 한 자리가 뒤집혀 도착했거나, 아무 곳도 뒤집히지 않았습니다. 받는 쪽은 어떤 일이 일어났는지 모릅니다.')}
-  <div class="card stack">${state.predicts.N14 ? `<div class="evidence">최초 응답: ${esc(state.predicts.N14.first.value)}번 · ${state.predicts.N14.first.beforeExperiment ? '실험 전 예측' : '실험을 본 뒤 기록'}</div>` : ''}<p>1번째 자리 뒤집힘부터 7번째 자리 뒤집힘, 아무 곳도 안 뒤집힘까지 일어날 수 있는 일은 여덟 가지입니다.</p><p>예·아니오로 답하는 질문만 할 수 있습니다. 예를 들어 “1·3·5·7번째 자리에서 1의 개수를 세면 짝수 규칙이 깨졌나요?”라고 묻습니다. 몇 번 물으면 어떤 일이 일어났는지 항상 알아낼 수 있을까요?</p><div class="choice-grid">${[2,3,4,7].map(value => `<div class="choice"><input id="n14-${value}" name="n14" type="radio" value="${value}" ${n14.prediction === String(value) ? 'checked' : ''}><label for="n14-${value}">${value}번</label></div>`).join('')}</div><div class="button-row"><button id="confirm-n14" class="primary-button" type="button">예측 기록</button>${n14.confirmed ? '<span class="result ok">예측이 기록되었습니다.</span>' : ''}</div></div>`;
+  if (!Array.isArray(n14.signal) || n14.signal.length !== N14_BITS) {
+    const rand = studentRandom('N14');
+    n14.signal = Array.from({ length: N14_BITS }, () => (rand() < 0.5 ? 0 : 1));
+    persist();
+  }
+  return n14.signal;
 }
 
-/* 질문 개수는 학생이 2~4개 사이에서 바꾼다(명세서 §19). */
+/* 여덟 가지 = 1~7번째가 뒤집힌 경우와 아무 곳도 안 뒤집힌 경우. */
+function n14Cases() {
+  const base = n14Signal();
+  return Array.from({ length: 8 }, (_, k) => ({
+    flipped: k < N14_BITS ? k : -1,
+    label: k < N14_BITS ? `${k + 1}번째가 뒤집힘` : '아무 곳도 안 뒤집힘',
+    signal: base.map((bit, i) => (i === k ? bit ^ 1 : bit))
+  }));
+}
+
+function renderN14() {
+  const n14 = state.screens.N14;
+  if (!Array.isArray(n14.pick)) n14.pick = [];
+  const base = n14Signal();
+  const cases = n14Cases();
+  const pick = n14.pick;
+
+  const caseRows = cases.map(item => `<tr>
+    <th scope="row">${esc(item.label)}</th>
+    <td><span class="trace-bits">${item.signal.map((bit, i) => `<span class="trace-bit${i === item.flipped ? ' flip' : ''}">${bit}</span>`).join('')}</span></td>
+  </tr>`).join('');
+
+  const chips = base.map((_, i) => `<button type="button" class="number-chip ${pick.includes(i + 1) ? 'selected' : ''}" data-n14-pick="${i + 1}" aria-pressed="${pick.includes(i + 1)}">${i + 1}</button>`).join('');
+
+  let split = '<p class="muted small" style="margin:0">칸을 몇 개 고른 뒤 「세어 보기」를 누르세요.</p>';
+  if (n14.counted && pick.length) {
+    const rows = cases.map(item => {
+      const ones = pick.reduce((sum, number) => sum + item.signal[number - 1], 0);
+      return { label: item.label, odd: ones % 2 === 1 };
+    });
+    const odd = rows.filter(row => row.odd).length;
+    split = `<div class="evidence">
+      <strong>${pick.join(' · ')}번째 칸</strong>을 골라 여덟 가지 각각에서 1의 개수를 세면 —
+      <table class="split-table"><tbody>${rows.map(row => `<tr class="${row.odd ? 'odd' : 'even'}"><th scope="row">${esc(row.label)}</th><td>${row.odd ? '홀수' : '짝수'}</td></tr>`).join('')}</tbody></table>
+      <strong>검사 한 번으로 여덟 가지가 두 무리로 갈렸습니다.</strong> 홀수 ${odd}가지 · 짝수 ${8 - odd}가지
+    </div>`;
+  }
+
+  return `${heading('5 검사로 찾기 · 예측', '검사를 몇 번 하면 될까?', '신호 7자리를 보냅니다. 오는 길에 한 자리가 뒤집히거나, 아무 곳도 뒤집히지 않습니다.')}
+  <div class="card stack">
+    ${state.predicts.N14 ? `<div class="evidence">최초 응답: ${esc(state.predicts.N14.first.value)}번 · ${state.predicts.N14.first.beforeExperiment ? '실험 전 예측' : '실험을 본 뒤 기록'}</div>` : ''}
+    <div>
+      <p class="muted small" style="margin:0 0 6px">보낸 신호</p>
+      <span class="trace-bits">${base.map(bit => `<span class="trace-bit">${bit}</span>`).join('')}</span>
+      <span class="trace-bits" style="margin-left:10px">${base.map((_, i) => `<span class="col-head">${i + 1}</span>`).join('')}</span>
+    </div>
+    <p style="margin:0">받는 쪽은 신호만 가지고 있습니다. <strong>보낸 사람에게 물어볼 수 없습니다.</strong> 일어날 수 있는 일은 여덟 가지입니다.</p>
+    <div class="table-wrap"><table class="case-table"><tbody>${caseRows}</tbody></table></div>
+    <div class="notice">보내는 쪽은 <strong>미리 정한 규칙</strong>대로 검사 비트를 함께 붙여 보냅니다. 받는 쪽은 그것을 세어 봅니다. 만화 ③에서 본 그 방법입니다. 몇 칸을 골라 1의 개수를 세면 결과는 <strong>짝수 아니면 홀수</strong>, 둘 중 하나입니다.</div>
+    <div>
+      <p class="muted small" style="margin:0 0 6px">검사 한 번 해보기 — 묶을 칸을 고르세요</p>
+      <div class="number-palette">${chips}</div>
+      <div class="button-row"><button id="n14-count" class="secondary-button" type="button" ${pick.length ? '' : 'disabled'}>세어 보기</button><button id="n14-clear" class="secondary-button" type="button">고른 칸 지우기</button></div>
+    </div>
+    ${split}
+  </div>
+  <div class="card stack">
+    <div class="reading"><p style="margin:0"><strong>한 칸씩 따로 검사하면</strong> 검사 <strong>7번</strong>, 검사 비트 <strong>7개</strong>로 위치를 정확히 찾습니다. 그런데 7자리를 보내려고 검사 비트를 7개나 붙였습니다.</p></div>
+    <p style="margin:0"><strong>여러 자리를 묶어서 검사하면 더 적게 할 수 있을까요?</strong></p>
+    <div class="choice-grid">${[2, 3, 4, 7].map(value => `<div class="choice"><input id="n14-${value}" name="n14" type="radio" value="${value}" ${n14.prediction === String(value) ? 'checked' : ''}><label for="n14-${value}">${value}번</label></div>`).join('')}</div>
+    <div class="button-row"><button id="confirm-n14" class="primary-button" type="button">예측 기록</button>${n14.confirmed ? '<span class="result ok">예측이 기록되었습니다.</span>' : ''}</div>
+  </div>`;
+}
+
+/* N14 재구성 때 함께 지워졌던 것을 되돌린다. 여덟 경우의 검사 결과 패턴. */
 const N15_MIN_GROUPS = 2;
 const N15_MAX_GROUPS = 4;
 
@@ -1809,6 +1941,14 @@ function bindScreen(id) {
   if (['N6_operate','N7','N8','N10'].includes(id)) bindCircuit(id === 'N6_operate' ? 'N6' : id);
   $('#go-enter-sid')?.addEventListener('click', () => navTo('N0'));
   $('#back-to-n6')?.addEventListener('click', () => navTo('N6_operate'));
+  $$('[data-axis]').forEach(button => button.addEventListener('click', () => {
+    const bridge = state.screens.N13_bridge || (state.screens.N13_bridge = { picked: null });
+    const axis = button.dataset.axis;
+    const index = Number(button.dataset.index);
+    bridge.picked = bridge.picked && bridge.picked.axis === axis && bridge.picked.index === index ? null : { axis, index };
+    persist();
+    render();
+  }));
   if (id === 'N11a') bindN11a();
   if (id === 'N11b') bindN11b();
   if (id === 'N12') bindN12();
@@ -2040,7 +2180,24 @@ function bindN11b() {
 function bindN12() { $$('[data-find-cell]').forEach(button => button.addEventListener('click', () => { const [r,c] = button.dataset.findCell.split(',').map(Number); if (r < 0 || c < 0) return; const n12 = state.screens.N12; const target = n12.board.cells[0]; const ok = r === target[0] && c === target[1]; n12.guesses[n12.round] = [r,c]; logEvent('attempt', 'N12', { detail: `${n12.round + 1}판 · 선택 ${r + 1}행 ${c + 1}열 · 실제 ${target[0] + 1}행 ${target[1] + 1}열 · ${ok ? '맞음' : '틀림'} · 힌트 ${state.hints.N12 || 0}단계`, attempt: { round: n12.round + 1, selected: [r + 1, c + 1], actual: [target[0] + 1, target[1] + 1], correct: ok, hintLevel: state.hints.N12 || 0 } }, ok ? 'ok' : 'fail'); if (!ok) advanceHint('N12'); mascotState = { mood: ok ? 'cheer' : (state.hints.N12 >= 2 ? 'worry' : 'tilt'), text: ok ? '찾았습니다. 같은 방법이 두 칸 오류에도 통할지 생각해 보세요.' : (HINTS.N12[state.hints.N12 - 1] || HINTS.N12[0]), open: true }; persist(); render(); })); $('#next-n12-round')?.addEventListener('click', () => { state.screens.N12.round += 1; state.screens.N12.board = randomErrorBoard(1, `N12:${state.screens.N12.round}`); persist(); render(); }); /* 같은 판을 다시 푸는 것이므로 문제는 그대로 두고 답만 비운다. */
   $('#reset-n12')?.addEventListener('click', () => { state.screens.N12.guesses[state.screens.N12.round] = undefined; persist(); render(); }); }
 
-function bindN14() { $$('input[name="n14"]').forEach(input => input.addEventListener('change', e => { state.screens.N14.prediction = e.target.value; recordPrediction('N14'); persist(); })); $('#confirm-n14')?.addEventListener('click', () => { if (!state.screens.N14.prediction) return; recordPrediction('N14', true); state.screens.N14.confirmed = true; logEvent('attempt', 'N14', { detail: `질문 수 예측 ${state.screens.N14.prediction || '미선택'}` }, 'predict'); persist(); render(); }); }
+function bindN14() {
+  $$('[data-n14-pick]').forEach(button => button.addEventListener('click', () => {
+    const n14 = state.screens.N14;
+    const number = Number(button.dataset.n14Pick);
+    n14.pick = n14.pick.includes(number) ? n14.pick.filter(value => value !== number) : [...n14.pick, number].sort((a, b) => a - b);
+    n14.counted = false;
+    persist();
+    render();
+  }));
+  $('#n14-count')?.addEventListener('click', () => {
+    const n14 = state.screens.N14;
+    n14.counted = true;
+    logEvent('attempt', 'N14', { detail: `검사 한 번 해보기 · ${n14.pick.join('·')}번째`, attempt: { pick: n14.pick.slice() } }, 'observe');
+    persist();
+    render();
+  });
+  $('#n14-clear')?.addEventListener('click', () => { state.screens.N14.pick = []; state.screens.N14.counted = false; persist(); render(); });
+  $$('input[name="n14"]').forEach(input => input.addEventListener('change', e => { state.screens.N14.prediction = e.target.value; recordPrediction('N14'); persist(); })); $('#confirm-n14')?.addEventListener('click', () => { if (!state.screens.N14.prediction) return; recordPrediction('N14', true); state.screens.N14.confirmed = true; logEvent('attempt', 'N14', { detail: `질문 수 예측 ${state.screens.N14.prediction || '미선택'}` }, 'predict'); persist(); render(); }); }
 
 function bindN15() {
   const n15 = state.screens.N15;

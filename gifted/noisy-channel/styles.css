@@ -410,3 +410,21 @@ input[type="range"] { min-height:44px; }
 .count-table tr.ellipsis td { color:var(--muted); text-align:center; }
 .count-table tfoot tr:first-child th { border-top:2px solid var(--line); }
 .count-table tfoot td { background:#fbfaf6; }
+
+/* 다리 화면 — 격자 줄을 눌러 무엇을 세는지 본다 (명세서 §32-4 9번). */
+.axis-picks { display:flex; flex-wrap:wrap; gap:6px; }
+.axis-pick { min-height:36px; padding:6px 10px; border:1px solid #c8c5bb; border-radius:9px; background:#fff; font-size:13px; font-weight:800; }
+.axis-pick.selected { color:#fff; border-color:var(--blue); background:var(--blue); }
+.grid-cell.picked { border-color:var(--blue); background:var(--blue-soft); }
+.bridge-steps { display:grid; gap:10px; margin:0; padding-left:1.3rem; font-size:14px; line-height:1.55; }
+
+/* 22번 — 여덟 가지 목록과 검사 한 번 해보기 (명세서 §32-4 10번). */
+.case-table { width:100%; border-collapse:collapse; font-size:13px; }
+.case-table th, .case-table td { padding:5px 10px; border-bottom:1px solid var(--line); text-align:left; white-space:nowrap; }
+.case-table th { font-weight:800; }
+.split-table { margin:8px 0; border-collapse:collapse; font-size:13px; }
+.split-table th, .split-table td { padding:4px 10px; text-align:left; }
+.split-table tr.odd td { color:var(--red); font-weight:900; }
+.split-table tr.even td { color:var(--muted); font-weight:800; }
+.split-table tr.odd th { font-weight:800; }
+@media (max-width:700px) { .axis-pick { min-height:44px; } }
