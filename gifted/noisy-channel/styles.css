@@ -428,3 +428,26 @@ input[type="range"] { min-height:44px; }
 .split-table tr.even td { color:var(--muted); font-weight:800; }
 .split-table tr.odd th { font-weight:800; }
 @media (max-width:700px) { .axis-pick { min-height:44px; } }
+
+/* 26번 종합표 — 그림이 곧 계산식이다 (명세서 §32-4 13번). */
+.compare-table { width:100%; border-collapse:collapse; font-size:13px; }
+.compare-table th, .compare-table td { padding:8px 9px; border-bottom:1px solid var(--line); text-align:left; vertical-align:middle; }
+.compare-table thead th { color:var(--muted); font-size:12px; font-weight:800; line-height:1.3; }
+.compare-table input[type="number"] { width:64px; min-height:38px; padding:4px 8px; border:1px solid #c8c5bb; border-radius:8px; font-size:15px; font-weight:800; text-align:center; }
+.compare-table select { min-height:38px; padding:4px 8px; border:1px solid #c8c5bb; border-radius:8px; background:#fff; font-size:15px; font-weight:800; }
+.method-name { padding:0; border:0; background:none; color:var(--ink); font-size:13px; font-weight:800; text-align:left; text-decoration:underline; text-underline-offset:3px; }
+
+/* 칸 하나가 1비트다. 세로로 맞춰야 세기 쉽다. */
+.shape { display:inline-grid; gap:2px; }
+.shape-row { display:grid; grid-auto-flow:column; grid-auto-columns:9px; gap:2px; }
+.shape-cell { display:inline-block; width:9px; height:9px; border-radius:2px; }
+.shape-cell.info { background:#5b6b8c; }
+.shape-cell.check { background:#e0b24a; }
+
+.info-pop { position:relative; padding:14px 34px 14px 14px; border:1px solid var(--blue); border-radius:12px; background:var(--blue-soft); font-size:14px; }
+.info-close { position:absolute; top:8px; right:8px; width:28px; height:28px; padding:0; border:0; border-radius:50%; background:transparent; font-size:18px; font-weight:900; line-height:1; }
+@media (max-width:700px) {
+  .compare-table th, .compare-table td { padding:6px 5px; }
+  .shape-row { grid-auto-columns:7px; }
+  .shape-cell { width:7px; height:7px; }
+}

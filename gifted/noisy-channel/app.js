@@ -106,9 +106,9 @@ const HINTS = {
     '이상한 가로줄과 이상한 세로줄이 만나는 곳을 생각해 보세요.'
   ],
   N15_operate: [
-    '아직 구별되지 않는 자리가 있습니다. 표에서 같은 답 패턴을 찾아보세요.',
-    '질문 하나의 답은 예 또는 아니오 두 가지입니다. 질문 두 개로 만들 수 있는 패턴 수를 세어 보세요.',
-    '여덟 가지 일을 가르려면 답 패턴이 여덟 개 모두 달라야 합니다.'
+    '아직 구별되지 않는 자리가 있습니다. 표에서 결과 패턴이 같은 줄을 찾아보세요.',
+    '검사 한 번의 결과는 홀수 또는 짝수 두 가지입니다. 검사 두 번으로 만들 수 있는 패턴 수를 세어 보세요.',
+    '여덟 가지를 가르려면 결과 패턴이 여덟 개 모두 달라야 합니다.'
   ],
   N17: [
     '두 부호를 골라 다른 칸의 개수를 세어 보세요.',
@@ -326,7 +326,7 @@ function initialState(sid = '') {
       N5: { count: 3, answers: { 3: [], 4: [], 5: [] }, checked: false, ties: [], observedCounts: [], exampleVersion: 2 },
       N12: { round: 0, guesses: [], board: null },
       N14: { prediction: '', confirmed: false, signal: null, pick: [], counted: false },
-      N15: { groups: [[], [], []], selected: null, checked: false },
+      N15: { groups: [[]], selected: null, checked: false, unlocked: 1 },
       N16: { round: 0, guesses: [], cases: [] },
       N17: { codes: ['000000', '000000', '000000', '000000'], query: null, guess: '', tested: false }
     },
@@ -400,7 +400,8 @@ function validateProgress(data) {
   if (!n5Lists.every(list => Array.isArray(list) && list.length <= 8 && list.every(value => value === null || bit(value)))) return false;
   if (!['N12','N16'].every(key => Array.isArray(data.screens[key].guesses) && Number.isInteger(data.screens[key].round) && data.screens[key].round >= 0 && data.screens[key].round < 3)) return false;
   if (!Array.isArray(data.screens.N16.cases) || !data.screens.N16.cases.every(value => Number.isInteger(value) && value >= 0 && value <= 7)) return false;
-  if (!Array.isArray(data.screens.N15.groups) || data.screens.N15.groups.length < 2 || data.screens.N15.groups.length > 4 || !data.screens.N15.groups.every(group => Array.isArray(group) && group.every(value => Number.isInteger(value) && value >= 1 && value <= 7))) return false;
+  /* 단계 잠금으로 검사 묶음 1개에서 시작한다(명세서 §32-4 12번). */
+  if (!Array.isArray(data.screens.N15.groups) || data.screens.N15.groups.length < 1 || data.screens.N15.groups.length > 4 || !data.screens.N15.groups.every(group => Array.isArray(group) && group.every(value => Number.isInteger(value) && value >= 1 && value <= 7))) return false;
   if (!Array.isArray(data.screens.N17.codes) || data.screens.N17.codes.length !== 4 || !data.screens.N17.codes.every(code => /^[01]{6}$/.test(code))) return false;
   return Object.keys(fresh.circuits).every(key => {
     const nodes = data.circuits[key]?.nodes;
@@ -1737,7 +1738,7 @@ function renderN14() {
 }
 
 /* N14 재구성 때 함께 지워졌던 것을 되돌린다. 여덟 경우의 검사 결과 패턴. */
-const N15_MIN_GROUPS = 2;
+const N15_MIN_GROUPS = 1;
 const N15_MAX_GROUPS = 4;
 
 function n15Patterns() {
@@ -1748,33 +1749,82 @@ function n15Patterns() {
   });
 }
 
+/* 팔레트·개수 조절·상자 3개·8행 표가 동시에 나와 어디부터 손댈지 알 수
+   없었다. 검사 묶음 1개에서 시작해 2 → 4 → 8갈래를 조작으로 겪게 한다
+   (명세서 §32-4 12번, §19-3). */
+function n15Stage() {
+  const n15 = state.screens.N15;
+  return Math.max(n15.unlocked || 1, n15.groups.length);
+}
+
 function renderN15Operate() {
   const n15 = state.screens.N15;
   const patterns = n15Patterns();
+  const distinct = new Set(patterns.map(item => item.pattern)).size;
   const counts = patterns.reduce((map, item) => { map[item.pattern] = (map[item.pattern] || 0) + 1; return map; }, {});
   const duplicated = new Set(Object.keys(counts).filter(pattern => counts[pattern] > 1));
   const unique = duplicated.size === 0;
   const selected = n15.selected;
-  return `${heading('5 질문으로 찾기 · 설계', '질문 묶음을 직접 만들어 보세요.', '어느 자리가 뒤집혔는지 알아내려면 무엇을 함께 검사해야 할까요? 번호를 묶어 질문을 만들고 여덟 가지 일을 구별해 보세요.')}
+  const filled = n15.groups.filter(group => group.length).length;
+  const unlocked = n15.unlocked || 1;
+  const canAdd = n15.groups.length < N15_MAX_GROUPS && n15.groups.length < unlocked;
+
+  /* 「구별할 수 있나?」를 누를 때마다 몇 갈래로 갈렸는지 알려주고, 모자라면
+     검사를 하나 더 만들 수 있게 연다. 정답 개수는 말하지 않는다. */
+  let verdict = '';
+  if (n15.lastCheck) {
+    const shown = n15.lastCheck;
+    verdict = unique
+      ? `<div class="result ok" role="status">${resultIcon('ok')} 여덟 가지가 모두 다른 결과를 냅니다. 구별할 수 있습니다.</div>`
+      : `<div class="result partial" role="status">${resultIcon('partial')} 여덟 가지가 <strong>${shown}갈래</strong>로 갈렸습니다. 아직 하나씩 구별할 수 없습니다.${canAdd ? ' 검사를 하나 더 만들어 보세요.' : ''}</div>`;
+  } else {
+    verdict = '<div class="result" role="status">검사 묶음을 만든 뒤 「구별할 수 있나?」를 눌러 보세요.</div>';
+  }
+
+  const boxes = n15.groups.map((group, g) => `<div class="question-box" data-box="${g}" tabindex="0" role="group" aria-label="${g + 1}번 검사 묶음">
+      <h3>${g + 1}번 검사</h3>
+      <div class="chip-row">${group.length ? group.map(number => `<button type="button" class="number-chip in-box" data-remove="${g},${number}" aria-label="${g + 1}번 검사에서 ${number}번 빼기">${number} ×</button>`).join('') : '<span class="muted small">비어 있음</span>'}</div>
+    </div>`).join('');
+
+  const head = n15.groups.map((group, g) => `<th>${g + 1}번 검사 결과</th>`).join('');
+  const body = patterns.map(item => `<tr class="${duplicated.has(item.pattern) ? 'duplicate' : 'unique'}">
+      <td>${item.errorCase === 0 ? '아무 곳도 안 뒤집힘' : `${item.errorCase}번째 뒤집힘`}</td>
+      ${item.values.map((value, g) => `<td>${n15.groups[g].length ? (value ? '홀수' : '짝수') : '검사 없음'}</td>`).join('')}
+      <td><strong>${filled ? item.values.map((value, g) => (n15.groups[g].length ? value : '–')).join('') : '검사 없음'}</strong></td>
+    </tr>`).join('');
+
+  return `${heading('5 검사로 찾기 · 설계', '검사 묶음을 직접 만들어 보세요.', '어느 자리가 뒤집혔는지 알아내려면 무엇을 함께 세어야 할까요? 번호를 묶어 검사를 만들고 여덟 가지를 구별해 보세요.')}
   <div class="card stack">
-    <div class="question-layout"><div class="question-controls"><ol class="question-steps"><li>질문 상자에 번호를 넣어 첫 질문을 만드세요.</li><li>「구별할 수 있나?」를 눌러 답 패턴 표를 보세요.</li><li>똑같은 답 패턴이 있으면 질문을 고치거나 더 만드세요.</li></ol>
-    <p class="muted small">각 질문은 “이 묶음에서 1의 개수를 세면 짝수 규칙이 깨졌나요?”입니다. 예는 1, 아니오는 0으로 적습니다. 한 번호를 여러 질문에 넣을 수 있습니다.</p>
-    <div>
-      <p class="muted small" style="margin:0 0 6px">번호 블록 — 끌어다 놓거나, 눌러서 고른 뒤 질문 상자를 누르세요.</p>
-      <div class="number-palette">${[1,2,3,4,5,6,7].map(number => `<button type="button" class="number-chip ${selected === number ? 'selected' : ''}" draggable="true" data-number="${number}" aria-pressed="${selected === number}" aria-label="${number}번 비트 블록">${number}</button>`).join('')}</div>
+    <div class="question-layout">
+      <div class="question-controls">
+        <ol class="question-steps">
+          <li>검사 묶음에 번호를 넣어 <strong>첫 검사</strong>를 만드세요.</li>
+          <li>「구별할 수 있나?」를 눌러 결과 패턴 표를 보세요.</li>
+          <li>똑같은 줄이 있으면 <strong>묶음을 고치거나 검사를 더 만드세요.</strong></li>
+        </ol>
+        <p class="muted small">각 검사는 “이 묶음에서 1의 개수를 세면?”입니다. 보내는 쪽이 짝수로 맞춰 보냈으므로 <strong>홀수면 그 묶음 안에 뒤집힌 자리가 있습니다.</strong> 홀수는 1, 짝수는 0으로 적습니다. 한 번호를 여러 검사에 넣을 수 있습니다.</p>
+        <div>
+          <p class="muted small" style="margin:0 0 6px">번호 블록 — 끌어다 놓거나, 눌러서 고른 뒤 검사 묶음을 누르세요.</p>
+          <div class="number-palette">${[1,2,3,4,5,6,7].map(number => `<button type="button" class="number-chip ${selected === number ? 'selected' : ''}" draggable="true" data-number="${number}" aria-pressed="${selected === number}" aria-label="${number}번 비트 블록">${number}</button>`).join('')}</div>
+        </div>
+        <div class="button-row">
+          <button id="n15-fewer" class="secondary-button" type="button" ${n15.groups.length <= N15_MIN_GROUPS ? 'disabled' : ''}>검사 줄이기</button>
+          <span class="muted small">검사 ${n15.groups.length}개</span>
+          <button id="n15-more" class="secondary-button" type="button" ${canAdd ? '' : 'disabled'}>검사 늘리기</button>
+        </div>
+        ${canAdd ? '' : n15.groups.length >= N15_MAX_GROUPS ? '' : '<p class="muted small" style="margin:0">「구별할 수 있나?」를 눌러 지금 설계로 몇 갈래가 갈리는지 먼저 확인하세요.</p>'}
+        <div class="three-column">${boxes}</div>
+      </div>
+      <div class="question-results">
+        <p class="muted small">각 줄은 그 일이 일어났을 때 검사 결과가 어떻게 나오는지 보여줍니다. <strong>두 줄이 똑같으면 그 두 경우를 구별할 수 없습니다.</strong></p>
+        <div class="table-wrap"><table class="pattern-table">
+          <thead><tr><th>일어난 일</th>${head}<th>결과 패턴</th></tr></thead>
+          <tbody>${body}</tbody>
+        </table></div>
+        ${verdict}
+        <div class="button-row"><button id="check-n15" class="primary-button" type="button" ${filled ? '' : 'disabled'}>구별할 수 있나?</button><button id="reset-n15" class="secondary-button" type="button">검사 비우기</button><button id="open-n15-guide" class="secondary-button" type="button">조작 안내</button></div>
+      </div>
     </div>
-    <div class="button-row">
-      <button id="n15-fewer" class="secondary-button" type="button" ${n15.groups.length <= N15_MIN_GROUPS ? 'disabled' : ''}>질문 줄이기</button>
-      <span class="muted small">질문 ${n15.groups.length}개</span>
-      <button id="n15-more" class="secondary-button" type="button" ${n15.groups.length >= N15_MAX_GROUPS ? 'disabled' : ''}>질문 늘리기</button>
-    </div>
-    <div class="three-column">${n15.groups.map((group, g) => `<div class="question-box" data-box="${g}" tabindex="0" role="group" aria-label="질문 ${g + 1} 상자">
-      <h3>질문 ${g + 1}</h3>
-      <div class="chip-row">${group.length ? group.map(number => `<button type="button" class="number-chip in-box" data-remove="${g},${number}" aria-label="질문 ${g + 1}에서 ${number}번 빼기">${number} ×</button>`).join('') : '<span class="muted small">비어 있음</span>'}</div>
-    </div>`).join('')}</div>
-    </div><div class="question-results"><p class="muted small">표의 각 행은 그 일이 일어났을 때 질문들에 어떤 답이 나오는지 보여줍니다. 두 행의 답 패턴이 똑같으면 그 두 일을 구별할 수 없습니다.</p><div class="table-wrap"><table class="pattern-table"><thead><tr><th>일어난 일</th>${n15.groups.map((group, g) => `<th>${g + 1}번 질문의 답</th>`).join('')}<th>답 패턴</th></tr></thead><tbody>${patterns.map(item => `<tr class="${duplicated.has(item.pattern) ? 'duplicate' : 'unique'}"><td>${item.errorCase === 0 ? '아무 곳도 안 뒤집힘' : `${item.errorCase}번째 뒤집힘`}</td>${item.values.map((value, g) => `<td>${n15.groups[g].length ? (value ? '예' : '아니오') : '질문 없음'}</td>`).join('')}<td><strong>${n15.groups.some(group => group.length) ? item.values.map((value, g) => n15.groups[g].length ? value : '–').join('') : '질문 없음'}</strong></td></tr>`).join('')}</tbody></table></div>
-    <div class="result ${unique ? 'ok' : 'partial'}" role="status">${resultIcon(unique ? 'ok' : 'partial')} ${unique ? '여덟 가지 일의 답 패턴이 모두 다릅니다.' : '아직 같은 답 패턴을 가진 일이 있습니다. 표에서 같은 답 패턴을 찾아 설계를 바꾸어 보세요.'}</div>
-    <div class="button-row"><button id="check-n15" class="primary-button" type="button">구별할 수 있나?</button><button id="reset-n15" class="secondary-button" type="button">질문 비우기</button><button id="open-n15-guide" class="secondary-button" type="button">조작 안내</button></div></div></div>
   </div>`;
 }
 
@@ -1862,23 +1912,138 @@ function compareRows() {
   return [
     ['그냥 보내기','8비트','✗','✗','1',real(['message','noise','receiver'])],
     ['검사 비트 1개','9비트','1개','✗','2',real(['message','parityEncode','noise','parityCheck','receiver'],true)],
-    ['해밍 (질문 4개)','12비트','○','1개','3',state.screens.N15.checked ? '질문 패턴 구별 완료 (7자리 활동)' : state.views.N15_operate ? '미해결' : '미실행'],
-    ['2×4 격자 검사','15비트','○','1개','4',checkParityGrid().ok ? '검사 칸 배치 완료 (6×6 활동)' : state.views.N11 ? '미해결' : '미실행'],
+    ['해밍 (검사 4개)','12비트','○','1개','3',state.screens.N15.checked ? '검사 패턴 구별 완료 (7자리 활동)' : state.views.N15_operate ? '미해결' : '미실행'],
+    ['2×4 격자 검사','15비트','○','1개','4',checkParityGrid().ok ? '검사 칸 배치 완료 (6×6 활동)' : state.views.N11b ? '미해결' : '미실행'],
     ['3번 반복 + 다수결','24비트','○','1개','3',real(['message','repeat3','noise','majority','receiver'])]
   ];
 }
 
 
+/* 표를 훑고 서술 칸으로 내려가면 끝이라 종합이 실제로 일어나지 않았다.
+   읽는 표에서 채우는 표로 바꾼다(명세서 §32-4 13번, §22).
+   보낼 정보는 다섯 줄 모두 8비트로 같다 — 「정보는 같고 보내는 양만
+   다르다」가 열 하나로 드러난다. */
+const COMPARE_METHODS = [
+  {
+    id: 'plain', name: '그냥 보내기', bits: 8, detect: false, fix: false, groups: 0,
+    shape: [{ info: 8, check: 0 }],
+    how: '검사 비트를 붙이지 않고 그대로 보냅니다. 뒤집혀도 알 방법이 없습니다.',
+    where: '11번에서 해 본 방법'
+  },
+  {
+    id: 'repeat3', name: '3번 반복', bits: 24, detect: true, fix: true, groups: null,
+    shape: [{ info: 8, check: 0 }, { info: 8, check: 0 }, { info: 8, check: 0 }],
+    how: '같은 8칸을 세 번 보내고, 열마다 많은 쪽을 고릅니다. 검사 비트를 붙이는 대신 정보를 통째로 복제합니다.',
+    where: '8~10번에서 해 본 방법'
+  },
+  {
+    id: 'parity1', name: '검사 비트 1개', bits: 9, detect: true, fix: false, groups: 1,
+    shape: [{ info: 8, check: 1 }],
+    how: '전체 1의 개수가 짝수가 되도록 비트 하나를 붙입니다. 받는 쪽은 1을 세어 홀수면 오류가 있다는 것을 압니다. 어느 자리인지는 모릅니다.',
+    where: '17번에서 해 본 방법'
+  },
+  {
+    id: 'grid', name: '격자 검사', bits: 15, detect: true, fix: true, groups: 7,
+    shape: [{ info: 4, check: 1 }, { info: 4, check: 1 }, { info: 0, check: 5 }],
+    how: '정보를 2×4로 늘어놓고 가로·세로가 각각 짝수가 되도록 검사 칸을 붙입니다. 이상한 가로줄과 세로줄이 만나는 곳이 뒤집힌 자리입니다.',
+    where: '18~20번에서 해 본 방법'
+  },
+  {
+    id: 'hamming', name: '해밍', bits: 12, detect: true, fix: true, groups: 4,
+    shape: [{ info: 8, check: 4 }],
+    how: '검사 묶음을 직접 설계해 붙입니다. 검사 결과를 이어 읽으면 뒤집힌 자리 번호가 그대로 나옵니다.',
+    where: '24·25번에서 설계한 방법'
+  }
+];
+
+function shapeHtml(shape) {
+  return `<span class="shape">${shape.map(row => `<span class="shape-row">${'<span class="shape-cell info"></span>'.repeat(row.info)}${'<span class="shape-cell check"></span>'.repeat(row.check)}</span>`).join('')}</span>`;
+}
+
+function n20State() {
+  const n20 = state.screens.N20 || (state.screens.N20 = {});
+  if (!n20.answers || typeof n20.answers !== 'object') n20.answers = {};
+  COMPARE_METHODS.forEach(method => {
+    if (!n20.answers[method.id]) n20.answers[method.id] = { bits: '', detect: '', fix: '' };
+  });
+  return n20;
+}
+
+function n20Wrong() {
+  const n20 = n20State();
+  const wrong = [];
+  COMPARE_METHODS.forEach(method => {
+    const a = n20.answers[method.id];
+    if (Number(a.bits) !== method.bits) wrong.push(`${method.id}.bits`);
+    if (a.detect !== (method.detect ? 'O' : 'X')) wrong.push(`${method.id}.detect`);
+    if (a.fix !== (method.fix ? 'O' : 'X')) wrong.push(`${method.id}.fix`);
+  });
+  return wrong;
+}
+
 function renderN20() {
-  const questionCount = state.screens.N15.groups.length;
-  return `${heading('7 닫기 · 종합', '어떤 방법이 점자에 가장 어울릴까?', '지나온 방법을 같은 조건으로 맞춰 비교하고, 자신의 선택을 근거와 함께 정리합니다.')}
+  const n20 = n20State();
+  const checked = Boolean(n20.checked);
+  const wrong = n20Wrong();
+  const passed = checked && wrong.length === 0;
+  /* 통과하면 보낼 비트 순으로 다시 놓는다. 비용이 줄어드는 축이 드러난다. */
+  const methods = passed ? [...COMPARE_METHODS].sort((a, b) => a.bits - b.bits) : COMPARE_METHODS;
+  const showDistance = state.includeOptional;
+
+  const rows = methods.map(method => {
+    const a = n20.answers[method.id];
+    const pick = (field, value) => `<select data-n20="${method.id}.${field}" aria-label="${esc(method.name)} ${field === 'detect' ? '알 수 있다' : '고칠 수 있다'}"><option value=""${a[field] ? '' : ' selected'}>—</option><option value="O"${a[field] === 'O' ? ' selected' : ''}>O</option><option value="X"${a[field] === 'X' ? ' selected' : ''}>X</option></select>`;
+    return `<tr>
+      <th scope="row"><button type="button" class="method-name" data-n20-info="${method.id}">${esc(method.name)} <span aria-hidden="true">ⓘ</span></button></th>
+      <td>${shapeHtml([{ info: 8, check: 0 }])}</td>
+      <td>${shapeHtml(method.shape)}</td>
+      <td><input type="number" inputmode="numeric" min="1" max="99" data-n20="${method.id}.bits" value="${esc(a.bits)}" aria-label="${esc(method.name)} 필요한 비트"></td>
+      <td>${pick('detect')}</td>
+      <td>${pick('fix')}</td>
+      ${showDistance ? `<td>${method.id === 'plain' ? 1 : method.id === 'parity1' ? 2 : method.id === 'grid' ? 4 : 3}</td>` : ''}
+    </tr>`;
+  }).join('');
+
+  const open = n20.info ? COMPARE_METHODS.find(method => method.id === n20.info) : null;
+
+  return `${heading('7 닫기 · 종합', '같은 8비트를 보내는데, 얼마나 더 보내야 할까?', '지나온 다섯 가지를 같은 조건으로 맞춰 정리합니다. 이름을 누르면 어떤 방법이었는지 다시 볼 수 있습니다.')}
   <div class="card stack">
-    <div class="notice">활동에서는 6×6 격자와 7비트로 해 봤지만, 아래 표는 모두 <strong>8비트 정보를 지키고 오류 1개를 고치는 조건</strong>으로 맞춰 비교합니다.</div>
-    <div class="table-wrap"><table><thead><tr><th>방식</th><th>전송 비트</th><th>탐지</th><th>정정</th><th>최소 거리</th><th>내 기록</th></tr></thead><tbody>${compareRows().map(row => `<tr>${row.map(cell => `<td>${esc(cell)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>
-    <div class="reading"><p style="margin:0">질문 설계판의 7자리와 오류 없음, 총 8가지를 구별하는 데 필요한 최소 질문은 3개입니다. 내 현재 설계는 질문 ${questionCount}개입니다. 해밍 부호에서는 정보 4비트에 검사 비트 3개를 붙입니다. 정보를 8비트로 늘리면 질문이 <strong>4개</strong> 필요합니다(2<sup>4</sup> = 16 ≥ 8 + 4 + 1). 정보가 두 배가 되어도 질문은 하나만 늘어납니다.</p></div>
-    ${writeBox('N20_reflect', '나라면 점자에 어느 방법을 쓰겠는가? 다시 보낼 수 없다는 점을 생각해서 쓰시오.', 'reflect')}
+    <div class="notice">오류를 <strong>없앨 수는 없습니다.</strong> 대신 오류가 생겨도 알아채고 고칠 수 있게 보냅니다. 아래 다섯 가지는 모두 <strong>정보 8비트</strong>를 지킵니다. 다른 것은 <strong>실제로 보내는 양</strong>입니다.</div>
+    <div class="table-wrap"><table class="compare-table">
+      <thead><tr><th>방식</th><th>보낼 정보</th><th>실제로 보내는 모양</th><th>필요한 비트</th><th>오류가 있다는 걸<br>알 수 있다</th><th>오류를 찾아<br>고칠 수 있다</th>${showDistance ? '<th>최소 거리</th>' : ''}</tr></thead>
+      <tbody>${rows}</tbody>
+    </table></div>
+    <p class="muted small" style="margin:0"><span class="shape-cell info"></span> 정보 &nbsp; <span class="shape-cell check"></span> 검사 비트 &nbsp;— 네모를 세어 「필요한 비트」를 채우세요.</p>
+    ${open ? `<div class="info-pop"><button type="button" id="n20-info-close" class="info-close" aria-label="닫기">×</button><strong>${esc(open.name)}</strong><p style="margin:6px 0">${esc(open.how)}</p><p class="muted small" style="margin:0">검사 묶음 ${open.groups === null ? '없음 (정보를 복제)' : `${open.groups}개`} · ${esc(open.where)}<br>내 기록: ${esc(compareRecord(open.id))}</p></div>` : ''}
+    <div class="button-row"><button id="check-n20" class="primary-button" type="button">검사</button><button id="reset-n20" class="secondary-button" type="button">전부 지우기</button></div>
+    <div id="n20-result" class="result ${checked ? (passed ? 'ok' : 'fail') : ''}" role="status">${checked ? (passed ? '✓ 모두 맞습니다.' : `${COMPARE_METHODS.length * 3}칸 중 <strong>${wrong.length}칸</strong>이 다릅니다. 어느 칸인지는 직접 확인하세요.`) : '표를 채운 뒤 「검사」를 누르세요.'}</div>
+    ${passed ? `<div class="reading">
+      <p style="margin:0">적게 보내는 순서로 놓으면 — <strong>${methods.map(method => method.bits).join(' · ')}</strong></p>
+      <p style="margin:8px 0 0"><strong>3번 반복만 방법이 다릅니다.</strong> 검사 비트를 붙이는 대신 정보를 통째로 세 번 보냅니다.</p>
+      <p style="margin:6px 0 0">나머지 셋은 <strong>같은 방법</strong>입니다 — 정보에 검사 비트를 붙이고 묶음마다 1의 개수가 짝수인지 봅니다. 다른 건 <strong>묶음을 어떻게 정했느냐</strong>뿐입니다.</p>
+      <ul style="margin:6px 0 0">
+        <li>검사 비트 1개 → 묶음 <strong>1개</strong> → 있다는 것만 안다</li>
+        <li>격자 검사 → 묶음 <strong>7개</strong>(행과 열) → 위치를 찾는다</li>
+        <li>해밍 → 묶음 <strong>4개</strong>(직접 설계) → 위치를 찾는다. 더 싸다</li>
+      </ul>
+      <p style="margin:8px 0 0">7자리를 지키는 데 검사 <strong>3번</strong>이면 됐습니다. 정보를 8비트로 늘려도 검사는 <strong>4번</strong>이면 됩니다. <strong>정보가 두 배가 되어도 검사는 하나만 늘어납니다.</strong></p>
+    </div>` : ''}
     ${evidenceFor(['N6_operate','N7','N8','N10','N11b','N12','N15_operate'])}
   </div>`;
+}
+
+/* ⓘ 창에 붙일 「내 기록」. 실제 실행 기록만 쓴다(명세서 §30). */
+function compareRecord(id) {
+  const logs = state.log.filter(item => item.kind === 'attempt' && item.attempt?.blocks);
+  const real = (nodes, one = false) => {
+    const item = [...logs].reverse().find(log => JSON.stringify(log.attempt.blocks) === JSON.stringify(nodes) && (one ? log.screen === 'N10' : log.screen !== 'N10'));
+    return item?.detail || '미실행';
+  };
+  if (id === 'plain') return real(['message','noise','receiver']);
+  if (id === 'repeat3') return real(['message','repeat3','noise','majority','receiver']);
+  if (id === 'parity1') return real(['message','parityEncode','noise','parityCheck','receiver'], true);
+  if (id === 'hamming') return state.screens.N15.checked ? '검사 패턴 구별 완료 (7자리 활동)' : state.views.N15_operate ? '미해결' : '미실행';
+  return checkParityGrid().ok ? '검사 칸 배치 완료 (6×6 활동)' : state.views.N11b ? '미해결' : '미실행';
 }
 
 function submissionSummary() {
@@ -1949,6 +2114,31 @@ function bindScreen(id) {
     persist();
     render();
   }));
+  $$('[data-n20]').forEach(field => field.addEventListener('change', () => {
+    const [id, key] = field.dataset.n20.split('.');
+    const n20 = n20State();
+    n20.answers[id][key] = field.value;
+    /* 칸을 고치면 이전 검사 결과는 이 답의 결과가 아니다(명세서 §14). */
+    n20.checked = false;
+    persist();
+    render();
+  }));
+  $$('[data-n20-info]').forEach(button => button.addEventListener('click', () => {
+    const n20 = n20State();
+    n20.info = n20.info === button.dataset.n20Info ? null : button.dataset.n20Info;
+    persist();
+    render();
+  }));
+  $('#n20-info-close')?.addEventListener('click', () => { n20State().info = null; persist(); render(); });
+  $('#check-n20')?.addEventListener('click', () => {
+    const n20 = n20State();
+    n20.checked = true;
+    const wrong = n20Wrong();
+    logEvent('attempt', 'N20', { detail: `종합표 검사 · 15칸 중 ${wrong.length}칸 다름`, attempt: { wrong: wrong.length, answers: JSON.parse(JSON.stringify(n20.answers)) } }, wrong.length ? 'fail' : 'ok');
+    persist();
+    render();
+  });
+  $('#reset-n20')?.addEventListener('click', () => { const n20 = n20State(); n20.answers = null; n20.checked = false; n20State(); persist(); render(); });
   if (id === 'N11a') bindN11a();
   if (id === 'N11b') bindN11b();
   if (id === 'N12') bindN12();
@@ -2229,19 +2419,23 @@ function bindN15() {
     persist();
     render();
   }));
-  $('#n15-more')?.addEventListener('click', () => { if (n15.groups.length < N15_MAX_GROUPS) { n15.groups.push([]); n15.checked = false; persist(); render(); } });
+  $('#n15-more')?.addEventListener('click', () => { if (n15.groups.length < N15_MAX_GROUPS && n15.groups.length < (n15.unlocked || 1)) { n15.groups.push([]); n15.checked = false; persist(); render(); } });
   $('#n15-fewer')?.addEventListener('click', () => { if (n15.groups.length > N15_MIN_GROUPS) { n15.groups.pop(); n15.checked = false; persist(); render(); } });
   $('#check-n15')?.addEventListener('click', () => {
     const patterns = n15Patterns();
-    const unique = new Set(patterns.map(item => item.pattern)).size === 8;
+    const distinct = new Set(patterns.map(item => item.pattern)).size;
+    const unique = distinct === 8;
     n15.checked = unique;
+    n15.lastCheck = distinct;
+    /* 모자라면 검사를 하나 더 만들 수 있게 연다. 2 → 4 → 8갈래를 겪는다. */
+    if (!unique) n15.unlocked = Math.min(N15_MAX_GROUPS, Math.max(n15.unlocked || 1, n15.groups.length + 1));
     logEvent('attempt', 'N15_operate', { detail: `질문 ${n15.groups.length}개 · 묶음 ${n15.groups.map((group, i) => `Q${i + 1}=${group.join('') || '없음'}`).join(' ')} · 서로 다른 패턴 ${new Set(patterns.map(item => item.pattern)).size}개`, attempt: { groups: n15.groups.map(group => group.slice()), distinct: new Set(patterns.map(item => item.pattern)).size } }, unique ? 'ok' : 'fail');
     if (!unique) advanceHint('N15_operate');
     mascotState = { mood: unique ? 'cheer' : 'tilt', text: unique ? '모든 일이 서로 다른 답 패턴을 가졌어요.' : (HINTS.N15_operate[(state.hints.N15_operate || 1) - 1] || HINTS.N15_operate[0]), open: true };
     persist();
     render();
   });
-  $('#reset-n15')?.addEventListener('click', () => { n15.groups = n15.groups.map(() => []); n15.selected = null; n15.checked = false; persist(); render(); });
+  $('#reset-n15')?.addEventListener('click', () => { n15.groups = n15.groups.map(() => []); n15.selected = null; n15.checked = false; n15.lastCheck = null; persist(); render(); });
   $('#open-n15-guide')?.addEventListener('click', () => openGuide('N15_operate', '번호 블록을 끌어다 질문 상자에 넣거나, 번호를 누른 뒤 상자를 누르세요. 상자 안의 번호를 누르면 빠집니다. 질문 개수도 바꿀 수 있습니다.'));
 }
 
