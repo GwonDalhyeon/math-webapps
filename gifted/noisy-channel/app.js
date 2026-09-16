@@ -1271,7 +1271,9 @@ function circuitDetail(metric, stage) {
 }
 
 const STAGE_COPY = {
-  N6: ['조립 S1 · 시험', '일단 보내 보고, 잡음이 얼마나 남는지 확인합니다.', '메시지 → 잡음 → 받은 메시지가 이어진 상태에서 실행해 보세요.'],
+  /* 이 화면에는 목표가 없다(judgeCircuit 이 N6 를 무조건 통과시킨다).
+     진짜 일은 「결과 읽는 법 배우기」이므로 그렇게 적는다(명세서 §32-4 1번). */
+  N6: ['조립 S1 · 시험', '결과에 뜨는 수가 무슨 뜻인지 익혀 봅시다.', '아직 목표는 없습니다. 메시지 → 잡음 → 받은 메시지가 이어진 상태로 한 번 보내 보세요. 다음 화면부터 여기 뜨는 수로 설계를 판단합니다.'],
   N7: ['조립 S2', '정확하게 보내는 통신로를 설계해 보세요.', '목표는 8비트가 모두 맞을 확률 4분의 3(75%) 이상입니다.'],
   N8: ['조립 S3', '정확하고 싸게 보내 보세요.', '8비트가 모두 맞을 확률 75% 이상이면서, 잡음 구간을 지나는 비트가 24개 이하여야 합니다.'],
   N10: ['조립 S4', '9비트로 보내되, 오류를 알아채는 방법을 설계해 보세요.', '전체 1의 개수가 짝수가 되도록 검사 비트를 하나 붙이고, 받은 뒤 1의 개수가 짝수인지 세어 봅니다. 이것을 검사라고 부릅니다. 9비트 이하로 보내 한 비트 오류를 알아채는 구조를 만들어 보세요.']
@@ -1406,7 +1408,7 @@ function renderN6Read() {
   if (!m || !Array.isArray(m.samples) || !m.samples.length) {
     return `${heading(kicker, '먼저 한 번 보내 보세요.', '앞 화면에서 통신로를 실행하면 그 결과로 수치를 어떻게 세었는지 함께 봅니다.')}
     <div class="card stack">
-      <div class="notice">아직 실행 기록이 없습니다. 앞 화면에서 <strong>${esc(`${TRIALS}번 보내기`)}</strong>를 눌러 보세요.</div>
+      <div class="notice">아직 실행 기록이 없습니다. <strong>앞 화면(조립 S1 · 시험)</strong>에서 파란 <strong>${esc(`${TRIALS}번 보내기`)}</strong> 버튼을 누른 뒤 다시 오세요.</div>
       <div class="button-row"><button id="back-to-n6" class="primary-button" type="button">앞 화면으로</button></div>
     </div>`;
   }
@@ -1728,7 +1730,7 @@ function renderN13Bridge() {
 }
 
 function renderN13Write() {
-  return `${heading('4 어디가 뒤집혔나 · 작성', '오류 위치를 찾는 방법과 한계를 설명해 보세요.', '한 칸을 찾았던 절차와 두 칸 오류에서 달라진 점을 구분해 적습니다.')}
+  return `${heading('4 어디가 뒤집혔나 · 작성', '두 칸은 왜 찾을 수 없을까?', '앞 화면에서 교차점 네 군데를 보았습니다. 한 칸일 때와 무엇이 달랐는지 떠올려 적습니다.')}
   <div class="card stack"><div class="writing-list">${writeBox('N13_two', '두 칸이 뒤집히면 왜 하나의 위치를 확정하기 어려울까요?', 'explain')}</div>${evidenceFor(['N12'])}</div>`;
 }
 
@@ -1903,7 +1905,7 @@ function renderN15Operate() {
 }
 
 function renderN15Write() {
-  return `${heading('5 질문으로 찾기 · 작성', '질문 수를 바꾼 이유를 설명해 보세요.', '방금 만든 답 패턴 표와 실제 설계 변화가 근거로 남아 있습니다.')}
+  return `${heading('5 검사로 찾기 · 작성', '검사 결과를 이어 읽으면 무엇이 될까?', '방금 만든 결과 패턴 표와 검사 묶음이 근거로 남아 있습니다.')}
   <div class="card stack">${evidenceFor(['N15_operate'])}<div class="evidence">현재 검사 묶음: ${state.screens.N15.groups.map((group, i) => `${i + 1}번 검사 = ${group.length ? group.join(', ') : '없음'}`).join(' · ')}</div><div class="writing-list">${writeBox('N15_binary', '내 검사 결과를 홀수=1, 짝수=0으로 적어 붙여 읽으면 무엇이 되나요?', 'explain')}</div></div>`;
 }
 
@@ -2597,7 +2599,8 @@ function showFirstGuide(screen) {
 
 function renderMascot() {
   let slot = $('.mascot-slot');
-  if (!slot) { slot = document.createElement('div'); slot.className = 'mascot-slot'; $('.bottom-bar').insertBefore(slot, $('#screen-count')); }
+  /* 이전 버튼 왼쪽에 둔다 — 이전·쪽번호·다음이 붙어 있어야 누르기 쉽다. */
+  if (!slot) { slot = document.createElement('div'); slot.className = 'mascot-slot'; $('.bottom-bar').insertBefore(slot, $('#prev-button')); }
   const last = [...state.log].reverse().find(item=>item.screen===state.screenId && item.kind==='attempt');
   const mood = mascotState.text ? mascotState.mood : last?.result==='ok' ? 'cheer' : hintMood(state.hints[state.screenId]||0);
   const level = state.hints[state.screenId] || 0;

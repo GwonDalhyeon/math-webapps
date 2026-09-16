@@ -472,3 +472,17 @@ input[type="range"] { min-height:44px; }
 .received-word.ok { border-color:#9fd3b4; background:var(--green-soft); }
 .received-syms { display:flex; flex-wrap:wrap; gap:5px; font-size:22px; font-weight:900; }
 .received-syms .unread { color:var(--red); }
+
+/* 이전·쪽번호·다음을 붙여 놓고 강아지를 그 왼쪽에 둔다.
+   화면 폭만큼 벌려 놓으니 두 버튼이 너무 멀어 누르기 힘들었다. */
+.bottom-bar { display:flex; grid-template-columns:none; justify-content:center; align-items:center; gap:10px; }
+.bottom-bar #prev-button, .bottom-bar #next-button { width:auto; min-width:84px; justify-self:auto; padding-inline:16px; }
+.screen-count { display:block; width:auto; min-width:66px; max-width:none; justify-self:auto; text-align:center; }
+.mascot-slot { flex:0 0 56px; margin-right:6px; }
+@media (max-width:420px) {
+  .bottom-bar { gap:7px; padding-inline:10px; }
+  .bottom-bar #prev-button, .bottom-bar #next-button { min-width:70px; padding-inline:10px; }
+  .screen-count { min-width:56px; font-size:.8rem; }
+  .mascot-slot { flex-basis:48px; margin-right:2px; }
+  .mascot-button { width:48px; height:48px; }
+}
