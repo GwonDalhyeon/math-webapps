@@ -1578,22 +1578,29 @@ function parityBoardHtml(board, chosen = null, correct = false, interactive = fa
   <p class="muted small" style="margin:0"><span class="legend-box parity"></span> 보낼 때 붙인 <strong>검사 비트</strong> — 여기는 뒤집히지 않았습니다 &nbsp; <span class="legend-box"></span> <strong>정보 칸</strong> — 이 중에서 뒤집혔습니다</p>`;
 }
 
-/* 받은 격자를 자모로 되읽는다. 뒤집힌 칸 때문에 점형이 표에 없으면 ? 로 둔다.
-   뒤집힌 칸을 찾아 고치면 낱말이 제대로 읽힌다. */
-function receivedWordHtml(board) {
-  const read = board.map(bits => {
-    for (const table of [BRAILLE.initial, BRAILLE.medial, BRAILLE.final]) {
-      for (const [sym, dots] of Object.entries(table)) {
-        if (dots.length && dotsToBits(dots).every((bit, i) => bit === bits[i])) return sym;
-      }
+/* 받은 격자를 자모로 되읽는다. 뒤집힌 점이 다른 자모의 점형이 되면
+   「읽을 수 없음」이 아니라 **엉뚱한 글자로 멀쩡히 읽힌다.** 그래서 보낸
+   낱말과 나란히 놓는다 — 둘을 비교해야 무엇이 이상한지 보인다.
+   학생은 N11b에서 검사 점을 놓은 보내는 쪽이므로 원래 낱말을 안다. */
+function readJamo(bits) {
+  for (const table of [BRAILLE.initial, BRAILLE.medial, BRAILLE.final]) {
+    for (const [sym, dots] of Object.entries(table)) {
+      if (dots.length && dotsToBits(dots).every((bit, i) => bit === bits[i])) return sym;
     }
-    return null;
-  });
-  const ok = read.every(Boolean);
-  return `<div class="received-word ${ok ? 'ok' : 'broken'}">
-    <strong>받은 낱말</strong>
-    <div class="received-syms">${read.map(sym => `<span class="${sym ? '' : 'unread'}">${sym || '?'}</span>`).join('')}</div>
-    <p class="muted small" style="margin:0">${ok ? '여섯 자모가 모두 읽힙니다.' : '<strong>?</strong> 자리는 점형이 점자표에 없어 읽을 수 없습니다. 뒤집힌 칸을 찾으면 읽힙니다.'}</p>
+  }
+  return null;
+}
+
+function receivedWordHtml(board) {
+  const sent = state.parity.labels || [];
+  const read = board.map(readJamo);
+  const same = read.every((sym, i) => sym && sym === sent[i]);
+  return `<div class="received-word ${same ? 'ok' : 'broken'}">
+    <div><strong>보낸 낱말</strong><div class="received-syms sent">${sent.map(sym => `<span>${esc(sym || '·')}</span>`).join('')}</div></div>
+    <div><strong>받은 낱말</strong><div class="received-syms">${read.map((sym, i) => `<span class="${sym === sent[i] ? '' : 'unread'}">${esc(sym || '?')}</span>`).join('')}</div></div>
+    <p class="muted small" style="margin:0">${same
+      ? '두 줄이 같습니다. 제대로 도착했습니다.'
+      : '두 줄이 다른 자리가 있습니다. <strong>?</strong> 는 점자표에 없는 점형이고, 빨간 자모는 <strong>읽히기는 하지만 다른 글자</strong>입니다.'}</p>
   </div>`;
 }
 
