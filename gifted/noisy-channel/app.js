@@ -7,9 +7,9 @@ const NOISE_RATE = 0.1;
 const OPTIONAL_IDS = new Set(['N16', 'N17', 'N18', 'N19']);
 const WRITE_FIELDS = [
   ['N1_thought', '도입 생각'], ['N2_observe', '잡음 관찰'], ['N2_explain', '읽기 한계'], ['N3_reason', 'N3 예측 이유'],
-  ['N5_method', '다수결 판단 방법'], ['N5_compare', '반복 횟수 비교'], ['N9_reflect', '통신로 비교 성찰'],
-  ['N13_one', '한 칸 찾기 절차'], ['N13_two', '두 칸 오류의 한계'], ['N15_change', '질문 수를 바꾼 이유'], ['N15_binary', '이진 표현 해석'],
-  ['N18_reason', '거리와 정정'], ['N19_mariner', '마리너 9호 비교'], ['N20_reflect', '종합 선택']
+  ['N5_compare', '반복 횟수 비교'], ['N9_reflect', '통신로 비교 성찰'],
+  ['N13_two', '두 칸 오류의 한계'], ['N15_binary', '이진 표현 해석'],
+  ['N18_reason', '거리와 정정'], ['N19_mariner', '마리너 9호 비교']
 ];
 
 const SCREEN_ORDER = [
@@ -280,9 +280,14 @@ function restoredBraille(answer, success) {
    각 행이 한 자모의 점형(6비트), 각 열이 점 번호 1~6번이다.
    이전에는 (r*5+c*3+r+c)%2 로 채웠는데 이 식은 항상 0이라 격자가 통째로
    비어 있었고, 그래서 패리티 활동이 성립하지 않았다. */
-/* 겹자모가 없어 이 앱의 점자표 안에서 온전히 표현되는 낱말만 쓴다.
-   표에 없는 점형을 지어내지 않는다(명세서 §36-3). */
-const PARITY_WORDS = ['수학공부', '나비하늘', '노트정리', '바다구름', '거리시간', '소리모아', '고구마', '파도소리', '비바람', '스스로', '토마토', '초코우유'];
+/* 정확히 6자모인 낱말만 쓴다. slice(0,6)으로 자르면 격자에 낱말이 다 담기지
+   않아 「받은 낱말」을 보여줄 수 없다(명세서 §32-4 5번).
+   전부 3음절이고 초성 ㅇ이 없어 여섯 자모 모두 점형이 있다. */
+const PARITY_WORDS = [
+  '고구마', '스스로', '토마토', '바나나', '다시마', '가마니', '너구리',
+  '소나무', '기러기', '도토리', '두더지', '미나리', '보리수', '가로수',
+  '바가지', '사다리', '다리미', '고사리', '도라지'
+];
 
 /* initialState()는 state가 아직 만들어지기 전에 돌기 때문에 학번을 읽을 수
    없다. 그래서 시드를 인자로 받는다. */
@@ -495,7 +500,7 @@ function reseedUntouchedProblems() {
   if (!answered) screens.N5.rows = {};
   if (state.parity.placed.length <= 1) state.parity = createParityGrid(sid);
   if (screens.N12 && !screens.N12.guesses.some(guess => guess)) screens.N12.board = null;
-  if (screens.N13 && !String(state.writes.N13_one || '').trim() && !String(state.writes.N13_two || '').trim()) screens.N13 = null;
+  if (screens.N13 && !String(state.writes.N13_two || '').trim()) screens.N13 = null;
   if (screens.N16 && !screens.N16.guesses.some(guess => guess !== undefined)) screens.N16.cases = [];
   if (screens.N17) screens.N17.query = null;
 }
@@ -998,7 +1003,7 @@ function renderN5Write() {
   const rows = repeatedRows(n5.count);
   const observedFour = (n5.observedCounts || []).includes(4);
   return `${heading('2 다수결 · 작성', '반복 횟수와 판단 방법을 돌아보세요.', `선택한 ${n5.count}번 받았을 때의 결과와 동점 여부가 근거로 남아 있습니다.`)}
-  <div class="card stack"><div class="evidence">선택한 반복: ${n5.count}번 받았을 때 · 동점 열: ${columnTies(rows).length ? columnTies(rows).map(i => i + 1).join(', ') : '없음'}</div><div class="writing-list">${writeBox('N5_method', '각 열에서 어떻게 판단했나요?', 'explain')}${observedFour ? writeBox('N5_compare', '3번·5번 받았을 때와 4번 받았을 때의 판단에는 어떤 차이가 있었나요?', 'explain') : '<div class="notice">4번 받았을 때는 미관찰입니다. 반복 횟수 정하기로 돌아가 비교해 보세요.</div>' + writeBox('N5_compare', '선택한 횟수들을 비교하여 차이를 설명해 보세요.', 'explain')}</div>${evidenceFor(['N5_operate'])}</div>`;
+  <div class="card stack"><div class="evidence">선택한 반복: ${n5.count}번 받았을 때 · 동점 열: ${columnTies(rows).length ? columnTies(rows).map(i => i + 1).join(', ') : '없음'}</div><div class="writing-list">${observedFour ? writeBox('N5_compare', '3번·5번 받았을 때와 4번 받았을 때의 판단에는 어떤 차이가 있었나요?', 'explain') : '<div class="notice">4번 받았을 때는 미관찰입니다. 반복 횟수 정하기로 돌아가 비교해 보세요.</div>' + writeBox('N5_compare', '선택한 횟수들을 비교하여 차이를 설명해 보세요.', 'explain')}</div>${evidenceFor(['N5_operate'])}</div>`;
 }
 
 function circuitBlockLabel(type) {
@@ -1540,24 +1545,67 @@ function randomErrorBoard(errorCount = 1, seedKey = null) {
   return { base, cells };
 }
 
-function parityBoardHtml(board, chosen = null, correct = false, interactive = false) {
+/* 자모 이름을 저장만 하고 화면에 한 번도 쓰지 않아, 학생은 0과 1이 36개
+   깔린 판만 보고 있었다. 점자 수업인데 점자가 안 보였다(명세서 §32-4 5번).
+   marks 에 [행, 열, 클래스]를 넘기면 그 칸에 표시를 더한다. */
+function parityBoardHtml(board, chosen = null, correct = false, interactive = false, marks = []) {
   const checks = parityExpected();
-  return `<div class="parity-grid" data-parity-board><span class="sr-only">파란 가장자리는 보낼 때 붙인 검사 비트입니다. 검사 비트를 포함하여 각 가로·세로의 1을 세어 보세요.</span>${Array.from({length:7}, (_,r)=>Array.from({length:7}, (_,c)=>{
-    const edge = r===0 || c===0;
-    const bit = edge ? checks[r][c] : board[r-1][c-1];
-    const selected = chosen && chosen[0]===r-1 && chosen[1]===c-1;
-    const label = edge ? `검사 비트 ${r===0 ? (c===0 ? '모서리' : c+'열') : r+'행'}, ${bit}` : `${r}행 ${c}열 ${bit}`;
-    const cls = `grid-cell ${edge ? 'parity' : ''} ${selected ? (correct ? 'good' : 'bad') : ''}`;
-    return interactive && !edge ? `<button type="button" class="${cls}" data-find-cell="${r-1},${c-1}" aria-label="${label}">${bit}</button>` : `<span class="${cls}" aria-label="${label}">${bit}</span>`;
-  }).join('')).join('')}</div>`;
+  const labels = state.parity.labels || [];
+  const markOf = (r, c) => marks.find(mark => mark[0] === r - 1 && mark[1] === c - 1)?.[2] || '';
+  const head = `<span class="grid-head corner"></span>${Array.from({ length: 6 }, (_, c) => `<span class="grid-head">${c + 1}</span>`).join('')}<span class="grid-head">검사</span>`;
+  const rows = Array.from({ length: 7 }, (_, r) => {
+    const name = r === 0 ? '검사' : (labels[r - 1] || '·');
+    const cells = Array.from({ length: 7 }, (_, c) => {
+      const edge = r === 0 || c === 0;
+      const bit = edge ? checks[r][c] : board[r - 1][c - 1];
+      const selected = chosen && chosen[0] === r - 1 && chosen[1] === c - 1;
+      const label = edge ? `검사 비트 ${r === 0 ? (c === 0 ? '모서리' : c + '열') : r + '행'}, ${bit}` : `${esc(name)} ${c}번 점, ${bit}`;
+      const cls = `grid-cell ${edge ? 'parity' : ''} ${selected ? (correct ? 'good' : 'bad') : ''} ${markOf(r, c)}`;
+      return interactive && !edge
+        ? `<button type="button" class="${cls}" data-find-cell="${r - 1},${c - 1}" aria-label="${label}">${bit}</button>`
+        : `<span class="${cls}" aria-label="${label}">${bit}</span>`;
+    }).join('');
+    /* 검사 줄(r=0)은 맨 아래가 아니라 맨 위에 있다. 이름을 그에 맞춘다. */
+    return `<span class="grid-head row">${esc(r === 0 ? '검사' : name)}</span>${cells}`;
+  }).join('');
+  return `<div class="parity-wrap">
+    <div class="parity-grid labelled" data-parity-board>
+      <span class="sr-only">왼쪽은 자모 이름, 위는 점 번호입니다. 파란 칸은 보낼 때 붙인 검사 비트이며 뒤집히지 않습니다.</span>
+      ${head}${rows}
+    </div>
+    ${receivedWordHtml(board)}
+  </div>
+  <p class="muted small" style="margin:0"><span class="legend-box parity"></span> 보낼 때 붙인 <strong>검사 비트</strong> — 여기는 뒤집히지 않았습니다 &nbsp; <span class="legend-box"></span> <strong>정보 칸</strong> — 이 중에서 뒤집혔습니다</p>`;
 }
+
+/* 받은 격자를 자모로 되읽는다. 뒤집힌 칸 때문에 점형이 표에 없으면 ? 로 둔다.
+   뒤집힌 칸을 찾아 고치면 낱말이 제대로 읽힌다. */
+function receivedWordHtml(board) {
+  const read = board.map(bits => {
+    for (const table of [BRAILLE.initial, BRAILLE.medial, BRAILLE.final]) {
+      for (const [sym, dots] of Object.entries(table)) {
+        if (dots.length && dotsToBits(dots).every((bit, i) => bit === bits[i])) return sym;
+      }
+    }
+    return null;
+  });
+  const ok = read.every(Boolean);
+  return `<div class="received-word ${ok ? 'ok' : 'broken'}">
+    <strong>받은 낱말</strong>
+    <div class="received-syms">${read.map(sym => `<span class="${sym ? '' : 'unread'}">${sym || '?'}</span>`).join('')}</div>
+    <p class="muted small" style="margin:0">${ok ? '여섯 자모가 모두 읽힙니다.' : '<strong>?</strong> 자리는 점형이 점자표에 없어 읽을 수 없습니다. 뒤집힌 칸을 찾으면 읽힙니다.'}</p>
+  </div>`;
+}
+
+/* 한 칸 찾기는 2판이면 방법이 굳는다(명세서 §32-4 6번). */
+const N12_ROUNDS = 2;
 
 function renderN12() {
   const n12 = state.screens.N12;
   if (!n12.board) n12.board = randomErrorBoard(1, `N12:${n12.round}`);
   const chosen = n12.guesses[n12.round];
   const correct = chosen && chosen[0]===n12.board.cells[0][0] && chosen[1]===n12.board.cells[0][1];
-  return `${heading('4 어디가 뒤집혔나 · 한 칸 찾기', `뒤집힌 칸을 찾아 보세요 · ${n12.round+1}/3판`, '보내는 쪽은 검사 비트를 포함한 가로·세로의 1이 모두 짝수 개가 되도록 맞춰서 보냈습니다. 오는 길에 한 칸이 뒤집혔습니다. 어느 칸인지 찾아 누르세요.')}<div class="card stack">${parityBoardHtml(n12.board.base, chosen, correct, true)}<div class="result ${chosen ? (correct ? 'ok' : 'fail') : ''}" role="status">${chosen ? (correct ? '✓ 찾았습니다.' : '! 아직 아닙니다. 가로와 세로를 다시 살펴보세요.') : '검사할 칸을 하나 골라 보세요.'}</div>${correct && n12.round<2 ? '<button id="next-n12-round" class="primary-button" type="button">다음 판</button>' : ''}<button id="reset-n12" class="secondary-button" type="button">이 판 다시 만들기</button></div>`;
+  return `${heading('4 어디가 뒤집혔나 · 한 칸 찾기', `뒤집힌 칸을 찾아 보세요 · ${N12_ROUNDS}문제 중 ${n12.round+1}번째`, '보내는 쪽은 검사 비트를 포함한 가로·세로의 1이 모두 짝수 개가 되도록 맞춰서 보냈습니다. 오는 길에 한 칸이 뒤집혔습니다. 어느 칸인지 찾아 누르세요.')}<div class="card stack">${parityBoardHtml(correct ? state.parity.data : n12.board.base, chosen, correct, true)}<div class="result ${chosen ? (correct ? 'ok' : 'fail') : ''}" role="status">${chosen ? (correct ? '✓ 찾았습니다. 낱말이 제대로 읽힙니다.' : '! 아직 아닙니다. 가로와 세로를 다시 살펴보세요.') : '검사할 칸을 하나 골라 보세요. 오른쪽 「받은 낱말」에 읽히지 않는 자리가 있습니다.'}</div><div class="button-row">${correct && n12.round < N12_ROUNDS - 1 ? '<button id="next-n12-round" class="primary-button" type="button">다음 문제</button>' : ''}<button id="reset-n12" class="secondary-button" type="button">고른 칸 지우기</button></div></div>`;
 }
 
 
@@ -1579,21 +1627,39 @@ function parityOffLines(board) {
   return { rows, cols };
 }
 
+/* 문제는 바뀌는데 화면이 안 바뀌었다 — 36칸 중 2칸만 달라지고 요약 문장은
+   매번 글자 하나까지 같았다. 교차점을 격자에 직접 표시하고, 몇 번 봤는지
+   누적해 「매번 4군데」라는 불변량을 학생이 발견하게 한다(명세서 §32-4 7번).
+   몇 칸이 뒤집혔는지는 알려주지 않는다 — 실제 받는 쪽도 모른다. */
 function renderN13Observe() {
-  if (!state.screens.N13) state.screens.N13 = { board: randomErrorBoard(2, 'N13:0'), shuffles: 0 };
-  const board = state.screens.N13.board || randomErrorBoard(2, 'N13:0');
+  if (!state.screens.N13) state.screens.N13 = { board: randomErrorBoard(2, 'N13:0'), shuffles: 0, seen: 1, revealed: false };
+  const n13 = state.screens.N13;
+  if (typeof n13.seen !== 'number') n13.seen = 1;
+  const board = n13.board || randomErrorBoard(2, 'N13:0');
   const off = parityOffLines(board.base);
   const crossings = off.rows.length * off.cols.length;
-  return `${heading('4 어디가 뒤집혔나 · 두 칸 오류', '두 칸이 뒤집히면 어떤 일이 생길까?', '이번에는 두 칸이 뒤집혔습니다. 아까와 같은 방법으로 찾을 수 있는지 확인해 보세요.')}
+  /* 이상한 가로줄과 세로줄이 만나는 칸 = 뒤집혔을 수 있는 후보 */
+  const marks = [];
+  off.rows.forEach(r => off.cols.forEach(c => marks.push([r - 1, c - 1, 'cross'])));
+  if (n13.revealed) board.cells.forEach(([r, c]) => marks.push([r, c, 'actual']));
+
+  return `${heading('4 어디가 뒤집혔나 · 두 칸 오류', '이번에는 몇 칸이 뒤집혔을까?', '몇 칸이 뒤집혔는지 알려주지 않습니다. 이상한 가로줄과 세로줄을 세어 짐작해 보세요.')}
   <div class="card stack">
-    ${parityBoardHtml(board.base)}
+    ${parityBoardHtml(board.base, null, false, false, marks)}
     <div class="axis-status">
       ${off.rows.length ? off.rows.map(n => `<span class="axis-pill bad">가로 ${n} 이상</span>`).join('') : '<span class="axis-pill">이상한 가로줄 없음</span>'}
       ${off.cols.length ? off.cols.map(n => `<span class="axis-pill bad">세로 ${n} 이상</span>`).join('') : '<span class="axis-pill">이상한 세로줄 없음</span>'}
     </div>
-    <div class="evidence">이상한 가로줄 ${off.rows.length}개, 세로줄 ${off.cols.length}개 → 가로·세로가 만나는 곳이 <strong>${crossings}군데</strong>입니다.</div>
-    <div class="notice">색이나 위치가 정답을 알려 주는 화면이 아닙니다. 지금 본 반응을 근거로 다음 쪽에서 설명해 보세요.</div>
-    <div class="button-row"><button id="reshuffle-n13" class="secondary-button" type="button">다른 두 칸으로 다시</button></div>
+    <div class="evidence">이상한 가로줄 ${off.rows.length}개, 세로줄 ${off.cols.length}개 → 둘이 만나는 곳이 <strong>${crossings}군데</strong>입니다. 노란 칸이 그 ${crossings}군데입니다.
+      ${n13.seen > 1 ? `<br><span class="muted">지금까지 <strong>${n13.seen}번</strong> 봤는데 <strong>매번 ${crossings}군데</strong>였습니다.</span>` : ''}
+    </div>
+    ${n13.revealed
+      ? `<div class="notice">실제로 뒤집힌 곳은 <strong>${board.cells.map(([r, c]) => `${r + 1}행 ${c + 1}열`).join('</strong>과 <strong>')}</strong>입니다. ${crossings}군데 중 둘입니다. <strong>받는 쪽은 이 ${crossings}군데를 구별할 방법이 없습니다.</strong></div>`
+      : '<div class="notice">노란 칸 중 어느 것이 실제로 뒤집혔는지 골라낼 수 있을까요?</div>'}
+    <div class="button-row">
+      <button id="reshuffle-n13" class="secondary-button" type="button">다른 두 칸이 뒤집힌 경우 보기</button>
+      ${n13.revealed ? '' : '<button id="reveal-n13" class="secondary-button" type="button">실제로 어디였나?</button>'}
+    </div>
   </div>`;
 }
 
@@ -1655,7 +1721,7 @@ function renderN13Bridge() {
 
 function renderN13Write() {
   return `${heading('4 어디가 뒤집혔나 · 작성', '오류 위치를 찾는 방법과 한계를 설명해 보세요.', '한 칸을 찾았던 절차와 두 칸 오류에서 달라진 점을 구분해 적습니다.')}
-  <div class="card stack"><div class="writing-list">${writeBox('N13_one', '한 칸을 찾았을 때 어떤 순서로 찾았나요?', 'explain')}${writeBox('N13_two', '두 칸이 뒤집히면 왜 하나의 위치를 확정하기 어려울까요?', 'explain')}</div>${evidenceFor(['N12'])}</div>`;
+  <div class="card stack"><div class="writing-list">${writeBox('N13_two', '두 칸이 뒤집히면 왜 하나의 위치를 확정하기 어려울까요?', 'explain')}</div>${evidenceFor(['N12'])}</div>`;
 }
 
 /* 신호도 여덟 가지도 검사도 전부 글로만 있어 찍을 수밖에 없었다.
@@ -1830,7 +1896,7 @@ function renderN15Operate() {
 
 function renderN15Write() {
   return `${heading('5 질문으로 찾기 · 작성', '질문 수를 바꾼 이유를 설명해 보세요.', '방금 만든 답 패턴 표와 실제 설계 변화가 근거로 남아 있습니다.')}
-  <div class="card stack">${evidenceFor(['N15_operate'])}<div class="evidence">현재 질문 묶음: ${state.screens.N15.groups.map((group, i) => `질문 ${i + 1} = ${group.length ? group.join(', ') : '없음'}`).join(' · ')}</div><div class="writing-list">${writeBox('N15_change', '질문을 몇 개로 시작했고, 왜 바꾸었나요?', 'reflect')}${writeBox('N15_binary', '예/아니오를 1/0으로 읽어 붙이면 무엇이 되나요?', 'explain')}</div></div>`;
+  <div class="card stack">${evidenceFor(['N15_operate'])}<div class="evidence">현재 검사 묶음: ${state.screens.N15.groups.map((group, i) => `${i + 1}번 검사 = ${group.length ? group.join(', ') : '없음'}`).join(' · ')}</div><div class="writing-list">${writeBox('N15_binary', '내 검사 결과를 홀수=1, 짝수=0으로 적어 붙여 읽으면 무엇이 되나요?', 'explain')}</div></div>`;
 }
 
 function renderN16() {
@@ -2074,7 +2140,8 @@ function submissionSummary() {
       const game=state.screens[screen.id];
       const guess=game.guesses[game.round];
       const correct=screen.id==='N12' ? guess && game.board && guess[0]===game.board.cells[0][0] && guess[1]===game.board.cells[0][1] : guess!==undefined && Number(guess)===game.cases[game.round] && n15Patterns().filter(item=>item.pattern===questionPatternFor(game.cases[game.round])).length===1;
-      status=game.round===2 && correct ? '해결 (3판)' : logs.length ? `미해결 (${game.round+1}/3판)` : '미실행';
+      const total = screen.id === 'N12' ? N12_ROUNDS : 3;
+      status=game.round===total-1 && correct ? `해결 (${total}문제)` : logs.length ? `미해결 (${total}문제 중 ${game.round+1}번째)` : '미실행';
     }
     if(screen.id==='N17') {
       const codes=state.screens.N17.codes;
@@ -2092,7 +2159,7 @@ function renderN21() {
   const summary=submissionSummary();
   const sent=state.submitted.result==='ok' || state.submitted.result==='sent' || (state.submitted.at>0 && !state.submitted.result && !/실패|중단/.test(state.submitted.status));
   const failed=state.submitted.result==='fail' || /실패|중단/.test(state.submitted.status);
-  return `${heading('7 닫기 · 제출','오늘의 탐구 기록을 제출하세요.','작성한 설명과 실제 실험 결과를 함께 제출합니다. 미작성·미해결 활동도 그대로 기록됩니다.')}<div class="card stack"><div class="two-column"><div class="evidence">미작성 문항 <strong>${summary.unfilled.length}개</strong></div><div class="evidence">미해결 활동 <strong>${summary.unresolved}개</strong></div></div><details class="attempt-details"><summary>활동별 상태 보기</summary><div class="evidence">${summary.statuses.map(item=>`<div>${esc(item.label)} · ${esc(item.status)}</div>`).join('')}</div></details><div id="submit-result" class="result ${failed?'fail':sent?'ok':''}" role="status">${esc(state.submitted.status || '제출 버튼을 누르면 탐구 기록 HTML이 만들어집니다.')}${state.submitted.code ? ` · 확인 코드 ${esc(state.submitted.code)}` : ''}</div><div class="button-row"><button id="submit-button" class="primary-button" type="button" ${submissionInFlight||sent?'disabled':''}>${submissionInFlight?'전송 중':sent?'이미 보냈습니다':failed?'다시 제출':'제출'}</button>${sent?'<button id="resubmit-button" class="secondary-button" type="button">다시 제출하기</button>':''}${failed?'<button id="download-button" class="secondary-button" type="button">파일로 저장</button>':''}</div></div>`;
+  return `${heading('7 닫기 · 제출','오늘의 탐구 기록을 제출하세요.','작성한 설명과 실제 실험 결과를 함께 제출합니다. 미작성·미해결 활동도 그대로 기록됩니다.')}<div class="card stack"><div class="two-column"><div class="evidence">미작성 문항 <strong>${summary.unfilled.length}개</strong></div><div class="evidence">미해결 활동 <strong>${summary.unresolved}개</strong></div></div><details class="attempt-details"><summary>활동별 상태 보기</summary><div class="evidence">${summary.statuses.map(item=>`<div>${esc(item.label)} · ${esc(item.status)}</div>`).join('')}</div></details><div id="submit-result" class="result ${failed?'fail':sent?'ok':''}" role="status">${esc(state.submitted.status || '제출 버튼을 누르면 탐구 기록 HTML이 만들어집니다.')}${state.submitted.code ? ` · 확인 코드 ${esc(state.submitted.code)}` : ''}</div><div class="button-row"><button id="submit-button" class="primary-button" type="button" ${submissionInFlight||sent?'disabled':''}>${submissionInFlight?'전송 중':sent?'이미 보냈습니다':failed?'다시 제출':'제출'}</button><button id="my-copy-button" class="secondary-button" type="button">내 기록 내려받기</button>${sent?'<button id="resubmit-button" class="secondary-button" type="button">다시 제출하기</button>':''}${failed?'<button id="download-button" class="secondary-button" type="button">전체 기록 파일로 저장</button>':''}</div><p class="muted small" style="margin:0">「제출」은 선생님께 보냅니다. 「내 기록 내려받기」는 <strong>내가 쓴 것과 조작 결과만</strong> 담긴 파일을 내 기기에 저장합니다.</p></div>`;
 }
 
 
@@ -2142,9 +2209,12 @@ function bindScreen(id) {
   if (id === 'N11a') bindN11a();
   if (id === 'N11b') bindN11b();
   if (id === 'N12') bindN12();
-  if (id === 'N13_observe' && !state.screens.N13) { state.screens.N13 = { board: randomErrorBoard(2, 'N13:0'), shuffles: 0 }; persist(); }
+  if (id === 'N13_observe' && !state.screens.N13) { state.screens.N13 = { board: randomErrorBoard(2, 'N13:0'), shuffles: 0, seen: 1, revealed: false }; persist(); }
+  $('#reveal-n13')?.addEventListener('click', () => { state.screens.N13.revealed = true; persist(); render(); });
   $('#reshuffle-n13')?.addEventListener('click', () => {
     state.screens.N13.shuffles = (state.screens.N13.shuffles || 0) + 1;
+    state.screens.N13.seen = (state.screens.N13.seen || 1) + 1;
+    state.screens.N13.revealed = false;
     state.screens.N13.board = randomErrorBoard(2, `N13:${state.screens.N13.shuffles}`);
     const off = parityOffLines(state.screens.N13.board.base);
     logEvent('attempt', 'N13_observe', { detail: `두 칸 오류 · 이상한 가로줄 ${off.rows.length}개, 세로줄 ${off.cols.length}개` }, 'observe');
@@ -2367,7 +2437,7 @@ function bindN11b() {
   $('#reset-parity')?.addEventListener('click', () => { state.parity = createParityGrid(studentId()); persist(); render(); });
 }
 
-function bindN12() { $$('[data-find-cell]').forEach(button => button.addEventListener('click', () => { const [r,c] = button.dataset.findCell.split(',').map(Number); if (r < 0 || c < 0) return; const n12 = state.screens.N12; const target = n12.board.cells[0]; const ok = r === target[0] && c === target[1]; n12.guesses[n12.round] = [r,c]; logEvent('attempt', 'N12', { detail: `${n12.round + 1}판 · 선택 ${r + 1}행 ${c + 1}열 · 실제 ${target[0] + 1}행 ${target[1] + 1}열 · ${ok ? '맞음' : '틀림'} · 힌트 ${state.hints.N12 || 0}단계`, attempt: { round: n12.round + 1, selected: [r + 1, c + 1], actual: [target[0] + 1, target[1] + 1], correct: ok, hintLevel: state.hints.N12 || 0 } }, ok ? 'ok' : 'fail'); if (!ok) advanceHint('N12'); mascotState = { mood: ok ? 'cheer' : (state.hints.N12 >= 2 ? 'worry' : 'tilt'), text: ok ? '찾았습니다. 같은 방법이 두 칸 오류에도 통할지 생각해 보세요.' : (HINTS.N12[state.hints.N12 - 1] || HINTS.N12[0]), open: true }; persist(); render(); })); $('#next-n12-round')?.addEventListener('click', () => { state.screens.N12.round += 1; state.screens.N12.board = randomErrorBoard(1, `N12:${state.screens.N12.round}`); persist(); render(); }); /* 같은 판을 다시 푸는 것이므로 문제는 그대로 두고 답만 비운다. */
+function bindN12() { $$('[data-find-cell]').forEach(button => button.addEventListener('click', () => { const [r,c] = button.dataset.findCell.split(',').map(Number); if (r < 0 || c < 0) return; const n12 = state.screens.N12; const target = n12.board.cells[0]; const ok = r === target[0] && c === target[1]; n12.guesses[n12.round] = [r,c]; logEvent('attempt', 'N12', { detail: `${n12.round + 1}판 · 선택 ${r + 1}행 ${c + 1}열 · 실제 ${target[0] + 1}행 ${target[1] + 1}열 · ${ok ? '맞음' : '틀림'} · 힌트 ${state.hints.N12 || 0}단계`, attempt: { round: n12.round + 1, selected: [r + 1, c + 1], actual: [target[0] + 1, target[1] + 1], correct: ok, hintLevel: state.hints.N12 || 0 } }, ok ? 'ok' : 'fail'); if (!ok) advanceHint('N12'); mascotState = { mood: ok ? 'cheer' : (state.hints.N12 >= 2 ? 'worry' : 'tilt'), text: ok ? '찾았습니다. 같은 방법이 두 칸 오류에도 통할지 생각해 보세요.' : (HINTS.N12[state.hints.N12 - 1] || HINTS.N12[0]), open: true }; persist(); render(); })); $('#next-n12-round')?.addEventListener('click', () => { if (state.screens.N12.round >= N12_ROUNDS - 1) return; state.screens.N12.round += 1; state.screens.N12.board = randomErrorBoard(1, `N12:${state.screens.N12.round}`); persist(); render(); }); /* 같은 판을 다시 푸는 것이므로 문제는 그대로 두고 답만 비운다. */
   $('#reset-n12')?.addEventListener('click', () => { state.screens.N12.guesses[state.screens.N12.round] = undefined; persist(); render(); }); }
 
 function bindN14() {
@@ -2482,7 +2552,8 @@ function bindN17() {
 
 function bindN21() {
   $('#submit-button')?.addEventListener('click', submitWork);
-  $('#download-button')?.addEventListener('click', downloadSubmission);
+  $('#download-button')?.addEventListener('click', () => downloadSubmission(false));
+  $('#my-copy-button')?.addEventListener('click', () => { downloadSubmission(true); logEvent('nav', 'N21', { detail: '학생용 기록 내려받기' }); persist(); });
   $('#resubmit-button')?.addEventListener('click',()=>{ if(window.confirm('이미 보낸 기록이 있습니다. 현재 기록을 다시 제출할까요?')) { state.submitted={at:0,code:'',status:''}; submitWork(); } });
 }
 
@@ -2553,7 +2624,10 @@ function renderMascot() {
 
 function createConfirmationCode() { const seed = `${state.student.sid}${state.student.name}${Date.now()}`; let hash = 0; for (const char of seed) hash = (hash * 31 + char.charCodeAt(0)) % 1000000; return String(hash).padStart(6, '0'); }
 
-function buildSubmissionHtml() {
+/* 출력물이 둘이다(명세서 §30-1). 제출본은 시도 요약과 전체 로그까지,
+   학생 다운로드본은 자기가 쓴 것과 조작 결과만. 같은 생성기에서 섹션만
+   달리 켠다 — 두 벌을 따로 만들면 갈라진다. */
+function buildSubmissionHtml(forStudent = false) {
   const summary=submissionSummary();
   const writes=WRITE_FIELDS.map(([key,label])=>`<section><h3>${esc(label.replace('N3 ','반복 '))}</h3><p class="answer">${!state.includeOptional && ['N18_reason','N19_mariner'].includes(key) ? '건너뜀' : esc(state.writes[key]||'미작성')}</p></section>`).join('');
   const records=summary.statuses.map(item=>{
@@ -2570,7 +2644,7 @@ function buildSubmissionHtml() {
       : item.id==='N11a' ? `<p>내 줄: ${esc(n11aRows().mine.join(''))} · 검사 점: ${state.screens.N11a.answer===null?'미입력':state.screens.N11a.answer}</p>`
       : item.id==='N11b' ? `<p>격자 낱말: ${esc(state.parity.word||'수학공부')}</p>` : '';
     const grid=item.id==='N11b' ? `<table>${state.parity.values.map((row,r)=>'<tr>'+row.map((value,c)=>`<td>${r===0||c===0 ? value===null?'미입력':value : state.parity.data[r-1][c-1]}</td>`).join('')+'</tr>').join('')}</table>` : '';
-    return `<section><h3>${esc(item.label)} · ${esc(item.status)}</h3><p>${esc(snapshot)}</p>${problem}${grid}${noiseRecord}<p>${esc(logs.at(-1)?.detail||'실행 기록 없음')}</p></section>`;
+    return `<section><h3>${esc(item.label)}${forStudent?'':` · ${esc(item.status)}`}</h3><p>${esc(snapshot)}</p>${problem}${grid}${noiseRecord}<p>${esc(logs.at(-1)?.detail||'실행 기록 없음')}</p></section>`;
   }).join('');
   const predictions=['N3','N14'].map(key=>{
     const prediction=state.predicts[key];
@@ -2579,18 +2653,28 @@ function buildSubmissionHtml() {
   }).join('');
   const tableRows=compareRows().map(row=>`<tr>${row.map(cell=>`<td>${esc(cell)}</td>`).join('')}</tr>`).join('');
   const stats=summary.statuses.map(item=>`<tr><td>${esc(item.label)}</td><td>${esc(item.status)}</td><td>${item.attempts}</td><td>${item.firstSuccess??'없음'}</td><td>${item.hintLevel}</td></tr>`).join('');
-  const makeHtml=logs=>`<!doctype html><html lang="ko"><head><meta charset="utf-8"><title>믿을 수 있게 보내기 제출 기록</title><style>@page{size:A4;margin:15mm}body{font-family:Arial,sans-serif;color:#202938;line-height:1.6}table{width:100%;border-collapse:collapse;margin:12px 0 24px}th,td{border:1px solid #ccc;padding:6px;text-align:left;overflow-wrap:anywhere}section{break-inside:avoid;border-top:1px solid #ddd;padding:8px 0}.answer{white-space:pre-wrap;overflow-wrap:anywhere}@media print{table{break-inside:avoid}}</style></head><body><h1>믿을 수 있게 보내기</h1><p>학번: ${esc(state.student.sid)} · 이름: ${esc(state.student.name)}<br>제출 시각: ${new Date(state.submitted.at||Date.now()).toLocaleString('ko-KR')} · 확인 코드: ${esc(state.submitted.code)}</p><p>과목: 수학 · 관련 단원: 이진법과 오류 정정<br>학습 목표: 반복·검사 비트·질문 설계를 비교하고 오류를 견디는 방법을 설명한다.</p><h2>예측 기록</h2>${predictions}<h2>쪽별 조작 기록</h2>${records}<h2>작성한 설명</h2>${writes}<h2>종합 비교표</h2><p>전송량은 정보 8비트 기준으로 환산한 비교값이며, 내 기록은 실제 활동에서 측정한 값입니다.</p><table><thead><tr><th>방식</th><th>전송량</th><th>탐지</th><th>정정</th><th>최소 거리</th><th>내 기록</th></tr></thead><tbody>${tableRows}</tbody></table><h2>시도 요약</h2><p>미작성 ${summary.unfilled.length}개 · 미해결 ${summary.unresolved}개</p><table><thead><tr><th>쪽</th><th>상태</th><th>시도 수</th><th>첫 성공 시도</th><th>힌트 단계</th></tr></thead><tbody>${stats}</tbody></table><details><summary>전체 로그 (${logs.length}/${state.log.length}건)</summary><table><thead><tr><th>시각</th><th>활동</th><th>상세</th><th>결과</th></tr></thead><tbody>${logs.map(item=>`<tr><td>${new Date(item.t).toLocaleString('ko-KR')}</td><td>${esc(screenInfo(item.screen).label)}</td><td>${esc(item.detail||item.field||item.kind)}</td><td>${esc(item.result)}</td></tr>`).join('')}</tbody></table></details></body></html>`;
+  const makeHtml=(logs, forStudent=false)=>`<!doctype html><html lang="ko"><head><meta charset="utf-8"><title>믿을 수 있게 보내기 제출 기록</title><style>@page{size:A4;margin:15mm}body{font-family:Arial,sans-serif;color:#202938;line-height:1.6}table{width:100%;border-collapse:collapse;margin:12px 0 24px}th,td{border:1px solid #ccc;padding:6px;text-align:left;overflow-wrap:anywhere}section{break-inside:avoid;border-top:1px solid #ddd;padding:8px 0}.answer{white-space:pre-wrap;overflow-wrap:anywhere}@media print{table{break-inside:avoid}}</style></head><body><h1>믿을 수 있게 보내기</h1><p>학번: ${esc(state.student.sid)} · 이름: ${esc(state.student.name)}<br>제출 시각: ${new Date(state.submitted.at||Date.now()).toLocaleString('ko-KR')} · 확인 코드: ${esc(state.submitted.code)}</p><p>과목: 수학 · 관련 단원: 이진법과 오류 정정<br>학습 목표: 반복·검사 비트·질문 설계를 비교하고 오류를 견디는 방법을 설명한다.</p><h2>예측 기록</h2>${predictions}<h2>쪽별 조작 기록</h2>${records}<h2>작성한 설명</h2>${writes}<h2>종합 비교표</h2><p>전송량은 정보 8비트 기준으로 환산한 비교값이며, 내 기록은 실제 활동에서 측정한 값입니다.</p><table><thead><tr><th>방식</th><th>전송량</th><th>탐지</th><th>정정</th><th>최소 거리</th><th>내 기록</th></tr></thead><tbody>${tableRows}</tbody></table>${forStudent?'':`<h2>시도 요약</h2><p>미작성 ${summary.unfilled.length}개 · 미해결 ${summary.unresolved}개</p><table><thead><tr><th>쪽</th><th>상태</th><th>시도 수</th><th>첫 성공 시도</th><th>힌트 단계</th></tr></thead><tbody>${stats}</tbody></table><details><summary>전체 로그 (${logs.length}/${state.log.length}건)</summary><table><thead><tr><th>시각</th><th>활동</th><th>상세</th><th>결과</th></tr></thead><tbody>${logs.map(item=>`<tr><td>${new Date(item.t).toLocaleString('ko-KR')}</td><td>${esc(screenInfo(item.screen).label)}</td><td>${esc(item.detail||item.field||item.kind)}</td><td>${esc(item.result)}</td></tr>`).join('')}</tbody></table></details>`}</body></html>`;
   let logs=state.log.slice();
-  let html=makeHtml(logs);
+  let html=makeHtml(logs, forStudent);
   while(new Blob([html]).size>500*1024 && logs.length>protectedLogEntries(logs).size) {
     logs=trimLogs(logs,Math.max(protectedLogEntries(logs).size,Math.floor(logs.length*.7)));
-    html=makeHtml(logs);
+    html=makeHtml(logs, forStudent);
   }
   return html;
 }
 
 
-function downloadSubmission() { const code = state.submitted.code || createConfirmationCode(); state.submitted.code = code; const blob = new Blob([buildSubmissionHtml()], { type: 'text/html;charset=utf-8' }); const url = URL.createObjectURL(blob); const link = document.createElement('a'); link.href = url; link.download = `${state.student.sid || '학번없음'}_${state.student.name || '이름없음'}_믿을수있게보내기.html`; link.click(); URL.revokeObjectURL(url); }
+function downloadSubmission(forStudent = false) {
+  const code = state.submitted.code || createConfirmationCode();
+  state.submitted.code = code;
+  const blob = new Blob([buildSubmissionHtml(forStudent)], { type: 'text/html;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `${state.student.sid || '학번없음'}_${state.student.name || '이름없음'}_믿을수있게보내기${forStudent ? '' : '_전체기록'}.html`;
+  link.click();
+  URL.revokeObjectURL(url);
+}
 
 async function submitWork() {
   if (submissionInFlight || ['ok','sent'].includes(state.submitted.result)) return;

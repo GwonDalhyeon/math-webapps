@@ -451,3 +451,24 @@ input[type="range"] { min-height:44px; }
   .shape-row { grid-auto-columns:7px; }
   .shape-cell { width:7px; height:7px; }
 }
+
+/* 격자에 자모와 점 번호를 보인다 (명세서 §32-4 5번). */
+.parity-wrap { display:grid; gap:14px; grid-template-columns:minmax(0,1fr); }
+@media (min-width:860px) { .parity-wrap { grid-template-columns:minmax(0,1fr) 190px; align-items:start; } }
+.parity-grid.labelled { grid-template-columns:34px repeat(7, minmax(30px, 1fr)); max-width:none; }
+.grid-head { display:grid; place-items:center; color:var(--muted); font-size:11px; font-weight:800; }
+.grid-head.row { justify-content:end; padding-right:4px; }
+.grid-head.corner { min-height:18px; }
+.legend-box { display:inline-block; width:12px; height:12px; border:1px solid #c8c5bb; border-radius:3px; background:#fff; vertical-align:-2px; }
+.legend-box.parity { background:#eef4ff; }
+
+/* 교차점 후보와 실제 뒤집힌 칸 (명세서 §32-4 7번). */
+.grid-cell.cross { border-color:#d9a400; background:var(--yellow-soft); }
+.grid-cell.actual { border-color:var(--red); border-width:2px; background:var(--red-soft); font-weight:900; }
+
+/* 받은 낱말 — 깨진 채 보이고, 오류를 찾으면 읽힌다. */
+.received-word { display:grid; gap:6px; align-content:start; padding:12px; border:1px solid var(--line); border-radius:12px; background:#fbfaf6; }
+.received-word.broken { border-color:#efaaa4; background:var(--red-soft); }
+.received-word.ok { border-color:#9fd3b4; background:var(--green-soft); }
+.received-syms { display:flex; flex-wrap:wrap; gap:5px; font-size:22px; font-weight:900; }
+.received-syms .unread { color:var(--red); }
