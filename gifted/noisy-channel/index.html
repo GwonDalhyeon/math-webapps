@@ -48,7 +48,10 @@
 
     <footer class="bottom-bar">
       <button id="prev-button" class="secondary-button" type="button">이전</button>
-      <span id="screen-count" class="screen-count"></span>
+      <form id="screen-count" class="screen-count" aria-label="페이지 바로 이동">
+        <input id="page-number" type="number" min="1" step="1" inputmode="numeric" enterkeyhint="go" required aria-label="이동할 페이지 번호" title="페이지 번호를 입력하고 Enter를 누르세요.">
+        <span id="page-total" aria-label="전체 페이지 수"></span>
+      </form>
       <button id="next-button" class="primary-button" type="button">다음</button>
     </footer>
   </div>

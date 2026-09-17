@@ -4,6 +4,61 @@ const fs = require('node:fs');
 const vm = require('node:vm');
 const path = require('node:path');
 
+test('export preserves actual comparison answers without generating unseen problems', () => {
+  const run=app();
+  run(`state.screens.N20={answers:{hamming:{bits:'99',detect:'X',fix:'O'}},checked:false}; beforeExport=JSON.stringify(state)`);
+  assert.match(run('buildSubmissionHtml(true)'), /<td>99<\/td>/);
+  assert.equal(run('JSON.stringify(state)===beforeExport'),true);
+  assert.equal(run("submissionSummary().statuses.find(x=>x.id==='N20').status"),'변경 후 미실행');
+  assert.doesNotMatch(run('buildSubmissionHtml(true)'),/전체 로그|시도 요약/);
+});
+
+test('changing a check design invalidates its verdict and dependent decoding answers', () => {
+  const run=app();
+  run(`state.screens.N15={groups:[[1,3,5,7],[2,3,6,7],[4,5,6,7]],checked:true,lastCheck:8};
+    state.screens.N15.lastCheckSignature=JSON.stringify(state.screens.N15.groups);
+    state.screens.N16.guesses=[1,2,3];state.screens.N16.round=2`);
+  assert.match(run('renderN15Operate()'),/여덟 가지가 모두 다른 결과/);
+  run('state.screens.N15.groups[2].pop();invalidateCheckDesign()');
+  assert.doesNotMatch(run('renderN15Operate()'),/여덟 가지가 모두 다른 결과/);
+  assert.equal(run('state.screens.N15.checked'),false);
+  assert.equal(run('state.screens.N16.guesses.length'),0);
+  assert.equal(run('state.screens.N16.round'),0);
+});
+
+test('two locating rounds differ for many student seeds and retain both problems', () => {
+  const run=app();
+  assert.equal(run(`(() => {
+    for(let sid=2000;sid<2200;sid++) {
+      state=initialState();state.student.sid=String(sid);
+      const first=n12BoardForRound(0);state.screens.N12.board=first;
+      const second=n12BoardForRound(1);
+      if(first.cells[0].join()===second.cells[0].join())return false;
+      if(Object.keys(state.screens.N12.boards).length!==2)return false;
+    }
+    return true;
+  })()`),true);
+});
+
+test('JSON null decoding answers cannot count as a correct no-error response', () => {
+  const run=app();
+  run(`state.includeOptional=true;state.screens.N15.groups=[[1,3,5,7],[2,3,6,7],[4,5,6,7]];
+    state.screens.N16={round:2,cases:[1,2,0],guesses:[1,2,null]};
+    state.log.push({kind:'attempt',screen:'N16',result:'ok'})`);
+  assert.notEqual(run("submissionSummary().statuses.find(x=>x.id==='N16').status"),'해결 (3문제)');
+  assert.doesNotMatch(run('problemRecordHtml("N16")'),/3번째 문제 · 패턴 000 · 내 답 아무 곳도/);
+  assert.match(run('problemRecordHtml("N16")'),/3번째 문제 · 패턴 000 · 내 답 미선택/);
+});
+
+test('an exported circuit separates the current design from its previous trial', () => {
+  const run=app();
+  run(`state.views.N7={visited:true};state.circuits.N7.nodes=['message','noise','receiver'];
+    state.circuits.N7.version=2;
+    state.circuits.N7.lastResult={version:1,blocks:['message','repeat3','noise','majority','receiver'],detail:'previous experiment',verdict:'ok'}`);
+  assert.match(run('buildSubmissionHtml(true)'),/이전 구성의 결과/);
+  assert.match(run('buildSubmissionHtml(true)'),/previous experiment/);
+});
+
 test('noise decoder round-trips every supported syllable including omitted initial ieung', () => {
   const run = app();
   assert.equal(run(`(() => {
@@ -253,16 +308,19 @@ test('comic intro views use local assets and preserve readable fallback scripts'
 test('one check splits the eight cases exactly by whether the flipped position is in the group', () => {
   const run = app();
   run(`state.student.sid = '30101'`);
-  /* 뒤집힌 자리가 묶음 안에 있을 때만 홀수가 나와야 한다. 여러 묶음 × 여덟 경우 전수. */
+  /* 모든 원신호와 비어 있지 않은 묶음에서, 실제로 보낸 검사 비트를 포함해 센다. */
   assert.equal(run(`(() => {
-    const groups = [[1],[2,3,5],[1,3,5,7],[4,5,6,7],[1,2,3,4,5,6,7]];
-    for (const pick of groups) {
-      for (const item of n14Cases()) {
-        const ones = pick.reduce((sum, n) => sum + item.signal[n-1], 0);
-        const base = pick.reduce((sum, n) => sum + n14Signal()[n-1], 0);
-        const odd = ones % 2 !== base % 2;
-        const inGroup = item.flipped >= 0 && pick.includes(item.flipped + 1);
-        if (odd !== inGroup) return false;
+    for(let source=0;source<128;source++) {
+      state.screens.N14.signal=Array.from({length:7},(_,i)=>(source>>i)&1);
+      for(let mask=1;mask<128;mask++) {
+        const pick=Array.from({length:7},(_,i)=>i+1).filter(n=>mask&(1<<(n-1)));
+        const check=n14Check(pick);
+        if((check.sentOnes+check.checkBit)%2!==0)return false;
+        for(const item of check.rows) {
+          const inGroup=item.flipped>=0 && pick.includes(item.flipped+1);
+          if(item.odd!==inGroup)return false;
+          if(item.ones!==pick.reduce((sum,n)=>sum+item.signal[n-1],check.checkBit))return false;
+        }
       }
     }
     return true;
@@ -271,6 +329,9 @@ test('one check splits the eight cases exactly by whether the flipped position i
   assert.equal(run('n14Cases().length'), 8);
   assert.equal(run('n14Cases().filter(item => item.flipped >= 0).length'), 7);
   assert.equal(run(`n14Cases().at(-1).signal.join('') === n14Signal().join('')`), true);
+  run('state.screens.N14.signal=[1,0,0,0,0,0,0];state.screens.N14.pick=[1];state.screens.N14.counted=true');
+  assert.match(run('renderN14()'),/검사 비트 <span class="trace-bit">1<\/span>/);
+  assert.match(run('renderN14()'),/아무 곳도 안 뒤집힘<\/th><td>2개<\/td><td>짝수/);
 });
 
 test('the bridge screen uses the sent parity, not the unfilled student grid', () => {

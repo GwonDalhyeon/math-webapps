@@ -42,6 +42,7 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .main-content { width: min(1080px, calc(100% - 32px)); margin: 0 auto; padding: 34px 0 130px; }
 .section-label { margin-bottom: 12px; text-transform: uppercase; }
 .screen { animation: appear .22s ease both; }
+.screen.screen-update { animation: none; }
 @keyframes appear { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 .screen-heading { max-width: 760px; margin-bottom: 22px; }
 .screen-heading h2 { margin: 4px 0 9px; font-size: clamp(1.75rem, 4vw, 2.65rem); line-height: 1.18; letter-spacing: -.06em; }
@@ -176,6 +177,7 @@ details.attempt-details summary { cursor: pointer; color: var(--muted); font-siz
 .comic-card { padding: clamp(12px, 2vw, 20px); }
 .comic-figure { display: grid; gap: 12px; margin: 0; }
 .comic-image { display: block; width: 100%; max-width: 480px; height: auto; margin-inline: auto; border: 1px solid var(--line); border-radius: 16px; background: #fff; }
+.comic-image[hidden] { display:none; }
 .comic-explanation { align-content: start; }
 .comic-explanation h3 { margin-bottom: 0; }
 .comic-explanation p { margin: 0; }
@@ -339,7 +341,10 @@ input[type="range"] { min-height:44px; }
   .question-results > p { margin-top:0; }
   .question-results .pattern-table th, .question-results .pattern-table td { padding:8px 6px; }
   .question-results .button-row { margin-top:10px; }
+  .pattern-writing-layout { display:grid; grid-template-columns:minmax(0,1.1fr) minmax(0,1fr); align-items:start; gap:22px; }
 }
+.pattern-writing-layout { min-width:0; }
+.pattern-writing-layout > * { min-width:0; }
 @media (max-width:599px) {
   .noise-workspace { padding:14px; }
 }
@@ -413,7 +418,7 @@ input[type="range"] { min-height:44px; }
 
 /* 다리 화면 — 격자 줄을 눌러 무엇을 세는지 본다 (명세서 §32-4 9번). */
 .axis-picks { display:flex; flex-wrap:wrap; gap:6px; }
-.axis-pick { min-height:36px; padding:6px 10px; border:1px solid #c8c5bb; border-radius:9px; background:#fff; font-size:13px; font-weight:800; }
+.axis-pick { min-height:44px; padding:6px 10px; border:1px solid #c8c5bb; border-radius:9px; background:#fff; font-size:14px; font-weight:800; }
 .axis-pick.selected { color:#fff; border-color:var(--blue); background:var(--blue); }
 .grid-cell.picked { border-color:var(--blue); background:var(--blue-soft); }
 .bridge-steps { display:grid; gap:10px; margin:0; padding-left:1.3rem; font-size:14px; line-height:1.55; }
@@ -435,7 +440,7 @@ input[type="range"] { min-height:44px; }
 .compare-table thead th { color:var(--muted); font-size:12px; font-weight:800; line-height:1.3; }
 .compare-table input[type="number"] { width:64px; min-height:38px; padding:4px 8px; border:1px solid #c8c5bb; border-radius:8px; font-size:15px; font-weight:800; text-align:center; }
 .compare-table select { min-height:38px; padding:4px 8px; border:1px solid #c8c5bb; border-radius:8px; background:#fff; font-size:15px; font-weight:800; }
-.method-name { padding:0; border:0; background:none; color:var(--ink); font-size:13px; font-weight:800; text-align:left; text-decoration:underline; text-underline-offset:3px; }
+.method-name { min-width:44px; min-height:44px; padding:0; border:0; background:none; color:var(--ink); font-size:14px; font-weight:800; text-align:left; text-decoration:underline; text-underline-offset:3px; }
 
 /* 칸 하나가 1비트다. 세로로 맞춰야 세기 쉽다. */
 .shape { display:inline-grid; gap:2px; }
@@ -444,8 +449,9 @@ input[type="range"] { min-height:44px; }
 .shape-cell.info { background:#5b6b8c; }
 .shape-cell.check { background:#e0b24a; }
 
-.info-pop { position:relative; padding:14px 34px 14px 14px; border:1px solid var(--blue); border-radius:12px; background:var(--blue-soft); font-size:14px; }
-.info-close { position:absolute; top:8px; right:8px; width:28px; height:28px; padding:0; border:0; border-radius:50%; background:transparent; font-size:18px; font-weight:900; line-height:1; }
+.info-pop { position:relative; padding:14px 58px 14px 14px; border:1px solid var(--blue); border-radius:12px; background:var(--blue-soft); font-size:14px; }
+.info-close { position:absolute; top:8px; right:8px; width:44px; height:44px; padding:0; border:0; border-radius:50%; background:transparent; font-size:18px; font-weight:900; line-height:1; }
+.compare-table input[type="number"], .compare-table select { min-height:44px; }
 @media (max-width:700px) {
   .compare-table th, .compare-table td { padding:6px 5px; }
   .shape-row { grid-auto-columns:7px; }
@@ -454,11 +460,38 @@ input[type="range"] { min-height:44px; }
 
 /* 격자에 자모와 점 번호를 보인다 (명세서 §32-4 5번). */
 .parity-wrap { display:grid; gap:14px; grid-template-columns:minmax(0,1fr); }
-@media (min-width:860px) { .parity-wrap { grid-template-columns:minmax(0,1fr) 190px; align-items:start; } }
-.parity-grid.labelled { grid-template-columns:34px repeat(7, minmax(30px, 1fr)); max-width:none; }
-.grid-head { display:grid; place-items:center; color:var(--muted); font-size:11px; font-weight:800; }
-.grid-head.row { justify-content:end; padding-right:4px; }
+@media (min-width:760px) { .parity-wrap { grid-template-columns:minmax(0,1fr) 190px; align-items:start; } }
+.parity-grid.labelled { grid-template-columns:40px repeat(7,44px); grid-template-rows:20px repeat(7,44px); gap:4px; width:376px; max-width:none; }
+.grid-head { display:grid; place-items:center; color:var(--ink); font-size:14px; font-weight:800; }
+.grid-head.row { font-size:20px; font-weight:900; }
+.grid-head.row.check-label { font-size:14px; }
 .grid-head.corner { min-height:18px; }
+@media (max-width:700px) {
+  .parity-grid.labelled { grid-template-columns:28px repeat(7,44px); width:343px; gap:1px; }
+}
+@media (max-width:359px) {
+  .parity-wrap { overflow-x:auto; }
+  .parity-grid.labelled { margin-inline:0; }
+}
+/* 20·21쪽: 격자와 해석을 나란히 두어 조작 중 화면을 오가지 않게 한다. */
+@media (min-width:1000px) {
+  .main-content:has(#screen-root:is([data-screen-id="N12"],[data-screen-id="N13_observe"])) { padding-top:16px; }
+  .main-content:has(#screen-root:is([data-screen-id="N12"],[data-screen-id="N13_observe"])) > .section-label { margin-bottom:4px; }
+  #screen-root:is([data-screen-id="N12"],[data-screen-id="N13_observe"]) .screen-heading { max-width:none; margin-bottom:14px; }
+  #screen-root:is([data-screen-id="N12"],[data-screen-id="N13_observe"]) .screen-heading h2 { font-size:2.1rem; }
+  #screen-root:is([data-screen-id="N12"],[data-screen-id="N13_observe"]) .screen-heading p { max-width:none; }
+  #screen-root:is([data-screen-id="N12"],[data-screen-id="N13_observe"]) .card { grid-template-columns:390px minmax(0,1fr); gap:8px 24px; padding:22px; align-items:start; }
+  #screen-root:is([data-screen-id="N12"],[data-screen-id="N13_observe"]) .parity-wrap { display:contents; }
+  #screen-root:is([data-screen-id="N12"],[data-screen-id="N13_observe"]) .parity-grid { grid-column:1; grid-row:1 / span 6; align-self:start; }
+  #screen-root:is([data-screen-id="N12"],[data-screen-id="N13_observe"]) .received-word,
+  #screen-root:is([data-screen-id="N12"],[data-screen-id="N13_observe"]) .card > :not(.parity-wrap) { grid-column:2; }
+  #screen-root:is([data-screen-id="N12"],[data-screen-id="N13_observe"]) .received-word > div { display:flex; align-items:center; gap:12px; }
+  #screen-root:is([data-screen-id="N12"],[data-screen-id="N13_observe"]) .received-word { padding:10px; gap:4px; }
+  #screen-root:is([data-screen-id="N12"],[data-screen-id="N13_observe"]) .received-syms { font-size:20px; line-height:1.25; }
+  #screen-root:is([data-screen-id="N12"],[data-screen-id="N13_observe"]) .axis-status { margin-top:0; }
+  #screen-root:is([data-screen-id="N12"],[data-screen-id="N13_observe"]) .evidence { padding:8px 12px; }
+  #screen-root:is([data-screen-id="N12"],[data-screen-id="N13_observe"]) .notice { padding:8px 12px; }
+}
 .legend-box { display:inline-block; width:12px; height:12px; border:1px solid #c8c5bb; border-radius:3px; background:#fff; vertical-align:-2px; }
 .legend-box.parity { background:#eef4ff; }
 
@@ -477,7 +510,10 @@ input[type="range"] { min-height:44px; }
    화면 폭만큼 벌려 놓으니 두 버튼이 너무 멀어 누르기 힘들었다. */
 .bottom-bar { display:flex; grid-template-columns:none; justify-content:center; align-items:center; gap:10px; }
 .bottom-bar #prev-button, .bottom-bar #next-button { width:auto; min-width:84px; justify-self:auto; padding-inline:16px; }
-.screen-count { display:block; width:auto; min-width:66px; max-width:none; justify-self:auto; text-align:center; }
+.screen-count { display:flex; align-items:center; gap:4px; margin:0; width:auto; min-width:82px; max-width:none; justify-self:auto; text-align:center; }
+#page-number { width:50px; min-height:44px; padding:7px 4px; border-radius:8px; text-align:center; font-size:16px; font-weight:800; appearance:textfield; -moz-appearance:textfield; }
+#page-number::-webkit-inner-spin-button, #page-number::-webkit-outer-spin-button { appearance:none; margin:0; }
+#page-total { white-space:nowrap; }
 .mascot-slot { flex:0 0 56px; margin-right:6px; }
 @media (max-width:420px) {
   .bottom-bar { gap:7px; padding-inline:10px; }
