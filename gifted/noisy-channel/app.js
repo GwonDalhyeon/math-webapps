@@ -4,6 +4,9 @@ const STORAGE_KEY = 'gifted26_noisy_state';
 const LOG_KEY = 'gifted26_noisy_log';
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyJkUruf0Y8waxOJokJxrq6Rk5o4JrwLcgY51NmsFdHPD2oKQja5E0-5SBtCNjOV665/exec';
 const NOISE_RATE = 0.1;
+const DESIGN_BITS = 8;
+const DESIGN_CASES = DESIGN_BITS + 1;
+const DESIGN_SCREENS = ['N14','N15_operate','N15_write','N16'];
 const OPTIONAL_IDS = new Set(['N16', 'N17', 'N18', 'N19']);
 const WRITE_FIELDS = [
   ['N1_thought', '도입 생각'], ['N2_observe', '잡음 관찰'], ['N2_explain', '읽기 한계'], ['N3_reason', 'N3 예측 이유'],
@@ -37,7 +40,7 @@ const SCREEN_ORDER = [
   { id: 'N12', activity: '어디가 뒤집혔나', label: '한 칸 찾기' },
   { id: 'N13_observe', activity: '어디가 뒤집혔나', label: '두 칸 오류 · 관찰' },
   { id: 'N13_write', activity: '어디가 뒤집혔나', label: '두 칸 오류 · 작성' },
-  /* 2차원 격자에서 1차원 7자리로, 정해진 줄에서 설계한 묶음으로 두 번 뛴다.
+  /* 2차원 격자에서 1차원 8자리로, 정해진 줄에서 설계한 묶음으로 두 번 뛴다.
      그 사이를 잇는다(명세서 §32-4 9번). */
   { id: 'N13_bridge', activity: '검사로 찾기', label: '검사도 결국 묶음이다' },
   /* 만화는 8 → 4 → 2까지만 보여주고 「몇 번 필요할까요?」로 끝난다. 답을
@@ -108,7 +111,7 @@ const HINTS = {
   N15_operate: [
     '아직 구별되지 않는 자리가 있습니다. 표에서 결과 패턴이 같은 줄을 찾아보세요.',
     '검사 한 번의 결과는 홀수 또는 짝수 두 가지입니다. 검사 두 번으로 만들 수 있는 패턴 수를 세어 보세요.',
-    '여덟 가지를 가르려면 결과 패턴이 여덟 개 모두 달라야 합니다.'
+    '아홉 가지를 구별하려면 결과 패턴이 아홉 개 모두 달라야 합니다.'
   ],
   N17: [
     '두 부호를 골라 다른 칸의 개수를 세어 보세요.',
@@ -315,6 +318,7 @@ function isParityGiven(r, c) { return r === PARITY_GIVEN[0] && c === PARITY_GIVE
 function initialState(sid = '') {
   return {
     v: 1,
+    designBits: DESIGN_BITS,
     student: { school: '', sid: '', name: '' },
     screenId: 'N0',
     includeOptional: false,
@@ -380,6 +384,25 @@ function loadState() {
     merged.writes = parsed.writes || {};
     merged.hints = parsed.hints || {};
     merged.parity = parsed.parity && parsed.parity.data ? parsed.parity : fresh.parity;
+    if (parsed.designBits !== DESIGN_BITS) {
+      const previousLog = merged.log.filter(item => DESIGN_SCREENS.includes(item.screen));
+      const used = previousLog.length || DESIGN_SCREENS.some(id => merged.views[id]?.visited) || merged.screens.N14.signal || merged.writes.N15_binary || merged.screens.N15.groups.some(group=>group.length);
+      if (used) merged.legacyDesign = {
+        bits:7, screens:{N14:merged.screens.N14,N15:merged.screens.N15,N16:merged.screens.N16},
+        explanation:merged.writes.N15_binary || '', prediction:merged.predicts.N14 || null,
+        log:previousLog, submitted:{...merged.submitted},
+        views:Object.fromEntries(DESIGN_SCREENS.map(id=>[id,merged.views[id]])),
+        hints:Object.fromEntries(DESIGN_SCREENS.map(id=>[id,merged.hints[id]])),
+        attemptStats:Object.fromEntries(DESIGN_SCREENS.map(id=>[id,merged.attemptStats[id]])),
+        writeMeta:merged.writeMeta.N15_binary
+      };
+      merged.log = merged.log.filter(item => !DESIGN_SCREENS.includes(item.screen));
+      for (const id of DESIGN_SCREENS) { delete merged.views[id]; delete merged.attemptStats[id]; delete merged.hints[id]; delete merged.guideSeen[id]; delete merged.guideSeen['feedback:'+id]; }
+      for (const id of ['N14','N15','N16']) merged.screens[id] = fresh.screens[id];
+      delete merged.writes.N15_binary; delete merged.writeMeta.N15_binary; delete merged.predicts.N14;
+      if (used) { if (merged.screens.N20) merged.screens.N20.checked=false; merged.submitted={...fresh.submitted}; }
+      merged.designBits = DESIGN_BITS;
+    }
     return merged;
   } catch (error) {
     return initialState();
@@ -404,9 +427,9 @@ function validateProgress(data) {
   if (![3,4,5].includes(data.screens.N5.count)) return false;
   if (!n5Lists.every(list => Array.isArray(list) && list.length <= 8 && list.every(value => value === null || bit(value)))) return false;
   if (!['N12','N16'].every(key => Array.isArray(data.screens[key].guesses) && Number.isInteger(data.screens[key].round) && data.screens[key].round >= 0 && data.screens[key].round < 3)) return false;
-  if (!Array.isArray(data.screens.N16.cases) || !data.screens.N16.cases.every(value => Number.isInteger(value) && value >= 0 && value <= 7)) return false;
+  if (!Array.isArray(data.screens.N16.cases) || !data.screens.N16.cases.every(value => Number.isInteger(value) && value >= 0 && value <= DESIGN_BITS)) return false;
   /* 단계 잠금으로 검사 묶음 1개에서 시작한다(명세서 §32-4 12번). */
-  if (!Array.isArray(data.screens.N15.groups) || data.screens.N15.groups.length < 1 || data.screens.N15.groups.length > 4 || !data.screens.N15.groups.every(group => Array.isArray(group) && group.every(value => Number.isInteger(value) && value >= 1 && value <= 7))) return false;
+  if (!Array.isArray(data.screens.N15.groups) || data.screens.N15.groups.length < 1 || data.screens.N15.groups.length > 4 || !data.screens.N15.groups.every(group => Array.isArray(group) && group.every(value => Number.isInteger(value) && value >= 1 && value <= DESIGN_BITS))) return false;
   if (!Array.isArray(data.screens.N17.codes) || data.screens.N17.codes.length !== 4 || !data.screens.N17.codes.every(code => /^[01]{6}$/.test(code))) return false;
   return Object.keys(fresh.circuits).every(key => {
     const nodes = data.circuits[key]?.nodes;
@@ -723,14 +746,14 @@ const COMIC_DATA = {
     section: '5 검사로 찾기',
     title: '스무고개',
     intro: '여덟 가지 중 하나를 고르는 문제입니다. 예·아니오 질문을 몇 번 하면 될까요?',
-    alt: ['두 사람이 마주 앉아 카드 여덟 장을 뒤집어 놓습니다. 그중 한 장이 뽑혔습니다.', '“왼쪽 네 장 안에 있어?”라고 묻자 상대가 고개를 끄덕이고 카드 네 장이 남습니다.', '“그중 위 두 장 안에 있어?”라고 묻자 고개를 젓고 카드 두 장이 남습니다.', '“둘 중 왼쪽?”이라고 묻자 끄덕이고 카드 한 장만 남아 빛납니다.'],
+    alt: ['두 사람이 카드 여덟 장 중 뽑힌 한 장을 찾습니다.', '“왼쪽 네 장 안에 있어?”라고 묻고 네 장을 표시합니다.', '“그중 위 두 장 안에 있어?”라고 묻고 두 장을 표시합니다.', '두 장이 남은 상태에서 “마지막 질문 하나면 될까?”라고 묻습니다.'],
     frames: [
       '여덟 장 중 한 장이 뽑혔습니다. 어느 것일까요?',
-      '“왼쪽 네 장 안에 있어?” — 예. 네 장이 남습니다.',
-      '“그중 위 두 장 안에 있어?” — 아니오. 두 장이 남습니다.',
-      '“둘 중 왼쪽?” — 예. 한 장이 남습니다. 8 = 2 × 2 × 2'
+      '“왼쪽 네 장 안에 있어?” — 네 장을 표시합니다.',
+      '“그중 위 두 장 안에 있어?” — 두 장을 표시합니다.',
+      '“마지막 질문 하나면 될까?” — 질문을 할 때마다 후보가 줄어듭니다. 여덟 가지 중 하나를 찾으려면 질문이 몇 번 필요할까요?'
     ],
-    explanation: '신호에서 어느 자리가 뒤집혔는지 알아내는 것도 같은 문제입니다. 일곱 자리와 「아무 곳도 안 뒤집힘」까지 여덟 가지 중 하나를 고르는 것이니, 좋은 질문 세 번이면 됩니다. 어떤 질문을 해야 할지는 여러분이 직접 설계합니다.'
+    explanation: '만화는 카드 여덟 장 중 하나를 찾는 상황입니다. 다음 활동에서는 정보 8곳의 오류와 「오류 없음」까지 아홉 가지를 구별합니다. 검사 비트에는 오류가 없다고 가정하고, 필요한 검사 묶음을 직접 설계해 봅니다.'
   }
 };
 
@@ -1758,7 +1781,7 @@ function renderN13Bridge() {
       <li><strong>그래서 격자로 갔습니다.</strong> 가로로 한 번, 세로로 한 번 묶어 교차점으로 찾았습니다. 위치를 <strong>(몇 행, 몇 열)</strong> 두 좌표로 말한 셈입니다.</li>
       <li><strong>대신 비쌌습니다.</strong> 한 칸씩 따로 검사하면 <strong>36번</strong>, 가로·세로로 묶으니 <strong>12번</strong>. 그래도 검사 칸을 <strong>13개</strong>나 붙였습니다.</li>
     </ol>
-    <div class="notice">가로·세로는 <strong>격자 모양에 따라 정해진 묶음</strong>입니다. <strong>묶는 방법을 새로 설계하면</strong> 검사를 더 줄일 수 있을까요? 다음 화면부터 칸이 <strong>7개</strong>인 작은 신호로 알아봅니다.</div>
+    <div class="notice">가로·세로는 <strong>격자 모양에 따라 정해진 묶음</strong>입니다. <strong>묶는 방법을 새로 설계하면</strong> 검사를 더 줄일 수 있을까요? 다음 화면부터 정보가 <strong>8비트</strong>인 신호로 알아봅니다.</div>
   </div>`;
 }
 
@@ -1770,7 +1793,7 @@ function renderN13Write() {
 /* 신호도 여덟 가지도 검사도 전부 글로만 있어 찍을 수밖에 없었다.
    상황을 보여주고, 검사 한 번을 직접 해보게 한다(명세서 §32-4 10번).
    정답 묶음(1·3·5·7 등)은 여기에 적지 않는다 — N15에서 학생이 찾는다. */
-const N14_BITS = 7;
+const N14_BITS = DESIGN_BITS;
 
 function n14Signal() {
   const n14 = state.screens.N14;
@@ -1782,10 +1805,10 @@ function n14Signal() {
   return n14.signal;
 }
 
-/* 여덟 가지 = 1~7번째가 뒤집힌 경우와 아무 곳도 안 뒤집힌 경우. */
+/* 아홉 가지 = 정보 1~8번째가 뒤집힌 경우와 아무 곳도 안 뒤집힌 경우. */
 function n14Cases() {
   const base = n14Signal();
-  return Array.from({ length: 8 }, (_, k) => ({
+  return Array.from({ length: DESIGN_CASES }, (_, k) => ({
     flipped: k < N14_BITS ? k : -1,
     label: k < N14_BITS ? `${k + 1}번째가 뒤집힘` : '아무 곳도 안 뒤집힘',
     signal: base.map((bit, i) => (i === k ? bit ^ 1 : bit))
@@ -1823,47 +1846,54 @@ function renderN14() {
     split = `<div class="evidence">
       받은 신호의 <strong>${pick.join(' · ')}번째 칸과 검사 비트</strong>를 함께 세면 —
       <table class="split-table"><thead><tr><th scope="col">일어난 일</th><th scope="col">1의 개수<br>(검사 포함)</th><th scope="col">결과</th></tr></thead><tbody>${rows.map(row => `<tr class="${row.odd ? 'odd' : 'even'}"><th scope="row">${esc(row.label)}</th><td>${row.ones}개</td><td>${row.odd ? '홀수' : '짝수'}</td></tr>`).join('')}</tbody></table>
-      <strong>검사 한 번으로 여덟 가지가 두 무리로 갈렸습니다.</strong> 홀수 ${odd}가지 · 짝수 ${8 - odd}가지
+      <strong>검사 한 번으로 아홉 가지가 두 무리로 갈렸습니다.</strong> 홀수 ${odd}가지 · 짝수 ${DESIGN_CASES - odd}가지
     </div>`;
   }
 
-  return `${heading('5 검사로 찾기 · 예측', '검사를 몇 번 하면 될까?', '신호 7자리를 보냅니다. 오는 길에 한 자리가 뒤집히거나, 아무 곳도 뒤집히지 않습니다.')}
+  return `${heading('5 검사로 찾기 · 예측', '검사를 몇 번 하면 될까?', '정보 8개에 검사 비트를 추가해 보냅니다. 정보 중 한 비트가 뒤집히거나 아무 곳도 뒤집히지 않습니다. 검사 비트에는 오류가 없습니다.')}
   <div class="card stack">
+    ${legacyDesignNotice()}
     ${state.predicts.N14 ? `<div class="evidence">최초 응답: ${esc(state.predicts.N14.first.value)}번 · ${state.predicts.N14.first.beforeExperiment ? '실험 전 예측' : '실험을 본 뒤 기록'}</div>` : ''}
     <div>
       <p class="muted small" style="margin:0 0 6px">보낸 신호</p>
       <span class="trace-bits">${base.map(bit => `<span class="trace-bit">${bit}</span>`).join('')}</span>
       <span class="trace-bits" style="margin-left:10px">${base.map((_, i) => `<span class="col-head">${i + 1}</span>`).join('')}</span>
     </div>
-    <p style="margin:0">받는 쪽은 신호만 가지고 있습니다. <strong>보낸 사람에게 물어볼 수 없습니다.</strong> 일어날 수 있는 일은 여덟 가지입니다.</p>
+    <p style="margin:0">받는 쪽은 신호만 가지고 있습니다. <strong>보낸 사람에게 물어볼 수 없습니다.</strong> 일어날 수 있는 일은 아홉 가지입니다.</p>
     <div class="table-wrap"><table class="case-table"><tbody>${caseRows}</tbody></table></div>
     <div class="notice">보내는 쪽은 <strong>고른 칸과 검사 비트의 1을 합쳐 짝수 개</strong>가 되도록 맞춰 보냅니다. 받는 쪽도 검사 비트까지 함께 셉니다. 이 실험에서는 검사 비트는 바뀌지 않습니다.</div>
     <div>
       <p class="muted small" style="margin:0 0 6px">검사 한 번 해보기 — 묶을 칸을 고르세요</p>
       <div class="number-palette">${chips}</div>
-      ${pick.length ? `<p id="n14-check-bit">보낼 때: 고른 칸의 1 <strong>${check.sentOnes}개</strong> + 검사 비트 <span class="trace-bit">${check.checkBit}</span> → 1이 모두 <strong>${check.sentOnes + check.checkBit}개 (짝수)</strong></p><p class="muted small">검사 비트까지 포함해 1의 개수를 세어 보세요.</p>` : ''}
+      ${pick.length ? `<p id="n14-check-bit">정보 8개 + 검사 비트 1개 = 총 9개<br>보낼 때: 고른 칸의 1 <strong>${check.sentOnes}개</strong> + 검사 비트 <span class="trace-bit">${check.checkBit}</span> → 1이 모두 <strong>${check.sentOnes + check.checkBit}개 (짝수)</strong></p><p class="muted small">검사 비트까지 포함해 1의 개수를 세어 보세요.</p>` : ''}
       <div class="button-row"><button id="n14-count" class="secondary-button" type="button" ${pick.length ? '' : 'disabled'}>세어 보기</button><button id="n14-clear" class="secondary-button" type="button">고른 칸 지우기</button></div>
     </div>
     ${split}
   </div>
   <div class="card stack">
-    <div class="reading"><p style="margin:0"><strong>한 칸씩 따로 검사하면</strong> 검사 <strong>7번</strong>, 검사 비트 <strong>7개</strong>로 위치를 정확히 찾습니다. 그런데 7자리를 보내려고 검사 비트를 7개나 붙였습니다.</p></div>
+    <div class="reading"><p style="margin:0"><strong>한 칸씩 따로 검사하면</strong> 검사 <strong>8번</strong>, 검사 비트 <strong>8개</strong>로 위치를 정확히 찾습니다. 정보 8개에 검사 8개를 더해 모두 16개를 보냅니다.</p></div>
     <p style="margin:0"><strong>여러 자리를 묶어서 검사하면 더 적게 할 수 있을까요?</strong></p>
-    <div class="choice-grid">${[2, 3, 4, 7].map(value => `<div class="choice"><input id="n14-${value}" name="n14" type="radio" value="${value}" ${n14.prediction === String(value) ? 'checked' : ''}><label for="n14-${value}">${value}번</label></div>`).join('')}</div>
+    <div class="choice-grid">${[2, 3, 4, 8].map(value => `<div class="choice"><input id="n14-${value}" name="n14" type="radio" value="${value}" ${n14.prediction === String(value) ? 'checked' : ''}><label for="n14-${value}">${value}번</label></div>`).join('')}</div>
     <div class="button-row"><button id="confirm-n14" class="primary-button" type="button">예측 기록</button>${n14.confirmed ? '<span class="result ok">예측이 기록되었습니다.</span>' : ''}</div>
   </div>`;
 }
 
-/* N14 재구성 때 함께 지워졌던 것을 되돌린다. 여덟 경우의 검사 결과 패턴. */
+/* 아홉 경우의 검사 결과 패턴. 검사 비트에는 오류가 없다. */
 const N15_MIN_GROUPS = 1;
 const N15_MAX_GROUPS = 4;
 
 function n15Patterns() {
   const groups = state.screens.N15.groups;
-  return Array.from({ length: 8 }, (_, errorCase) => {
+  return Array.from({ length: DESIGN_CASES }, (_, errorCase) => {
     const values = groups.map(group => (errorCase === 0 ? 0 : (group.includes(errorCase) ? 1 : 0)));
     return { errorCase, values, pattern: values.join('') };
   });
+}
+
+function legacyDesignNotice() {
+  const old=state.legacyDesign;
+  if (!old?.screens?.N14 || !Array.isArray(old.screens?.N15?.groups)) return '';
+  return `<details class="attempt-details"><summary>이전 정보 7비트 활동 기록 (보존됨)</summary><div class="evidence"><p>지금은 정보 8비트 활동입니다. 이전 결과는 새 활동의 성공 판정에 포함하지 않습니다.</p><p>이전 신호: ${esc(old.screens.N14.signal?.join('') || '미생성')} · 검사 수 예측: ${esc(old.screens.N14.prediction || '미작성')}</p><p>이전 검사 묶음: ${old.screens.N15.groups.map((g,i)=>`${i+1}번: ${g.join(', ')||'없음'}`).join(' / ')}</p><p class="answer">이전 설명: ${esc(old.explanation || '미작성')}</p></div></details>`;
 }
 
 function n15PatternTable() {
@@ -1881,7 +1911,7 @@ function n15PatternTable() {
 }
 
 /* 팔레트·개수 조절·상자 3개·8행 표가 동시에 나와 어디부터 손댈지 알 수
-   없었다. 검사 묶음 1개에서 시작해 2 → 4 → 8갈래를 조작으로 겪게 한다
+   없었다. 검사 묶음 1개에서 시작해 최대 2 → 4 → 8갈래와 그 한계를 조작으로 겪게 한다
    (명세서 §32-4 12번, §19-3). */
 function n15Stage() {
   const n15 = state.screens.N15;
@@ -1906,8 +1936,8 @@ function renderN15Operate() {
   if (n15.lastCheck && n15.lastCheckSignature === JSON.stringify(n15.groups)) {
     const shown = n15.lastCheck;
     verdict = unique
-      ? `<div class="result ok" role="status">${resultIcon('ok')} 여덟 가지가 모두 다른 결과를 냅니다. 구별할 수 있습니다.</div>`
-      : `<div class="result partial" role="status">${resultIcon('partial')} 여덟 가지가 <strong>${shown}갈래</strong>로 갈렸습니다. 아직 하나씩 구별할 수 없습니다.${canAdd ? ' 검사를 하나 더 만들어 보세요.' : ''}</div>`;
+      ? `<div class="result ok" role="status">${resultIcon('ok')} 아홉 가지가 모두 다른 결과를 냅니다. 구별할 수 있습니다.</div>`
+      : `<div class="result partial" role="status">${resultIcon('partial')} 아홉 가지가 <strong>${shown}갈래</strong>로 갈렸습니다. 아직 하나씩 구별할 수 없습니다.${canAdd ? ' 검사를 하나 더 만들어 보세요.' : ''}</div>`;
   } else {
     verdict = '<div class="result" role="status">검사 묶음을 만든 뒤 「구별할 수 있나?」를 눌러 보세요.</div>';
   }
@@ -1917,8 +1947,9 @@ function renderN15Operate() {
       <div class="chip-row">${group.length ? group.map(number => `<button type="button" class="number-chip in-box" data-remove="${g},${number}" aria-label="${g + 1}번 검사에서 ${number}번 빼기">${number} ×</button>`).join('') : '<span class="muted small">비어 있음</span>'}</div>
     </div>`).join('');
 
-  return `${heading('5 검사로 찾기 · 설계', '검사 묶음을 직접 만들어 보세요.', '어느 자리가 뒤집혔는지 알아내려면 무엇을 함께 세어야 할까요? 번호를 묶어 검사를 만들고 여덟 가지를 구별해 보세요.')}
+  return `${heading('5 검사로 찾기 · 설계', '검사 묶음을 직접 만들어 보세요.', '어느 자리가 뒤집혔는지 알아내려면 무엇을 함께 세어야 할까요? 정보 8개에 검사 비트를 추가합니다. 정보의 오류 위치 8곳과 오류 없음, 아홉 가지를 구별해 보세요. 검사 비트에는 오류가 없습니다.')}
   <div class="card stack">
+    <p class="notice" style="margin:0">보낼 정보 <strong>8개</strong> + 추가할 검사 비트 <strong>${n15.groups.length}개</strong> = 모두 <strong>${DESIGN_BITS+n15.groups.length}개</strong>. 검사 묶음 하나마다 검사 비트 하나를 붙입니다.</p>
     <div class="question-layout">
       <div class="question-controls">
         <ol class="question-steps">
@@ -1929,7 +1960,7 @@ function renderN15Operate() {
         <p class="muted small">앞에서처럼 <strong>각 묶음과 검사 비트의 1을 함께 셉니다.</strong> 보낼 때 짝수로 맞췄고 검사 비트는 바뀌지 않으므로, 홀수면 그 묶음 안에 뒤집힌 자리가 있습니다. 홀수는 1, 짝수는 0으로 적습니다. 한 번호를 여러 검사에 넣을 수 있습니다.</p>
         <div>
           <p class="muted small" style="margin:0 0 6px">번호 블록 — 끌어다 놓거나, 눌러서 고른 뒤 검사 묶음을 누르세요.</p>
-          <div class="number-palette">${[1,2,3,4,5,6,7].map(number => `<button type="button" class="number-chip ${selected === number ? 'selected' : ''}" draggable="true" data-number="${number}" aria-pressed="${selected === number}" aria-label="${number}번 비트 블록">${number}</button>`).join('')}</div>
+          <div class="number-palette">${Array.from({length:DESIGN_BITS},(_,i)=>i+1).map(number => `<button type="button" class="number-chip ${selected === number ? 'selected' : ''}" draggable="true" data-number="${number}" aria-pressed="${selected === number}" aria-label="${number}번 비트 블록">${number}</button>`).join('')}</div>
         </div>
         <div class="button-row">
           <button id="n15-fewer" class="secondary-button" type="button" ${n15.groups.length <= N15_MIN_GROUPS ? 'disabled' : ''}>검사 줄이기</button>
@@ -1950,8 +1981,8 @@ function renderN15Operate() {
 }
 
 function renderN15Write() {
-  return `${heading('5 검사로 찾기 · 작성', '검사 결과로 뒤집힌 자리를 어떻게 찾을까?', '내가 만든 결과표를 보며 설명해 보세요.')}
-  <div class="card stack"><div class="evidence">현재 검사 묶음: ${state.screens.N15.groups.map((group, i) => `${i + 1}번 검사 = ${group.length ? group.join(', ') : '없음'}`).join(' · ')}</div><div class="pattern-writing-layout">${n15PatternTable()}<div class="writing-list">${writeBox('N15_binary', '검사 결과를 홀수=1, 짝수=0으로 나타냈습니다. 이 결과로 뒤집힌 자리를 어떻게 찾을 수 있나요?', 'explain')}</div></div>${evidenceFor(['N15_operate'])}</div>`;
+  return `${heading('5 검사로 찾기 · 작성', '검사 결과로 뒤집힌 자리를 어떻게 찾을까?', `정보 8개에 검사 비트 ${state.screens.N15.groups.length}개를 추가한 설계입니다. 검사 비트에는 오류가 없습니다. 내가 만든 결과표를 보며 설명해 보세요.`)}
+  <div class="card stack">${legacyDesignNotice()}<div class="evidence">현재 검사 묶음: ${state.screens.N15.groups.map((group, i) => `${i + 1}번 검사 = ${group.length ? group.join(', ') : '없음'}`).join(' · ')}</div><div class="pattern-writing-layout">${n15PatternTable()}<div class="writing-list">${writeBox('N15_binary', '검사 결과를 홀수=1, 짝수=0으로 나타냈습니다. 이 결과로 뒤집힌 자리를 어떻게 찾을 수 있나요?', 'explain')}</div></div>${evidenceFor(['N15_operate'])}</div>`;
 }
 
 function renderN16() {
@@ -1962,11 +1993,11 @@ function renderN16() {
   const matches=n15Patterns().filter(item=>item.pattern===questionPatternFor(target));
   const ambiguous=matches.length>1;
   const ok = !ambiguous && guess != null && Number(guess) === target;
-  return `${heading('5 질문으로 찾기 · 선택 활동', `내 질문으로 오류 위치 찾기 · ${n16.round + 1}/3판`, '앞에서 만든 질문 묶음의 답 패턴을 보고 실제 위치를 골라 봅니다.')}
-  <div class="card stack"><div class="notice">이번 답 패턴: <strong>${questionPatternFor(target)}</strong></div><div class="choice-grid">${['없음',1,2,3,4,5,6,7].map((label, i) => { const value = i === 0 ? 0 : i; return `<div class="choice"><input id="n16-${value}" name="n16" type="radio" value="${value}" ${guess != null && Number(guess) === value ? 'checked' : ''}><label for="n16-${value}">${label === '없음' ? '아무 곳도 안 뒤집힘' : `${label}번째 뒤집힘`}</label></div>`; }).join('')}</div><div class="result ${guess == null ? '' : ok ? 'ok' : 'fail'}" role="status">${ambiguous ? `이 패턴에 해당하는 일이 ${matches.length}개여서 위치를 확정할 수 없습니다. 질문 설계로 돌아가 묶음을 바꾸어 보세요.` : guess == null ? '답을 하나 골라 보세요.' : ok ? '맞았습니다.' : '다른 일의 답 패턴과 비교해 보세요.'}</div>${ok && n16.round < 2 ? '<button id="next-n16" class="primary-button" type="button">다음 판</button>' : ''}</div>`;
+  return `${heading('5 검사로 찾기 · 선택 활동', `내 검사로 오류 위치 찾기 · ${n16.round + 1}/3판`, '정보 8개의 검사 결과를 보고 뒤집힌 위치를 고르세요. 검사 비트에는 오류가 없습니다.')}
+  <div class="card stack"><div class="notice">이번 답 패턴: <strong>${questionPatternFor(target)}</strong></div><div class="choice-grid">${['없음',...Array.from({length:DESIGN_BITS},(_,i)=>i+1)].map((label, i) => { const value = i === 0 ? 0 : i; return `<div class="choice"><input id="n16-${value}" name="n16" type="radio" value="${value}" ${guess != null && Number(guess) === value ? 'checked' : ''}><label for="n16-${value}">${label === '없음' ? '아무 곳도 안 뒤집힘' : `${label}번째 뒤집힘`}</label></div>`; }).join('')}</div><div class="result ${guess == null ? '' : ok ? 'ok' : 'fail'}" role="status">${ambiguous ? `이 패턴에 해당하는 일이 ${matches.length}개여서 위치를 확정할 수 없습니다. 검사 설계로 돌아가 묶음을 바꾸어 보세요.` : guess == null ? '답을 하나 골라 보세요.' : ok ? '맞았습니다.' : '다른 일의 답 패턴과 비교해 보세요.'}</div>${ok && n16.round < 2 ? '<button id="next-n16" class="primary-button" type="button">다음 판</button>' : ''}</div>`;
 }
 
-function randomQuestionCase(seedKey = null) { return Math.floor((seedKey ? studentRandom(seedKey) : Math.random)() * 8); }
+function randomQuestionCase(seedKey = null) { return Math.floor((seedKey ? studentRandom(seedKey) : Math.random)() * DESIGN_CASES); }
 function questionPatternFor(errorCase) { return n15PatternsFor(errorCase).join(''); }
 function n15PatternsFor(errorCase) { return state.screens.N15.groups.map(group => errorCase === 0 ? 0 : group.includes(errorCase) ? 1 : 0); }
 
@@ -2023,7 +2054,7 @@ function renderN19() {
 }
 
 /* 8비트 정보를 보내고 오류 1개를 고친다는 조건으로 환산한다(명세서 §6-3).
-   활동에서 쓴 크기(6×6 격자, 7비트)와 다르므로 화면에 환산 사실을 적는다. */
+   활동에서 쓴 크기(6×6 격자, 정보 8비트)와 다르므로 화면에 환산 사실을 적는다. */
 function compareRows() {
   const logs = state.log.filter(item => item.kind === 'attempt' && item.attempt?.blocks);
   const real = (nodes, one = false) => {
@@ -2033,7 +2064,7 @@ function compareRows() {
   return [
     ['그냥 보내기','8비트','✗','✗','1',real(['message','noise','receiver'])],
     ['검사 비트 1개','9비트','1개','✗','2',real(['message','parityEncode','noise','parityCheck','receiver'],true)],
-    ['해밍 (검사 4개)','12비트','○','1개','3',state.screens.N15.checked ? '검사 패턴 구별 완료 (7자리 활동)' : state.views.N15_operate ? '미해결' : '미실행'],
+    ['해밍 (검사 4개)','12비트','○','1개','3',state.screens.N15.checked ? '검사 패턴 구별 완료 (정보 8비트 활동)' : state.views.N15_operate ? '미해결' : '미실행'],
     ['2×4 격자 검사','15비트','○','1개','4',checkParityGrid().ok ? '검사 칸 배치 완료 (6×6 활동)' : state.views.N11b ? '미해결' : '미실행'],
     ['3번 반복 + 다수결','24비트','○','1개','3',real(['message','repeat3','noise','majority','receiver'])]
   ];
@@ -2072,8 +2103,8 @@ const COMPARE_METHODS = [
   {
     id: 'hamming', name: '해밍', bits: 12, detect: true, fix: true, groups: 4,
     shape: [{ info: 8, check: 4 }],
-    how: '검사 묶음을 직접 설계해 붙입니다. 검사 결과를 이어 읽으면 뒤집힌 자리 번호가 그대로 나옵니다.',
-    where: '24·25번에서 설계한 방법'
+    how: '정보 8개에 검사 비트 4개를 더해 12개를 보냅니다. 검사 결과 패턴을 표와 맞춰 뒤집힌 자리를 찾습니다. 여기서는 검사 비트에 오류가 없다고 가정합니다.',
+    where: '26·27쪽에서 설계한 원리를 적용한 방법'
   }
 ];
 
@@ -2129,7 +2160,7 @@ function renderN20() {
 
   return `${heading('7 닫기 · 종합', '같은 8비트를 보내는데, 얼마나 더 보내야 할까?', '지나온 다섯 가지를 같은 조건으로 맞춰 정리합니다. 이름을 누르면 어떤 방법이었는지 다시 볼 수 있습니다.')}
   <div class="card stack">
-    <div class="notice">오류를 <strong>없앨 수는 없습니다.</strong> 대신 오류가 생겨도 알아채고 고칠 수 있게 보냅니다. 아래 다섯 가지는 모두 <strong>정보 8비트</strong>를 지킵니다. 다른 것은 <strong>실제로 보내는 양</strong>입니다.</div>
+    <div class="notice">오류를 <strong>없앨 수는 없습니다.</strong> 대신 오류가 생겨도 알아채고 고칠 수 있게 보냅니다. 아래 다섯 가지의 보낼 정보는 모두 <strong>8비트</strong>입니다. 보내는 정보(반복한 사본 포함) 중 최대 한 비트에 오류가 나며, <strong>추가한 검사 비트에는 오류가 없다</strong>고 가정합니다. 다른 것은 <strong>실제로 보내는 양</strong>입니다.</div>
     <div class="table-wrap"><table class="compare-table">
       <thead><tr><th>방식</th><th>보낼 정보</th><th>실제로 보내는 모양</th><th>필요한 비트</th><th>오류가 있다는 걸<br>알 수 있다</th><th>오류를 찾아<br>고칠 수 있다</th>${showDistance ? '<th>최소 거리</th>' : ''}</tr></thead>
       <tbody>${rows}</tbody>
@@ -2164,7 +2195,7 @@ function compareRecord(id) {
   if (id === 'plain') return real(['message','noise','receiver']);
   if (id === 'repeat3') return real(['message','repeat3','noise','majority','receiver']);
   if (id === 'parity1') return real(['message','parityEncode','noise','parityCheck','receiver'], true);
-  if (id === 'hamming') return state.screens.N15.checked ? '검사 패턴 구별 완료 (7자리 활동)' : state.views.N15_operate ? '미해결' : '미실행';
+  if (id === 'hamming') return state.screens.N15.checked ? '검사 패턴 구별 완료 (정보 8비트 활동)' : state.views.N15_operate ? '미해결' : '미실행';
   return checkParityGrid().ok ? '검사 칸 배치 완료 (6×6 활동)' : state.views.N11b ? '미해결' : '미실행';
 }
 
@@ -2520,7 +2551,7 @@ function bindN14() {
     render();
   });
   $('#n14-clear')?.addEventListener('click', () => { state.screens.N14.pick = []; state.screens.N14.counted = false; persist(); render(); });
-  $$('input[name="n14"]').forEach(input => input.addEventListener('change', e => { state.screens.N14.prediction = e.target.value; recordPrediction('N14'); persist(); })); $('#confirm-n14')?.addEventListener('click', () => { if (!state.screens.N14.prediction) return; recordPrediction('N14', true); state.screens.N14.confirmed = true; logEvent('attempt', 'N14', { detail: `질문 수 예측 ${state.screens.N14.prediction || '미선택'}` }, 'predict'); persist(); render(); }); }
+  $$('input[name="n14"]').forEach(input => input.addEventListener('change', e => { state.screens.N14.prediction = e.target.value; recordPrediction('N14'); persist(); })); $('#confirm-n14')?.addEventListener('click', () => { if (!state.screens.N14.prediction) return; recordPrediction('N14', true); state.screens.N14.confirmed = true; logEvent('attempt', 'N14', { detail: `검사 수 예측 ${state.screens.N14.prediction || '미선택'}` }, 'predict'); persist(); render(); }); }
 
 function invalidateCheckDesign() {
   state.screens.N15.checked = false;
@@ -2550,7 +2581,7 @@ function bindN15() {
     const boxIndex = Number(box.dataset.box);
     box.addEventListener('dragover', event => { event.preventDefault(); box.classList.add('drop-target'); });
     box.addEventListener('dragleave', () => box.classList.remove('drop-target'));
-    box.addEventListener('drop', event => { event.preventDefault(); box.classList.remove('drop-target'); const number = Number(event.dataTransfer.getData('text/plain')); if (number >= 1 && number <= 7) addNumber(boxIndex, number); });
+    box.addEventListener('drop', event => { event.preventDefault(); box.classList.remove('drop-target'); const number = Number(event.dataTransfer.getData('text/plain')); if (number >= 1 && number <= DESIGN_BITS) addNumber(boxIndex, number); });
     box.addEventListener('click', event => { if (event.target.closest('[data-remove]')) return; if (n15.selected) addNumber(boxIndex, n15.selected); });
     box.addEventListener('keydown', event => { if (event.target === box && (event.key === 'Enter' || event.key === ' ') && n15.selected) { event.preventDefault(); addNumber(boxIndex, n15.selected); } });
   });
@@ -2567,20 +2598,20 @@ function bindN15() {
   $('#check-n15')?.addEventListener('click', () => {
     const patterns = n15Patterns();
     const distinct = new Set(patterns.map(item => item.pattern)).size;
-    const unique = distinct === 8;
+    const unique = distinct === DESIGN_CASES;
     n15.checked = unique;
     n15.lastCheck = distinct;
     n15.lastCheckSignature = JSON.stringify(n15.groups);
-    /* 모자라면 검사를 하나 더 만들 수 있게 연다. 2 → 4 → 8갈래를 겪는다. */
+    /* 모자라면 검사를 하나 더 만들 수 있게 연다. 최대 2 → 4 → 8갈래와 그 한계를 겪는다. */
     if (!unique) n15.unlocked = Math.min(N15_MAX_GROUPS, Math.max(n15.unlocked || 1, n15.groups.length + 1));
-    logEvent('attempt', 'N15_operate', { detail: `질문 ${n15.groups.length}개 · 묶음 ${n15.groups.map((group, i) => `Q${i + 1}=${group.join('') || '없음'}`).join(' ')} · 서로 다른 패턴 ${new Set(patterns.map(item => item.pattern)).size}개`, attempt: { groups: n15.groups.map(group => group.slice()), distinct: new Set(patterns.map(item => item.pattern)).size } }, unique ? 'ok' : 'fail');
+    logEvent('attempt', 'N15_operate', { detail: `검사 ${n15.groups.length}개 · 묶음 ${n15.groups.map((group, i) => `검사${i + 1}=${group.join(',') || '없음'}`).join(' ')} · 서로 다른 패턴 ${new Set(patterns.map(item => item.pattern)).size}개`, attempt: { groups: n15.groups.map(group => group.slice()), distinct: new Set(patterns.map(item => item.pattern)).size } }, unique ? 'ok' : 'fail');
     if (!unique) advanceHint('N15_operate');
     mascotState = { mood: unique ? 'cheer' : 'tilt', text: unique ? '모든 일이 서로 다른 답 패턴을 가졌어요.' : (HINTS.N15_operate[(state.hints.N15_operate || 1) - 1] || HINTS.N15_operate[0]), open: true };
     persist();
     render();
   });
-  $('#reset-n15')?.addEventListener('click', () => { n15.groups = n15.groups.map(() => []); n15.selected = null; invalidateCheckDesign(); persist(); render(); });
-  $('#open-n15-guide')?.addEventListener('click', () => openGuide('N15_operate', '번호 블록을 끌어다 질문 상자에 넣거나, 번호를 누른 뒤 상자를 누르세요. 상자 안의 번호를 누르면 빠집니다. 질문 개수도 바꿀 수 있습니다.'));
+  $('#reset-n15')?.addEventListener('click', () => { n15.unlocked = Math.max(n15.unlocked || 1, n15.groups.length); n15.groups = [[]]; n15.selected = null; mascotState = { mood:'idle', text:'번호를 고른 뒤 빈 검사 상자를 누르세요.', open:false }; feedbackPending=null; invalidateCheckDesign(); persist(); render(); });
+  $('#open-n15-guide')?.addEventListener('click', () => openGuide('N15_operate', '번호 블록을 끌어다 검사 상자에 넣거나, 번호를 누른 뒤 상자를 누르세요. 상자 안의 번호를 누르면 빠집니다. 검사 개수도 바꿀 수 있습니다.'));
 }
 
 function bindN16() { $$('input[name="n16"]').forEach(input => input.addEventListener('change', event => { const n16 = state.screens.N16; const target = n16.cases[n16.round]; const guess = Number(event.target.value); n16.guesses[n16.round] = guess; const ambiguous=n15Patterns().filter(item=>item.pattern===questionPatternFor(target)).length>1; const ok = !ambiguous && guess === target; logEvent('attempt', 'N16', { detail: `${n16.round + 1}판 · 답 패턴 ${questionPatternFor(target)} · 선택 ${guess === 0 ? '오류 없음' : `${guess}번`} · 실제 ${target === 0 ? '오류 없음' : `${target}번`} · ${ok ? '맞음' : '틀림'}`, attempt: { round: n16.round + 1, pattern: questionPatternFor(target), groups: state.screens.N15.groups.map(group=>group.slice()), guess, actual: target, correct: ok } }, ok ? 'ok' : 'fail'); persist(); render(); })); $('#next-n16')?.addEventListener('click', () => { state.screens.N16.round += 1; persist(); render(); }); }
@@ -2758,7 +2789,7 @@ function buildSubmissionHtml(forStudent = false) {
   }).join('');
   const tableRows=compareRows().map(row=>`<tr>${row.filter((_,i)=>i!==4||showDistance).map((cell,i)=>`<td>${esc(forStudent && cell==='미실행'?'—':cell)}</td>`).join('')}</tr>`).join('');
   const stats=summary.statuses.map(item=>`<tr><td>${esc(item.label)}</td><td>${esc(item.status)}</td><td>${item.attempts}</td><td>${item.firstSuccess??'없음'}</td><td>${item.hintLevel}</td></tr>`).join('');
-  const makeHtml=logs=>`<!doctype html><html lang="ko"><head><meta charset="utf-8"><title>믿을 수 있게 보내기 탐구 기록</title><style>@page{size:A4;margin:15mm}body{font-family:Arial,sans-serif;color:#202938;line-height:1.6}table{width:100%;border-collapse:collapse;margin:12px 0 24px}th,td{border:1px solid #ccc;padding:6px;text-align:left;overflow-wrap:anywhere}section{break-inside:avoid;border-top:1px solid #ddd;padding:8px 0}.answer,pre{white-space:pre-wrap;overflow-wrap:anywhere}@media print{table{break-inside:avoid}}</style></head><body><h1>믿을 수 있게 보내기</h1><p>학교: ${esc(state.student.school||'')} · 학번: ${esc(state.student.sid)} · 이름: ${esc(state.student.name)}<br>기록 생성 시각: ${new Date().toLocaleString('ko-KR')} · 확인 코드: ${esc(state.submitted.code)}</p><p>과목: 수학 · 관련 단원: 이진법과 오류 정정<br>학습 목표: 반복·검사 비트·검사 설계를 비교하고 오류를 견디는 방법을 설명한다.</p><h2>예측 기록</h2>${predictions}<h2>쪽별 조작 기록</h2>${records}<h2>작성한 설명</h2>${writes}<h2>내가 작성한 종합 비교표</h2>${comparisonAnswerHtml()}<h2>종합 비교 참고표</h2><p>전송량은 정보 8비트 기준으로 환산한 참고값이며, 내 기록은 실제 활동에서 측정한 값입니다.</p><table><thead><tr><th>방식</th><th>전송량</th><th>탐지</th><th>정정</th>${showDistance?'<th>최소 거리</th>':''}<th>내 기록</th></tr></thead><tbody>${tableRows}</tbody></table>${forStudent?'':`<h2>시도 요약</h2><p>미작성 ${summary.unfilled.length}개 · 미해결 ${summary.unresolved}개</p><table><thead><tr><th>쪽</th><th>상태</th><th>시도 수</th><th>첫 성공 시도</th><th>힌트 단계</th></tr></thead><tbody>${stats}</tbody></table><details><summary>전체 로그 (${logs.length}/${state.log.length}건)</summary><table><thead><tr><th>시각</th><th>활동</th><th>상세</th><th>결과</th></tr></thead><tbody>${logs.map(item=>`<tr><td>${new Date(item.t).toLocaleString('ko-KR')}</td><td>${esc(screenInfo(item.screen).label)}</td><td>${esc(item.detail||item.field||item.kind)}${item.attempt?`<details><summary>당시 설계·응답</summary><pre>${esc(JSON.stringify(item.attempt,null,2))}</pre></details>`:''}</td><td>${esc(item.result)}</td></tr>`).join('')}</tbody></table></details>`}</body></html>`;
+  const makeHtml=logs=>`<!doctype html><html lang="ko"><head><meta charset="utf-8"><title>믿을 수 있게 보내기 탐구 기록</title><style>@page{size:A4;margin:15mm}body{font-family:Arial,sans-serif;color:#202938;line-height:1.6}table{width:100%;border-collapse:collapse;margin:12px 0 24px}th,td{border:1px solid #ccc;padding:6px;text-align:left;overflow-wrap:anywhere}section{break-inside:avoid;border-top:1px solid #ddd;padding:8px 0}.answer,pre{white-space:pre-wrap;overflow-wrap:anywhere}@media print{table{break-inside:avoid}}</style></head><body><h1>믿을 수 있게 보내기</h1><p>학교: ${esc(state.student.school||'')} · 학번: ${esc(state.student.sid)} · 이름: ${esc(state.student.name)}<br>기록 생성 시각: ${new Date().toLocaleString('ko-KR')} · 확인 코드: ${esc(state.submitted.code)}</p><p>과목: 수학 · 관련 단원: 이진법과 오류 정정<br>학습 목표: 반복·검사 비트·검사 설계를 비교하고 오류를 견디는 방법을 설명한다.</p><h2>예측 기록</h2>${predictions}${legacyDesignNotice()}${!forStudent && state.legacyDesign ? `<details><summary>이전 7비트 활동 원기록</summary><pre>${esc(JSON.stringify(state.legacyDesign,null,2))}</pre></details>` : ''}<h2>쪽별 조작 기록</h2>${records}<h2>작성한 설명</h2>${writes}<h2>내가 작성한 종합 비교표</h2>${comparisonAnswerHtml()}<h2>종합 비교 참고표</h2><p>정보 8비트를 보냅니다. 정보(반복한 사본 포함) 중 최대 한 오류가 있고, 추가한 검사 비트에는 오류가 없다고 가정합니다. 내 기록은 실제 활동 결과입니다.</p><table><thead><tr><th>방식</th><th>전송량</th><th>탐지</th><th>정정</th>${showDistance?'<th>최소 거리</th>':''}<th>내 기록</th></tr></thead><tbody>${tableRows}</tbody></table>${forStudent?'':`<h2>시도 요약</h2><p>미작성 ${summary.unfilled.length}개 · 미해결 ${summary.unresolved}개</p><table><thead><tr><th>쪽</th><th>상태</th><th>시도 수</th><th>첫 성공 시도</th><th>힌트 단계</th></tr></thead><tbody>${stats}</tbody></table><details><summary>전체 로그 (${logs.length}/${state.log.length}건)</summary><table><thead><tr><th>시각</th><th>활동</th><th>상세</th><th>결과</th></tr></thead><tbody>${logs.map(item=>`<tr><td>${new Date(item.t).toLocaleString('ko-KR')}</td><td>${esc(screenInfo(item.screen).label)}</td><td>${esc(item.detail||item.field||item.kind)}${item.attempt?`<details><summary>당시 설계·응답</summary><pre>${esc(JSON.stringify(item.attempt,null,2))}</pre></details>`:''}</td><td>${esc(item.result)}</td></tr>`).join('')}</tbody></table></details>`}</body></html>`;
   let logs=state.log.slice();
   let html=makeHtml(logs);
   while(new Blob([html]).size>500*1024 && logs.length>protectedLogEntries(logs).size) {

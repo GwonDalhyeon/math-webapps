@@ -130,24 +130,44 @@ const out=path.resolve(__dirname,'../.work/noisy-audit-20260917');
   await go('N13_write');await page.locator('[data-write="N13_two"]').fill('첫 줄\n둘째 줄');
   console.log('parity placement, aligned labels, two solved rounds, revealed two-error locations');
 
-  await page.evaluate(()=>{state.screens.N14.signal=[1,0,0,0,0,0,0]});
+  await page.evaluate(()=>{state.screens.N14.signal=[1,0,0,0,0,0,0,0]});
   await go('N14');await page.locator('[data-n14-pick="1"]').click();
   assert.match(await page.locator('#n14-check-bit').textContent(),/모두 2개 \(짝수\)/);
   await page.locator('#n14-count').click();
-  assert.equal(await page.locator('.split-table tbody tr').count(),8);
+  assert.equal(await page.locator('.split-table tbody tr').count(),9);
   assert.deepEqual(await page.locator('.split-table tbody tr').last().locator('td').allTextContents(),['2개','짝수']);
   assert.deepEqual(await page.locator('.split-table tbody tr').first().locator('td').allTextContents(),['1개','홀수']);
   await page.locator('[data-n14-pick="1"]').click();await page.locator('[data-n14-pick="2"]').click();
   assert.equal(await page.locator('#n14-check-bit .trace-bit').textContent(),'0');
   await page.locator('#n14-count').click();
   assert.deepEqual(await page.locator('.split-table tbody tr').last().locator('td').allTextContents(),['0개','짝수']);
-  await page.locator('label[for="n14-3"]').click();await page.locator('#confirm-n14').click();
-  await go('N15_operate');const groups=[[1,3,5,7],[2,3,6,7],[4,5,6,7]];
-  for(let g=0;g<3;g++) {
+  await page.locator('label[for="n14-4"]').click();await page.locator('#confirm-n14').click();
+  await go('N15_operate');const groups=[[1,3,5,7],[2,3,6,7],[4,5,6,7],[8]];
+  for(let g=0;g<4;g++) {
    if(g)await page.locator('#n15-more').click();
    for(const n of groups[g]) {await page.locator(`[data-number="${n}"]`).click();await page.locator(`[data-box="${g}"]`).press('Enter');}
-   await page.locator('#check-n15').click();assert.equal(await page.evaluate(()=>state.screens.N15.lastCheck),2**(g+1));
+   await page.locator('#check-n15').click();assert.equal(await page.evaluate(()=>state.screens.N15.lastCheck),[2,4,8,9][g]);
   }
+  // Reset must restore a usable empty box and retain previously unlocked checks.
+  await page.locator('#reset-n15').click();
+  assert.equal(await page.locator('[data-box]').count(),1);
+  assert.equal(await page.locator('#check-n15').isEnabled(),false);
+  await page.locator('[data-number="8"]').click();await page.locator('[data-box="0"]').click();
+  assert.equal(await page.locator('[data-remove="0,8"]').count(),1);
+  await page.locator('#reset-n15').click();
+  await page.locator('[data-number="8"]').press('Enter');await page.locator('[data-box="0"]').press('Space');
+  assert.equal(await page.locator('[data-remove="0,8"]').count(),1);
+  await page.locator('#reset-n15').click();
+  const dragData=await page.evaluateHandle(()=>new DataTransfer());
+  await page.locator('[data-number="8"]').dispatchEvent('dragstart',{dataTransfer:dragData});
+  await page.locator('[data-box="0"]').dispatchEvent('drop',{dataTransfer:dragData});
+  assert.equal(await page.locator('[data-remove="0,8"]').count(),1);
+  await dragData.dispose();await page.locator('#reset-n15').click();
+  for(let g=0;g<4;g++) {
+   if(g)await page.locator('#n15-more').click();
+   for(const n of groups[g]) {await page.locator(`[data-number="${n}"]`).click();await page.locator(`[data-box="${g}"]`).click({position:{x:10,y:10}});}
+  }
+  await page.locator('#check-n15').click();assert.equal(await page.evaluate(()=>state.screens.N15.lastCheck),9);
   await page.locator('[data-remove="2,4"]').click();
   assert.equal(await page.locator('.question-results .result.ok').count(),0);
   assert.equal(await page.evaluate(()=>state.screens.N15.lastCheck),null);
@@ -159,7 +179,7 @@ const out=path.resolve(__dirname,'../.work/noisy-audit-20260917');
   await go('N16');
   for(let round=0;round<3;round++) {
    const pattern=await page.locator('.notice strong').textContent();
-   const answer=Array.from({length:8},(_,i)=>i).find(i=>groups.map(group=>i&&group.includes(i)?1:0).join('')===pattern);
+   const answer=Array.from({length:9},(_,i)=>i).find(i=>groups.map(group=>i&&group.includes(i)?1:0).join('')===pattern);
    await page.locator(`label[for="n16-${answer}"]`).click();if(round<2)await page.locator('#next-n16').click();
   }
   await go('N17');await page.locator('#test-code-error').click();const query=await page.evaluate(()=>JSON.stringify(state.screens.N17.query));
@@ -194,7 +214,29 @@ const out=path.resolve(__dirname,'../.work/noisy-audit-20260917');
   const context2=await browser.newContext();await context2.route('https://**',r=>r.abort());
   const page2=await context2.newPage();await page2.goto(url);await page2.locator('#menu-button').click();await page2.locator('.utility-details summary').click();
   await page2.locator('#progress-code').fill(progressCode);await page2.locator('#import-code').click();
-  assert.equal(await page2.evaluate(()=>state.screenId),'N13_write');assert.equal(await page2.locator('[data-write="N13_two"]').inputValue(),'첫 줄\n둘째 줄');await context2.close();
+  assert.equal(await page2.evaluate(()=>state.screenId),'N13_write');assert.equal(await page2.locator('[data-write="N13_two"]').inputValue(),'첫 줄\n둘째 줄');
+  await page2.evaluate(()=>{
+   const old=JSON.parse(JSON.stringify(state));delete old.designBits;
+   old.screenId='N15_operate';old.screens.N14.signal=[1,0,1,0,1,0,1];
+   old.screens.N15.groups=[[1,3,5,7],[2,3,6,7],[4,5,6,7]];old.screens.N15.checked=true;
+   old.writes.N15_binary='보존할 이전 설명';state=old;resumeView=old.screenId;persist(true);
+  });
+  await page2.reload();await page2.locator('#resume-button').click();
+  assert.equal(await page2.locator('[data-number]').count(),8);
+  assert.equal(await page2.locator('[data-box]').count(),1);
+  assert.equal(await page2.evaluate(()=>state.screens.N15.checked),false);
+  assert.match(await page2.evaluate(()=>buildSubmissionHtml(true)),/보존할 이전 설명/);
+  await page2.evaluate(()=>persist(true));await page2.reload();
+  assert.equal(await page2.evaluate(()=>state.legacyDesign.explanation),'보존할 이전 설명');
+  await context2.close();
+  const touchContext=await browser.newContext({viewport:{width:820,height:1180},hasTouch:true});
+  await touchContext.route('https://**',r=>r.abort());const touchPage=await touchContext.newPage();await touchPage.goto(url);
+  await touchPage.evaluate(()=>{state.student={school:'검토학교',sid:'2101',name:'터치검토'};state.screens.N15.unlocked=4;navTo('N15_operate')});
+  await touchPage.locator('#reset-n15').tap();
+  await touchPage.locator('[data-number="8"]').tap();await touchPage.locator('[data-box="0"]').tap();
+  assert.equal(await touchPage.locator('[data-remove="0,8"]').count(),1);
+  await touchPage.locator('#n15-more').tap();assert.equal(await touchPage.locator('[data-box]').count(),2);
+  await touchContext.close();
   await page.locator('#menu-close').click();
   await go('N21');
   await page.evaluate(()=>{window.fetch=async()=>{throw new Error('offline test')}});await page.locator('#submit-button').click();await page.waitForFunction(()=>!submissionInFlight);

@@ -15,12 +15,12 @@ test('export preserves actual comparison answers without generating unseen probl
 
 test('changing a check design invalidates its verdict and dependent decoding answers', () => {
   const run=app();
-  run(`state.screens.N15={groups:[[1,3,5,7],[2,3,6,7],[4,5,6,7]],checked:true,lastCheck:8};
+  run(`state.screens.N15={groups:[[1,3,5,7],[2,3,6,7],[4,5,6,7],[8]],checked:true,lastCheck:9};
     state.screens.N15.lastCheckSignature=JSON.stringify(state.screens.N15.groups);
     state.screens.N16.guesses=[1,2,3];state.screens.N16.round=2`);
-  assert.match(run('renderN15Operate()'),/여덟 가지가 모두 다른 결과/);
+  assert.match(run('renderN15Operate()'),/아홉 가지가 모두 다른 결과/);
   run('state.screens.N15.groups[2].pop();invalidateCheckDesign()');
-  assert.doesNotMatch(run('renderN15Operate()'),/여덟 가지가 모두 다른 결과/);
+  assert.doesNotMatch(run('renderN15Operate()'),/아홉 가지가 모두 다른 결과/);
   assert.equal(run('state.screens.N15.checked'),false);
   assert.equal(run('state.screens.N16.guesses.length'),0);
   assert.equal(run('state.screens.N16.round'),0);
@@ -260,10 +260,60 @@ test('a solved activity is not counted unresolved because of earlier failures', 
   assert.equal(run('submissionSummary().unresolved'),0);
 });
 
-test('eight Hamming question patterns and all 24 single-bit code corrections', () => {
+test('legacy seven-bit progress is archived once and cannot count as eight-bit success', () => {
   const run=app();
-  run('state.screens.N15.groups=[[1,3,5,7],[2,3,6,7],[4,5,6,7]]');
-  assert.equal(run('new Set(n15Patterns().map(item=>item.pattern)).size'),8);
+  run(`state=initialState();delete state.designBits;
+    state.screens.N14.signal=[1,0,1,0,1,0,1];state.screens.N14.prediction='3';
+    state.screens.N15.groups=[[1,3,5,7],[2,3,6,7],[4,5,6,7]];state.screens.N15.checked=true;
+    state.writes.N15_binary='old explanation';state.writes.N13_two='keep this';
+    state.views.N15_operate={visited:true};state.hints.N15_operate=2;
+    state.log=[{kind:'attempt',screen:'N15_operate',result:'ok',detail:'old success'},{kind:'attempt',screen:'N12',result:'ok'}];
+    state.submitted={at:123,code:'old-code',result:'ok'};
+    localStorage.setItem(STORAGE_KEY,JSON.stringify(state));state=loadState()`);
+  assert.equal(run('state.designBits'),8);
+  assert.equal(run('state.screens.N14.signal'),null);
+  assert.equal(run('state.screens.N15.checked'),false);
+  assert.equal(run('JSON.stringify(state.screens.N15.groups)'),'[[]]');
+  assert.equal(run('state.writes.N15_binary'),undefined);
+  assert.equal(run('state.writes.N13_two'),'keep this');
+  assert.equal(run('state.legacyDesign.explanation'),'old explanation');
+  assert.equal(run('state.legacyDesign.hints.N15_operate'),2);
+  assert.equal(run('state.legacyDesign.log.length'),1);
+  assert.equal(run('state.log.length'),1);
+  assert.equal(run('state.views.N15_operate'),undefined);
+  assert.equal(run('state.submitted.at'),0);
+  assert.match(run('buildSubmissionHtml(true)'),/이전 정보 7비트 활동 기록[\s\S]*old explanation/);
+  assert.equal(run('validateProgress(JSON.parse(JSON.stringify(state)))'),true);
+  run(`state.screens.N15.groups=[[8]];state.writes.N15_binary='new explanation';
+    localStorage.setItem(STORAGE_KEY,JSON.stringify(state));state=loadState()`);
+  assert.equal(run('JSON.stringify(state.screens.N15.groups)'),'[[8]]');
+  assert.equal(run('state.writes.N15_binary'),'new explanation');
+  assert.equal(run('state.legacyDesign.explanation'),'old explanation');
+});
+
+test('four error-free checks decode all 256 information words and nine possible error cases', () => {
+  const run=app();
+  assert.equal(run(`(() => {
+    const groups=[[1,3,5,7],[2,3,6,7],[4,5,6,7],[8]];
+    state.screens.N15.groups=groups;
+    for(let word=0;word<256;word++) {
+      const information=Array.from({length:8},(_,i)=>(word>>i)&1);
+      const checks=groups.map(group=>group.reduce((sum,n)=>sum+information[n-1],0)%2);
+      for(let error=0;error<=8;error++) {
+        const received=information.map((bit,i)=>i+1===error ? bit^1 : bit);
+        const pattern=groups.map((group,g)=>group.reduce((sum,n)=>sum+received[n-1],checks[g])%2).join('');
+        const matches=n15Patterns().filter(row=>row.pattern===pattern);
+        if(matches.length!==1 || matches[0].errorCase!==error)return false;
+      }
+    }
+    return true;
+  })()`),true);
+});
+
+test('nine check patterns and all 24 single-bit code corrections', () => {
+  const run=app();
+  run('state.screens.N15.groups=[[1,3,5,7],[2,3,6,7],[4,5,6,7],[8]]');
+  assert.equal(run('new Set(n15Patterns().map(item=>item.pattern)).size'),9);
   assert.equal(run(`(()=>{const codes=['000000','011011','101101','110110'];return codes.every((code,sent)=>Array.from({length:6},(_,error)=>{
     const received=flipBit(code,error);const distances=codes.map(other=>hammingDistance(other,received));
     return distances[sent]===1&&distances.every((d,i)=>i===sent||d>1);
@@ -305,15 +355,15 @@ test('comic intro views use local assets and preserve readable fallback scripts'
 
 /* ── 4차 개편 (명세서 §32-4) ───────────────────────────────────────────── */
 
-test('one check splits the eight cases exactly by whether the flipped position is in the group', () => {
+test('one check splits the nine cases exactly by whether the flipped position is in the group', () => {
   const run = app();
   run(`state.student.sid = '30101'`);
   /* 모든 원신호와 비어 있지 않은 묶음에서, 실제로 보낸 검사 비트를 포함해 센다. */
   assert.equal(run(`(() => {
-    for(let source=0;source<128;source++) {
-      state.screens.N14.signal=Array.from({length:7},(_,i)=>(source>>i)&1);
-      for(let mask=1;mask<128;mask++) {
-        const pick=Array.from({length:7},(_,i)=>i+1).filter(n=>mask&(1<<(n-1)));
+    for(let source=0;source<256;source++) {
+      state.screens.N14.signal=Array.from({length:8},(_,i)=>(source>>i)&1);
+      for(let mask=1;mask<256;mask++) {
+        const pick=Array.from({length:8},(_,i)=>i+1).filter(n=>mask&(1<<(n-1)));
         const check=n14Check(pick);
         if((check.sentOnes+check.checkBit)%2!==0)return false;
         for(const item of check.rows) {
@@ -325,11 +375,11 @@ test('one check splits the eight cases exactly by whether the flipped position i
     }
     return true;
   })()`), true);
-  /* 여덟 경우는 「1~7번째 뒤집힘」과 「아무 곳도 안 뒤집힘」이다. */
-  assert.equal(run('n14Cases().length'), 8);
-  assert.equal(run('n14Cases().filter(item => item.flipped >= 0).length'), 7);
+  /* 아홉 경우는 「1~8번째 뒤집힘」과 「아무 곳도 안 뒤집힘」이다. */
+  assert.equal(run('n14Cases().length'), 9);
+  assert.equal(run('n14Cases().filter(item => item.flipped >= 0).length'), 8);
   assert.equal(run(`n14Cases().at(-1).signal.join('') === n14Signal().join('')`), true);
-  run('state.screens.N14.signal=[1,0,0,0,0,0,0];state.screens.N14.pick=[1];state.screens.N14.counted=true');
+  run('state.screens.N14.signal=[1,0,0,0,0,0,0,0];state.screens.N14.pick=[1];state.screens.N14.counted=true');
   assert.match(run('renderN14()'),/검사 비트 <span class="trace-bit">1<\/span>/);
   assert.match(run('renderN14()'),/아무 곳도 안 뒤집힘<\/th><td>2개<\/td><td>짝수/);
 });
@@ -424,7 +474,7 @@ test('two flipped cells always leave four candidates, for every student', () => 
   })()`), true);
 });
 
-test('checks unlock one at a time and split the cases 2 then 4 then 8', () => {
+test('checks distinguish at most eight cases with three checks and all nine with four', () => {
   const run = app();
   run(`state.screens.N15.groups = [[]]; state.screens.N15.unlocked = 1`);
   const distinct = () => run('new Set(n15Patterns().map(item => item.pattern)).size');
@@ -434,9 +484,12 @@ test('checks unlock one at a time and split the cases 2 then 4 then 8', () => {
   /* 둘이면 네 갈래. */
   run(`state.screens.N15.groups = [[1,3,5,7],[2,3,6,7]]`);
   assert.equal(distinct(), 4);
-  /* 셋이면 여덟 갈래 — 여기서 통과한다. */
+  /* 셋이면 최대 여덟 갈래 — 8번 오류와 무오류가 겹친다. */
   run(`state.screens.N15.groups = [[1,3,5,7],[2,3,6,7],[4,5,6,7]]`);
   assert.equal(distinct(), 8);
+  assert.equal(run('questionPatternFor(0)===questionPatternFor(8)'),true);
+  run('state.screens.N15.groups.push([8])');
+  assert.equal(distinct(),9);
   /* 검사 한 번을 해봐야 다음 칸이 열린다. 누르기 전에는 잠겨 있다. */
   run(`state.screens.N15.groups = [[1,2]]; state.screens.N15.unlocked = 1`);
   assert.match(run('renderN15Operate()'), /id="n15-more"[^>]*disabled/);
