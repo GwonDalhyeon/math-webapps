@@ -9,9 +9,9 @@ const DESIGN_CASES = DESIGN_BITS + 1;
 const DESIGN_SCREENS = ['N14','N15_operate','N15_write','N16'];
 const OPTIONAL_IDS = new Set(['N16', 'N17', 'N18', 'N19']);
 const WRITE_FIELDS = [
-  ['N1_thought', '도입 생각'], ['N2_observe', '잡음 관찰'], ['N2_explain', '읽기 한계'], ['N3_reason', 'N3 예측 이유'],
+  ['N1_thought', '도입 생각'], ['N2_observe', '잡음 관찰'], ['N2_explain', '오류율에 따른 변화'], ['N3_reason', 'N3 예측 이유'],
   ['N5_compare', '반복 횟수 비교'], ['N9_reflect', '통신로 비교 성찰'],
-  ['N13_two', '두 칸 오류의 한계'], ['N15_binary', '이진 표현 해석'],
+  ['N13_two', '두 칸 오류의 한계'], ['N15_binary', '이진 표현 해석'], ['N20_reflect', '처음 생각과 마무리'],
   ['N18_reason', '거리와 정정'], ['N19_mariner', '마리너 9호 비교']
 ];
 
@@ -20,22 +20,22 @@ const SCREEN_ORDER = [
   { id: 'C1', activity: '보내면 망가진다', label: '만화 ① · 신호는 망가진다' },
   { id: 'N1', activity: '보내면 망가진다', label: '도입' },
   { id: 'N2_operate', activity: '보내면 망가진다', label: '잡음 (가) · 같은 오류율' },
-  { id: 'N2_write', activity: '보내면 망가진다', label: '잡음 (나) · 읽기 한계' },
+  { id: 'N2_write', activity: '보내면 망가진다', label: '잡음 (나) · 오류율에 따른 변화' },
   { id: 'C2', activity: '보내면 망가진다', label: '만화 ② · 여러 번 보내기' },
   { id: 'N3', activity: '보내면 망가진다', label: '예측' },
   { id: 'N4', activity: '다수결', label: '겹쳐 놓고 고르기' },
   { id: 'N5_operate', activity: '다수결', label: '반복 횟수 정하기' },
   { id: 'N5_write', activity: '다수결', label: '반복 횟수 · 작성' },
-  { id: 'N6_operate', activity: '통신로 설계', label: '조립 S1 · 시험' },
+  { id: 'N6_operate', activity: '통신로 설계', label: '기본 전송 실험' },
   { id: 'N6_read', activity: '통신로 설계', label: '결과 읽는 법' },
-  { id: 'N7', activity: '통신로 설계', label: '조립 S2' },
-  { id: 'N8', activity: '통신로 설계', label: '조립 S3' },
+  { id: 'N7', activity: '통신로 설계', label: '정확하게 보내기' },
+  { id: 'N8', activity: '통신로 설계', label: '정확하고 싸게 보내기' },
   { id: 'N9', activity: '통신로 설계', label: '비교 · 성찰' },
   { id: 'C3', activity: '어디가 뒤집혔나', label: '만화 ③ · 검사 점 붙이기' },
   /* 개념 → 손(1차원) → 블록(1차원) → 손(2차원). 검사 비트 블록을 만나기
      전에 손으로 한 번 만들어 본다(명세서 §32-4 4번). */
   { id: 'N11a', activity: '어디가 뒤집혔나', label: '검사 점 (가) · 한 줄' },
-  { id: 'N10', activity: '어디가 뒤집혔나', label: '조립 S4' },
+  { id: 'N10', activity: '어디가 뒤집혔나', label: '오류 유무 판단하기' },
   { id: 'N11b', activity: '어디가 뒤집혔나', label: '검사 점 (나) · 7×7' },
   { id: 'N12', activity: '어디가 뒤집혔나', label: '한 칸 찾기' },
   { id: 'N13_observe', activity: '어디가 뒤집혔나', label: '두 칸 오류 · 관찰' },
@@ -100,8 +100,8 @@ const HINTS = {
   ],
   N11b: [
     '아직 짝수가 아닌 줄이 있습니다. 가로줄부터 하나씩 세어 보세요.',
-    '가로줄 여섯 개와 세로줄 여섯 개를 각각 맞춰야 합니다. 둘 다 확인했나요?',
-    '맨 오른쪽 아래 한 칸은 가로줄에도 속하고 세로줄에도 속합니다. 두 조건을 같이 만족하나요?'
+    '검사 줄까지 가로 7줄과 세로 7줄을 각각 맞춰야 합니다. 둘 다 확인했나요?',
+    '왼쪽 위 모서리는 위쪽 검사 줄과 왼쪽 검사 줄에 함께 속합니다. 두 조건을 같이 만족하나요?'
   ],
   N12: [
     '아직 아닙니다. 어느 가로·세로에서 1의 개수가 홀수인지 먼저 찾아보세요.',
@@ -164,7 +164,7 @@ function hasStudentId() { return studentId().length > 0; }
 function studentRandom(...parts) { return seededRandom(studentId(), ...parts); }
 
 /* 시드로 문제를 만드는 화면은 학번이 없으면 문제를 만들지 않는다(§36-2). */
-const SEEDED_SCREENS = new Set(['N4', 'N5_operate', 'N5_write', 'N11a', 'N11b', 'N12', 'N13_observe', 'N13_write', 'N13_bridge', 'N14', 'N15_operate', 'N16', 'N17']);
+const SEEDED_SCREENS = new Set(['N4', 'N5_operate', 'N5_write', 'N11a', 'N11b', 'N12', 'N13_observe', 'N13_write', 'N13_bridge', 'N14', 'N15_operate', 'N15_write', 'N16', 'N17']);
 
 function defaultCircuit(stage = 'N6') {
   const fixed = ['message', 'receiver'];
@@ -286,6 +286,7 @@ function restoredBraille(answer, success) {
 /* 정확히 6자모인 낱말만 쓴다. slice(0,6)으로 자르면 격자에 낱말이 다 담기지
    않아 「받은 낱말」을 보여줄 수 없다(명세서 §32-4 5번).
    전부 3음절이고 초성 ㅇ이 없어 여섯 자모 모두 점형이 있다. */
+const BRAILLE_EXAMPLES = ['수학', '학교', '우주', '친구', '고구마', '바나나', '소나무', '기러기', '도토리', '다리미'];
 const PARITY_WORDS = [
   '고구마', '스스로', '토마토', '바나나', '다시마', '가마니', '너구리',
   '소나무', '기러기', '도토리', '두더지', '미나리', '보리수', '가로수',
@@ -319,6 +320,9 @@ function initialState(sid = '') {
   return {
     v: 1,
     designBits: DESIGN_BITS,
+    baseline: null,
+    circuitMethods: {},
+    detectionVersion: 2,
     student: { school: '', sid: '', name: '' },
     screenId: 'N0',
     includeOptional: false,
@@ -403,6 +407,16 @@ function loadState() {
       if (used) { if (merged.screens.N20) merged.screens.N20.checked=false; merged.submitted={...fresh.submitted}; }
       merged.designBits = DESIGN_BITS;
     }
+    if (!merged.baseline) {
+      const first = merged.log.find(item => item.screen === 'N6_operate' && item.attempt?.metric?.ran && item.attempt.metric.trials === 1000 && JSON.stringify(item.attempt.blocks) === '["message","noise","receiver"]');
+      if (first) merged.baseline = {metric:first.attempt.metric, blocks:first.attempt.blocks, detail:first.detail};
+    }
+    if (parsed.detectionVersion !== 2) {
+      merged.legacyDetection = {stats:merged.attemptStats.N10 || null, hints:merged.hints.N10 || 0};
+      merged.attemptStats.N10 = {count:0, failures:0, firstSuccess:null};
+      merged.hints.N10 = 0;
+      merged.detectionVersion = 2;
+    }
     return merged;
   } catch (error) {
     return initialState();
@@ -430,6 +444,13 @@ function validateProgress(data) {
   if (!Array.isArray(data.screens.N16.cases) || !data.screens.N16.cases.every(value => Number.isInteger(value) && value >= 0 && value <= DESIGN_BITS)) return false;
   /* 단계 잠금으로 검사 묶음 1개에서 시작한다(명세서 §32-4 12번). */
   if (!Array.isArray(data.screens.N15.groups) || data.screens.N15.groups.length < 1 || data.screens.N15.groups.length > 4 || !data.screens.N15.groups.every(group => Array.isArray(group) && group.every(value => Number.isInteger(value) && value >= 1 && value <= DESIGN_BITS))) return false;
+  const practice = data.screens.N15.practice;
+  const errorCase = value => Number.isInteger(value) && value >= 0 && value <= DESIGN_BITS;
+  if (practice != null && (!object(practice) || typeof practice.signature !== 'string' || !errorCase(practice.target) || !(practice.guess === null || errorCase(practice.guess)))) return false;
+  const realMetric = metric => object(metric) && metric.ran === true && metric.trials === 1000 && Number.isFinite(metric.messageSuccess) && metric.messageSuccess >= 0 && metric.messageSuccess <= 100 && Number.isInteger(metric.bits) && metric.bits > 0;
+  const validMethod = item => object(item) && Array.isArray(item.blocks) && item.blocks.every(type => ['message','noise','receiver','repeat3','repeat5','majority','parityEncode','parityCheck'].includes(type)) && realMetric(item.metric);
+  if (data.baseline != null && (!validMethod(data.baseline) || JSON.stringify(data.baseline.blocks) !== '["message","noise","receiver"]' || data.baseline.metric.bits !== 8)) return false;
+  if (data.circuitMethods != null && (!object(data.circuitMethods) || !Object.values(data.circuitMethods).every(validMethod))) return false;
   if (!Array.isArray(data.screens.N17.codes) || data.screens.N17.codes.length !== 4 || !data.screens.N17.codes.every(code => /^[01]{6}$/.test(code))) return false;
   return Object.keys(fresh.circuits).every(key => {
     const nodes = data.circuits[key]?.nodes;
@@ -461,8 +482,9 @@ function protectedLogEntries(logs) {
   const latest = new Map();
   for (const entry of logs) {
     if (entry.kind !== 'attempt') continue;
-    if (!first.has(entry.screen)) { first.add(entry.screen); kept.add(entry); }
-    if (entry.result === 'ok' && !success.has(entry.screen)) { success.add(entry.screen); kept.add(entry); }
+    const condition = entry.screen === 'N10' ? `${entry.screen}:${entry.attempt?.metric?.conditionVersion || 1}` : entry.screen;
+    if (!first.has(condition)) { first.add(condition); kept.add(entry); }
+    if (entry.result === 'ok' && !success.has(condition)) { success.add(condition); kept.add(entry); }
     latest.set(entry.screen, entry);
   }
   latest.forEach(entry => kept.add(entry));
@@ -712,18 +734,18 @@ const COMIC_DATA = {
       '점 하나가 달라져 학생이 글자를 알아보지 못합니다.',
       '학생이 다시 보내 달라고 할 수 없는 상황에서 해결 방법을 생각합니다.'
     ],
-    explanation: '신호가 오가는 길에는 늘 잡음이 있습니다. 점자처럼 다시 보낼 수 없는 경우도 있고, 우주 탐사선처럼 다시 보낼 수 있어도 시간이 아주 오래 걸리는 경우도 있습니다. 이번 시간에는 망가져도 알아채고, 고칠 수 있는 방법을 직접 설계합니다.'
+    explanation: '신호가 오가는 길에는 늘 잡음이 있습니다. 이번 활동에서는 편지를 받은 뒤 다시 보내 달라고 할 수 없다고 가정합니다. 우주 탐사선처럼 다시 보낼 수 있어도 시간이 아주 오래 걸리는 경우도 있습니다. 이번 시간에는 망가져도 알아채고, 고칠 수 있는 방법을 직접 설계합니다.'
   },
   C2: {
     src: './assets/comic-2.png',
     title: '여러 번 보내기',
-    intro: '한 번 말하면 잘못 들을 수 있습니다. 같은 말을 여러 번 보내면 무엇을 비교할 수 있을까요?',
-    alt: ['시끄러운 공사장에서 학생이 다른 학생에게 “3시!”라고 외칩니다.', '상대 학생이 잘못 들은 듯 머리를 긁으며 “2시?”라고 되묻습니다.', '처음 학생이 같은 말을 여러 번 외치고 상대 학생이 반복된 신호를 듣습니다.', '상대 학생이 1시·2시·3시라고 적힌 세 종이를 비교하며 생각하고, 말풍선에 “2시? 3시?”가 나타납니다.'],
+    intro: '처음부터 같은 신호를 여러 번 보내는 방법입니다. 받은 신호들을 어떻게 비교하면 좋을까요?',
+    alt: ['시끄러운 공사장에서 학생이 다른 학생에게 “3시!”라고 외칩니다.', '상대 학생이 잘못 들은 듯 머리를 긁으며 “2시?”라고 되묻습니다.', '처음 학생이 같은 말을 여러 번 외치고 상대 학생이 반복된 신호를 듣습니다.', '상대 학생이 3시·2시·3시라고 적힌 세 종이를 비교하며 생각하고, 말풍선에 “2시? 3시?”가 나타납니다.'],
     frames: [
       '시끄러운 공사장에서 A가 B에게 “3시!”라고 외칩니다.',
       'B가 잘못 들은 듯 “2시?”라고 되묻습니다.',
       'A가 같은 말을 여러 번 외칩니다.',
-      'B가 1시·2시·3시라고 적힌 세 종이를 비교하며 “2시? 3시?”라고 생각합니다.'
+      'B가 3시·2시·3시라고 적힌 세 종이를 비교하며 “2시? 3시?”라고 생각합니다.'
     ],
     explanation: '같은 신호를 여러 번 보내면 받는 쪽에 비교할 근거가 생깁니다. 하지만 세 번 보내면 보낼 양도 세 배가 됩니다. 정확함과 비용 중 무엇을 택할지가 오늘의 문제입니다.'
   },
@@ -731,15 +753,15 @@ const COMIC_DATA = {
     src: './assets/comic-3.png',
     section: '4 어디가 뒤집혔나',
     title: '검사 점 붙이기',
-    intro: '점 하나를 더 붙이는 것만으로 오류가 있는지 알 수 있습니다. 그 대신 어느 점인지는 알 수 없습니다.',
-    alt: ['보내는 사람이 「검은 점은 항상 짝수 개」라는 규칙을 적어 둡니다.', '점이 홀수일 때 다른 색 점 하나를 더 찍어 짝수로 맞춥니다. 이 점을 검사 점이라고 합니다.', '받는 사람이 점을 세어 짝수인 것을 확인하고 고개를 끄덕입니다.', '다른 편지에서 점이 홀수인 것을 세고 눈을 크게 뜨며 어딘가 잘못됐다는 것을 알아챕니다.'],
+    intro: '한 비트가 뒤집히면 홀짝이 바뀝니다. 검사로 무엇을 알 수 있을까요?',
+    alt: ['보내는 사람이 「검은 점은 항상 짝수 개」라는 규칙을 적어 둡니다.', '점이 홀수일 때 다른 색 점 하나를 더 찍어 짝수로 맞춥니다. 이 점을 검사 점이라고 합니다.', '받는 사람이 “짝수네. 검사를 통과했어.”라고 말합니다. 자막은 “짝수이면 검사를 통과합니다. 오류가 없다고 확신할 수 있을까요?”라고 묻습니다.', '다른 편지에서 점이 홀수인 것을 세고 눈을 크게 뜨며 어딘가 잘못됐다는 것을 알아챕니다.'],
     frames: [
       '보내는 사람이 규칙을 정합니다. “검은 점의 개수는 항상 짝수.”',
       '점이 홀수면 점 하나를 더 붙여 짝수로 맞춥니다. 이 점을 검사 점이라고 합니다.',
-      '받는 사람이 세어 봅니다. “짝수네. 괜찮아.”',
+      '받는 사람이 세어 봅니다. “짝수네. 검사를 통과했어.” 짝수이면 검사를 통과합니다. 오류가 없다고 확신할 수 있을까요?',
       '다른 편지는 홀수입니다. “홀수야! 어딘가 잘못됐어.”'
     ],
-    explanation: '점 하나를 더 붙이는 것만으로 오류가 있는지 알 수 있습니다. 대신 어느 점이 뒤집혔는지는 알 수 없습니다. 틀렸다는 사실만 알 수 있는 것입니다. 위치까지 알아내려면 무엇이 더 필요할까요?'
+    explanation: '한 비트가 뒤집히면 홀짝이 바뀌어 오류를 알아챌 수 있습니다. 다만 어느 자리인지는 알 수 없습니다.'
   },
   C4: {
     src: './assets/comic-4.png',
@@ -795,14 +817,14 @@ function renderN0() {
     </div>
     <div class="card">
       <h3>오늘의 흐름</h3>
-      <ul class="check-list"><li>잡음을 직접 보고, 반복과 다수결을 비교합니다.</li><li>통신로를 설계하고 정확성과 전송량을 함께 살핍니다.</li><li>검사 비트와 질문 설계로 오류 위치를 찾아봅니다.</li><li>마지막에는 실제 시도와 생각의 변화를 제출합니다.</li></ul>
-      <p class="muted small" style="margin-bottom:0">선택 활동은 언제든 활동 목록에서 포함하거나 건너뛸 수 있습니다.</p>
+      <ul class="check-list"><li>잡음을 직접 보고, 반복과 다수결을 비교합니다.</li><li>통신로를 설계하고 정확성과 전송량을 함께 살핍니다.</li><li>검사 비트와 검사 묶음 설계로 오류 위치를 찾아봅니다.</li><li>마지막에는 실제 시도와 생각의 변화를 제출합니다.</li></ul>
+      <p class="muted small" style="margin-bottom:0">선택 활동은 이 시작 화면의 「선택 활동도 포함하기」에서 설정합니다.</p>
     </div>
   </div>`;
 }
 
 function renderN1() {
-  return `${heading('1 보내면 망가진다', '망가진 점자 편지도 알아볼 수 있게 하려면?', '점자로 찍은 편지는 눌리거나 지워져도 다시 보낼 수 없습니다. 받는 사람이 글자가 망가진 것을 알아채고, 원래 글자를 되찾게 하려면 보내는 쪽에서 무엇을 바꿔야 할까요?')}
+  return `${heading('1 보내면 망가진다', '망가진 점자 편지도 알아볼 수 있게 하려면?', '이번에는 편지를 받은 뒤 다시 보내 달라고 할 수 없는 상황입니다. 글자가 망가져도 알아보고 고칠 수 있도록, 보내기 전에 무엇을 바꾸면 좋을까요?')}
   <div class="card stack"><div class="notice">망가진 것을 알아채는 방법과 원래 글자를 되찾는 방법을 생각해 봅시다.</div><div class="writing-list">${writeBox('N1_thought', '지금 떠오르는 방법을 한 가지 적어 보세요.', 'reflect')}</div></div>`;
 }
 
@@ -819,7 +841,9 @@ function noiseSession(part = noisePart()) {
   if (!n2.sessions[part]) n2.sessions[part] = { rate: part === 'a' ? 10 : 0, sends: 0, atTen: 0, word: messageWord(), cells: null };
   const session = n2.sessions[part];
   if (session.word !== messageWord()) Object.assign(session, { word: messageWord(), cells: null, atTen: 0 });
-  if (!session.cells && session.word) session.cells = transmitCells(messageCells(session.word).cells, session.rate);
+  const built = messageCells(session.word);
+  if (built.skipped.length) session.cells = null;
+  else if (!session.cells && session.word) session.cells = transmitCells(built.cells, session.rate);
   return session;
 }
 
@@ -847,20 +871,19 @@ function noiseQuestionHtml(part, session) {
   if (part === 'a' && session.atTen < 3 && !state.writes.N2_observe) return `<p class="notice">이 낱말을 오류율 10%에서 ${session.atTen}/3번 다시 보냈습니다. 3번 보내면 질문 칸이 열립니다. 다음 쪽으로 이동할 수도 있습니다.</p>`;
   return writeBox(part === 'a' ? 'N2_observe' : 'N2_explain', part === 'a'
     ? '오류율을 바꾸지 않았는데 결과가 달라졌습니다. 왜 그럴까요?'
-    : '내 낱말을 읽을 수 있는 한계는 몇 %인가요? 그렇게 정한 근거는?', part === 'a' ? 'observe' : 'explain');
+    : '오류율이 높아질수록 원래 낱말과 다른 결과가 더 자주 나왔나요? 관찰한 결과를 근거로 설명해 보세요.', part === 'a' ? 'observe' : 'explain');
 }
 
 function renderN2(part) {
   const session = noiseSession(part);
   const word = messageWord();
   const built = messageCells(word);
-  const title = part === 'a' ? '같은 오류율인데 결과도 같을까?' : '내 낱말은 어디까지 읽을 수 있을까?';
-  const instruction = part === 'a' ? '오류율을 10%에 두고 「같은 오류율로 다시 보내기」를 3번 이상 누르세요.' : '오류율을 0%부터 올려 가며 되읽은 결과를 보세요. 한 번의 결과로 한계를 정하기 어렵다면 같은 오류율에서 다시 보내 보세요.';
-  return `${heading('1 보내면 망가진다 · ' + (part === 'a' ? '(가) 같은 오류율' : '(나) 읽기 한계'), title, instruction)}
+  const title = part === 'a' ? '같은 오류율인데 결과도 같을까?' : '오류율이 높아지면 결과는 어떻게 달라질까?';
+  const instruction = part === 'a' ? '오류율을 10%에 두고 「같은 오류율로 다시 보내기」를 3번 이상 누르세요.' : '오류율을 바꿔 가며 같은 오류율에서 여러 번 보내고, 원래 낱말과 같은지 비교하세요.';
+  return `${heading('1 보내면 망가진다 · ' + (part === 'a' ? '(가) 같은 오류율' : '(나) 오류율에 따른 변화'), title, instruction)}
   <div class="card stack noise-workspace">
-    <div class="field noise-word-field"><label for="braille-word">점자로 보낼 낱말</label><input id="braille-word" type="text" maxlength="6" value="${esc(word)}" placeholder="이름이나 짧은 한글 낱말"></div>
-    ${!word ? '<div class="notice">보낼 낱말을 입력하세요. 입력하면 점자와 오류율 조절 막대가 나타납니다.</div>' : `
-    ${built.skipped.length ? `<div class="notice">${esc([...new Set(built.skipped)].join(', '))}: 이 앱의 점자표 지원 범위 밖입니다. 해당 글자는 ?로 표시합니다. 지원하는 자모만 보내며, 겹자모 규칙은 다루지 않습니다.</div>` : ''}
+    <div class="field noise-word-field"><label for="braille-word">점자로 보낼 낱말</label><input id="braille-word" list="braille-examples" type="text" maxlength="6" value="${esc(word)}" placeholder="낱말을 쓰거나 예시 선택"><datalist id="braille-examples">${BRAILLE_EXAMPLES.map(word => `<option value="${word}"></option>`).join('')}</datalist><span class="muted small">직접 쓰거나 입력창의 예시를 고르세요. 결과를 비교할 때는 같은 낱말을 유지하세요.</span></div>
+    ${!word ? '<div class="notice">보낼 낱말을 입력하세요. 입력하면 점자와 오류율 조절 막대가 나타납니다.</div>' : built.skipped.length ? '<div class="notice" role="status">이 낱말은 점자로 바꿀 수 없는 글자가 있습니다. 다른 낱말을 입력하거나 예시를 고르세요.</div>' : `
     <div id="noise-display">${noiseDisplayHtml(session)}</div>
     <div class="slider-wrap"><label for="noise-rate"><strong>오류율</strong> <output id="noise-rate-value">${session.rate}%</output></label><input id="noise-rate" type="range" min="0" max="30" value="${session.rate}"></div>
     <div class="button-row"><button id="resend-noise" class="primary-button" type="button" ${built.cells.length ? '' : 'disabled'}>같은 오류율로 다시 보내기</button><span id="noise-count" class="muted small">다시 보낸 횟수 ${session.sends}회</span></div>
@@ -873,7 +896,7 @@ function renderN2Write() { return renderN2('b'); }
 
 function renderN3() {
   const n3 = state.screens.N3;
-  return `${heading('1 보내면 망가진다 · 예측', '몇 번 반복해서 보내면 더 잘 읽을 수 있을까?', '여러 번 보내는 방법을 시험해 봅시다. 실험 결과를 보기 전에 예측을 정합니다. 확정한 최초 응답은 나중에 바뀌지 않습니다.')}
+  return `${heading('1 보내면 망가진다 · 예측', '몇 번 보내면 원래 신호를 더 잘 되찾을까?', '오류율이 같을 때, 원래 신호를 되찾을 가능성이 가장 높을 것 같은 횟수를 고르세요.')}
   <div class="card stack"><div class="choice-grid">${['1회', '3회', '5회'].map(option => `<div class="choice"><input id="n3-${option}" name="n3" type="radio" value="${option}" ${n3.prediction === option ? 'checked' : ''} ${n3.locked ? 'disabled' : ''}><label for="n3-${option}">${option}</label></div>`).join('')}</div>${writeBox('N3_reason', '왜 그렇게 예상했나요?', 'predict', { locked: n3.locked })}<div class="button-row"><button id="confirm-n3" class="primary-button" type="button" ${n3.locked ? 'disabled' : ''}>예측 확정</button>${n3.locked ? '<span class="result ok">예측이 잠겼습니다.</span>' : ''}</div></div>`;
 }
 
@@ -1040,7 +1063,7 @@ function renderN5Write() {
   const rows = repeatedRows(n5.count);
   const observedFour = (n5.observedCounts || []).includes(4);
   return `${heading('2 다수결 · 작성', '반복 횟수와 판단 방법을 돌아보세요.', `선택한 ${n5.count}번 받았을 때의 결과와 동점 여부가 근거로 남아 있습니다.`)}
-  <div class="card stack"><div class="evidence">선택한 반복: ${n5.count}번 받았을 때 · 동점 열: ${columnTies(rows).length ? columnTies(rows).map(i => i + 1).join(', ') : '없음'}</div><div class="writing-list">${observedFour ? writeBox('N5_compare', '3번·5번 받았을 때와 4번 받았을 때의 판단에는 어떤 차이가 있었나요?', 'explain') : '<div class="notice">4번 받았을 때는 미관찰입니다. 반복 횟수 정하기로 돌아가 비교해 보세요.</div>' + writeBox('N5_compare', '선택한 횟수들을 비교하여 차이를 설명해 보세요.', 'explain')}</div>${evidenceFor(['N5_operate'])}</div>`;
+  <div class="card stack"><div class="evidence">선택한 반복: ${n5.count}번 받았을 때 · 동점 열: ${columnTies(rows).length ? columnTies(rows).map(i => i + 1).join(', ') : '없음'}</div><div class="writing-list">${observedFour ? writeBox('N5_compare', '3번·5번 받았을 때와 4번 받았을 때의 판단에는 어떤 차이가 있었나요?', 'explain') : '<div class="notice">4번 받았을 때는 미관찰입니다. 반복 횟수 정하기로 돌아가 비교해 보세요.</div>' + writeBox('N5_compare', '선택한 횟수들을 비교하여 차이를 설명해 보세요.', 'explain')}</div>${evidenceFor(['N5_operate'])}<p class="notice">동점이 없으면 항상 원래 신호를 되찾을까요? 다음 실험에서 확인해 봅시다.</p></div>`;
 }
 
 function circuitBlockLabel(type) {
@@ -1113,7 +1136,7 @@ function analyzeCircuit(nodes) {
   return { canCompare, finalLength: length, noiseBits, warnings };
 }
 
-/* 파이프라인 1회 실행. mode 'noise'는 각 비트를 NOISE_RATE로, 'one'은 정확히 한 비트를 뒤집는다. */
+/* 파이프라인 1회 실행. mode 'noise'는 각 비트를 NOISE_RATE로, 'one'은 정보 한 비트만, 'none'은 무오류다. */
 /* 잡음이 없었다면 있어야 할 값과 어긋난 자리를 찾는다. */
 function wrongIndexes(signal, origin) {
   const out = [];
@@ -1130,6 +1153,8 @@ function runPipelineOnce(nodes, mode, steps = null) {
   let groupSize = 1;
   let parityAttached = 0;
   let detected = false;
+  let hadError = false;
+  let kinds = signal.map(() => 'info');
   if (steps) steps.push({ label: '보낼 신호', type: 'start', signal: signal.slice(), wrong: [], fixed: [], groupSize: 1 });
   for (const type of nodes) {
     let fixedHere = [];
@@ -1139,18 +1164,22 @@ function runPipelineOnce(nodes, mode, steps = null) {
       const nextOrigin = steps ? [] : null;
       for (let i = 0; i < signal.length; i += 1) for (let j = 0; j < k; j += 1) { next.push(signal[i]); if (steps) nextOrigin.push(origin[i]); }
       signal = next;
+      kinds = kinds.flatMap(kind => Array(k).fill(kind));
       if (steps) origin = nextOrigin;
       groupSize *= k;
     } else if (type === 'parityEncode') {
       signal = signal.concat([signal.reduce((sum, bit) => sum + bit, 0) % 2]);
       if (steps) origin = origin.concat([origin.reduce((sum, bit) => sum + bit, 0) % 2]);
       parityAttached += 1;
+      kinds.push('check');
     } else if (type === 'noise') {
       if (mode === 'one') {
-        const at = Math.floor(Math.random() * signal.length);
+        const eligible = kinds.flatMap((kind, i) => kind === 'info' ? [i] : []);
+        const at = eligible[Math.floor(Math.random() * eligible.length)];
+        hadError = at !== undefined;
         signal = signal.map((bit, index) => (index === at ? bit ^ 1 : bit));
-      } else {
-        signal = signal.map(bit => (Math.random() < NOISE_RATE ? bit ^ 1 : bit));
+      } else if (mode !== 'none') {
+        signal = signal.map(bit => { if (Math.random() < NOISE_RATE) { hadError = true; return bit ^ 1; } return bit; });
       }
     } else if (type === 'majority') {
       if (groupSize <= 1) continue;
@@ -1170,12 +1199,14 @@ function runPipelineOnce(nodes, mode, steps = null) {
         }
       }
       signal = next;
+      kinds = next.map((_, i) => kinds.slice(i * groupSize, (i + 1) * groupSize).every(kind => kind === 'check') ? 'check' : 'info');
       if (steps) origin = nextOrigin;
       groupSize = 1;
     } else if (type === 'parityCheck') {
       if (!parityAttached) continue;
       detected = signal.reduce((sum, bit) => sum + bit, 0) % 2 !== 0;
       signal = signal.slice(0, -1);
+      kinds = kinds.slice(0, -1);
       if (steps) origin = origin.slice(0, -1);
       parityAttached -= 1;
     } else {
@@ -1183,7 +1214,7 @@ function runPipelineOnce(nodes, mode, steps = null) {
     }
     if (steps) steps.push({ label: circuitBlockLabel(type), type, signal: signal.slice(), wrong: wrongIndexes(signal, origin), fixed: fixedHere, groupSize, detected: type === 'parityCheck' ? detected : undefined });
   }
-  return { signal, detected };
+  return { signal, detected, hadError, kinds };
 }
 
 /* 표본이 너무 길면 화면에 담을 수 없으므로 기록하지 않는다. */
@@ -1202,7 +1233,7 @@ function traceHtml(steps) {
     const notes = [`${step.signal.length}비트`];
     if (step.type === 'noise') notes.push(step.wrong.length ? `뒤집힌 자리 ${step.wrong.length}개` : '이번에는 뒤집히지 않았습니다');
     if (step.fixed.length) notes.push(`고친 자리 ${step.fixed.length}개`);
-    if (step.type === 'parityCheck') notes.push(step.detected ? '홀수 · 오류 있음' : '짝수 · 이상 없음');
+    if (step.type === 'parityCheck') notes.push(step.detected ? '홀수 · 오류 있음' : '짝수 · 검사 통과');
     return `<div class="trace-row" style="--i:${index}">
       <span class="trace-label">${index === 0 ? '' : '<span aria-hidden="true">↓ </span>'}${esc(step.label)}</span>
       <span class="trace-bits">${bits}</span>
@@ -1217,7 +1248,7 @@ function traceHtml(steps) {
   </div>`;
 }
 
-/* 1000회 시행의 상대도수를 낸다. N10은 한 비트 오류를 강제로 넣어 탐지율을 본다. */
+/* N10은 무오류와 정보 한 비트 오류를 각각 500회 시험한다. */
 /* 「결과 읽는 법」 화면이 쓸 표본이다(명세서 §32-4 1번).
    1번째 시행은 신호 변형 표시와 **같은 시행**이어야 한다. 따로 한 번 더
    돌리면 「앞 화면에서 본 그 한 번」이 거짓이 된다. */
@@ -1226,23 +1257,28 @@ const SAMPLE_TRIALS = 5;
 function simulateCircuit(nodes, stage) {
   const info = analyzeCircuit(nodes);
   if (!info.canCompare) return { ...info, ran: false };
-  const mode = stage === 'N10' ? 'one' : 'noise';
+  // 두 조건을 500번씩 실제 실행한다. 한 오류는 정보 비트에서만 고른다.
+  const detection = stage === 'N10';
   let exact = 0;
   let bitHits = 0;
   let detectHits = 0;
+  let errorTrials = 0;
+  let cleanTrials = 0;
+  let passHits = 0;
   const samples = [];
   let firstTrace = null;
   for (let t = 0; t < TRIALS; t += 1) {
     /* 1번째 시행만 변형 과정을 함께 기록한다. 나머지는 기록 비용이 들지 않는다. */
     const steps = t === 0 ? [] : null;
-    const out = runPipelineOnce(nodes, mode, steps);
+    const out = runPipelineOnce(nodes, detection ? (t % 2 ? 'one' : 'none') : 'noise', steps);
     if (t === 0) firstTrace = steps.some(step => step.signal.length > TRACE_MAX_BITS) ? null : steps;
     let same = 0;
     for (let i = 0; i < SOURCE_BITS; i += 1) if (out.signal[i] === SOURCE[i]) same += 1;
     bitHits += same;
     if (same === SOURCE_BITS) exact += 1;
-    if (out.detected) detectHits += 1;
-    if (t < SAMPLE_TRIALS) samples.push({ signal: out.signal.slice(0, SOURCE_BITS), same });
+    if (out.hadError) { errorTrials += 1; if (out.detected) detectHits += 1; }
+    else { cleanTrials += 1; if (!out.detected) passHits += 1; }
+    if (t < SAMPLE_TRIALS) samples.push({ signal: out.signal.slice(0, SOURCE_BITS), same, hadError: out.hadError, detected: out.detected });
   }
   return {
     ...info,
@@ -1254,7 +1290,10 @@ function simulateCircuit(nodes, stage) {
     trace: firstTrace,
     messageSuccess: (exact / TRIALS) * 100,
     bitRecovery: (bitHits / (TRIALS * SOURCE_BITS)) * 100,
-    detectRate: (detectHits / TRIALS) * 100,
+    conditionVersion: detection ? 2 : 1,
+    errorTrials, cleanTrials, detectHits, passHits,
+    detectRate: errorTrials ? (detectHits / errorTrials) * 100 : 0,
+    passRate: cleanTrials ? (passHits / cleanTrials) * 100 : 0,
     bits: info.noiseBits
   };
 }
@@ -1262,6 +1301,8 @@ function simulateCircuit(nodes, stage) {
 /* 판정은 측정값만으로 한다(명세서 §17-4). 블록 구성을 조건에 넣지 않는다 —
    5번 반복으로 푼 학생이 탈락해서는 안 된다. */
 const MESSAGE_GOAL = 75;
+
+function detectionPassed(metric) { return metric.conditionVersion === 2 && metric.errorTrials > 0 && metric.cleanTrials > 0 && metric.detectRate === 100 && metric.passRate === 100; }
 
 function judgeCircuit(metric, stage) {
   if (!metric || !metric.ran) return 'blocked';
@@ -1274,7 +1315,7 @@ function judgeCircuit(metric, stage) {
   }
   if (stage === 'N10') {
     const cheap = metric.bits <= 9;
-    const detects = metric.detectRate >= 100;
+    const detects = detectionPassed(metric);
     return cheap && detects ? 'ok' : (cheap || detects ? 'partial' : 'fail');
   }
   return 'fail';
@@ -1294,7 +1335,7 @@ function circuitHint(stage, level, metric) {
   }
   if (stage === 'N10') {
     const cheap = metric.bits <= 9;
-    const detects = metric.detectRate >= 100;
+    const detects = detectionPassed(metric);
     if (cheap && !detects) return '전송량은 조건 안에 있습니다. 오류를 알아채지 못한 까닭을 살펴보세요.';
     if (!cheap && detects) return '오류는 알아챘습니다. 전송량이 9비트를 넘었습니다.';
   }
@@ -1302,19 +1343,19 @@ function circuitHint(stage, level, metric) {
 }
 
 function circuitDetail(metric, stage) {
-  if (stage === 'N10') return `전송량 ${metric.bits}비트 · 한 비트 오류 탐지율 ${metric.detectRate.toFixed(1)}% · ${metric.trials}회 시행`;
+  if (stage === 'N10') return `전송량 ${metric.bits}비트 · 오류 있을 때 탐지 ${metric.detectRate.toFixed(1)}% (${metric.errorTrials}회) · 오류 없을 때 통과 ${metric.passRate.toFixed(1)}% (${metric.cleanTrials}회) · ${metric.trials}회 시행`;
   return `메시지 전체 성공률 ${metric.messageSuccess.toFixed(1)}% · 비트 복원률 ${metric.bitRecovery.toFixed(1)}% · 전송량 ${metric.bits}비트 · ${metric.trials}회 시행`;
 }
 
 const STAGE_COPY = {
   /* 이 화면에는 목표가 없다(judgeCircuit 이 N6 를 무조건 통과시킨다).
      진짜 일은 「결과 읽는 법 배우기」이므로 그렇게 적는다(명세서 §32-4 1번). */
-  N6: ['조립 S1 · 시험', '결과에 뜨는 수가 무슨 뜻인지 익혀 봅시다.', '아직 목표는 없습니다. 메시지 → 잡음 → 받은 메시지가 이어진 상태로 한 번 보내 보세요. 다음 화면부터 여기 뜨는 수로 설계를 판단합니다.'],
-  N7: ['조립 S2', '정확하게 보내는 통신로를 설계해 보세요.', '목표는 8비트가 모두 맞을 확률 4분의 3(75%) 이상입니다.'],
-  N8: ['조립 S3', '정확하고 싸게 보내 보세요.', '8비트가 모두 맞을 확률 75% 이상이면서, 잡음 구간을 지나는 비트가 24개 이하여야 합니다.'],
+  N6: ['기본 전송 실험', '결과에 뜨는 수가 무슨 뜻인지 익혀 봅시다.', '먼저 기본 상태에서 「1000번 보내기」를 누르세요. 첫 결과를 확인하면 블록을 조작할 수 있습니다. 바꾼 방법의 결과를 처음 결과와 비교하세요.'],
+  N7: ['정확하게 보내기', '정확하게 보내는 통신로를 설계해 보세요.', '목표는 8비트가 모두 맞을 확률 4분의 3(75%) 이상입니다.'],
+  N8: ['정확하고 싸게 보내기', '정확하고 싸게 보내 보세요.', '8비트가 모두 맞을 확률 75% 이상이면서, 잡음 구간을 지나는 비트가 24개 이하여야 합니다.'],
   /* 앞 화면은 6칸 한 줄에 손으로 점 하나를 붙였다. 여기서 갑자기 9비트가
      나오면 연결이 끊긴다 — 8 + 1 = 9 임을 문장으로 잇는다. */
-  N10: ['조립 S4', '방금 손으로 한 일을 블록으로 해 봅시다.', '앞 화면에서는 6칸 한 줄에 검사 점을 하나 붙였습니다. 여기서는 메시지 8비트에 붙입니다 — 8 + 1 = 9비트입니다. 전체 1의 개수가 짝수가 되도록 검사 비트를 하나 붙이고, 받은 뒤 짝수인지 세어 봅니다. 9비트 이하로 한 비트 오류를 알아채는 구조를 만들어 보세요.']
+  N10: ['오류 유무 판단하기', '방금 손으로 한 일을 블록으로 해 봅시다.', '정보 8비트에 검사 비트를 붙여 봅시다. 오류 없음과 정보 한 비트 오류를 섞어 시험하며, 검사 비트에는 오류가 없습니다. 9비트 이하로 보내면서 오류가 있으면 알아채고, 없으면 통과시키세요.']
 };
 
 /* 목표가 안내문 한 문장으로만 지나가 실행 중에는 화면에서 사라졌다.
@@ -1323,7 +1364,7 @@ const STAGE_COPY = {
 const STAGE_GOALS = {
   N7: [{ key: 'accuracy', label: '정확함', goal: `${MESSAGE_GOAL}% 이상` }],
   N8: [{ key: 'accuracy', label: '정확함', goal: `${MESSAGE_GOAL}% 이상` }, { key: 'cost', label: '비용', goal: '24비트 이하' }],
-  N10: [{ key: 'detect', label: '오류 탐지', goal: '100%' }, { key: 'cost9', label: '비용', goal: '9비트 이하' }]
+  N10: [{ key: 'detect', label: '오류 유무 판단', goal: '두 경우 모두 100%' }, { key: 'cost9', label: '비용', goal: '9비트 이하' }]
 };
 
 function goalTableHtml(stage, last, stale) {
@@ -1336,7 +1377,7 @@ function goalTableHtml(stage, last, stale) {
     if (row.key === 'accuracy') return { text: `${m.messageSuccess.toFixed(1)}%`, ok: m.messageSuccess >= MESSAGE_GOAL };
     if (row.key === 'cost') return { text: `${m.bits}비트`, ok: m.bits <= 24 };
     if (row.key === 'cost9') return { text: `${m.bits}비트`, ok: m.bits <= 9 };
-    return { text: `${m.detectRate.toFixed(1)}%`, ok: m.detectRate >= 100 };
+    return { text: m.conditionVersion === 2 ? `오류 탐지 ${m.detectRate.toFixed(1)}% / 무오류 통과 ${m.passRate.toFixed(1)}%` : '이전 조건의 기록 · 다시 시험하세요', ok: detectionPassed(m) };
   };
   return `<table class="goal-table"><caption class="sr-only">목표와 내 설계 비교</caption>
     <thead><tr><th></th><th>목표</th><th>내 설계</th></tr></thead>
@@ -1377,22 +1418,61 @@ function inheritCircuit(stage) {
   target.inherited = true;
 }
 
+
+function circuitResultStale(circuit, stage) {
+  return Boolean(circuit.lastResult) && (circuit.lastResult.version !== circuit.version || (stage === 'N10' && circuit.lastResult.metric?.conditionVersion !== 2));
+}
+
+function baselineResult() {
+  if (state.baseline?.metric?.ran) return state.baseline;
+  // Recover only a real unprotected trial, never infer its success rate.
+  const first = state.log.find(item => item.screen === 'N6_operate' && item.attempt?.metric?.ran && item.attempt.metric.trials === 1000 && JSON.stringify(item.attempt.blocks) === '["message","noise","receiver"]');
+  return first ? { metric: first.attempt.metric, blocks: first.attempt.blocks, detail: first.detail } : null;
+}
+
+function circuitLocked(stage) { return ['N6','N7','N8'].includes(stage) && !baselineResult(); }
+
+function baselineComparisonHtml(last, stale) {
+  const first = baselineResult()?.metric;
+  const current = last?.metric;
+  return `<aside class="baseline-panel"><h3>처음과 비교하기</h3><table><thead><tr><th>항목</th><th>처음 결과</th><th>이번 결과</th></tr></thead><tbody>
+    <tr><th>8비트 모두<br>맞은 비율</th><td>${first ? first.messageSuccess.toFixed(1)+'%' : '미실행'}</td><td>${current ? current.messageSuccess.toFixed(1)+'%' : '미실행'}</td></tr>
+    <tr><th>보낸 비트 수</th><td>${first ? first.bits+'개' : '미실행'}</td><td>${current ? current.bits+'개' : '미실행'}</td></tr></tbody></table>
+    <p class="muted small">처음 결과는 기본 전송의 실제 측정값으로 고정됩니다.${stale ? ' 이번 결과는 이전 구성의 결과입니다. 지금 구성으로 다시 실행하세요.' : ''}</p></aside>`;
+}
+
+function circuitMethodsHtml() {
+  const methods = new Map();
+  for (const item of state.log) {
+    if (!['N6_operate','N7','N8'].includes(item.screen) || !item.attempt?.metric?.ran || !item.attempt.blocks) continue;
+    methods.set(JSON.stringify(item.attempt.blocks), { blocks: item.attempt.blocks, metric: item.attempt.metric, at: item.t });
+  }
+  for (const [key, item] of Object.entries(state.circuitMethods || {})) if (!methods.has(key) || item.at >= (methods.get(key).at || 0)) methods.set(key, item);
+  const baseline = baselineResult();
+  if (baseline && !methods.has(JSON.stringify(baseline.blocks))) methods.set(JSON.stringify(baseline.blocks), baseline);
+  if (!methods.size) return '<p class="notice">아직 시험한 방법이 없습니다. 11·13·14쪽에서 실행한 결과가 여기에 모입니다.</p>';
+  const name = nodes => nodes.join(',') === 'message,noise,receiver' ? '기본 전송' : nodes.map(circuitBlockLabel).join(' → ');
+  return `<div class="table-wrap"><table class="methods-table"><thead><tr><th>실제 시험한 방법</th><th>8비트 모두 맞은 비율</th><th>보낸 비트 수</th></tr></thead><tbody>${[...methods.values()].map(item => `<tr><th>${esc(name(item.blocks))}</th><td>${item.metric.messageSuccess.toFixed(1)}%</td><td>${item.metric.bits}개</td></tr>`).join('')}</tbody></table><p class="muted small">같은 방법은 가장 최근에 실행한 결과입니다.</p></div>`;
+}
+
 function renderCircuitScreen(id) {
   const stage = id === 'N6_operate' ? 'N6' : id;
   inheritCircuit(stage);
   const circuit = circuitConfigFor(stage);
-  const info = analyzeCircuit(circuit.nodes);
+  const locked = circuitLocked(stage);
+  const nodes = locked ? ['message','noise','receiver'] : circuit.nodes;
+  const info = analyzeCircuit(nodes);
   const last = circuit.lastResult;
-  const stale = Boolean(last) && last.version !== circuit.version;
+  const stale = circuitResultStale(circuit, stage);
   const copy = STAGE_COPY[stage] || ['통신로 조립', '블록을 골라 통신로를 바꾸어 보세요.', ''];
 
-  const flow = circuit.nodes.map((node, index) => {
+  const flow = nodes.map((node, index) => {
     const fixed = node === 'message' || node === 'noise' || node === 'receiver';
-    return `${circuitNode(node, index, circuit.selected, fixed)}${index < circuit.nodes.length - 1 ? '<span class="circuit-arrow" aria-hidden="true">→</span>' : ''}`;
+    return `${circuitNode(node, index, locked ? null : circuit.selected, fixed || locked)}${index < nodes.length - 1 ? '<span class="circuit-arrow" aria-hidden="true">→</span>' : ''}`;
   }).join('');
 
   const palette = paletteFor(stage)
-    .map(type => `<button type="button" data-add-block="${type}"><span class="palette-name">+ ${esc(circuitBlockLabel(type))}</span><span class="palette-role">${esc(circuitBlockRole(type))}</span></button>`).join('');
+    .map(type => `<button type="button" data-add-block="${type}" ${locked ? 'disabled' : ''}><span class="palette-name">+ ${esc(circuitBlockLabel(type))}</span><span class="palette-role">${esc(circuitBlockRole(type))}</span></button>`).join('');
 
   const warnBox = info.warnings.length
     ? `<div class="result fail" role="status">${resultIcon('fail')} ${info.warnings.map(esc).join('<br>')}</div>`
@@ -1402,35 +1482,39 @@ function renderCircuitScreen(id) {
   if (last) {
     const m = last.metric;
     const headline = stage === 'N10'
-      ? { label: '한 비트 오류 탐지율', value: `${m.detectRate.toFixed(1)}%`, sub: `전송량 ${m.bits}비트 · ${m.trials}회 시행` }
+      ? { label: '오류 유무 판단', value: m.conditionVersion === 2 ? `오류 탐지 ${m.detectRate.toFixed(1)}% / 무오류 통과 ${m.passRate.toFixed(1)}%` : '이전 조건의 기록', sub: m.conditionVersion === 2 ? `정보 한 비트 오류 ${m.errorTrials}회 · 무오류 ${m.cleanTrials}회 · ${m.bits}비트 전송` : '검사 비트까지 매번 한 오류를 넣었던 기록입니다. 새 조건으로 다시 시험하세요.' }
       : { label: '메시지 전체 성공률', value: `${m.messageSuccess.toFixed(1)}%`, sub: `비트 복원률 ${m.bitRecovery.toFixed(1)}% · 전송량 ${m.bits}비트 · ${m.trials}회 시행` };
     resultBox = `<div class="evidence">
       ${stale ? '<span class="muted small">이전 구성의 결과</span><br>' : ''}
       <strong>${headline.label}</strong><br>${headline.value}<br>
       <span class="muted small">${esc(headline.sub)}</span>
     </div>
-    <div class="status-line"><span class="result ${last.verdict}" role="status">${resultIcon(last.verdict)} ${esc(VERDICT_TEXT[last.verdict] || '')}</span></div>
+    ${stale ? '' : `<div class="status-line"><span class="result ${last.verdict}" role="status">${resultIcon(last.verdict)} ${esc(VERDICT_TEXT[last.verdict] || '')}</span></div>`}
     ${stale ? '<p class="muted small" style="margin:6px 0 0">구성이 바뀌었습니다. 다시 시험해 보세요.</p>' : ''}`;
   }
 
-  let runLabel = stage === 'N10' ? '오류를 넣어 시험하기' : `${TRIALS}번 보내기`;
-  if (last && !stale) runLabel = stage === 'N10' ? '다시 시험하기' : '다시 보내기';
+  let runLabel = stage === 'N10' ? '오류 유무 시험하기' : `${TRIALS}번 보내기`;
+  if (last && !stale && !locked) runLabel = stage === 'N10' ? '다시 시험하기' : '다시 보내기';
 
   return `${heading(copy[0], copy[1], copy[2])}
   <div class="card stack">
+    <div class="circuit-workspace">
     <div class="circuit-board">
+      ${locked ? '<p class="notice">먼저 11쪽의 기본 상태에서 「1000번 보내기」를 누르세요. 그 결과를 저장한 뒤 블록 조작이 열립니다.</p>' : ''}
       <div class="circuit-flow">${flow}</div>
       <p class="muted small" style="margin:0">블록을 추가한 뒤 끌어서 옮기거나 ← → 로 순서를 바꿔 보세요. 연결은 왼쪽에서 오른쪽으로 읽습니다. 놓는 순서에 따라 결과가 달라집니다.</p>
       <div><h3 style="font-size:1rem">블록 팔레트</h3><div class="palette">${palette}</div></div>
-    </div>
-    ${goalTableHtml(stage, last, stale)}
-    ${warnBox}
-    <div>${resultBox}</div>
-    ${last && !stale && last.trace ? traceHtml(last.trace) : ''}
     <div class="button-row">
-      <button id="run-circuit" class="primary-button" type="button">${esc(runLabel)}</button>
+      ${locked && stage !== 'N6' ? '<button id="baseline-first" class="primary-button" type="button">11쪽 기본 전송 실험으로</button>' : `<button id="run-circuit" class="primary-button" type="button">${esc(runLabel)}</button>`}
       <button id="open-circuit-guide" class="secondary-button" type="button">조작 안내</button>
     </div>
+    </div>
+    ${stage !== 'N10' ? baselineComparisonHtml(last, stale) : ''}</div>
+    ${goalTableHtml(stage, last, stale)}
+    ${warnBox}
+    <div>${stage === 'N10' ? resultBox : last ? `<p class="muted small">${stale ? '이전 구성의 결과 · 다시 실행하세요.' : esc(VERDICT_TEXT[last.verdict])} 비트 복원률 ${last.metric.bitRecovery.toFixed(1)}%</p>` : ''}</div>
+    ${last && !stale && last.trace ? traceHtml(last.trace) : ''}
+
   </div>`;
 }
 
@@ -1446,7 +1530,7 @@ function renderN6Read() {
   if (!m || !Array.isArray(m.samples) || !m.samples.length) {
     return `${heading(kicker, '먼저 한 번 보내 보세요.', '앞 화면에서 통신로를 실행하면 그 결과로 수치를 어떻게 세었는지 함께 봅니다.')}
     <div class="card stack">
-      <div class="notice">아직 실행 기록이 없습니다. <strong>앞 화면(조립 S1 · 시험)</strong>에서 파란 <strong>${esc(`${TRIALS}번 보내기`)}</strong> 버튼을 누른 뒤 다시 오세요.</div>
+      <div class="notice">아직 실행 기록이 없습니다. <strong>앞 화면(기본 전송 실험)</strong>에서 파란 <strong>${esc(`${TRIALS}번 보내기`)}</strong> 버튼을 누른 뒤 다시 오세요.</div>
       <div class="button-row"><button id="back-to-n6" class="primary-button" type="button">앞 화면으로</button></div>
     </div>`;
   }
@@ -1481,7 +1565,7 @@ function renderN6Read() {
       <strong>메시지 전체 성공률 ${m.messageSuccess.toFixed(1)}%</strong> · <strong>비트 복원률 ${m.bitRecovery.toFixed(1)}%</strong><br>
       ${broken
         ? `<span class="muted">${brokenIndex + 1}번째 줄을 보세요. 성공률에서는 <strong>0번</strong>으로, 복원률에서는 <strong>${broken.same}개</strong>로 세어집니다. 한 자리만 틀려도 메시지는 실패입니다. 그래서 두 수가 다릅니다.</span>`
-        : '<span class="muted">앞 다섯 번은 모두 전부 맞았습니다. 한 자리만 틀려도 메시지는 실패로 세므로, 틀린 줄이 섞이면 성공률만 떨어집니다. 그래서 두 수가 다릅니다.</span>'}
+        : '<span class="muted">앞 다섯 번은 모두 전부 맞았습니다. 한 자리라도 틀리면 그 메시지는 실패입니다. 하지만 그 안의 맞은 비트는 비트 복원률에 포함됩니다.</span>'}
     </div>
     <div class="reading">
       <p style="margin:0"><strong>전송량 ${m.bits}비트</strong> — 잡음 구간을 지나는 비트 수입니다. 많이 보낼수록 시간·전력·통신료가 듭니다. 이것이 <strong>비용</strong>입니다.</p>
@@ -1495,7 +1579,7 @@ function renderN9() {
   const n3 = state.screens.N3;
   const circuitLogs = state.log.filter(item => ['N6_operate','N7','N8'].includes(item.screen) && item.kind === 'attempt');
   return `${heading('3 통신로 설계 · 비교', '가장 정확한 방법과 가장 합리적인 방법은 같은가?', '예측과 실제 실행을 나란히 보고, 정확성과 전송량 사이의 선택을 자신의 말로 설명합니다.')}
-  <div class="card stack"><div class="evidence"><strong>${predictionEvidence('N3')}</strong><br>${esc(n3.prediction || '미작성')}<br><span class="muted">${esc(state.writes.N3_reason || '이유 미작성')}</span></div>${evidenceFor(['N6_operate','N7','N8'])}<div class="writing-list">${writeBox('N9_reflect', '가장 정확한 방법과 가장 합리적인 방법은 같은가? 오늘 실험에서 예를 들어 쓰시오.', 'reflect')}</div>${circuitLogs.length ? `<details class="attempt-details"><summary>최근 실행 구성 ${circuitLogs.length}회</summary><div class="evidence">${circuitLogs.slice(-6).map(item => `<div>${esc(item.detail || '')}</div>`).join('')}</div></details>` : ''}</div>`;
+  <div class="card stack"><div class="evidence"><strong>${predictionEvidence('N3')}</strong><br>${esc(n3.prediction || '미작성')}<br><span class="muted">${esc(state.writes.N3_reason || '이유 미작성')}</span></div>${circuitMethodsHtml()}<div class="writing-list">${writeBox('N9_reflect', '가장 정확한 방법과 가장 합리적인 방법은 같은가? 오늘 실험에서 예를 들어 쓰시오.', 'reflect')}</div>${circuitLogs.length ? `<details class="attempt-details"><summary>최근 실행 구성 ${circuitLogs.length}회</summary><div class="evidence">${circuitLogs.slice(-6).map(item => `<div>${esc(item.detail || '')}</div>`).join('')}</div></details>` : ''}</div>`;
 }
 
 function resultIcon(result) { return result === 'ok' ? '✓' : result === 'partial' ? '△' : result === 'fail' ? '!' : '·'; }
@@ -1518,7 +1602,7 @@ function renderN11a() {
   const mineOnes = rows.mine.reduce((sum, bit) => sum + bit, 0);
   const cell = (bit, extra = '') => `<span class="pbit${extra}">${bit}</span>`;
   const correct = n11aCorrect();
-  return `${heading('4 어디가 뒤집혔나 · 검사 점 (가)', '검사 점 하나를 붙여 보세요.', '보내는 쪽은 「1의 개수가 항상 짝수」라는 규칙을 정했습니다. 홀수면 검사 점을 하나 붙여 짝수로 맞춥니다.')}
+  return `${heading('4 어디가 뒤집혔나 · 검사 점 (가)', '검사 점 하나를 붙여 보세요.', '검사 칸 하나를 추가합니다. 검사 칸까지 포함해 1의 개수가 짝수가 되도록, 그 칸에 0 또는 1을 넣으세요.')}
   <div class="card stack">
     <div class="parity-row-box">
       <div class="parity-row"><span class="prow-label">예시</span>${rows.example.map(bit => cell(bit)).join('')}<span class="prow-arrow" aria-hidden="true">→</span>${cell(parityOf(rows.example), ' check given')}</div>
@@ -1540,7 +1624,7 @@ function renderN11b() {
   const ready = placedCount === 13;
   /* 「가로 1 확인」 칩이 입력할 때마다 알려 주어 학생이 세어 볼 이유가 없었다.
      「검사」를 누를 때만, 그것도 이상한 줄의 개수만 알려준다(명세서 §18-1). */
-  return `${heading('4 어디가 뒤집혔나 · 검사 점 (나)', '격자 전체에 검사 점을 놓아 보세요.', '가로 6줄과 세로 6줄 모두 1이 짝수 개가 되도록 가장자리 13칸을 채웁니다. 맨 윗줄 한 칸은 예시로 채워 두었습니다. 다 채우면 「검사」를 누르세요.')}<div class="card stack"><div class="parity-grid" role="grid" aria-label="7 곱하기 7 검사 점 격자">${grid.values.map((row, r) => row.map((value, c) => { const edge = r === 0 || c === 0; const given = isParityGiven(r, c); const editable = edge && !given; const shown = edge ? value : grid.data[r - 1]?.[c - 1]; return `<button type="button" class="grid-cell ${editable ? 'parity editable' : ''} ${given ? 'given' : ''} ${shown === null ? 'empty' : ''} ${grid.checked && check.ok && edge ? 'good' : ''}" data-parity-cell="${r},${c}" aria-label="${r + 1}행 ${c + 1}열 ${shown === null ? '미입력' : shown}${given ? ', 예시' : ''}">${shown === null ? '·' : shown}</button>`; }).join('')).join('')}</div><div id="n11b-result" class="result ${grid.checked ? (check.ok ? 'ok' : 'fail') : ''}" role="status">${grid.checked ? (check.ok ? '✓ 가로와 세로가 모두 짝수입니다. 통과!' : `이상한 줄이 ${badLines}개 있습니다. 어느 줄인지는 직접 세어 찾아 보세요.`) : `검사 칸 ${placedCount}/13개를 정했습니다.${ready ? ' 「검사」를 눌러 확인하세요.' : ''}`}</div><div class="button-row"><button id="check-parity" class="primary-button" type="button" ${ready ? '' : 'disabled'}>검사</button><button id="reset-parity" class="secondary-button" type="button">전부 지우기</button></div></div>`;
+  return `${heading('4 어디가 뒤집혔나 · 검사 점 (나)', '격자 전체에 검사 점을 놓아 보세요.', '위쪽 줄과 왼쪽 줄의 빈 검사 칸에 0 또는 1을 넣으세요. 검사 칸까지 포함해 모든 가로줄과 세로줄의 1 개수가 짝수가 되게 맞추세요. 다 채우면 「검사」를 누르세요.')}<div class="card stack"><div class="parity-grid" role="grid" aria-label="7 곱하기 7 검사 점 격자">${grid.values.map((row, r) => row.map((value, c) => { const edge = r === 0 || c === 0; const given = isParityGiven(r, c); const editable = edge && !given; const shown = edge ? value : grid.data[r - 1]?.[c - 1]; return `<button type="button" class="grid-cell ${editable ? 'parity editable' : ''} ${given ? 'given' : ''} ${shown === null ? 'empty' : ''} ${grid.checked && check.ok && edge ? 'good' : ''}" data-parity-cell="${r},${c}" ${r === 0 && c === 0 ? 'title="이 칸은 위쪽 검사 줄과 왼쪽 검사 줄에 함께 속합니다."' : ''} aria-label="${r + 1}행 ${c + 1}열 ${shown === null ? '미입력' : shown}${given ? ', 예시' : ''}">${shown === null ? '·' : shown}</button>`; }).join('')).join('')}</div><p class="muted small" style="margin:0">왼쪽 위 모서리: 이 칸은 위쪽 검사 줄과 왼쪽 검사 줄에 함께 속합니다.</p><div id="n11b-result" class="result ${grid.checked ? (check.ok ? 'ok' : 'fail') : ''}" role="status">${grid.checked ? (check.ok ? '✓ 가로와 세로가 모두 짝수입니다. 통과!' : `이상한 줄이 ${badLines}개 있습니다. 어느 줄인지는 직접 세어 찾아 보세요.`) : `검사 칸 ${placedCount}/13개를 정했습니다.${ready ? ' 「검사」를 눌러 확인하세요.' : ''}`}</div><div class="button-row"><button id="check-parity" class="primary-button" type="button" ${ready ? '' : 'disabled'}>검사</button><button id="reset-parity" class="secondary-button" type="button">전부 지우기</button></div></div>`;
 }
 
 function parityExpected() {
@@ -1589,13 +1673,13 @@ function randomErrorBoard(errorCount = 1, seedKey = null) {
 /* 자모 이름을 저장만 하고 화면에 한 번도 쓰지 않아, 학생은 0과 1이 36개
    깔린 판만 보고 있었다. 점자 수업인데 점자가 안 보였다(명세서 §32-4 5번).
    marks 에 [행, 열, 클래스]를 넘기면 그 칸에 표시를 더한다. */
-function parityBoardHtml(board, chosen = null, correct = false, interactive = false, marks = []) {
+function parityBoardHtml(board, chosen = null, correct = false, interactive = false, marks = [], showOriginal = true) {
   const checks = parityExpected();
   const labels = state.parity.labels || [];
   const markOf = (r, c) => marks.filter(mark => mark[0] === r - 1 && mark[1] === c - 1).map(mark => mark[2]).join(' ');
   const head = `<span class="grid-head corner"></span><span class="grid-head">검사</span>${Array.from({ length: 6 }, (_, c) => `<span class="grid-head">${c + 1}</span>`).join('')}`;
   const rows = Array.from({ length: 7 }, (_, r) => {
-    const name = r === 0 ? '검사' : (labels[r - 1] || '·');
+    const name = r === 0 ? '검사' : showOriginal ? (labels[r - 1] || '·') : `${r}행`;
     const cells = Array.from({ length: 7 }, (_, c) => {
       const edge = r === 0 || c === 0;
       const bit = edge ? checks[r][c] : board[r - 1][c - 1];
@@ -1611,10 +1695,10 @@ function parityBoardHtml(board, chosen = null, correct = false, interactive = fa
   }).join('');
   return `<div class="parity-wrap">
     <div class="parity-grid labelled" data-parity-board>
-      <span class="sr-only">왼쪽은 자모 이름, 위는 점 번호입니다. 파란 칸은 보낼 때 붙인 검사 비트이며 뒤집히지 않습니다.</span>
+      <span class="sr-only">왼쪽은 ${showOriginal ? '자모 이름' : '행 번호'}, 위는 점 번호입니다. 파란 칸은 보낼 때 붙인 검사 비트이며 뒤집히지 않습니다.</span>
       ${head}${rows}
     </div>
-    ${receivedWordHtml(board)}
+    ${showOriginal ? receivedWordHtml(board) : ''}
   </div>
   <p class="muted small" style="margin:0"><span class="legend-box parity"></span> 보낼 때 붙인 <strong>검사 비트</strong> — 여기는 뒤집히지 않았습니다 &nbsp; <span class="legend-box"></span> <strong>정보 칸</strong> — 이 중에서 뒤집혔습니다</p>`;
 }
@@ -1671,7 +1755,7 @@ function renderN12() {
   if (!n12.board) n12.board = n12BoardForRound(n12.round);
   const chosen = n12.guesses[n12.round];
   const correct = chosen && chosen[0]===n12.board.cells[0][0] && chosen[1]===n12.board.cells[0][1];
-  return `${heading('4 어디가 뒤집혔나 · 한 칸 찾기', `뒤집힌 칸을 찾아 보세요 · ${N12_ROUNDS}문제 중 ${n12.round+1}번째`, '보내는 쪽은 검사 비트를 포함한 가로·세로의 1이 모두 짝수 개가 되도록 맞춰서 보냈습니다. 오는 길에 한 칸이 뒤집혔습니다. 어느 칸인지 찾아 누르세요.')}<div class="card stack">${parityBoardHtml(correct ? state.parity.data : n12.board.base, chosen, correct, true)}<div class="result ${chosen ? (correct ? 'ok' : 'fail') : ''}" role="status">${chosen ? (correct ? '✓ 찾았습니다. 낱말이 제대로 읽힙니다.' : '! 아직 아닙니다. 가로와 세로를 다시 살펴보세요.') : '검사할 칸을 하나 골라 보세요. 오른쪽 「받은 낱말」에 읽히지 않는 자리가 있습니다.'}</div><div class="button-row">${correct && n12.round < N12_ROUNDS - 1 ? '<button id="next-n12-round" class="primary-button" type="button">다음 문제</button>' : ''}<button id="reset-n12" class="secondary-button" type="button">고른 칸 지우기</button></div></div>`;
+  return `${heading('4 어디가 뒤집혔나 · 한 칸 찾기', `뒤집힌 칸을 찾아 보세요 · ${N12_ROUNDS}문제 중 ${n12.round+1}번째`, '1의 개수가 홀수인 가로줄과 세로줄을 찾아, 두 줄이 만나는 칸을 누르세요.')}<div class="card stack">${parityBoardHtml(correct ? state.parity.data : n12.board.base, chosen, correct, true, [], Boolean(correct))}<div class="result ${chosen ? (correct ? 'ok' : 'fail') : ''}" role="status">${chosen ? (correct ? `✓ 찾았습니다. 복원된 낱말: ${esc(state.parity.word)}` : '! 아직 아닙니다. 가로와 세로를 다시 살펴보세요.') : '검사 비트도 함께 세어 뒤집힌 칸을 찾아보세요.'}</div><div class="button-row">${correct && n12.round < N12_ROUNDS - 1 ? '<button id="next-n12-round" class="primary-button" type="button">다음 문제</button>' : ''}<button id="reset-n12" class="secondary-button" type="button">고른 칸 지우기</button></div></div>`;
 }
 
 
@@ -1693,41 +1777,36 @@ function parityOffLines(board) {
   return { rows, cols };
 }
 
-/* 문제는 바뀌는데 화면이 안 바뀌었다 — 36칸 중 2칸만 달라지고 요약 문장은
-   매번 글자 하나까지 같았다. 교차점을 격자에 직접 표시하고, 몇 번 봤는지
-   누적해 「매번 4군데」라는 불변량을 학생이 발견하게 한다(명세서 §32-4 7번).
-   몇 칸이 뒤집혔는지는 알려주지 않는다 — 실제 받는 쪽도 모른다. */
-function renderN13Observe() {
-  if (!state.screens.N13) state.screens.N13 = { board: randomErrorBoard(2, 'N13:0'), shuffles: 0, seen: 1, revealed: false };
-  const n13 = state.screens.N13;
-  if (typeof n13.seen !== 'number') n13.seen = 1;
-  const board = n13.board || randomErrorBoard(2, 'N13:0');
-  const off = parityOffLines(board.base);
-  const crossings = off.rows.length * off.cols.length;
-  /* 이상한 가로줄과 세로줄이 만나는 칸 = 뒤집혔을 수 있는 후보 */
-  const marks = [];
-  off.rows.forEach(r => off.cols.forEach(c => marks.push([r - 1, c - 1, 'cross'])));
-  if (n13.revealed) board.cells.forEach(([r, c]) => marks.push([r, c, 'actual']));
 
-  return `${heading('4 어디가 뒤집혔나 · 두 칸 오류', '이번에는 몇 칸이 뒤집혔을까?', '몇 칸이 뒤집혔는지 알려주지 않습니다. 이상한 가로줄과 세로줄을 세어 짐작해 보세요.')}
-  <div class="card stack">
-    ${parityBoardHtml(board.base, null, false, false, marks)}
-    <div class="axis-status">
-      ${off.rows.length ? off.rows.map(n => `<span class="axis-pill bad">가로 ${n} 이상</span>`).join('') : '<span class="axis-pill">이상한 가로줄 없음</span>'}
-      ${off.cols.length ? off.cols.map(n => `<span class="axis-pill bad">세로 ${n} 이상</span>`).join('') : '<span class="axis-pill">이상한 세로줄 없음</span>'}
-    </div>
-    <div class="evidence">이상한 가로줄 ${off.rows.length}개, 세로줄 ${off.cols.length}개 → 둘이 만나는 곳이 <strong>${crossings}군데</strong>입니다. 노란 칸이 그 ${crossings}군데입니다.
-      ${n13.seen > 1 ? `<br><span class="muted">지금까지 <strong>${n13.seen}번</strong> 봤는데 <strong>매번 ${crossings}군데</strong>였습니다.</span>` : ''}
-    </div>
-    ${n13.revealed
-      ? `<div class="notice">실제로 뒤집힌 곳은 <strong>${board.cells.map(([r, c]) => `${r + 1}행 ${c + 1}열`).join('</strong>과 <strong>')}</strong>입니다. ${crossings}군데 중 둘입니다. <strong>받는 쪽은 이 ${crossings}군데를 구별할 방법이 없습니다.</strong></div>`
-      : '<div class="notice">노란 칸 중 어느 것이 실제로 뒤집혔는지 골라낼 수 있을까요?</div>'}
-    <div class="button-row">
-      <button id="reshuffle-n13" class="secondary-button" type="button">다른 두 칸이 뒤집힌 경우 보기</button>
-      ${n13.revealed ? '' : '<button id="reveal-n13" class="secondary-button" type="button">실제로 어디였나?</button>'}
-    </div>
-  </div>`;
+function n13State() {
+  if (!state.screens.N13) state.screens.N13 = { board: randomErrorBoard(2, 'N13:0'), shuffles: 0, seen: 1, revealed: false, pair: null };
+  return state.screens.N13;
 }
+
+function n13Pairs() {
+  const off = parityOffLines(n13State().board.base);
+  const [a,b] = off.rows.map(n => n-1), [c,d] = off.cols.map(n => n-1);
+  return [[[a,c],[b,d]], [[a,d],[b,c]]];
+}
+
+function n13PairEvidence() {
+  const n13 = n13State(), off = parityOffLines(n13.board.base);
+  return `<div class="pair-options">${n13Pairs().map((pair, i) => `<button type="button" data-error-pair="${i}" class="pair-option ${n13.pair === i ? 'selected' : ''}" aria-pressed="${n13.pair === i}"><strong>조합 ${i+1}</strong><span class="pair-mini" aria-hidden="true">${[0,1,2,3].map(j => `<span class="${(i === 0 ? [0,3] : [1,2]).includes(j) ? 'marked' : ''}">${(i === 0 ? [0,3] : [1,2]).includes(j) ? '●' : '·'}</span>`).join('')}</span><span>${pair.map(([r,c]) => `${r+1}행 ${c+1}열`).join(' + ')}</span></button>`).join('')}</div>
+    <div class="evidence">두 조합 모두 검사 결과가 같습니다.<br><strong>홀수인 가로줄: ${off.rows.join('·')}행 / 홀수인 세로줄: ${off.cols.join('·')}열</strong><br><span class="muted small">각 조합이 두 가로줄과 두 세로줄에서 한 칸씩을 차지합니다. 조합을 눌러 위치를 비교하세요.</span></div>`;
+}
+
+function renderN13Observe() {
+  const n13 = n13State(), board = n13.board, off = parityOffLines(board.base);
+  const marks = off.rows.flatMap(r => off.cols.map(c => [r-1,c-1,'cross']));
+  if (n13.pair === 0 || n13.pair === 1) n13Pairs()[n13.pair].forEach(([r,c]) => marks.push([r,c,'pair-picked']));
+  if (n13.revealed) board.cells.forEach(([r,c]) => marks.push([r,c,'actual']));
+  return `${heading('4 어디가 뒤집혔나 · 두 칸 오류', '어느 두 칸이 뒤집혔는지 정할 수 있을까?', '이번에는 서로 다른 가로줄·세로줄에서 두 칸이 뒤집혔습니다.')}
+    <div class="card stack">${parityBoardHtml(board.base,null,false,false,marks)}
+    ${n13PairEvidence()}
+    ${n13.revealed ? `<div class="notice">실제로 뒤집힌 곳은 ${board.cells.map(([r,c])=>`${r+1}행 ${c+1}열`).join('과 ')}입니다. 하지만 검사 결과만으로는 두 조합을 구별할 수 없습니다.</div>` : ''}
+    <div class="button-row"><button id="reshuffle-n13" class="secondary-button" type="button">다른 두 칸이 뒤집힌 경우 보기</button>${n13.revealed ? '' : '<button id="reveal-n13" class="secondary-button" type="button">실제로 어디였나?</button>'}</div></div>`;
+}
+
 
 /* 가로줄 하나를 세는 것도 「이 묶음의 1이 짝수인가」라는 검사 한 번이었다.
    격자에서는 묶음이 행·열로 정해져 있었을 뿐이다(명세서 §32-4 9번). */
@@ -1779,16 +1858,18 @@ function renderN13Bridge() {
     <ol class="bridge-steps">
       <li><strong>검사 비트 하나를 붙여 봤습니다.</strong> 오류가 있다는 건 알았지만 <strong>어느 자리인지는 몰랐습니다.</strong></li>
       <li><strong>그래서 격자로 갔습니다.</strong> 가로로 한 번, 세로로 한 번 묶어 교차점으로 찾았습니다. 위치를 <strong>(몇 행, 몇 열)</strong> 두 좌표로 말한 셈입니다.</li>
-      <li><strong>대신 비쌌습니다.</strong> 한 칸씩 따로 검사하면 <strong>36번</strong>, 가로·세로로 묶으니 <strong>12번</strong>. 그래도 검사 칸을 <strong>13개</strong>나 붙였습니다.</li>
+      <li><strong>추가로 보내는 양도 살펴봅시다.</strong> 정보 36개에 검사 비트 <strong>13개</strong>를 더해 보냈습니다.</li>
     </ol>
-    <div class="notice">가로·세로는 <strong>격자 모양에 따라 정해진 묶음</strong>입니다. <strong>묶는 방법을 새로 설계하면</strong> 검사를 더 줄일 수 있을까요? 다음 화면부터 정보가 <strong>8비트</strong>인 신호로 알아봅니다.</div>
+    <div class="notice">이제 정보 8개를 보내는 방법을 설계해 봅시다. 정보는 최대 한 비트만 뒤집히고, 검사 비트에는 오류가 없다고 가정합니다.</div>
   </div>`;
 }
 
+
 function renderN13Write() {
-  return `${heading('4 어디가 뒤집혔나 · 작성', '두 칸은 왜 찾을 수 없을까?', '앞 화면에서 교차점 네 군데를 보았습니다. 한 칸일 때와 무엇이 달랐는지 떠올려 적습니다.')}
-  <div class="card stack"><div class="writing-list">${writeBox('N13_two', '두 칸이 뒤집히면 왜 하나의 위치를 확정하기 어려울까요?', 'explain')}</div>${evidenceFor(['N12'])}</div>`;
+  return `${heading('4 어디가 뒤집혔나 · 작성', '두 조합을 검사 결과로 구별할 수 있을까?', '앞 화면과 같은 두 조합입니다. 같은 검사 결과가 나오는 까닭을 생각해 보세요.')}
+  <div class="card stack">${n13PairEvidence()}<div class="writing-list">${writeBox('N13_two', '이 검사 결과만으로 어느 두 칸이 뒤집혔는지 결정할 수 있을까요? 이유를 설명해 보세요.', 'explain')}</div></div>`;
 }
+
 
 /* 신호도 여덟 가지도 검사도 전부 글로만 있어 찍을 수밖에 없었다.
    상황을 보여주고, 검사 한 번을 직접 해보게 한다(명세서 §32-4 10번).
@@ -1980,9 +2061,32 @@ function renderN15Operate() {
   </div>`;
 }
 
+
+function checkDesignUnique() { return new Set(n15Patterns().map(row => row.pattern)).size === DESIGN_CASES; }
+
+function n15Practice() {
+  if (!checkDesignUnique()) return null;
+  const n15 = state.screens.N15, signature = JSON.stringify(n15.groups);
+  if (!n15.practice || n15.practice.signature !== signature) {
+    n15.practice = { signature, target: randomQuestionCase('N15:practice'), guess: null };
+    persist();
+  }
+  return n15.practice;
+}
+
+function practiceCorrect(practice = state.screens.N15.practice) {
+  return Boolean(practice && practice.signature === JSON.stringify(state.screens.N15.groups) && checkDesignUnique() && practice.guess != null && practice.guess === practice.target);
+}
+
+function n15PracticeHtml() {
+  const practice = n15Practice();
+  if (!practice) return '<div class="notice">현재 표에는 같은 결과가 나오는 경우가 있습니다. 26쪽에서 검사 묶음을 보완한 뒤 이 표를 사용해 보세요.</div><button id="back-to-design" class="secondary-button" type="button">26쪽 검사 묶음 설계로</button>';
+  return `<div class="practice-box"><h3>내 표로 한 번 찾아보기</h3><p>검사 결과가 <strong>${questionPatternFor(practice.target)}</strong>입니다. 표에서 같은 결과를 찾아 뒤집힌 자리를 고르세요.</p><div class="practice-choices">${Array.from({length:DESIGN_CASES},(_,i)=>`<button type="button" data-practice-guess="${i}" class="secondary-button ${practice.guess===i?'selected':''}" aria-pressed="${practice.guess===i}">${i ? i+'번' : '오류 없음'}</button>`).join('')}</div><p class="result ${practice.guess==null?'':practiceCorrect(practice)?'ok':'fail'}" role="status">${practice.guess==null?'자기 표와 비교해서 고르세요.':practiceCorrect(practice)?'✓ 찾았습니다. 이제 찾은 방법을 아래에 설명해 보세요.':'표에서 같은 결과 패턴이 있는 줄을 다시 찾아보세요.'}</p></div>`;
+}
+
 function renderN15Write() {
   return `${heading('5 검사로 찾기 · 작성', '검사 결과로 뒤집힌 자리를 어떻게 찾을까?', `정보 8개에 검사 비트 ${state.screens.N15.groups.length}개를 추가한 설계입니다. 검사 비트에는 오류가 없습니다. 내가 만든 결과표를 보며 설명해 보세요.`)}
-  <div class="card stack">${legacyDesignNotice()}<div class="evidence">현재 검사 묶음: ${state.screens.N15.groups.map((group, i) => `${i + 1}번 검사 = ${group.length ? group.join(', ') : '없음'}`).join(' · ')}</div><div class="pattern-writing-layout">${n15PatternTable()}<div class="writing-list">${writeBox('N15_binary', '검사 결과를 홀수=1, 짝수=0으로 나타냈습니다. 이 결과로 뒤집힌 자리를 어떻게 찾을 수 있나요?', 'explain')}</div></div>${evidenceFor(['N15_operate'])}</div>`;
+  <div class="card stack">${legacyDesignNotice()}<div class="evidence">현재 검사 묶음: ${state.screens.N15.groups.map((group, i) => `${i + 1}번 검사 = ${group.length ? group.join(', ') : '없음'}`).join(' · ')}</div><div class="pattern-writing-layout">${n15PatternTable()}<div class="writing-list">${n15PracticeHtml()}${writeBox('N15_binary', '검사 결과를 홀수=1, 짝수=0으로 나타냈습니다. 이 결과로 뒤집힌 자리를 어떻게 찾을 수 있나요?', 'explain')}</div></div>${evidenceFor(['N15_operate'])}</div>`;
 }
 
 function renderN16() {
@@ -2059,7 +2163,7 @@ function compareRows() {
   const logs = state.log.filter(item => item.kind === 'attempt' && item.attempt?.blocks);
   const real = (nodes, one = false) => {
     const item = [...logs].reverse().find(log => JSON.stringify(log.attempt.blocks) === JSON.stringify(nodes) && (one ? log.screen==='N10' : log.screen!=='N10'));
-    return item?.detail || '미실행';
+    return item ? ((one && item.attempt?.metric?.conditionVersion !== 2 ? '이전 조건 (매번 한 오류) · ' : '') + (item.detail || '기록 있음')) : '미실행';
   };
   return [
     ['그냥 보내기','8비트','✗','✗','1',real(['message','noise','receiver'])],
@@ -2181,6 +2285,8 @@ function renderN20() {
       </ul>
       <p style="margin:8px 0 0"><strong>해밍 방식에서는 정보가 두 배가 되어도, 검사 비트는 하나만 더 있으면 충분합니다.</strong></p>
     </div>` : ''}
+    <div class="evidence"><strong>3쪽에서 처음 쓴 생각</strong><p class="original-answer">${esc(state.writes.N1_thought || '아직 처음 생각을 적지 않았습니다.')}</p></div>
+    ${writeBox('N20_reflect', '처음 적은 방법에서 무엇을 바꾸고 싶나요?', 'reflect')}
     ${evidenceFor(['N6_operate','N7','N8','N10','N11b','N12','N15_operate'])}
   </div>`;
 }
@@ -2190,7 +2296,7 @@ function compareRecord(id) {
   const logs = state.log.filter(item => item.kind === 'attempt' && item.attempt?.blocks);
   const real = (nodes, one = false) => {
     const item = [...logs].reverse().find(log => JSON.stringify(log.attempt.blocks) === JSON.stringify(nodes) && (one ? log.screen === 'N10' : log.screen !== 'N10'));
-    return item?.detail || '미실행';
+    return item ? ((one && item.attempt?.metric?.conditionVersion !== 2 ? '이전 조건 (매번 한 오류) · ' : '') + (item.detail || '기록 있음')) : '미실행';
   };
   if (id === 'plain') return real(['message','noise','receiver']);
   if (id === 'repeat3') return real(['message','repeat3','noise','majority','receiver']);
@@ -2216,11 +2322,12 @@ function submissionSummary() {
     if(writing && !screen.id.startsWith('N2_')) status = fields.some(key=>unfilled.includes(key)) ? '미작성' : '작성';
     if(['N6_operate','N7','N8','N10'].includes(screen.id)) {
       const circuit=state.circuits[screen.id==='N6_operate'?'N6':screen.id];
-      status=!circuit.lastResult ? '미실행' : circuit.lastResult.version!==circuit.version ? '변경 후 미실행' : circuit.lastResult.verdict==='ok' ? '해결' : '미해결';
+      status=!circuit.lastResult ? '미실행' : circuitResultStale(circuit, screen.id) ? '변경 후 미실행' : circuit.lastResult.verdict==='ok' ? '해결' : '미해결';
     }
     if(screen.id==='N11a') status=state.screens.N11a.checked ? (n11aCorrect() ? '해결' : '미해결') : '미실행';
     if(screen.id==='N11b') status=state.parity.checked ? (checkParityGrid().ok ? '해결' : '미해결') : state.parity.placed.length > 1 ? '미제출' : '미실행';
     if(screen.id==='N15_operate') status=state.screens.N15.checked ? '해결' : logs.length ? '미해결' : '미실행';
+    if(screen.id==='N15_write' && state.views.N15_write?.visited && !practiceCorrect()) status = state.screens.N15.practice?.guess != null ? '미해결 (표 적용)' : '미해결 (표 적용 미실행)';
     if(screen.id==='N20') {
       const n20 = state.screens.N20;
       const hasAnswer = n20?.answers && Object.values(n20.answers).some(answer=>Object.values(answer).some(value=>String(value).trim()));
@@ -2241,7 +2348,7 @@ function submissionSummary() {
       status=logs.length ? min>=3 && state.screens.N17.guess!=='' && Number(state.screens.N17.guess)===state.screens.N17.query?.codeIndex ? '해결' : '미해결' : '미실행';
     }
     if(screen.optional && !state.includeOptional) status='건너뜀';
-    return {id:screen.id,label:screen.label,status,attempts:stats?.count ?? logs.length,firstSuccess:stats?.firstSuccess ?? (logs.findIndex(item=>item.result==='ok')<0 ? null : logs.findIndex(item=>item.result==='ok')+1),hintLevel:state.hints[screen.id]||0};
+    return {id:screen.id,label:screen.label,status,attempts:stats?.count ?? logs.length,firstSuccess:stats ? stats.firstSuccess : (logs.findIndex(item=>item.result==='ok')<0 ? null : logs.findIndex(item=>item.result==='ok')+1),hintLevel:state.hints[screen.id]||0};
   });
   return { statuses, unfilled, unresolved:statuses.filter(item=>item.status.startsWith('미해결') || item.status==='변경 후 미실행').length };
 }
@@ -2303,11 +2410,13 @@ function bindScreen(id) {
   if (id === 'N11b') bindN11b();
   if (id === 'N12') bindN12();
   if (id === 'N13_observe' && !state.screens.N13) { state.screens.N13 = { board: randomErrorBoard(2, 'N13:0'), shuffles: 0, seen: 1, revealed: false }; persist(); }
+  $$('[data-error-pair]').forEach(button => button.addEventListener('click', () => { const n13 = n13State(); n13.pair = Number(button.dataset.errorPair); logEvent('attempt', id, { detail: `두 칸 오류 조합 ${n13.pair+1} 비교`, attempt: {pair:n13.pair, positions:n13Pairs()[n13.pair], checks:parityOffLines(n13.board.base)} }, 'observe'); persist(); render(); }));
   $('#reveal-n13')?.addEventListener('click', () => { state.screens.N13.revealed = true; persist(); render(); });
   $('#reshuffle-n13')?.addEventListener('click', () => {
     state.screens.N13.shuffles = (state.screens.N13.shuffles || 0) + 1;
     state.screens.N13.seen = (state.screens.N13.seen || 1) + 1;
     state.screens.N13.revealed = false;
+    state.screens.N13.pair = null;
     state.screens.N13.board = randomErrorBoard(2, `N13:${state.screens.N13.shuffles}`);
     const off = parityOffLines(state.screens.N13.board.base);
     logEvent('attempt', 'N13_observe', { detail: `두 칸 오류 · 이상한 가로줄 ${off.rows.length}개, 세로줄 ${off.cols.length}개` }, 'observe');
@@ -2316,6 +2425,8 @@ function bindScreen(id) {
   });
   if (id === 'N14') bindN14();
   if (id === 'N15_operate') bindN15();
+  $('#back-to-design')?.addEventListener('click', () => navTo('N15_operate'));
+  $$('[data-practice-guess]').forEach(button => button.addEventListener('click', () => { const practice = n15Practice(); if (!practice) return; practice.guess = Number(button.dataset.practiceGuess); logEvent('attempt', 'N15_write', {detail: `내 검사표 적용 · 패턴 ${questionPatternFor(practice.target)} · 내 답 ${practice.guess ? practice.guess+'번' : '오류 없음'}`, attempt: {...practice, pattern:questionPatternFor(practice.target), groups:state.screens.N15.groups.map(group=>group.slice())}}, practiceCorrect(practice) ? 'ok' : 'fail'); persist(); render(); }));
   if (id === 'N16') bindN16();
   if (id === 'N17') bindN17();
   if (id === 'N21') bindN21();
@@ -2367,7 +2478,7 @@ function bindN0() {
 
 function recordNoiseSample(action) {
   const session = noiseSession();
-  if (!messageWord()) return;
+  if (!messageWord() || messageCells(messageWord()).skipped.length) return;
   session.cells = transmitCells(messageCells(messageWord()).cells, session.rate);
   if (action === 'resend') {
     session.sends += 1;
@@ -2436,14 +2547,15 @@ function bindN5() {
 
 function bindCircuit(stage) {
   const circuit = circuitConfigFor(stage);
-  $$('[data-add-block]').forEach(button => button.addEventListener('click', () => { const type = button.dataset.addBlock; if (!circuit.nodes.includes(type) || type === 'majority') circuit.nodes.splice(Math.max(1, circuit.nodes.length - 1), 0, type); else circuit.nodes.splice(Math.max(1, circuit.nodes.length - 1), 0, type); circuit.version += 1; persist(); render(); }));
-  $$('[data-node-index]').forEach(node => node.addEventListener('click', event => { if (event.target.closest('[data-node-action]')) return; circuit.selected = Number(node.dataset.nodeIndex); persist(); render(); }));
-  $$('[data-node-action]').forEach(button => button.addEventListener('click', () => { const index = Number(button.dataset.nodeIndex); const action = button.dataset.nodeAction; if (action === 'remove' && !['message','receiver'].includes(circuit.nodes[index])) circuit.nodes.splice(index, 1); if (action === 'up' && index > 1) [circuit.nodes[index - 1], circuit.nodes[index]] = [circuit.nodes[index], circuit.nodes[index - 1]]; if (action === 'down' && index < circuit.nodes.length - 2) [circuit.nodes[index + 1], circuit.nodes[index]] = [circuit.nodes[index], circuit.nodes[index + 1]]; circuit.version += 1; persist(); render(); }));
+  $('#baseline-first')?.addEventListener('click', () => navTo('N6_operate'));
+  $$('[data-add-block]').forEach(button => button.addEventListener('click', () => { if (circuitLocked(stage)) return; const type = button.dataset.addBlock; if (!circuit.nodes.includes(type) || type === 'majority') circuit.nodes.splice(Math.max(1, circuit.nodes.length - 1), 0, type); else circuit.nodes.splice(Math.max(1, circuit.nodes.length - 1), 0, type); circuit.version += 1; persist(); render(); }));
+  $$('[data-node-index]').forEach(node => node.addEventListener('click', event => { if (circuitLocked(stage)) return; if (event.target.closest('[data-node-action]')) return; circuit.selected = Number(node.dataset.nodeIndex); persist(); render(); }));
+  $$('[data-node-action]').forEach(button => button.addEventListener('click', () => { if (circuitLocked(stage)) return; const index = Number(button.dataset.nodeIndex); const action = button.dataset.nodeAction; if (action === 'remove' && !['message','receiver'].includes(circuit.nodes[index])) circuit.nodes.splice(index, 1); if (action === 'up' && index > 1) [circuit.nodes[index - 1], circuit.nodes[index]] = [circuit.nodes[index], circuit.nodes[index - 1]]; if (action === 'down' && index < circuit.nodes.length - 2) [circuit.nodes[index + 1], circuit.nodes[index]] = [circuit.nodes[index], circuit.nodes[index + 1]]; circuit.version += 1; persist(); render(); }));
   $$('.circuit-node').forEach(node => node.addEventListener('keydown', event => { if (event.target !== node) return; if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); node.click(); } }));
   /* 끌어서 순서 바꾸기. 터치·키보드에서는 ← → 버튼이 같은 일을 한다(명세서 §13). */
   let dragFrom = null;
   $$('.circuit-node[draggable="true"]').forEach(node => {
-    node.addEventListener('dragstart', event => { dragFrom = Number(node.dataset.nodeIndex); node.classList.add('dragging'); event.dataTransfer.effectAllowed = 'move'; event.dataTransfer.setData('text/plain', String(dragFrom)); });
+    node.addEventListener('dragstart', event => { if (circuitLocked(stage)) { event.preventDefault(); return; } dragFrom = Number(node.dataset.nodeIndex); node.classList.add('dragging'); event.dataTransfer.effectAllowed = 'move'; event.dataTransfer.setData('text/plain', String(dragFrom)); });
     node.addEventListener('dragend', () => { node.classList.remove('dragging'); $$('.circuit-node').forEach(other => other.classList.remove('drop-target')); });
   });
   $$('.circuit-node').forEach(node => {
@@ -2451,6 +2563,7 @@ function bindCircuit(stage) {
     node.addEventListener('dragleave', () => node.classList.remove('drop-target'));
     node.addEventListener('drop', event => {
       event.preventDefault();
+      if (circuitLocked(stage)) return;
       const to = Number(node.dataset.nodeIndex);
       if (dragFrom === null || to === dragFrom || to === 0 || to === circuit.nodes.length - 1) return;
       const [moved] = circuit.nodes.splice(dragFrom, 1);
@@ -2463,6 +2576,10 @@ function bindCircuit(stage) {
   });
   $('#run-circuit')?.addEventListener('click', () => {
     const viewId = stage === 'N6' ? 'N6_operate' : stage;
+    const firstBaseline = circuitLocked(stage);
+    if (firstBaseline && stage !== 'N6') { navTo('N6_operate'); return; }
+    // Previously saved designs stay intact until the student requests the baseline run.
+    if (firstBaseline) { if (circuit.version || circuit.lastResult) state.beforeBaseline = JSON.parse(JSON.stringify(circuit)); circuit.nodes = ['message','noise','receiver']; circuit.version += 1; }
     const info = analyzeCircuit(circuit.nodes);
     if (!info.canCompare) {
       /* 실행 불가능한 구조와 실패로 결론 낼 수 있는 설계를 구분한다(명세서 §14).
@@ -2477,6 +2594,11 @@ function bindCircuit(stage) {
     const detail = circuitDetail(metric, stage);
     circuit.lastResult = { version: circuit.version, verdict, detail, metric, blocks: circuit.nodes.slice(), trace: metric.trace };
     logEvent('attempt', viewId, { detail, attempt: { blocks: circuit.nodes.slice(), order: circuit.nodes.join(' > '), metric: { ...metric }, goal: STAGE_COPY[stage][2], version: circuit.version } }, verdict);
+    if (firstBaseline) state.baseline = JSON.parse(JSON.stringify(circuit.lastResult));
+    if (['N6','N7','N8'].includes(stage)) {
+      if (!state.circuitMethods) state.circuitMethods = {};
+      state.circuitMethods[JSON.stringify(circuit.nodes)] = { blocks: circuit.nodes.slice(), metric, at: Date.now() };
+    }
     if (verdict === 'ok') {
       mascotState = { mood: 'cheer', text: '목표 조건을 만족했어요. 다른 구성과도 비교해 보세요.', open: true };
     } else {
@@ -2554,6 +2676,7 @@ function bindN14() {
   $$('input[name="n14"]').forEach(input => input.addEventListener('change', e => { state.screens.N14.prediction = e.target.value; recordPrediction('N14'); persist(); })); $('#confirm-n14')?.addEventListener('click', () => { if (!state.screens.N14.prediction) return; recordPrediction('N14', true); state.screens.N14.confirmed = true; logEvent('attempt', 'N14', { detail: `검사 수 예측 ${state.screens.N14.prediction || '미선택'}` }, 'predict'); persist(); render(); }); }
 
 function invalidateCheckDesign() {
+  state.screens.N15.practice = null;
   state.screens.N15.checked = false;
   state.screens.N15.lastCheck = null;
   state.screens.N15.lastCheckSignature = null;
@@ -2684,7 +2807,7 @@ function hintTextFor(screen, level) {
 }
 
 function showFirstGuide(screen) {
-  const guides={N4:['bits','.bit-display','내 답의 빈칸을 눌러 0 또는 1을 정하세요.'],N6_operate:['pipeline','.palette','팔레트에서 블록을 추가하고, 화살표로 순서를 바꾸어 시험해 보세요.'],N7:['pipeline','.palette','팔레트에서 블록을 추가하고 화살표로 순서를 바꾸어 보세요.'],N10:['pipeline','.palette','팔레트에서 블록을 추가하고 화살표로 순서를 바꾸어 보세요.'],N11b:['parity','.parity-grid','가장자리 검사 칸을 눌러 0 또는 1을 정하세요.'],N15_operate:['questions','.number-palette','번호를 고른 뒤 질문 상자를 누르세요. 상자 안의 번호를 누르면 빠집니다.']};
+  const guides={N4:['bits','.bit-display','내 답의 빈칸을 눌러 0 또는 1을 정하세요.'],N6_operate:['pipeline','#run-circuit','먼저 「1000번 보내기」를 눌러 처음 결과를 확인하세요. 그 뒤 블록을 추가하고 순서를 바꿀 수 있습니다.'],N7:['pipeline','.palette','팔레트에서 블록을 추가하고 화살표로 순서를 바꾸어 보세요.'],N10:['pipeline','.palette','팔레트에서 블록을 추가하고 화살표로 순서를 바꾸어 보세요.'],N11b:['parity','.parity-grid','가장자리 검사 칸을 눌러 0 또는 1을 정하세요.'],N15_operate:['questions','.number-palette','번호를 고른 뒤 검사 묶음 상자를 누르세요. 상자 안의 번호를 누르면 빠집니다.']};
   const guide=guides[screen];
   if(!guide || state.guideSeen[`mode:${guide[0]}`]) return;
   state.guideSeen[`mode:${guide[0]}`]=true;
@@ -2736,10 +2859,14 @@ function createConfirmationCode() { const seed = `${state.student.school || ''}$
 /* 출력물이 둘이다(명세서 §30-1). 제출본은 시도 요약과 전체 로그까지,
    학생 다운로드본은 자기가 쓴 것과 조작 결과만. 같은 생성기에서 섹션만
    달리 켠다 — 두 벌을 따로 만들면 갈라진다. */
+function logDetail(item) { return (item.screen === 'N10' && item.kind === 'attempt' && item.attempt?.metric?.conditionVersion !== 2 ? '이전 조건 (매번 한 오류, 검사 비트도 오류 가능) · ' : '') + (item.detail || item.field || item.kind || ''); }
+
 function problemRecordHtml(id) {
   const bits = rows => rows.map(row=>row.map(v=>v==null?'·':v).join('')).join(' / ');
   const grid = rows => `<table>${rows.map(row=>`<tr>${row.map(value=>`<td>${esc(value==null?'·':value)}</td>`).join('')}</tr>`).join('')}</table>`;
   const n = state.screens;
+  if (id === 'N9') return circuitMethodsHtml();
+  if (id === 'N6_operate' && baselineResult()) return `<p>처음 기본 전송 결과 (고정): ${esc(baselineResult().detail || circuitDetail(baselineResult().metric, 'N6'))}</p>`;
   if (id === 'N4' && (n.N4.rows || n.N4.checked)) return `<p>받은 신호: ${esc(bits(n.N4.rows || [[1,0,1,0,1,0,1,1],[1,0,0,0,1,1,1,1],[1,1,1,0,0,1,1,0]]))}</p><p>내 답: ${esc(bits([n.N4.answer]))}</p>`;
   if (id === 'N5_operate') return [3,4,5].filter(count=>n.N5.rows?.[count]).map(count=>`<p>${count}번 받았을 때: ${esc(bits(n.N5.rows[count]))}<br>내 답: ${esc(bits([n.N5.answers?.[count] || []]))}</p>`).join('');
   if (id === 'N11a' && state.views.N11a?.visited) return `<p>내 줄: ${esc(n11aRows().mine.join(''))} · 검사 점: ${n.N11a.answer==null?'미입력':n.N11a.answer}</p>`;
@@ -2752,6 +2879,10 @@ function problemRecordHtml(id) {
   if (id === 'N13_observe' && n.N13?.board) return `<p>받은 정보 칸</p>${grid(n.N13.board.base)}<p>관찰한 경우 ${n.N13.seen || 1}개 · 실제 위치 확인 ${n.N13.revealed?'함':'안 함'}</p>`;
   if (id === 'N14' && n.N14.signal) return `<p>보낸 신호: ${esc(n.N14.signal.join(''))}<br>고른 자리: ${esc((n.N14.pick||[]).join(', '))} · 세어 보기 ${n.N14.counted?'실행':'미실행'}</p>`;
   if (id === 'N15_operate' && state.views.N15_operate?.visited) return `<p>${n.N15.groups.map((group,i)=>`검사 ${i+1}: ${group.join(', ')||'없음'}`).join(' / ')}</p><table><tr><th>일어난 일</th><th>현재 결과 패턴</th></tr>${n15Patterns().map(row=>`<tr><td>${row.errorCase?row.errorCase+'번째 뒤집힘':'아무 곳도 안 뒤집힘'}</td><td>${esc(row.pattern)}</td></tr>`).join('')}</table>`;
+  if (id === 'N15_write' && n.N15.practice) {
+    const q = n.N15.practice;
+    return `<p>자기 검사표 적용 · 결과 패턴 ${esc(questionPatternFor(q.target))} · 내 답 ${q.guess==null?'미선택':q.guess===0?'오류 없음':q.guess+'번'} · ${practiceCorrect(q)?'해결':'미해결'}</p>`;
+  }
   if (id === 'N16' && n.N16.cases.length) return n.N16.cases.slice(0,n.N16.round+1).map((target,i)=>`<p>${i+1}번째 문제 · 패턴 ${esc(questionPatternFor(target))} · 내 답 ${n.N16.guesses[i]==null?'미선택':n.N16.guesses[i]===0?'아무 곳도 안 뒤집힘':n.N16.guesses[i]+'번째 뒤집힘'}</p>`).join('');
   if (id === 'N17' && state.views.N17?.visited) return `<p>내 부호: ${n.N17.codes.map(esc).join(' / ')}</p>${n.N17.tested&&n.N17.query?`<p>받은 값: ${esc(flipBit(n.N17.codes[n.N17.query.codeIndex],n.N17.query.error))} · 내 답: ${n.N17.guess===''?'미선택':'신호 '+(Number(n.N17.guess)+1)}</p>`:''}`;
   return '';
@@ -2775,12 +2906,12 @@ function buildSubmissionHtml(forStudent = false) {
     let snapshot='';
     if(circuit && (state.views[item.id]?.visited || circuit.lastResult)) {
       snapshot=`<p>현재 구성: ${esc(circuit.nodes.map(circuitBlockLabel).join(' → '))}</p>`;
-      if(circuit.lastResult) snapshot+=`<p>${circuit.lastResult.version!==circuit.version?'이전 구성의 결과':'실행한 구성의 결과'}: ${esc((circuit.lastResult.blocks||circuit.nodes).map(circuitBlockLabel).join(' → '))}<br>${esc(circuit.lastResult.detail||'')}</p>`;
+      if(circuit.lastResult) snapshot+=`<p>${circuitResultStale(circuit,item.id)?'이전 구성 또는 이전 조건의 결과':'실행한 구성의 결과'}: ${esc((circuit.lastResult.blocks||circuit.nodes).map(circuitBlockLabel).join(' → '))}<br>${esc(circuit.lastResult.detail||'')}</p>`;
     }
     const noisePartId=item.id==='N2_operate'?'a':item.id==='N2_write'?'b':null;
     const noise=noisePartId && state.screens.N2.sessions?.[noisePartId];
     const noiseRecord=noise?`<p>낱말 ${esc(noise.word)} · 오류율 ${noise.rate}% · 다시 보내기 ${noise.sends}회 · 10%에서 다시 보내기 ${noise.atTen}회 · 되읽기 ${esc(readBrailleWord(noise.word,noise.cells||[]).text)}</p><p>보낸 점형: ${esc((noise.cells||[]).map(cell=>cell.bits.join('')).join(' / '))}<br>받은 점형: ${esc((noise.cells||[]).map(cell=>(cell.received||cell.bits).join('')).join(' / '))}</p>`:'';
-    return `<section><h3>${esc(item.label)}${forStudent?'':` · ${esc(item.status)}`}</h3>${snapshot}${problemRecordHtml(item.id)}${noiseRecord}${logs.length?`<p>최근 기록: ${esc(logs.at(-1).detail||'')}</p>`:''}</section>`;
+    return `<section><h3>${esc(item.label)}${forStudent?'':` · ${esc(item.status)}`}</h3>${snapshot}${problemRecordHtml(item.id)}${noiseRecord}${logs.length?`<p>최근 기록: ${esc(logDetail(logs.at(-1)))}</p>`:''}</section>`;
   }).join('');
   const predictions=['N3','N14'].map(key=>{
     const prediction=state.predicts[key];
@@ -2789,7 +2920,7 @@ function buildSubmissionHtml(forStudent = false) {
   }).join('');
   const tableRows=compareRows().map(row=>`<tr>${row.filter((_,i)=>i!==4||showDistance).map((cell,i)=>`<td>${esc(forStudent && cell==='미실행'?'—':cell)}</td>`).join('')}</tr>`).join('');
   const stats=summary.statuses.map(item=>`<tr><td>${esc(item.label)}</td><td>${esc(item.status)}</td><td>${item.attempts}</td><td>${item.firstSuccess??'없음'}</td><td>${item.hintLevel}</td></tr>`).join('');
-  const makeHtml=logs=>`<!doctype html><html lang="ko"><head><meta charset="utf-8"><title>믿을 수 있게 보내기 탐구 기록</title><style>@page{size:A4;margin:15mm}body{font-family:Arial,sans-serif;color:#202938;line-height:1.6}table{width:100%;border-collapse:collapse;margin:12px 0 24px}th,td{border:1px solid #ccc;padding:6px;text-align:left;overflow-wrap:anywhere}section{break-inside:avoid;border-top:1px solid #ddd;padding:8px 0}.answer,pre{white-space:pre-wrap;overflow-wrap:anywhere}@media print{table{break-inside:avoid}}</style></head><body><h1>믿을 수 있게 보내기</h1><p>학교: ${esc(state.student.school||'')} · 학번: ${esc(state.student.sid)} · 이름: ${esc(state.student.name)}<br>기록 생성 시각: ${new Date().toLocaleString('ko-KR')} · 확인 코드: ${esc(state.submitted.code)}</p><p>과목: 수학 · 관련 단원: 이진법과 오류 정정<br>학습 목표: 반복·검사 비트·검사 설계를 비교하고 오류를 견디는 방법을 설명한다.</p><h2>예측 기록</h2>${predictions}${legacyDesignNotice()}${!forStudent && state.legacyDesign ? `<details><summary>이전 7비트 활동 원기록</summary><pre>${esc(JSON.stringify(state.legacyDesign,null,2))}</pre></details>` : ''}<h2>쪽별 조작 기록</h2>${records}<h2>작성한 설명</h2>${writes}<h2>내가 작성한 종합 비교표</h2>${comparisonAnswerHtml()}<h2>종합 비교 참고표</h2><p>정보 8비트를 보냅니다. 정보(반복한 사본 포함) 중 최대 한 오류가 있고, 추가한 검사 비트에는 오류가 없다고 가정합니다. 내 기록은 실제 활동 결과입니다.</p><table><thead><tr><th>방식</th><th>전송량</th><th>탐지</th><th>정정</th>${showDistance?'<th>최소 거리</th>':''}<th>내 기록</th></tr></thead><tbody>${tableRows}</tbody></table>${forStudent?'':`<h2>시도 요약</h2><p>미작성 ${summary.unfilled.length}개 · 미해결 ${summary.unresolved}개</p><table><thead><tr><th>쪽</th><th>상태</th><th>시도 수</th><th>첫 성공 시도</th><th>힌트 단계</th></tr></thead><tbody>${stats}</tbody></table><details><summary>전체 로그 (${logs.length}/${state.log.length}건)</summary><table><thead><tr><th>시각</th><th>활동</th><th>상세</th><th>결과</th></tr></thead><tbody>${logs.map(item=>`<tr><td>${new Date(item.t).toLocaleString('ko-KR')}</td><td>${esc(screenInfo(item.screen).label)}</td><td>${esc(item.detail||item.field||item.kind)}${item.attempt?`<details><summary>당시 설계·응답</summary><pre>${esc(JSON.stringify(item.attempt,null,2))}</pre></details>`:''}</td><td>${esc(item.result)}</td></tr>`).join('')}</tbody></table></details>`}</body></html>`;
+  const makeHtml=logs=>`<!doctype html><html lang="ko"><head><meta charset="utf-8"><title>믿을 수 있게 보내기 탐구 기록</title><style>@page{size:A4;margin:15mm}body{font-family:Arial,sans-serif;color:#202938;line-height:1.6}table{width:100%;border-collapse:collapse;margin:12px 0 24px}th,td{border:1px solid #ccc;padding:6px;text-align:left;overflow-wrap:anywhere}section{break-inside:avoid;border-top:1px solid #ddd;padding:8px 0}.answer,pre{white-space:pre-wrap;overflow-wrap:anywhere}@media print{table{break-inside:avoid}}</style></head><body><h1>믿을 수 있게 보내기</h1><p>학교: ${esc(state.student.school||'')} · 학번: ${esc(state.student.sid)} · 이름: ${esc(state.student.name)}<br>기록 생성 시각: ${new Date().toLocaleString('ko-KR')} · 확인 코드: ${esc(state.submitted.code)}</p><p>과목: 수학 · 관련 단원: 이진법과 오류 정정<br>학습 목표: 반복·검사 비트·검사 설계를 비교하고 오류를 견디는 방법을 설명한다.</p><h2>예측 기록</h2>${predictions}${legacyDesignNotice()}${!forStudent && state.legacyDesign ? `<details><summary>이전 7비트 활동 원기록</summary><pre>${esc(JSON.stringify(state.legacyDesign,null,2))}</pre></details>` : ''}<h2>쪽별 조작 기록</h2>${records}<h2>작성한 설명</h2>${writes}<h2>내가 작성한 종합 비교표</h2>${comparisonAnswerHtml()}<h2>종합 비교 참고표</h2><p>정보 8비트를 보냅니다. 정보(반복한 사본 포함) 중 최대 한 오류가 있고, 추가한 검사 비트에는 오류가 없다고 가정합니다. 내 기록은 실제 활동 결과입니다.</p><table><thead><tr><th>방식</th><th>전송량</th><th>탐지</th><th>정정</th>${showDistance?'<th>최소 거리</th>':''}<th>내 기록</th></tr></thead><tbody>${tableRows}</tbody></table>${forStudent?'':`<h2>시도 요약</h2><p>미작성 ${summary.unfilled.length}개 · 미해결 ${summary.unresolved}개</p><table><thead><tr><th>쪽</th><th>상태</th><th>시도 수</th><th>첫 성공 시도</th><th>힌트 단계</th></tr></thead><tbody>${stats}</tbody></table><details><summary>전체 로그 (${logs.length}/${state.log.length}건)</summary><table><thead><tr><th>시각</th><th>활동</th><th>상세</th><th>결과</th></tr></thead><tbody>${logs.map(item=>`<tr><td>${new Date(item.t).toLocaleString('ko-KR')}</td><td>${esc(screenInfo(item.screen).label)}</td><td>${esc(logDetail(item))}${item.attempt?`<details><summary>당시 설계·응답</summary><pre>${esc(JSON.stringify(item.attempt,null,2))}</pre></details>`:''}</td><td>${esc(item.result)}</td></tr>`).join('')}</tbody></table></details>`}</body></html>`;
   let logs=state.log.slice();
   let html=makeHtml(logs);
   while(new Blob([html]).size>500*1024 && logs.length>protectedLogEntries(logs).size) {

@@ -53,7 +53,23 @@ const out=path.resolve(__dirname,'../.work/noisy-audit-20260917');
   assert.equal(await page.locator('.comic-image').isVisible(),false);
   console.log('29 required / 33 total views; identity gating and all comic assets/fallbacks');
 
-  await go('N2_operate'); await page.locator('#braille-word').fill('수학');await page.locator('#braille-word').press('Tab');
+  await go('N1');await page.locator('[data-write="N1_thought"]').fill('처음에는 같은 말을 반복하려 했다.\n처음 답 두 번째 줄.');
+  await go('N7');assert.equal(await page.locator('[data-add-block="repeat3"]').isDisabled(),true);
+  assert.equal(await page.locator('#run-circuit').count(),0);
+  await page.locator('#baseline-first').click();assert.equal(await page.evaluate(()=>state.screenId),'N6_operate');
+  assert.equal(await page.locator('[data-add-block="repeat3"]').isDisabled(),true);
+  // Synthetic click must not bypass the disabled control's handler either.
+  await page.locator('[data-add-block="repeat3"]').dispatchEvent('click');
+  assert.equal(await page.evaluate(()=>state.circuits.N6.nodes.length),3);
+  assert.equal(await page.locator('[draggable="true"]').count(),0);
+
+  await go('N2_operate');
+  assert.equal(await page.locator('#braille-examples option').count(),10);
+  const beforeUnsupported=await page.evaluate(()=>state.log.filter(x=>x.noise).length);
+  await page.locator('#braille-word').fill('과학');await page.locator('#braille-word').press('Tab');
+  assert.equal(await page.locator('#resend-noise').count(),0);
+  assert.equal(await page.evaluate(()=>state.log.filter(x=>x.noise).length),beforeUnsupported);
+  await page.locator('#braille-word').fill('수학');await page.locator('#braille-word').press('Tab');
   assert.equal(await page.locator('[data-write]').count(),0);
   for(let i=0;i<3;i++)await page.locator('#resend-noise').click();
   await page.locator('[data-write="N2_observe"]').fill('같은 확률도 결과는 다르다.');
@@ -89,6 +105,10 @@ const out=path.resolve(__dirname,'../.work/noisy-audit-20260917');
   // The smoke walkthrough already visited N8; restore its first-visit setup.
   await page.evaluate(()=>{state.circuits.N8=defaultCircuit('N8')});
   await go('N6_operate');await page.locator('#run-circuit').click();
+  const baseline=await page.evaluate(()=>JSON.stringify(state.baseline));
+  assert.equal(await page.locator('[data-add-block="repeat3"]').isEnabled(),true);
+  assert.equal(await page.locator('.baseline-panel tbody tr').count(),2);
+  await page.locator('#run-circuit').click();assert.equal(await page.evaluate(()=>JSON.stringify(state.baseline)),baseline);
   await go('N6_read');assert.equal(await page.locator('.count-table tbody tr').count(),6);
   await go('N7');await page.locator('[data-add-block="repeat3"]').click();
   await page.locator('[data-node-action="up"][data-node-index="2"]').press('Enter');
@@ -98,10 +118,16 @@ const out=path.resolve(__dirname,'../.work/noisy-audit-20260917');
   await go('N8');assert.equal(await page.evaluate(()=>state.circuits.N8.nodes.join(',')),'message,repeat3,noise,majority,receiver');
   await page.locator('#run-circuit').click();assert.equal(await page.evaluate(()=>state.circuits.N8.lastResult.verdict),'ok');
   await page.locator('[data-add-block="repeat5"]').click();assert.match(await page.locator('#screen-root').textContent(),/이전 구성의 결과/);
+  assert.equal(await page.evaluate(()=>JSON.stringify(state.baseline)),baseline);
+  await go('N9');assert.equal(await page.locator('.methods-table tbody tr').count(),2);
+  assert.doesNotMatch(await page.locator('.methods-table').innerText(),/5번 반복/);
   await go('N10');await page.locator('[data-add-block="parityEncode"]').click();
   await page.locator('[data-node-action="up"][data-node-index="2"]').click();
   await page.locator('[data-add-block="parityCheck"]').click();await page.locator('#run-circuit').click();
   assert.equal(await page.evaluate(()=>state.circuits.N10.lastResult.metric.detectRate),100);
+  assert.equal(await page.evaluate(()=>state.circuits.N10.lastResult.metric.passRate),100);
+  assert.equal(await page.evaluate(()=>state.circuits.N10.lastResult.metric.cleanTrials),500);
+  assert.equal(await page.evaluate(()=>state.circuits.N10.lastResult.metric.errorTrials),500);
   console.log('real circuit trials, inherited design, stale result and single-error detection');
 
   await go('N11a'); await page.locator('#n11a-cell').click();
@@ -112,6 +138,8 @@ const out=path.resolve(__dirname,'../.work/noisy-audit-20260917');
   await page.locator('#check-parity').click();assert.match(await page.locator('#n11b-result').textContent(),/통과/);
   await page.locator('[data-parity-cell="0,0"]').click();await page.locator('#check-parity').click();assert.match(await page.locator('#n11b-result').textContent(),/이상한 줄/);
   await go('N12');
+  assert.equal(await page.locator('.received-word').count(),0);
+  assert.equal(await page.locator('.grid-head.row').nth(1).textContent(),'1행');
   assert.deepEqual(await page.locator('[data-parity-board] > .grid-head').evaluateAll(nodes=>nodes.slice(0,8).map(x=>x.textContent)),['','검사','1','2','3','4','5','6']);
   for(let round=0;round<2;round++) {
    const target=await page.locator('[data-parity-board]').evaluate(board=>{
@@ -125,6 +153,7 @@ const out=path.resolve(__dirname,'../.work/noisy-audit-20260917');
   }
   assert.equal(await page.evaluate(()=>submissionSummary().statuses.find(x=>x.id==='N12').status),'해결 (2문제)');
   await go('N13_observe');assert.equal(await page.locator('.grid-cell.cross').count(),4);
+  for(const i of [0,1]) {await page.locator(`[data-error-pair="${i}"]`).click();assert.equal(await page.locator('.grid-cell.pair-picked').count(),2);}
   await page.locator('#reveal-n13').click();assert.equal(await page.locator('.grid-cell.actual').count(),2);
   await page.locator('#reshuffle-n13').click();assert.equal(await page.locator('.grid-cell.actual').count(),0);
   await go('N13_write');await page.locator('[data-write="N13_two"]').fill('첫 줄\n둘째 줄');
@@ -174,6 +203,10 @@ const out=path.resolve(__dirname,'../.work/noisy-audit-20260917');
   await page.locator('[data-number="4"]').click();await page.locator('[data-box="2"]').press('Enter');await page.locator('#check-n15').click();
   const ownPatterns=await page.locator('.pattern-table').innerText();
   await go('N15_write');assert.equal(await page.locator('.pattern-table').innerText(),ownPatterns);
+  const practicePattern=await page.locator('.practice-box p strong').textContent();
+  const practiceAnswer=Array.from({length:9},(_,i)=>i).find(i=>groups.map(group=>i&&group.includes(i)?1:0).join('')===practicePattern);
+  await page.locator(`[data-practice-guess="${(practiceAnswer+1)%9}"]`).click();assert.equal(await page.locator('.practice-box .result.fail').count(),1);
+  await page.locator(`[data-practice-guess="${practiceAnswer}"]`).click();assert.equal(await page.locator('.practice-box .result.ok').count(),1);
   assert.match(await page.locator('[data-write="N15_binary"]').locator('..').innerText(),/뒤집힌 자리를 어떻게 찾을 수 있나요/);
   await page.locator('[data-write="N15_binary"]').fill('내 표에서 같은 결과 패턴의 줄을 찾는다.');
   await go('N16');
@@ -191,6 +224,8 @@ const out=path.resolve(__dirname,'../.work/noisy-audit-20260917');
   console.log('check design unlocks, stale invalidation, own patterns and changing code-error tests');
 
   await go('N20');assert.equal(await page.evaluate(()=>submissionSummary().statuses.find(x=>x.id==='N20').status),'미실행');
+  assert.equal(await page.locator('.original-answer').textContent(),'처음에는 같은 말을 반복하려 했다.\n처음 답 두 번째 줄.');
+  await page.locator('[data-write="N20_reflect"]').fill('추가할 검사 비트를 줄이면서 위치를 구별하겠다.');
   const answers=[['plain',8,'X','X'],['repeat3',24,'O','O'],['parity1',9,'O','X'],['grid',15,'O','O'],['hamming',12,'O','O']];
   for(const [id,bits,detect,fix] of answers){
    await page.locator(`[data-n20="${id}.bits"]`).fill(String(bits));await page.locator(`[data-n20="${id}.detect"]`).selectOption(detect);await page.locator(`[data-n20="${id}.fix"]`).selectOption(fix);
@@ -202,6 +237,9 @@ const out=path.resolve(__dirname,'../.work/noisy-audit-20260917');
   assert.equal(await page.locator('.n20-conclusion').count(),0);
   await page.locator('#check-n20').click();assert.equal(await page.evaluate(()=>submissionSummary().statuses.find(x=>x.id==='N20').status),'미해결');
   const exportHtml=await page.evaluate(()=>buildSubmissionHtml(true));assert.match(exportHtml,/<td>99<\/td>/);assert.doesNotMatch(exportHtml,/전체 로그|시도 요약/);
+  assert.match(exportHtml,/추가할 검사 비트를 줄이면서 위치를 구별하겠다/);
+  assert.match(exportHtml,/자기 검사표 적용/);
+  assert.match(exportHtml,/처음 기본 전송 결과 \(고정\)/);
   fs.writeFileSync(path.join(out,'student.html'),exportHtml);
   fs.writeFileSync(path.join(out,'teacher.html'),await page.evaluate(()=>buildSubmissionHtml(false)));
   console.log('comparison answer persistence, one-click checking and exported actual responses');
@@ -209,12 +247,18 @@ const out=path.resolve(__dirname,'../.work/noisy-audit-20260917');
   await go('N13_write');await page.reload();assert.equal(await page.evaluate(()=>state.screenId),'N0');
   await page.locator('#resume-button').click();assert.equal(await page.evaluate(()=>state.screenId),'N13_write');
   assert.equal(await page.locator('[data-write="N13_two"]').inputValue(),'첫 줄\n둘째 줄');
+  assert.equal(await page.evaluate(()=>JSON.stringify(state.baseline)),baseline);
+  assert.equal(await page.evaluate(()=>practiceCorrect()),true);
+  assert.equal(await page.evaluate(()=>state.writes.N20_reflect),'추가할 검사 비트를 줄이면서 위치를 구별하겠다.');
   await page.locator('#menu-button').click();await page.locator('.utility-details summary').click();await page.locator('#export-code').click();
   const progressCode=await page.locator('#progress-code').inputValue();
   const context2=await browser.newContext();await context2.route('https://**',r=>r.abort());
   const page2=await context2.newPage();await page2.goto(url);await page2.locator('#menu-button').click();await page2.locator('.utility-details summary').click();
   await page2.locator('#progress-code').fill(progressCode);await page2.locator('#import-code').click();
   assert.equal(await page2.evaluate(()=>state.screenId),'N13_write');assert.equal(await page2.locator('[data-write="N13_two"]').inputValue(),'첫 줄\n둘째 줄');
+  assert.equal(await page2.evaluate(()=>JSON.stringify(state.baseline)),baseline);
+  assert.equal(await page2.evaluate(()=>practiceCorrect()),true);
+  assert.equal(await page2.evaluate(()=>state.writes.N20_reflect),'추가할 검사 비트를 줄이면서 위치를 구별하겠다.');
   await page2.evaluate(()=>{
    const old=JSON.parse(JSON.stringify(state));delete old.designBits;
    old.screenId='N15_operate';old.screens.N14.signal=[1,0,1,0,1,0,1];
@@ -253,7 +297,7 @@ const out=path.resolve(__dirname,'../.work/noisy-audit-20260917');
   }
   fs.writeFileSync(path.join(out,'layout-tested.json'),JSON.stringify(layout,null,2));assert.deepEqual(layout,[]);
   for(const [width,height] of [[1180,820],[820,1180],[375,812]]){
-   await page.setViewportSize({width,height});for(const id of ['N12','N13_observe','N14','N15_operate','N15_write','N20']){await go(id);await page.screenshot({path:path.join(out,`${id}-${width}-fixed.png`),fullPage:true});}
+   await page.setViewportSize({width,height});for(const id of ['N6_operate','N7','N10','N12','N13_observe','N14','N15_operate','N15_write','N20']){await go(id);await page.screenshot({path:path.join(out,`${id}-${width}-fixed.png`),fullPage:true});}
   }
   assert.deepEqual(errors,[]);console.log('198 populated screen/viewport checks; no overflow, undersized buttons or page errors');
  } finally {await browser.close();}

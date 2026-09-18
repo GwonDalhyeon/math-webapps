@@ -327,6 +327,12 @@ input[type="range"] { min-height:44px; }
 .bit-row { grid-template-columns:104px repeat(8,44px); }
 .bit-row .row-label { width:104px; line-height:1.35; }
 @media (min-width:1000px) {
+  .main-content:has(.circuit-workspace) { padding-top:16px; }
+  .main-content:has(.circuit-workspace) > .section-label { margin-bottom:4px; }
+  #screen-root:has(.circuit-workspace) .screen-heading { max-width:none; margin-bottom:14px; }
+  #screen-root:has(.circuit-workspace) .screen-heading h2 { font-size:2.1rem; }
+  #screen-root:has(.circuit-workspace) .screen-heading p { max-width:none; }
+  #screen-root:has(.circuit-workspace) > .card { padding:20px; }
   .noise-signals .braille-card { grid-template-columns:90px minmax(0,1fr); align-items:center; }
   .noise-signals .cell-labels { grid-column:2; }
   .main-content:has(.noise-workspace), .main-content:has(.question-layout) { padding-top:18px; }
@@ -499,6 +505,51 @@ input[type="range"] { min-height:44px; }
 /* 교차점 후보와 실제 뒤집힌 칸 (명세서 §32-4 7번). */
 .grid-cell.cross { border-color:#d9a400; background:var(--yellow-soft); }
 .grid-cell.actual { border-color:var(--red); border-width:2px; background:var(--red-soft); font-weight:900; }
+.grid-cell.pair-picked { outline:3px solid var(--blue); outline-offset:-4px; }
+
+/* 첫 실험과 현재 설계를 나란히 비교한다. 좁은 화면에서는 바로 아래로 잇는다. */
+.circuit-workspace { display:grid; grid-template-columns:minmax(0,1fr) 290px; gap:16px; align-items:start; }
+.circuit-workspace:has(> .circuit-board:only-child) { grid-template-columns:minmax(0,1fr); }
+.circuit-workspace .circuit-board { padding:12px; gap:10px; min-width:0; }
+.circuit-workspace .circuit-node { min-width:160px; flex:0 1 160px; padding:10px; }
+.baseline-panel { padding:12px; background:var(--blue-soft); border:1px solid #b8ccec; border-radius:14px; min-width:0; }
+.baseline-panel h3 { font-size:1.05rem; margin:0 0 10px; }
+.baseline-panel table { table-layout:fixed; font-size:14px; }
+.baseline-panel th, .baseline-panel td { padding:8px 4px; overflow-wrap:anywhere; }
+.baseline-panel p { margin:10px 0 0; }
+.pair-options { display:flex; gap:12px; flex-wrap:wrap; }
+.pair-option { flex:1 1 150px; display:grid; grid-template-columns:auto 48px; gap:6px; align-items:center; padding:10px; border:2px solid var(--line); border-radius:12px; background:#fff; color:var(--ink); font:inherit; font-size:14px; text-align:left; }
+.pair-option > span:last-child { grid-column:1 / -1; }
+.pair-option.selected, .practice-choices .selected { border-color:var(--blue); background:var(--blue-soft); }
+.pair-mini { display:grid; grid-template-columns:repeat(2,22px); gap:2px; }
+.pair-mini span { text-align:center; line-height:20px; border:1px solid #bbb; border-radius:3px; }
+.pair-mini .marked { color:var(--blue); background:var(--blue-soft); }
+.practice-box { padding:12px; border:1px solid var(--line); border-radius:12px; }
+.practice-box h3 { font-size:1rem; margin:0 0 8px; }
+.practice-box p { margin:8px 0; }
+.practice-choices { display:flex; flex-wrap:wrap; gap:6px; }
+.practice-choices button { min-width:44px; min-height:44px; padding:8px 12px; }
+.original-answer { white-space:pre-wrap; overflow-wrap:anywhere; }
+@media (max-width:900px) {
+  .circuit-workspace { grid-template-columns:minmax(0,1fr); }
+  .baseline-panel { width:100%; }
+}
+@media (min-width:1000px) {
+  .main-content:has(#screen-root[data-screen-id="N15_write"]) { padding-top:16px; }
+  .main-content:has(#screen-root[data-screen-id="N15_write"]) > .section-label { margin-bottom:4px; }
+  #screen-root[data-screen-id="N15_write"] .screen-heading { max-width:none; margin-bottom:14px; }
+  #screen-root[data-screen-id="N15_write"] .screen-heading h2 { font-size:2.1rem; }
+  #screen-root[data-screen-id="N15_write"] .screen-heading p { max-width:none; }
+  #screen-root[data-screen-id="N15_write"] .card { padding:20px; gap:10px; }
+  #screen-root[data-screen-id="N15_write"] .pattern-table th,
+  #screen-root[data-screen-id="N15_write"] .pattern-table td { padding:6px 4px; font-size:14px; }
+  #screen-root[data-screen-id="N15_write"] .pattern-table th { word-break:keep-all; }
+  #screen-root[data-screen-id="N15_write"] .pattern-table th:last-child { min-width:64px; }
+  #screen-root[data-screen-id="N15_write"] .writing-list { gap:10px; }
+  #screen-root[data-screen-id="N15_write"] .practice-box { padding:10px; }
+  #screen-root[data-screen-id="N15_write"] .practice-box h3 { margin-bottom:4px; }
+  #screen-root[data-screen-id="N15_write"] textarea { min-height:88px; }
+}
 
 /* 받은 낱말 — 깨진 채 보이고, 오류를 찾으면 읽힌다. */
 .received-word { display:grid; gap:6px; align-content:start; padding:12px; border:1px solid var(--line); border-radius:12px; background:#fbfaf6; }

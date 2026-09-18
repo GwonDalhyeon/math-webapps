@@ -4,6 +4,88 @@ const fs = require('node:fs');
 const vm = require('node:vm');
 const path = require('node:path');
 
+test('examples round-trip and unsupported words never generate a partial experiment', () => {
+  const run=app();
+  assert.equal(run(`BRAILLE_EXAMPLES.every(word => !messageCells(word).skipped.length && readBrailleWord(word, transmitCells(messageCells(word).cells,0)).text===word)`),true);
+  run(`state.screenId='N2_write';state.screens.N2.word='과학';recordNoiseSample('word');recordNoiseSample('resend')`);
+  assert.equal(run('state.log.length'),0);
+  assert.equal(run('noiseSession().cells'),null);
+  assert.doesNotMatch(run('renderN2Write()'),/id="resend-noise"|id="noise-rate"/);
+  assert.match(run('renderN2Write()'),/다른 낱말을 입력하거나 예시를 고르세요/);
+});
+
+test('detection tests 500 clean and 500 erroneous messages and protects all check copies', () => {
+  const run=app();
+  run(`nodes=['message','parityEncode','noise','parityCheck','receiver'];m=simulateCircuit(nodes,'N10')`);
+  assert.equal(run('m.errorTrials'),500);assert.equal(run('m.cleanTrials'),500);
+  assert.equal(run('m.detectRate'),100);assert.equal(run('m.passRate'),100);
+  assert.equal(run(`judgeCircuit(m,'N10')`),'ok');
+  assert.notEqual(run(`judgeCircuit({...m,passRate:0},'N10')`),'ok');
+  assert.notEqual(run(`judgeCircuit({...m,detectRate:0},'N10')`),'ok');
+  assert.notEqual(run(`judgeCircuit({...m,conditionVersion:1},'N10')`),'ok');
+  for(const nodes of ["['message','parityEncode','noise','receiver']", "['message','parityEncode','repeat3','noise','receiver']"]) {
+    assert.equal(run(`(()=>{ for(let i=0;i<100;i++){const trace=[];const out=runPipelineOnce(${nodes},'one',trace);const noise=trace.find(x=>x.type==='noise');if(noise.wrong.length!==1||out.kinds[noise.wrong[0]]!=='info')return false;}return true;})()`),true);
+  }
+  assert.equal(run(`runPipelineOnce(nodes,'none').hadError`),false);
+  assert.equal(run(`simulateCircuit(['message','noise','parityEncode','parityCheck','receiver'],'N10').detectRate`),0);
+});
+
+test('both diagonal pairs yield exactly the same parity syndrome on many boards', () => {
+  const run=app();
+  assert.equal(run(`(()=>{for(let sid=2000;sid<2050;sid++){state=initialState(String(sid));state.student.sid=String(sid);const n=n13State(), expected=JSON.stringify(parityOffLines(n.board.base));for(const pair of n13Pairs()){const b=state.parity.data.map(row=>row.slice());pair.forEach(([r,c])=>b[r][c]^=1);if(JSON.stringify(parityOffLines(b))!==expected)return false;const corrected=n.board.base.map(row=>row.slice());pair.forEach(([r,c])=>corrected[r][c]^=1);const off=parityOffLines(corrected);if(off.rows.length||off.cols.length)return false;}}return true})()`),true);
+});
+
+test('locating a single error hides original letters until the position is found', () => {
+  const run=app();run(`state.student.sid='2101';renderN12()`);
+  assert.doesNotMatch(run('renderN12()'),/received-word|보낸 낱말|class="unread"/);
+  assert.match(run('renderN12()'),/1행/);
+  run('state.screens.N12.guesses[0]=state.screens.N12.board.cells[0]');
+  assert.match(run('renderN12()'),/received-word|복원된 낱말/);
+});
+
+test('required table practice accepts none, persists, exports and invalidates on redesign', () => {
+  const run=app();
+  assert.equal(run('n15Practice()'),null);
+  run(`state.screens.N15.groups=[[1,3,5,7],[2,3,6,7],[4,5,6,7],[8]];state.views.N15_write={visited:true};n15Practice();state.screens.N15.practice.target=0`);
+  assert.equal(run('practiceCorrect()'),false);
+  run('state.screens.N15.practice.guess=0;persist(true);state=loadState()');
+  assert.equal(run('practiceCorrect()'),true);
+  assert.match(run('buildSubmissionHtml(true)'),/자기 검사표 적용 · 결과 패턴 0000 · 내 답 오류 없음 · 해결/);
+  run('state.screens.N15.groups[3]=[7];invalidateCheckDesign()');
+  assert.equal(run('practiceCorrect()'),false);assert.equal(run('n15Practice()'),null);
+  assert.match(run('renderN15Write()'),/26쪽에서 검사 묶음을 보완/);
+});
+
+test('old detection successes remain archived but cannot pass the new condition', () => {
+  const run=app();
+  run(`state.circuits.N10.lastResult={metric:{ran:true,detectRate:100,bits:9},version:0,verdict:'ok'};state.attemptStats.N10={count:3,failures:1,firstSuccess:2};delete state.detectionVersion;persist(true);state=loadState()`);
+  assert.equal(run(`circuitResultStale(state.circuits.N10,'N10')`),true);
+  assert.equal(run('state.legacyDetection.stats.firstSuccess'),2);
+  assert.equal(run(`submissionSummary().statuses.find(x=>x.id==='N10').firstSuccess`),null);
+  assert.equal(run(`submissionSummary().statuses.find(x=>x.id==='N10').status`),'변경 후 미실행');
+});
+
+test('first real baseline survives reload and comparison retains only actual latest methods', () => {
+  const run=app();assert.equal(run(`circuitLocked('N7')`),true);
+  run(`baseNodes=['message','noise','receiver'];first=simulateCircuit(baseNodes,'N6');logEvent('attempt','N6_operate',{attempt:{blocks:baseNodes,metric:first}},'ok');persist(true);state=loadState()`);
+  assert.equal(run(`circuitLocked('N7')`),false);
+  run(`logEvent('attempt','N7',{attempt:{blocks:baseNodes,metric:{...first,messageSuccess:12}}},'ok')`);
+  assert.equal(run('baselineResult().metric.messageSuccess'),run('first.messageSuccess'));
+  assert.match(run('circuitMethodsHtml()'),/12.0%/);
+  assert.doesNotMatch(run('circuitMethodsHtml()'),/3번 반복|5번 반복/);
+  assert.equal(run('validateProgress(state)'),true);
+  run('state.baseline.metric.messageSuccess="bad"');assert.equal(run('validateProgress(state)'),false);
+});
+
+test('final reflection keeps the original answer separate in saved and exported work', () => {
+  const run=app();run(`state.writes.N1_thought='처음 생각\\n두 줄';state.writes.N20_reflect='묶음을 다르게 만들겠다';persist(true);state=loadState()`);
+  assert.equal(run('state.writes.N1_thought'),'처음 생각\n두 줄');
+  assert.match(run('renderN20()'),/처음 생각\n두 줄/);
+  assert.match(run('buildSubmissionHtml(true)'),/묶음을 다르게 만들겠다/);
+  assert.match(run('buildSubmissionHtml(false)'),/묶음을 다르게 만들겠다/);
+  assert.equal(run(`submissionSummary().unfilled.includes('N20_reflect')`),false);
+});
+
 test('export preserves actual comparison answers without generating unseen problems', () => {
   const run=app();
   run(`state.screens.N20={answers:{hamming:{bits:'99',detect:'X',fix:'O'}},checked:false}; beforeExport=JSON.stringify(state)`);
@@ -55,7 +137,7 @@ test('an exported circuit separates the current design from its previous trial',
   run(`state.views.N7={visited:true};state.circuits.N7.nodes=['message','noise','receiver'];
     state.circuits.N7.version=2;
     state.circuits.N7.lastResult={version:1,blocks:['message','repeat3','noise','majority','receiver'],detail:'previous experiment',verdict:'ok'}`);
-  assert.match(run('buildSubmissionHtml(true)'),/이전 구성의 결과/);
+  assert.match(run('buildSubmissionHtml(true)'),/이전 구성 또는 이전 조건의 결과/);
   assert.match(run('buildSubmissionHtml(true)'),/previous experiment/);
 });
 
@@ -350,7 +432,7 @@ test('comic intro views use local assets and preserve readable fallback scripts'
   assert.match(c2, /\.\/assets\/comic-2\.png/);
   assert.match(c1, /그림을 불러오지 못했습니다/);
   assert.match(c1, /점자 편지를 손끝으로 읽으며 웃습니다/);
-  assert.match(c2, /1시·2시·3시/);
+  assert.match(c2, /3시·2시·3시/);
 });
 
 /* ── 4차 개편 (명세서 §32-4) ───────────────────────────────────────────── */
@@ -552,14 +634,14 @@ test('the student copy keeps the writing and drops the log', () => {
   }
 });
 
-test('the required path asks eight written questions', () => {
+test('the required path asks nine written questions including the final reflection', () => {
   const run = app();
-  /* 명세서 §32-4 15번 — 서술 12 → 8문항. 선택 활동 둘을 뺀 수다. */
-  assert.equal(run('WRITE_FIELDS.length'), 10);
-  assert.equal(run(`WRITE_FIELDS.filter(([key]) => !['N18_reason','N19_mariner'].includes(key)).length`), 8);
-  /* 폐기한 넷이 어디에도 남아 있지 않다. */
+  /* §46 E17에서 처음 생각과 마무리를 연결하는 서술 1문항을 다시 추가했다. */
+  assert.equal(run('WRITE_FIELDS.length'), 11);
+  assert.equal(run(`WRITE_FIELDS.filter(([key]) => !['N18_reason','N19_mariner'].includes(key)).length`), 9);
+  assert.equal(run(`WRITE_FIELDS.some(([key]) => key === 'N20_reflect')`), true);
   const source = fs.readFileSync(path.join(__dirname, '../gifted/noisy-channel/app.js'), 'utf8');
-  for (const key of ['N5_method', 'N13_one', 'N15_change', 'N20_reflect']) {
+  for (const key of ['N5_method', 'N13_one', 'N15_change']) {
     assert.equal(source.includes(`'${key}'`), false, `${key} 가 남아 있다`);
   }
   /* 이진법 귀환 문항은 필수 경로에 남아야 한다(§3-6). */
