@@ -107,7 +107,8 @@
     .mode-note { margin: 0; padding: 12px 13px; border-radius: 13px; background: #f0f4fa; color: #53627a; font-size: .84rem; line-height: 1.55; }
     .formula-card { margin-top: 16px; padding: 13px 15px; border: 1px solid #dbe4f2; border-radius: 15px; background: #f8faff; color: #304665; }
     .formula-card p { margin: 0 0 8px; font-size: .8rem; font-weight: 800; }
-    .formula-card math { display: block; font-size: 1.35rem; }
+    .formula-card math { display: block; font-family: "Cambria Math", "STIX Two Math", serif; font-size: 1.35rem; line-height: 1.2; }
+    .formula-card math[hidden] { display: none; }
     .formula-card .formula-caption { margin: 8px 0 0; color: var(--muted); font-size: .79rem; font-weight: 600; }
 
     .learning-footer { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 17px; }
@@ -125,6 +126,7 @@
     .svg-force { stroke: var(--orange); stroke-width: 6; stroke-linecap: round; }
     .svg-component { stroke: var(--blue); stroke-width: 5; stroke-linecap: round; }
     .svg-sum { stroke: var(--teal); stroke-width: 7; stroke-linecap: round; }
+    .svg-parallelogram { fill: rgba(8, 148, 156, .08); stroke: #6abec2; stroke-width: 2.5; stroke-dasharray: 7 6; }
     .svg-resistance { stroke: #8b5cc7; stroke-width: 5; stroke-linecap: round; }
     .svg-angle { fill: none; stroke: #526b93; stroke-width: 2.5; }
     .svg-ground { fill: #e6edf6; }
@@ -132,8 +134,17 @@
     .person-body { fill: #4e76c4; stroke: #254d94; stroke-width: 2; }
     .opponent-body { fill: #f08a43; stroke: #a34d17; stroke-width: 2; }
     .team-body { fill: #26a9a2; stroke: #087c7a; stroke-width: 2; }
+    .top-person-arm { fill: none; stroke: currentColor; stroke-width: 7; stroke-linecap: round; }
+    .top-person-front { fill: #fff; opacity: .92; }
+    .top-person-back { fill: none; stroke: currentColor; stroke-width: 3; stroke-linecap: round; opacity: .7; }
     .drag-dot { fill: #fff; stroke: var(--orange); stroke-width: 5; }
     .drag-dot.blue { stroke: var(--blue); }
+    .person-handle { cursor: grab; }
+    .person-handle:active { cursor: grabbing; }
+    .cosine-strip { display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: center; margin-top: 10px; padding: 10px 13px; border: 1px solid #cad9f8; border-radius: 13px; background: #f3f7ff; color: #3a5684; font-size: .86rem; }
+    .cosine-strip[hidden] { display: none; }
+    .cosine-strip strong { color: #174aab; font-variant-numeric: tabular-nums; }
+    .cosine-strip .cosine-title { flex-basis: 100%; color: #536a8d; font-size: .77rem; font-weight: 800; }
 
     @media (max-width: 930px) {
       .hero { grid-template-columns: 1fr; }
@@ -188,10 +199,10 @@
               <title id="stage-title">줄다리기 벡터 시각화</title>
               <desc id="stage-desc">힘 벡터와 목표 방향 성분, 상대의 이동을 보여주는 그림입니다.</desc>
               <defs>
-                <marker id="arrow-orange" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#ef7d32" /></marker>
-                <marker id="arrow-blue" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#2864d7" /></marker>
-                <marker id="arrow-teal" markerWidth="11" markerHeight="11" refX="9" refY="5.5" orient="auto"><path d="M0,0 L11,5.5 L0,11 z" fill="#08949c" /></marker>
-                <marker id="arrow-purple" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#8b5cc7" /></marker>
+                <marker id="arrow-orange" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 z" fill="#ef7d32" /></marker>
+                <marker id="arrow-blue" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 z" fill="#2864d7" /></marker>
+                <marker id="arrow-teal" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#08949c" /></marker>
+                <marker id="arrow-purple" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 z" fill="#8b5cc7" /></marker>
               </defs>
               <g id="scene"></g>
             </svg>
@@ -201,8 +212,13 @@
           <div class="metric-grid" aria-live="polite">
             <div class="metric"><span class="label">내 힘의 크기</span><strong class="value" id="force-value">500 N</strong></div>
             <div class="metric primary"><span class="label">목표 방향 유효 힘</span><strong class="value" id="effective-value">410 N</strong></div>
-            <div class="metric"><span class="label">상대 저항</span><strong class="value" id="resistance-value">400 N</strong></div>
+            <div class="metric"><span class="label">상대 저항</span><strong class="value" id="resistance-value">600 N</strong></div>
             <div class="metric" id="net-metric"><span class="label">순 유효 힘</span><strong class="value" id="net-value">+10 N</strong></div>
+          </div>
+          <div class="cosine-strip" id="sum-cosines" hidden aria-live="polite">
+            <span class="cosine-title">기준방향에 대한 코사인 값</span>
+            <span>벡터 1: <strong id="cos-one">cos θ₁ = 1.00</strong></span>
+            <span>벡터 2: <strong id="cos-two">cos θ₂ = 0.95</strong></span>
           </div>
 
           <div class="status-panel" id="status-panel" aria-live="polite">
@@ -219,8 +235,8 @@
             <input id="force-range" type="range" min="200" max="700" step="10" value="500" />
             <div class="range-help"><span>작은 힘</span><span>큰 힘</span></div>
             <div id="resistance-control">
-              <label class="control-label" for="resistance-range"><span>상대의 고정 저항</span><output id="resistance-output">400 N</output></label>
-              <input id="resistance-range" type="range" min="250" max="850" step="10" value="400" />
+              <label class="control-label" for="resistance-range"><span>상대의 고정 저항</span><output id="resistance-output">600 N</output></label>
+            <input id="resistance-range" type="range" min="350" max="1200" step="10" value="600" />
               <div class="range-help"><span>가벼운 상대</span><span>강한 상대</span></div>
             </div>
             <div class="button-row">
@@ -244,14 +260,14 @@
             <h3>수학으로 읽기</h3>
             <div class="formula-card" id="formula-card">
               <p id="formula-title">내 힘이 목표 방향에 기여하는 크기</p>
-              <math id="projection-formula" display="block" aria-label="F 곱하기 코사인 세타">
-                <mi>F</mi><mo>cos</mo><mi>θ</mi><mo>=</mo><mtext id="formula-force">500</mtext><mo>cos</mo><mtext id="formula-angle">35°</mtext><mo>≈</mo><mtext id="formula-effective">410</mtext><mtext> N</mtext>
+              <math id="projection-formula" xmlns="http://www.w3.org/1998/Math/MathML" display="block" aria-label="F 곱하기 코사인 세타">
+                <mrow><mi>F</mi><mo>·</mo><mi>cos</mi><mi>θ</mi><mo>=</mo><mn id="formula-force">500</mn><mo>·</mo><mi>cos</mi><mn id="formula-angle">35°</mn><mo>≈</mo><mn id="formula-effective">410</mn><mtext> N</mtext></mrow>
               </math>
-              <math id="sum-formula" display="block" aria-label="두 벡터의 합의 크기" hidden>
-                <mo>|</mo><msub><mi>F</mi><mn>1</mn></msub><mo>+</mo><msub><mi>F</mi><mn>2</mn></msub><mo>|</mo><mo>≈</mo><mtext id="sum-effective">988</mtext><mtext> N</mtext>
+              <math id="sum-formula" xmlns="http://www.w3.org/1998/Math/MathML" display="block" aria-label="두 벡터의 합의 크기" hidden>
+                <mrow><mo>|</mo><msub><mi>F</mi><mn>1</mn></msub><mo>+</mo><msub><mi>F</mi><mn>2</mn></msub><mo>|</mo><mo>≈</mo><mn id="sum-effective">988</mn><mtext> N</mtext></mrow>
               </math>
-              <math id="team-formula" display="block" aria-label="팀 유효 힘의 합" hidden>
-                <munderover><mo>Σ</mo><mrow><mi>i</mi><mo>=</mo><mn>1</mn></mrow><mi>n</mi></munderover><msub><mi>F</mi><mi>i</mi></msub><mo>cos</mo><msub><mi>θ</mi><mi>i</mi></msub><mo>=</mo><mtext id="team-effective">1451</mtext><mtext> N</mtext>
+              <math id="team-formula" xmlns="http://www.w3.org/1998/Math/MathML" display="block" aria-label="팀 유효 힘의 합" hidden>
+                <mrow><munderover><mo>Σ</mo><mrow><mi>i</mi><mo>=</mo><mn>1</mn></mrow><mi>n</mi></munderover><msub><mi>F</mi><mi>i</mi></msub><mo>·</mo><mi>cos</mi><msub><mi>θ</mi><mi>i</mi></msub><mo>=</mo><mn id="team-effective">1451</mn><mtext> N</mtext></mrow>
               </math>
               <p class="formula-caption" id="formula-caption">θ는 내 힘과 목표 방향 사이의 각입니다.</p>
             </div>
@@ -279,6 +295,7 @@
       const SVG_NS = "http://www.w3.org/2000/svg";
       const scene = document.getElementById("scene");
       const stage = document.getElementById("stage");
+      const stageHint = document.querySelector(".stage-hint");
       const modeTitle = document.getElementById("mode-title");
       const modeDescription = document.getElementById("mode-description");
       const modeNote = document.getElementById("mode-note");
@@ -305,6 +322,9 @@
       const teamFormula = document.getElementById("team-formula");
       const sumEffective = document.getElementById("sum-effective");
       const teamEffective = document.getElementById("team-effective");
+      const sumCosines = document.getElementById("sum-cosines");
+      const cosOne = document.getElementById("cos-one");
+      const cosTwo = document.getElementById("cos-two");
       const statusPanel = document.getElementById("status-panel");
       const statusIcon = document.getElementById("status-icon");
       const statusTitle = document.getElementById("status-title");
@@ -340,10 +360,11 @@
       const state = {
         mode: "side",
         force: 500,
-        resistance: 400,
+        resistance: 600,
         angle: 35,
         teamCount: 3,
         teamAngles: [0, 18, -18, 28, -28],
+        teamOffsets: [0, -28, 28, -52, 52],
         running: false,
         frameId: null,
         progress: 0,
@@ -392,6 +413,25 @@
         return group;
       }
 
+      function drawTopPerson(parent, x, y, type = "team", scale = 1, index = "") {
+        const bodyClass = type === "opponent" ? "opponent-body" : "team-body";
+        const ink = type === "opponent" ? "#a34d17" : "#087c7a";
+        const groupAttrs = { transform: `translate(${x} ${y}) scale(${scale})` };
+        if (index !== "") {
+          groupAttrs.class = "person-handle drag-handle";
+          groupAttrs["data-drag-type"] = `person-${index}`;
+        }
+        const group = append(parent, "g", groupAttrs);
+        // 항공뷰에서는 머리·팔·어깨만 보여 주고, 얼굴 쪽 삼각형과 등 표시로 앞뒤를 구분한다.
+        append(group, "ellipse", { cx: 0, cy: 8, rx: 13, ry: 10, class: bodyClass });
+        append(group, "circle", { cx: 11, cy: -13, r: 13, class: bodyClass });
+        append(group, "path", { d: "M-2 -13 L5 -19 L5 -7 Z", class: "top-person-front" });
+        append(group, "line", { x1: 20, y1: -5, x2: 20, y2: 0, class: "top-person-back", stroke: ink });
+        append(group, "line", { x1: 0, y1: 4, x2: -25, y2: -10, class: "top-person-arm", stroke: ink });
+        append(group, "line", { x1: 0, y1: 11, x2: -25, y2: 25, class: "top-person-arm", stroke: ink });
+        return group;
+      }
+
       function drawGrid() {
         for (let x = 40; x < 860; x += 40) append(scene, "line", { x1: x, y1: 20, x2: x, y2: 410, class: "svg-grid" });
         for (let y = 20; y < 430; y += 40) append(scene, "line", { x1: 0, y1: y, x2: 860, y2: y, class: "svg-grid" });
@@ -422,36 +462,42 @@
         append(scene, "text", { x: origin.x - 88, y: origin.y + (state.angle > 0 ? 25 : -14), class: "svg-label" }, `θ = ${rounded(state.angle)}°`);
         const handle = append(scene, "circle", { cx: fullEnd.x, cy: fullEnd.y, r: 11, class: "drag-dot drag-handle", tabindex: "0", role: "slider", "aria-label": "내 힘의 방향 조절", "aria-valuemin": "-65", "aria-valuemax": "65", "aria-valuenow": String(rounded(state.angle)) });
         handle.dataset.dragType = "side";
-        append(scene, "line", { x1: opponentX + 4, y1: 190, x2: opponentX + 4, y2: 265, class: "svg-resistance", "marker-end": "url(#arrow-purple)" });
-        append(scene, "text", { x: opponentX - 54, y: 177, class: "svg-label" }, `상대 저항 ${state.resistance} N`);
+        const resistanceLength = 52 + state.resistance / 1200 * 98;
+        const resistanceStart = Math.min(opponentX + 34, 760);
+        const resistanceEnd = Math.min(resistanceStart + resistanceLength, 830);
+        append(scene, "line", { x1: resistanceStart, y1: 188, x2: resistanceEnd, y2: 188, class: "svg-resistance", "marker-end": "url(#arrow-purple)" });
+        append(scene, "text", { x: Math.max(520, resistanceStart - 42), y: 174, class: "svg-label" }, `상대 저항 ${state.resistance} N`);
         append(scene, "text", { x: 52, y: 72, class: "svg-big" }, "옆에서 본 장면");
         append(scene, "text", { x: 52, y: 93, class: "svg-small" }, "수평 방향으로 기여하는 성분만 줄을 움직입니다.");
       }
 
       function drawSum() {
         drawGrid();
-        const origin = { x: 215, y: 270 };
+        const origin = { x: 385, y: 250 };
         const length = 130;
         const a1 = state.teamAngles[0] || 0;
         const a2 = state.teamAngles[1] || 18;
         const end1 = polarEndpoint(origin.x, origin.y, length, a1);
         const end2 = polarEndpoint(origin.x, origin.y, length, a2);
-        const vectorLength = 280;
-        const sumX = 2 * 330 - (length * Math.cos(radians(a1)) + length * Math.cos(radians(a2)));
-        const sumY = 2 * origin.y + (length * Math.sin(radians(a1)) + length * Math.sin(radians(a2)));
-        const sumEnd = { x: origin.x + (sumX - 2 * origin.x) * .7, y: origin.y + (sumY - 2 * origin.y) * .7 };
-        append(scene, "line", { x1: origin.x, y1: origin.y, x2: 650, y2: origin.y, class: "svg-target" });
-        append(scene, "text", { x: 600, y: origin.y - 13, class: "svg-small" }, "기준 방향");
+        const parallelogramCorner = { x: end1.x + end2.x - origin.x, y: end1.y + end2.y - origin.y };
+        append(scene, "line", { x1: 90, y1: origin.y, x2: 760, y2: origin.y, class: "svg-target" });
+        append(scene, "text", { x: 92, y: origin.y - 13, class: "svg-small" }, "기준 방향 ←");
+        append(scene, "polygon", { points: `${origin.x},${origin.y} ${end1.x},${end1.y} ${parallelogramCorner.x},${parallelogramCorner.y} ${end2.x},${end2.y}`, class: "svg-parallelogram" });
+        append(scene, "line", { x1: end1.x, y1: end1.y, x2: parallelogramCorner.x, y2: parallelogramCorner.y, class: "svg-parallelogram" });
+        append(scene, "line", { x1: end2.x, y1: end2.y, x2: parallelogramCorner.x, y2: parallelogramCorner.y, class: "svg-parallelogram" });
         drawArrow(scene, origin, end1, "svg-force", "arrow-orange", "벡터 1", { x: -8, y: -9 });
         drawArrow(scene, origin, end2, "svg-component", "arrow-blue", "벡터 2", { x: -8, y: 22 });
-        drawArrow(scene, origin, sumEnd, "svg-sum", "arrow-teal", "합벡터", { x: -10, y: -12 });
+        drawArrow(scene, origin, parallelogramCorner, "svg-sum", "arrow-teal", "합벡터", { x: -10, y: -12 });
         const h1 = append(scene, "circle", { cx: end1.x, cy: end1.y, r: 11, class: "drag-dot drag-handle", tabindex: "0", role: "slider", "aria-label": "첫 번째 벡터 방향 조절", "aria-valuenow": String(rounded(a1)) });
         const h2 = append(scene, "circle", { cx: end2.x, cy: end2.y, r: 11, class: "drag-dot blue drag-handle", tabindex: "0", role: "slider", "aria-label": "두 번째 벡터 방향 조절", "aria-valuenow": String(rounded(a2)) });
         h1.dataset.dragType = "sum-0";
         h2.dataset.dragType = "sum-1";
         append(scene, "circle", { cx: origin.x, cy: origin.y, r: 8, fill: "#172033" });
         append(scene, "text", { x: 52, y: 72, class: "svg-big" }, "두 벡터를 한 방향으로");
-        append(scene, "text", { x: 52, y: 93, class: "svg-small" }, "합벡터가 어떻게 달라지는지 확인하세요.");
+        append(scene, "text", { x: 52, y: 93, class: "svg-small" }, "기준점에서 평행사변형을 만들어 합벡터를 확인하세요.");
+        append(scene, "text", { x: 108, y: 347, class: "svg-label" }, `cos θ₁ = ${Math.cos(radians(a1)).toFixed(2)}`);
+        append(scene, "text", { x: 108, y: 372, class: "svg-label" }, `cos θ₂ = ${Math.cos(radians(a2)).toFixed(2)}`);
+        append(scene, "text", { x: parallelogramCorner.x - 8, y: parallelogramCorner.y - 16, class: "svg-small" }, "평행사변형의 네 번째 꼭짓점");
         const angleBetween = Math.abs(a2 - a1);
         const vectorSum = Math.sqrt(Math.pow(length * Math.cos(radians(a1)) + length * Math.cos(radians(a2)), 2) + Math.pow(length * Math.sin(radians(a1)) + length * Math.sin(radians(a2)), 2));
         append(scene, "text", { x: 536, y: 356, class: "svg-label" }, `두 벡터 사이의 각: ${rounded(angleBetween)}°`);
@@ -473,23 +519,26 @@
         let effective = 0;
         for (let i = 0; i < state.teamCount; i += 1) {
           const x = startX + i * spacing;
-          const y = 215;
+          const y = 215 + (state.teamOffsets[i] || 0);
           const angle = state.teamAngles[i] || 0;
           const endpoint = polarEndpoint(x, y, 105, angle);
           effective += state.force * Math.cos(radians(angle));
-          drawPerson(scene, x, 220, "team", .55);
+          drawTopPerson(scene, x, y, "team", .78, i);
           drawArrow(scene, { x, y }, endpoint, "svg-force", "arrow-orange", `F${i + 1}`, { x: -5, y: angle > 0 ? 19 : -8 });
           const componentEnd = { x: x - 105 * Math.cos(radians(angle)), y };
           append(scene, "line", { x1: x, y1: y, x2: componentEnd.x, y2: componentEnd.y, class: "svg-component", "stroke-dasharray": "5 4" });
           const handle = append(scene, "circle", { cx: endpoint.x, cy: endpoint.y, r: 10, class: "drag-dot drag-handle", tabindex: "0", role: "slider", "aria-label": `${i + 1}번 팀원 방향 조절`, "aria-valuemin": "-65", "aria-valuemax": "65", "aria-valuenow": String(rounded(angle)) });
           handle.dataset.dragType = `team-${i}`;
-          append(scene, "text", { x: x - 16, y: 296, class: "svg-small" }, `팀원 ${i + 1}`);
+          append(scene, "text", { x: x - 16, y: y + 62, class: "svg-small" }, `팀원 ${i + 1}`);
         }
-        const opponent = drawPerson(scene, opponentX, 220, "opponent", .95);
-        opponent.setAttribute("transform", `translate(${opponentX} 220) rotate(${-state.progress * 16} 0 0) scale(.95)`);
+        const opponent = drawTopPerson(scene, opponentX, 215, "opponent", 1.1);
+        opponent.setAttribute("transform", `translate(${opponentX} 215) rotate(${-state.progress * 16} 0 0) scale(1.1)`);
         append(scene, "text", { x: opponentX - 28, y: 310, class: "svg-big" }, "상대");
-        append(scene, "text", { x: opponentX - 72, y: 110, class: "svg-label" }, `상대 저항 ${state.resistance} N`);
-        append(scene, "line", { x1: opponentX, y1: 125, x2: opponentX, y2: 193, class: "svg-resistance", "marker-end": "url(#arrow-purple)" });
+        const resistanceLength = 52 + state.resistance / 1200 * 98;
+        const resistanceStart = Math.min(opponentX + 35, 760);
+        const resistanceEnd = Math.min(resistanceStart + resistanceLength, 830);
+        append(scene, "text", { x: Math.max(520, resistanceStart - 42), y: 110, class: "svg-label" }, `상대 저항 ${state.resistance} N`);
+        append(scene, "line", { x1: resistanceStart, y1: 126, x2: resistanceEnd, y2: 126, class: "svg-resistance", "marker-end": "url(#arrow-purple)" });
         drawArrow(scene, { x: 390, y: 384 }, { x: 390 + Math.min(190, effective / 4), y: 384 }, "svg-sum", "arrow-teal", `팀 유효 힘 ${rounded(effective)} N`, { x: -10, y: -12 });
       }
 
@@ -518,6 +567,13 @@
         liveBadge.textContent = info.badge;
         teamSection.hidden = state.mode !== "top";
         resistanceControl.hidden = state.mode === "sum";
+        sumCosines.hidden = state.mode !== "sum";
+        sumCosines.style.display = state.mode === "sum" ? "flex" : "none";
+        stageHint.textContent = state.mode === "sum"
+          ? "두 흰색 손잡이를 드래그해 기준방향에 대한 cos θ와 평행사변형 합을 확인하세요."
+          : state.mode === "top"
+            ? "주황색 손잡이는 힘의 방향, 사람 그림은 줄에서의 거리를 바꿉니다."
+            : "주황색 힘 벡터의 끝에 있는 흰색 손잡이를 드래그해 방향을 바꿔 보세요.";
         forceOutput.textContent = `${state.force} N`;
         resistanceOutput.textContent = `${state.resistance} N`;
         forceValue.textContent = `${state.force} N`;
@@ -529,9 +585,16 @@
         formulaEffective.textContent = rounded(metrics.effective);
         sumEffective.textContent = rounded(metrics.effective);
         teamEffective.textContent = rounded(metrics.effective);
+        const a1 = state.teamAngles[0] || 0;
+        const a2 = state.teamAngles[1] || 18;
+        cosOne.textContent = `cos θ₁ = ${Math.cos(radians(a1)).toFixed(2)}`;
+        cosTwo.textContent = `cos θ₂ = ${Math.cos(radians(a2)).toFixed(2)}`;
         projectionFormula.hidden = state.mode !== "side";
         sumFormula.hidden = state.mode !== "sum";
         teamFormula.hidden = state.mode !== "top";
+        projectionFormula.style.display = state.mode === "side" ? "block" : "none";
+        sumFormula.style.display = state.mode === "sum" ? "block" : "none";
+        teamFormula.style.display = state.mode === "top" ? "block" : "none";
         formulaTitle.textContent = state.mode === "sum" ? "두 벡터의 합의 크기" : state.mode === "top" ? "팀이 줄 방향으로 만드는 유효 힘" : "내 힘이 목표 방향에 기여하는 크기";
         formulaCaption.textContent = state.mode === "sum" ? "두 벡터 사이의 각이 작을수록 합벡터가 커집니다." : state.mode === "top" ? "각 팀원의 줄 방향 성분을 모두 더한 값입니다." : "θ는 내 힘과 목표 방향 사이의 각입니다.";
         if (state.mode === "sum") {
@@ -623,12 +686,15 @@
           state.angle = targetAngleFromPoint({ x: 203, y: 226 }, point);
         } else if (state.activeDrag.startsWith("sum-")) {
           const index = Number(state.activeDrag.slice(4));
-          state.teamAngles[index] = targetAngleFromPoint({ x: 215, y: 270 }, point);
+          state.teamAngles[index] = targetAngleFromPoint({ x: 385, y: 250 }, point);
         } else if (state.activeDrag.startsWith("team-")) {
           const index = Number(state.activeDrag.slice(5));
           const spacing = state.teamCount === 2 ? 86 : 66;
-          const origin = { x: 125 + index * spacing, y: 215 };
+          const origin = { x: 125 + index * spacing, y: 215 + (state.teamOffsets[index] || 0) };
           state.teamAngles[index] = targetAngleFromPoint(origin, point);
+        } else if (state.activeDrag.startsWith("person-")) {
+          const index = Number(state.activeDrag.slice(7));
+          state.teamOffsets[index] = clamp(point.y - 215, -90, 90);
         }
         render();
       }
