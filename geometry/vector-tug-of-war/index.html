@@ -253,6 +253,7 @@
                 <marker id="tip-orange" markerUnits="userSpaceOnUse" markerWidth="13" markerHeight="13" refX="11" refY="6.5" orient="auto"><path d="M0,0 L13,6.5 L0,13 z" fill="#ef7d32" /></marker>
                 <marker id="tip-gray" markerUnits="userSpaceOnUse" markerWidth="13" markerHeight="13" refX="11" refY="6.5" orient="auto"><path d="M0,0 L13,6.5 L0,13 z" fill="#55617a" /></marker>
                 <marker id="tip-teal" markerUnits="userSpaceOnUse" markerWidth="14" markerHeight="14" refX="12" refY="7" orient="auto"><path d="M0,0 L14,7 L0,14 z" fill="#08949c" /></marker>
+                <clipPath id="above-ground"><rect x="0" y="0" width="860" height="336" /></clipPath>
                 <image id="art-blue" href="./assets/people/aerial-teammate-above.png" x="0" y="0" width="260" height="402" />
                 <image id="art-red" href="./assets/people/aerial-teammate-below.png" x="0" y="0" width="260" height="319" />
                 <image id="art-foe" href="./assets/people/aerial-opponent.png" x="0" y="0" width="260" height="353" />
@@ -548,7 +549,7 @@
       function drawSidePhoto(parent, rightEdge, heightM, opacity) {
         const scale = heightM * PX_PER_M / (SIDE_ART.sole - SIDE_ART.top);
         return add(parent, "use", {
-          href: `#${SIDE_ART.id}`, class: "art", opacity,
+          href: `#${SIDE_ART.id}`, class: "art", opacity, "clip-path": "url(#above-ground)",
           transform: `translate(${rightEdge} ${GROUND_Y - SIDE_ART.sole * scale}) scale(${-scale} ${scale})`
         });
       }
@@ -592,12 +593,45 @@
         add(parent, "path", Object.assign({}, base, { stroke: color, "stroke-width": width }));
       }
 
+      // 그림의 각 부분은 굵은 선으로 그리므로, 선 두께의 절반까지 지면 위에 있어야 한다.
+      function figureLowest(geo, spin, pivot) {
+        // 신발은 GROUND_Y - 7에 굵기 14로 그리므로 접지점 자체가 바닥선이다(여유 0).
+        const parts = [
+          [geo.head, BODY.headR * PX_PER_M + 3], [geo.shoulder, 14], [geo.hip, 14],
+          [geo.ankle, 9.5], [geo.frontAnkle, 9.5], [geo.hand, 8],
+          [geo.backHeel, 0], [geo.backToe, 0], [geo.frontHeel, 0], [geo.frontToe, 0]
+        ];
+        let lowest = -Infinity;
+        for (const [point, pad] of parts) {
+          const moved = spin ? rotate(point, pivot, spin) : point;
+          lowest = Math.max(lowest, moved.y + pad);
+        }
+        return lowest;
+      }
+
+      // 지면에 닿을 때까지만 넘어지도록 회전각을 구한다.
+      // 서 있는 자세의 가장 낮은 점을 기준으로 삼아, 그보다 더 내려가면 멈춘다.
+      function restingSpin(geo, direction) {
+        const pivot = direction > 0 ? geo.frontToe : geo.backHeel;
+        const baseline = figureLowest(geo, 0, pivot);
+        let last = 0;
+        for (let a = 1; a <= 120; a += 1) {
+          const spin = a * direction;
+          if (figureLowest(geo, spin, pivot) > baseline) break;
+          last = spin;
+        }
+        return last;
+      }
+
       function drawSideFigure(parent, geo, spin = 0, pivot = null) {
+        // 어떤 자세에서도 지면 아래로는 그려지지 않게 잘라낸다.
+        // 잘라내는 영역이 같이 회전하지 않도록 바깥 그룹에 적용한다.
+        const clip = add(parent, "g", { "clip-path": "url(#above-ground)" });
         const attrs = {};
         if (spin && pivot) attrs.transform = `rotate(${spin} ${pivot.x} ${pivot.y})`;
-        const g = add(parent, "g", attrs);
+        const g = add(clip, "g", attrs);
         const P = pt => `${pt.x.toFixed(1)} ${pt.y.toFixed(1)}`;
-        const shoeY = GROUND_Y - 4;
+        const shoeY = GROUND_Y - 7;
         // 앞다리: 무릎을 굽혀 앞발을 딛는다.
         const knee = {
           x: (geo.hip.x + geo.frontAnkle.x) / 2 + 0.13 * PX_PER_M,
@@ -807,7 +841,7 @@
         // 힘 벡터: 줄의 장력 T와 무게 mg
         const T = state.pull * FORCE_PX;
         arrow(vectors, hand, { x: hand.x + T, y: hand.y }, "svg-force", "arrow-orange", `T = ${state.pull} N`, { x: 6, y: -12 });
-        const W = limits.weight * FORCE_PX;
+        const W = Math.max(20, Math.min(limits.weight * FORCE_PX, GROUND_Y - 6 - com.y));
         casedLine(vectors, com, { x: com.x, y: com.y + W }, "svg-weight", 5, "arrow-gray");
         add(vectors, "text", { x: com.x - 118, y: com.y + W / 2, class: "svg-label" }, `mg = ${round(limits.weight)} N`);
         add(vectors, "circle", { cx: com.x, cy: com.y, r: 6, class: "com-dot" });
@@ -1148,12 +1182,15 @@
       function step() {
         if (state.mode === "body") {
           const limits = bodyLimits();
+          const geo = sideGeometry(300 + state.slide, state.lean);
           if (limits.failure === "forward") {
-            state.tipAngle = Math.min(58, state.tipAngle + 0.9);
-            if (state.tipAngle >= 58) stopLoop("앞으로 넘어졌습니다");
+            const rest = restingSpin(geo, 1);
+            state.tipAngle = Math.min(rest, state.tipAngle + 0.9);
+            if (state.tipAngle >= rest) stopLoop("앞으로 넘어졌습니다");
           } else if (limits.failure === "backward") {
-            state.tipAngle = Math.max(-58, state.tipAngle - 0.9);
-            if (state.tipAngle <= -58) stopLoop("뒤로 넘어졌습니다");
+            const rest = restingSpin(geo, -1);
+            state.tipAngle = Math.max(rest, state.tipAngle - 0.9);
+            if (state.tipAngle <= rest) stopLoop("뒤로 넘어졌습니다");
           } else if (limits.failure === "slip") {
             state.slide = Math.min(150, state.slide + 1.1);
             if (state.slide >= 150) stopLoop("미끄러졌습니다");
