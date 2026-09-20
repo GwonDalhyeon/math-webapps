@@ -158,16 +158,8 @@
     .svg-support.bad { stroke: var(--red); }
     .svg-action { stroke: var(--teal); stroke-width: 2.4; stroke-dasharray: 7 5; fill: none; }
     .svg-action.bad { stroke: var(--red); }
-    .figure-skin { fill: #f3d3b6; stroke: #b9835c; stroke-width: 2; }
-    .figure-limb { fill: none; stroke: #3c5687; stroke-linecap: round; stroke-linejoin: round; }
-    .figure-torso { fill: none; stroke: #4e76c4; stroke-linecap: round; stroke-linejoin: round; }
-    .figure-foot { stroke: #2c3f60; stroke-width: 6; stroke-linecap: round; }
-    .foe-limb { stroke: #a4632c; }
-    .foe-torso { stroke: #ef9350; }
-    .foe-foot { stroke: #7d451a; }
-    .team-torso { stroke: #26a9a2; }
-    .team-limb { stroke: #0c7d78; }
-    .figure-dim { opacity: .45; }
+    .art { pointer-events: none; }
+    #scene text { pointer-events: none; }
     .drag-dot { fill: #fff; stroke: var(--orange); stroke-width: 4.5; }
     .drag-dot.blue { stroke: var(--blue); }
     .drag-dot.brown { stroke: #b2784d; }
@@ -256,6 +248,10 @@
                 <marker id="arrow-gray" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 z" fill="#55617a" /></marker>
                 <marker id="arrow-green" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 z" fill="#167d4b" /></marker>
                 <marker id="arrow-cyan" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 z" fill="#1f7fb8" /></marker>
+                <image id="art-blue" href="./assets/people/aerial-teammate-above.png" x="0" y="0" width="260" height="402" />
+                <image id="art-red" href="./assets/people/aerial-teammate-below.png" x="0" y="0" width="260" height="319" />
+                <image id="art-foe" href="./assets/people/aerial-opponent.png" x="0" y="0" width="260" height="353" />
+                <image id="art-side" href="./assets/people/side-puller.png" x="0" y="0" width="210" height="390" />
               </defs>
               <g id="scene"></g>
             </svg>
@@ -528,22 +524,31 @@
       /* ── 사람 그리기 ────────────────────────────────── */
 
       // 위에서 내려다본 사람. facing은 몸이 향하는 방향(도), 0이면 오른쪽을 본다.
-      function drawTopFigure(parent, center, facing, scale, tone) {
-        const torso = tone === "foe" ? "figure-torso foe-torso" : tone === "team" ? "figure-torso team-torso" : "figure-torso";
-        const limb = tone === "foe" ? "figure-limb foe-limb" : tone === "team" ? "figure-limb team-limb" : "figure-limb";
-        const g = add(parent, "g", { transform: `translate(${center.x} ${center.y}) rotate(${facing}) scale(${scale})` });
-        // 다리: 몸 뒤쪽으로 벌려 버틴다.
-        add(g, "path", { d: "M -6 -10 L -26 -21 L -34 -26", class: limb, "stroke-width": 9 });
-        add(g, "path", { d: "M -6 10 L -26 21 L -34 26", class: limb, "stroke-width": 9 });
-        // 몸통(어깨가 넓은 타원)
-        add(g, "ellipse", { cx: 0, cy: 0, rx: 15, ry: 19, class: torso, "stroke-width": 11, style: "fill:#fff" });
-        // 팔: 앞으로 뻗어 줄을 잡는다.
-        add(g, "path", { d: "M 6 -16 L 26 -10 L 35 -5", class: limb, "stroke-width": 7 });
-        add(g, "path", { d: "M 6 16 L 26 10 L 35 5", class: limb, "stroke-width": 7 });
-        // 머리와 시선 방향
-        add(g, "circle", { cx: 7, cy: 0, r: 10, class: "figure-skin" });
-        add(g, "circle", { cx: 13, cy: 0, r: 2.6, fill: "#7a5636" });
-        return g;
+      // 항공뷰 캐릭터 이미지. 그림마다 회전이 구워져 있어 baked 값을 빼서 방향을 맞춘다.
+      // fx, fy는 그림 안에서 주먹이 있는 좌표이며, 이 점을 줄을 잡는 위치에 놓는다.
+      const TOP_ART = {
+        blue: { id: "art-blue", w: 260, fx: 235, fy: 214, baked: 24.4 },
+        red: { id: "art-red", w: 260, fx: 234, fy: 117, baked: -25 },
+        foe: { id: "art-foe", w: 260, fx: 28, fy: 170, baked: -177.7 }
+      };
+
+      // grip에 주먹을 두고 facing 방향(도, 0이면 오른쪽)을 보게 캐릭터를 놓는다.
+      function drawTopFigure(parent, art, grip, facing, width) {
+        const scale = width / art.w;
+        return add(parent, "use", {
+          href: `#${art.id}`, class: "art",
+          transform: `translate(${grip.x} ${grip.y}) rotate(${facing - art.baked}) scale(${scale}) translate(${-art.fx} ${-art.fy})`
+        });
+      }
+
+      // 옆모습 캐릭터 이미지(모드 ②의 상대). 발바닥이 지면에 닿도록 놓고 좌우를 뒤집는다.
+      const SIDE_ART = { id: "art-side", top: 24, sole: 322 };
+      function drawSidePhoto(parent, rightEdge, heightM, opacity) {
+        const scale = heightM * PX_PER_M / (SIDE_ART.sole - SIDE_ART.top);
+        return add(parent, "use", {
+          href: `#${SIDE_ART.id}`, class: "art", opacity,
+          transform: `translate(${rightEdge} ${GROUND_Y - SIDE_ART.sole * scale}) scale(${-scale} ${scale})`
+        });
       }
 
       // 옆에서 본 사람의 뼈대 좌표를 계산한다.
@@ -570,36 +575,45 @@
         };
       }
 
-      // 옆모습 사람. geo는 sideGeometry의 결과, spin은 넘어질 때의 회전각.
-      function drawSideFigure(parent, geo, tone, spin = 0, faint = false) {
-        const torso = tone === "foe" ? "figure-torso foe-torso" : "figure-torso";
-        const limb = tone === "foe" ? "figure-limb foe-limb" : "figure-limb";
-        const foot = tone === "foe" ? "figure-foot foe-foot" : "figure-foot";
+      // 옆모습 사람. 항공뷰 캐릭터와 같은 화풍(굵은 남색 외곽선 + 면 채색)으로 그린다.
+      const SKIN_TONE = { ink: "#101c3d", shirt: "#12539c", pants: "#3a465e", shoe: "#16203c", skin: "#fbcfa0", hair: "#5a3418" };
+
+      // 같은 선을 굵은 외곽선 → 색 순서로 두 번 그려 에셋의 두꺼운 테두리 느낌을 낸다.
+      function inkLine(parent, d, color, width, opacity) {
+        const base = { d, fill: "none", "stroke-linecap": "round", "stroke-linejoin": "round" };
+        if (opacity) base.opacity = opacity;
+        add(parent, "path", Object.assign({}, base, { stroke: SKIN_TONE.ink, "stroke-width": width + 6 }));
+        add(parent, "path", Object.assign({}, base, { stroke: color, "stroke-width": width }));
+      }
+
+      function drawSideFigure(parent, geo, spin = 0) {
         const attrs = {};
         if (spin) attrs.transform = `rotate(${spin} ${geo.toe.x} ${geo.toe.y})`;
-        if (faint) attrs.class = "figure-dim";
         const g = add(parent, "g", attrs);
-
         const knee = (ankle, push) => ({
           x: (geo.hip.x + ankle.x) / 2 + push,
           y: (geo.hip.y + ankle.y) / 2 + 6
         });
         const backKnee = knee(geo.backAnkle, -10);
         const frontKnee = knee(geo.frontAnkle, 16);
+        const P = pt => `${pt.x.toFixed(1)} ${pt.y.toFixed(1)}`;
         // 뒷다리 → 앞다리 순서로 그려 겹침이 자연스럽게 보이게 한다.
-        add(g, "path", { d: `M ${geo.hip.x} ${geo.hip.y} L ${backKnee.x} ${backKnee.y} L ${geo.backAnkle.x} ${geo.backAnkle.y}`, class: limb, "stroke-width": 12, opacity: .78 });
-        add(g, "line", { x1: geo.backAnkle.x, y1: geo.backAnkle.y, x2: geo.heel.x, y2: geo.heel.y, class: foot, opacity: .78 });
-        add(g, "path", { d: `M ${geo.hip.x} ${geo.hip.y} L ${frontKnee.x} ${frontKnee.y} L ${geo.frontAnkle.x} ${geo.frontAnkle.y}`, class: limb, "stroke-width": 12 });
-        add(g, "line", { x1: geo.frontAnkle.x, y1: geo.frontAnkle.y, x2: geo.toe.x, y2: geo.toe.y, class: foot });
+        inkLine(g, `M ${P(geo.hip)} L ${P(backKnee)} L ${P(geo.backAnkle)}`, SKIN_TONE.pants, 12, .82);
+        inkLine(g, `M ${P(geo.backAnkle)} L ${P(geo.heel)}`, SKIN_TONE.shoe, 7, .82);
+        inkLine(g, `M ${P(geo.hip)} L ${P(frontKnee)} L ${P(geo.frontAnkle)}`, SKIN_TONE.pants, 12);
+        inkLine(g, `M ${P(geo.frontAnkle)} L ${P(geo.toe)}`, SKIN_TONE.shoe, 7);
         // 몸통
-        add(g, "path", { d: `M ${geo.hip.x} ${geo.hip.y} L ${geo.shoulder.x} ${geo.shoulder.y}`, class: torso, "stroke-width": 21 });
+        inkLine(g, `M ${P(geo.hip)} L ${P(geo.shoulder)}`, SKIN_TONE.shirt, 21);
         // 팔(팔꿈치를 살짝 굽힌다)
         const elbow = { x: (geo.shoulder.x + geo.hand.x) / 2 - 3, y: (geo.shoulder.y + geo.hand.y) / 2 + 9 };
-        add(g, "path", { d: `M ${geo.shoulder.x} ${geo.shoulder.y} L ${elbow.x} ${elbow.y} L ${geo.hand.x} ${geo.hand.y}`, class: limb, "stroke-width": 9 });
-        // 머리
-        add(g, "circle", { cx: geo.head.x, cy: geo.head.y, r: BODY.headR * PX_PER_M, class: "figure-skin" });
-        add(g, "circle", { cx: geo.head.x + 6, cy: geo.head.y - 1, r: 2.4, fill: "#7a5636" });
-        add(g, "circle", { cx: geo.hand.x, cy: geo.hand.y, r: 5.5, class: "figure-skin" });
+        inkLine(g, `M ${P(geo.shoulder)} L ${P(elbow)} L ${P(geo.hand)}`, SKIN_TONE.shirt, 9);
+        // 머리: 뒤통수 머리카락 위에 얼굴을 얹는다.
+        const r = BODY.headR * PX_PER_M;
+        add(g, "circle", { cx: geo.head.x - 2.5, cy: geo.head.y - 2.5, r, fill: SKIN_TONE.hair, stroke: SKIN_TONE.ink, "stroke-width": 2.5 });
+        add(g, "circle", { cx: geo.head.x + 3, cy: geo.head.y + 1.5, r: r - 1.5, fill: SKIN_TONE.skin, stroke: SKIN_TONE.ink, "stroke-width": 2.5 });
+        add(g, "circle", { cx: geo.head.x + 7, cy: geo.head.y, r: 2.2, fill: SKIN_TONE.ink });
+        // 주먹
+        add(g, "circle", { cx: geo.hand.x, cy: geo.hand.y, r: 6, fill: SKIN_TONE.skin, stroke: SKIN_TONE.ink, "stroke-width": 2.5 });
         return g;
       }
 
@@ -668,10 +682,10 @@
         add(scene, "text", { x: 40, y: 56, class: "svg-small" }, "힘의 크기는 그대로 두고 방향만 바꾸면 합의 크기가 어떻게 달라질까요?");
 
         // 줄과 기준 방향
-        add(scene, "line", { x1: origin.x, y1: origin.y, x2: 846, y2: origin.y, class: "svg-rope" });
+        add(scene, "line", { x1: origin.x, y1: origin.y, x2: 730, y2: origin.y, class: "svg-rope" });
         add(scene, "line", { x1: 60, y1: origin.y, x2: origin.x, y2: origin.y, class: "svg-target" });
         add(scene, "text", { x: 62, y: origin.y - 13, class: "svg-small" }, "← 목표 방향(줄 방향)");
-        add(scene, "text", { x: 786, y: origin.y + 54, class: "svg-label" }, "상대");
+        add(scene, "text", { x: 792, y: origin.y + 62, class: "svg-label" }, "상대");
 
         // 평행사변형
         add(scene, "polygon", { points: `${origin.x},${origin.y} ${end1.x},${end1.y} ${corner.x},${corner.y} ${end2.x},${end2.y}`, class: "svg-parallelogram" });
@@ -690,7 +704,7 @@
         const labelPos = leftPoint(origin, 74, Math.min(state.angle1, state.angle2) - 11);
         add(scene, "text", { x: labelPos.x - 18, y: labelPos.y + 4, class: "svg-label" }, `θ = ${round(mid.between)}°`);
 
-        drawTopFigure(scene, { x: 802, y: origin.y }, 180, .9, "foe");
+        drawTopFigure(scene, TOP_ART.foe, { x: 726, y: origin.y }, 180, 124);
 
         add(scene, "circle", { cx: origin.x, cy: origin.y, r: 7, fill: "#172033" });
 
@@ -724,10 +738,13 @@
 
         // 줄과 상대가 당기는 쪽
         const ropeDir = { x: Math.cos(rad(state.ropeAngle)), y: -Math.sin(rad(state.ropeAngle)) };
-        const ropeEnd = { x: hand.x + 300 * ropeDir.x, y: hand.y + 300 * ropeDir.y };
+        const ropeLen = Math.min(250, 690 - hand.x);
+        const ropeEnd = { x: hand.x + ropeLen * ropeDir.x, y: hand.y + ropeLen * ropeDir.y };
         add(scene, "line", { x1: hand.x, y1: hand.y, x2: ropeEnd.x, y2: ropeEnd.y, class: "svg-rope" });
-        arrow(scene, ropeEnd, { x: ropeEnd.x + 96 * ropeDir.x, y: ropeEnd.y + 96 * ropeDir.y }, "svg-resistance", "arrow-violet", "", {});
-        add(scene, "text", { x: ropeEnd.x + 18, y: ropeEnd.y - 18, class: "svg-label" }, "상대가 당기는 쪽 →");
+        arrow(scene, ropeEnd, { x: ropeEnd.x + 78 * ropeDir.x, y: ropeEnd.y + 78 * ropeDir.y }, "svg-resistance", "arrow-violet", "", {});
+        add(scene, "text", { x: ropeEnd.x + 8, y: ropeEnd.y - 20, class: "svg-label" }, "상대가 당기는 쪽 →");
+        drawSidePhoto(scene, 848, 1.72, .3);
+        add(scene, "text", { x: 756, y: GROUND_Y + 26, class: "svg-small" }, "상대 팀");
 
         const failing = state.slide > 2 || state.tipAngle > 2;
         const vectors = add(scene, "g", failing ? { opacity: .35 } : {});
@@ -765,7 +782,7 @@
         add(vectors, "line", { x1: com.x, y1: GROUND_Y + 32, x2: geo.toe.x, y2: GROUND_Y + 32, class: "svg-dim" });
         add(vectors, "text", { x: (com.x + geo.toe.x) / 2 - 28, y: GROUND_Y + 50, class: "svg-label" }, `d = ${limits.d.toFixed(2)} m`);
 
-        drawSideFigure(scene, geo, "default", spin);
+        drawSideFigure(scene, geo, spin);
 
         // 힘 벡터 (이름은 기호만, 수치는 범례에서 읽는다)
         const T = state.pull * FORCE_PX;
@@ -816,33 +833,42 @@
         add(scene, "text", { x: 46, y: 56, class: "svg-small" }, "각자의 힘을 줄 방향으로 모을수록 팀의 합력이 커집니다.");
 
         const foeX = 706 - state.progress * 210;
-        add(scene, "line", { x1: 120, y1: ropeY, x2: foeX - 34, y2: ropeY, class: "svg-rope" });
+        add(scene, "line", { x1: 110, y1: ropeY, x2: foeX, y2: ropeY, class: "svg-rope" });
         add(scene, "line", { x1: 130, y1: 104, x2: 330, y2: 104, class: "svg-target", "marker-end": "url(#arrow-gray)", transform: "rotate(180 230 104)" });
         add(scene, "text", { x: 130, y: 92, class: "svg-small" }, "← 줄 방향(목표 방향): 이 방향의 성분만 줄을 끌어옵니다.");
 
         const spacing = teamSpacing();
         const firstGrip = 560 - (state.teamCount - 1) * spacing;
+        const len = Math.min(120, metrics.per * TEAM_PX);
+        const members = [];
         for (let i = 0; i < state.teamCount; i += 1) {
           const a = state.teamAngles[i] || 0;
           const grip = { x: firstGrip + i * spacing, y: ropeY };
-          const len = Math.min(120, metrics.per * TEAM_PX);
-          const tip = leftPoint(grip, len, a);
+          members.push({ i, a, grip, tip: leftPoint(grip, len, a) });
+        }
+        // 1차: 벡터와 캐릭터
+        members.forEach(({ i, a, grip, tip }) => {
           const comp = { x: grip.x - len * Math.cos(rad(a)), y: grip.y };
           // 줄 방향 성분과 수직 성분
           add(scene, "line", { x1: grip.x, y1: grip.y, x2: comp.x, y2: comp.y, class: "svg-component", "stroke-dasharray": "6 5", opacity: .8 });
           add(scene, "line", { x1: tip.x, y1: tip.y, x2: comp.x, y2: comp.y, class: "svg-guide" });
           arrow(scene, grip, tip, "svg-force", "arrow-orange", "", {});
-          drawTopFigure(scene, leftPoint(grip, len + 34, a), -a, .8, "team");
-          add(scene, "text", { x: tip.x - 16, y: tip.y + (a >= 0 ? 34 : -26), class: "svg-small" }, `${i + 1}번`);
+          drawTopFigure(scene, i % 2 ? TOP_ART.red : TOP_ART.blue, leftPoint(grip, len + 13, a), -a, 96);
+        });
+        // 2차: 손잡이. 3차: 번호. 캐릭터나 이웃 손잡이에 가리지 않도록 순서를 나눈다.
+        members.forEach(({ i, a, tip }) => {
           const handle = add(scene, "circle", { cx: tip.x, cy: tip.y, r: 10, class: "drag-dot drag-handle", tabindex: "0", role: "slider", "aria-label": `${i + 1}번 팀원이 당기는 방향`, "aria-valuemin": "-55", "aria-valuemax": "55", "aria-valuenow": String(round(a)) });
           handle.dataset.dragType = `team-${i}`;
-        }
+        });
+        members.forEach(({ i, a, grip }) => {
+          add(scene, "text", { x: grip.x - 7, y: grip.y + (a > 0 ? -14 : 24), class: "svg-small" }, `${i + 1}번`);
+        });
 
-        drawTopFigure(scene, { x: foeX, y: ropeY }, 180, .96, "foe");
-        add(scene, "text", { x: foeX - 16, y: ropeY + 52, class: "svg-label" }, "상대");
+        drawTopFigure(scene, TOP_ART.foe, { x: foeX, y: ropeY }, 180, 124);
+        add(scene, "text", { x: foeX + 46, y: ropeY + 68, class: "svg-label" }, "상대");
         const resistLen = Math.min(150, state.resistance * 0.07);
-        arrow(scene, { x: foeX + 34, y: ropeY }, { x: foeX + 34 + resistLen, y: ropeY }, "svg-resistance", "arrow-violet",
-          `상대 저항 ${state.resistance} N`, { x: -60, y: -18 });
+        arrow(scene, { x: foeX + 18, y: ropeY - 78 }, { x: foeX + 18 + resistLen, y: ropeY - 78 }, "svg-resistance", "arrow-violet",
+          `상대 저항 ${state.resistance} N`, { x: -resistLen - 4, y: -14 });
 
         // 팀 합력(벡터합)과 줄 방향 성분
         const base = { x: 560, y: 340 };
