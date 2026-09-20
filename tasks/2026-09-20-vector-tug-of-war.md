@@ -6,7 +6,7 @@
 
 ## 위치
 
-`gifted/vector-tug-of-war/index.html`
+`geometry/vector-tug-of-war/index.html`
 
 ## 함께 만들 학습지
 
@@ -396,13 +396,13 @@ $$
 
 ## 생성할 파일
 
-- `gifted/vector-tug-of-war/index.html`
+- `geometry/vector-tug-of-war/index.html`
 
 필요하면 공통 목록 등록을 위한 수정 파일을 추가한다.
 
 ## 수정할 파일
 
-- `gifted/index.html`: 실제 앱 파일이 완성된 뒤 목록 카드와 상대 링크를 추가한다.
+- `geometry/index.html`: 실제 앱 파일이 완성된 뒤 목록 카드와 상대 링크를 추가한다.
 
 ## 수정하지 말 것
 
@@ -464,14 +464,14 @@ $$
 - iPad A16 가로 `1180×820`에서 핵심 조작과 결과 시각화가 함께 보인다.
 - iPad A16 세로 `820×1180`에서 요소가 겹치거나 잘리지 않는다.
 - 브라우저 콘솔 오류가 없다.
-- `gifted/index.html`의 링크가 실제 앱 폴더를 가리킨다.
+- `geometry/index.html`의 링크가 실제 앱 폴더를 가리킨다.
 - GitHub Pages에서 사용할 수 있는 상대경로만 사용한다.
 
 ---
 
 ## 검증 방법
 
-1. `gifted/vector-tug-of-war/index.html`을 브라우저에서 연다.
+1. `geometry/vector-tug-of-war/index.html`을 브라우저에서 연다.
 2. 기본 모드 B에서 기본값과 설명 문구가 표시되는지 확인한다.
 3. 힘 벡터를 수평에서 위쪽으로 드래그하고 `F cos θ`가 감소하는지 확인한다.
 4. 상대 저항을 내 유효 힘보다 크게 설정하고 상대가 끌려오지 않는지 확인한다.
@@ -486,4 +486,4 @@ $$
 13. iPad A16 세로 viewport `820×1180`에서 주요 요소가 겹치거나 잘리지 않는지 확인한다.
 14. 터치 드래그, 슬라이더, 키보드 조작이 동작하는지 확인한다.
 15. 개발자 도구 콘솔에 오류가 없는지 확인한다.
-16. `gifted/index.html`에서 앱 링크가 실제 파일과 일치하는지 확인한다.
+16. `geometry/index.html`에서 앱 링크가 실제 파일과 일치하는지 확인한다.
