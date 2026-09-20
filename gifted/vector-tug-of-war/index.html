@@ -1,0 +1,678 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="힘의 방향과 벡터의 합을 줄다리기 게임으로 탐구하는 수학 웹앱입니다." />
+  <title>줄다리기 벡터 전략 게임</title>
+  <link rel="icon" href="../../favicon.ico" sizes="16x16 32x32 48x48" />
+  <link rel="icon" href="../../assets/favicon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="../../assets/apple-touch-icon.png" />
+  <link rel="stylesheet" href="../../assets/common.css" />
+  <style>
+    :root {
+      --ink: #172033;
+      --muted: #5f6b7b;
+      --paper: #f7f9fc;
+      --panel: #ffffff;
+      --line: #dbe2ee;
+      --blue: #2864d7;
+      --blue-soft: #e8f0ff;
+      --orange: #ef7d32;
+      --orange-soft: #fff0e6;
+      --teal: #08949c;
+      --green: #167d4b;
+      --red: #bd3a3a;
+      --shadow: 0 18px 45px rgba(34, 52, 84, .11);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: linear-gradient(180deg, #f4f7fc 0%, #ffffff 58%);
+      font-family: Pretendard, "Noto Sans KR", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    button, input { font: inherit; }
+
+    .app-shell { max-width: 1360px; margin: 0 auto; padding: 20px 24px 48px; }
+    .back-link { color: #3f5e93; text-decoration: none; font-weight: 700; }
+    .back-link:hover { text-decoration: underline; }
+
+    .hero { display: grid; grid-template-columns: 1fr auto; gap: 24px; align-items: end; margin: 22px 0 18px; }
+    .eyebrow { margin: 0 0 8px; color: var(--blue); font-size: .78rem; font-weight: 900; letter-spacing: .12em; text-transform: uppercase; }
+    h1 { margin: 0; font-size: clamp(2rem, 4vw, 3.3rem); letter-spacing: -.055em; line-height: 1.05; }
+    .lead { max-width: 760px; margin: 14px 0 0; color: var(--muted); font-size: 1.06rem; line-height: 1.7; }
+    .hero-callout { max-width: 320px; padding: 16px 18px; border: 1px solid #cad9f8; border-radius: 18px; background: var(--blue-soft); color: #24477e; line-height: 1.55; }
+    .hero-callout strong { display: block; margin-bottom: 5px; font-size: 1.05rem; }
+
+    .app-board { overflow: hidden; border: 1px solid var(--line); border-radius: 26px; background: rgba(255,255,255,.9); box-shadow: var(--shadow); }
+    .mode-bar { display: flex; gap: 8px; padding: 12px; border-bottom: 1px solid var(--line); background: #fbfcff; }
+    .mode-tab { flex: 1; min-height: 56px; border: 1px solid transparent; border-radius: 15px; background: transparent; color: var(--muted); cursor: pointer; font-weight: 900; text-align: left; padding: 9px 14px; transition: .18s ease; }
+    .mode-tab span { display: block; margin-top: 4px; font-size: .78rem; font-weight: 600; }
+    .mode-tab:hover { background: #f0f4fb; color: var(--ink); }
+    .mode-tab.active { border-color: #b9cdf5; background: var(--blue-soft); color: #174aab; }
+
+    .workspace { display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(330px, .72fr); gap: 0; min-height: 600px; }
+    .visual-column { min-width: 0; padding: 20px; border-right: 1px solid var(--line); }
+    .control-column { padding: 20px; background: #fbfcff; }
+    .visual-heading { display: flex; justify-content: space-between; align-items: start; gap: 14px; margin-bottom: 12px; }
+    .visual-heading h2 { margin: 0; font-size: 1.22rem; }
+    .visual-heading p { margin: 5px 0 0; color: var(--muted); font-size: .92rem; }
+    .live-badge { flex: 0 0 auto; padding: 8px 11px; border-radius: 999px; background: #eef3fb; color: #426087; font-size: .78rem; font-weight: 900; }
+
+    .stage-wrap { position: relative; overflow: hidden; border: 1px solid #ccd7e7; border-radius: 22px; background: #f6f9fd; }
+    #stage { display: block; width: 100%; height: auto; min-height: 350px; touch-action: none; }
+    .stage-hint { margin: 9px 4px 0; color: #627089; font-size: .84rem; }
+    .drag-handle { cursor: grab; }
+    .drag-handle:active { cursor: grabbing; }
+
+    .metric-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 9px; margin-top: 13px; }
+    .metric { min-height: 80px; padding: 11px 12px; border: 1px solid var(--line); border-radius: 15px; background: var(--panel); }
+    .metric .label { display: block; color: var(--muted); font-size: .75rem; font-weight: 700; line-height: 1.25; }
+    .metric .value { display: block; margin-top: 6px; font-size: 1.25rem; font-weight: 900; letter-spacing: -.035em; }
+    .metric.primary { border-color: #b9cdf5; background: var(--blue-soft); }
+    .metric.primary .value { color: #174aab; }
+    .metric.good { border-color: #bde5d0; background: #edf9f2; }
+    .metric.good .value { color: var(--green); }
+    .metric.warn { border-color: #f0c8ad; background: var(--orange-soft); }
+    .metric.warn .value { color: #bb581a; }
+
+    .status-panel { display: flex; gap: 12px; align-items: center; min-height: 72px; margin-top: 12px; padding: 13px 15px; border-radius: 16px; background: #eef2f7; }
+    .status-icon { display: grid; place-items: center; width: 38px; height: 38px; flex: 0 0 auto; border-radius: 50%; background: #dbe4f1; color: #526a8d; font-size: 1.15rem; font-weight: 900; }
+    .status-panel.good { background: #e9f7ef; color: #155f3a; }
+    .status-panel.good .status-icon { background: #bce5ce; color: var(--green); }
+    .status-panel.warn { background: #fff1e8; color: #8f4219; }
+    .status-panel.warn .status-icon { background: #ffd5b9; color: #a44e1e; }
+    .status-panel strong { display: block; margin-bottom: 3px; }
+    .status-panel p { margin: 0; font-size: .9rem; line-height: 1.45; }
+
+    .control-section + .control-section { margin-top: 19px; padding-top: 18px; border-top: 1px solid var(--line); }
+    .control-section h3 { margin: 0 0 10px; font-size: .96rem; }
+    .control-label { display: flex; justify-content: space-between; gap: 12px; align-items: center; margin: 13px 0 7px; font-size: .9rem; font-weight: 800; }
+    .control-label output { color: var(--blue); font-variant-numeric: tabular-nums; }
+    input[type="range"] { width: 100%; accent-color: var(--blue); cursor: pointer; }
+    .range-help { display: flex; justify-content: space-between; margin-top: 2px; color: #7a879a; font-size: .72rem; }
+    .button-row { display: grid; grid-template-columns: 1.25fr 1fr 1fr; gap: 8px; margin-top: 15px; }
+    .button-row button, .ghost-button { min-height: 44px; border: 1px solid #cbd6e6; border-radius: 12px; background: #fff; color: var(--ink); cursor: pointer; font-weight: 900; }
+    .button-row button:hover, .ghost-button:hover { border-color: var(--blue); background: var(--blue-soft); }
+    .button-row .primary-button { border-color: var(--blue); background: var(--blue); color: #fff; }
+    .button-row .primary-button:hover { background: #1d53ba; }
+    .button-row .primary-button.is-running { background: #174aab; }
+    .team-choice { display: flex; gap: 7px; }
+    .team-choice button { flex: 1; min-height: 40px; border: 1px solid #cbd6e6; border-radius: 10px; background: #fff; color: var(--muted); cursor: pointer; font-weight: 800; }
+    .team-choice button.active { border-color: var(--blue); background: var(--blue-soft); color: #174aab; }
+    .mode-note { margin: 0; padding: 12px 13px; border-radius: 13px; background: #f0f4fa; color: #53627a; font-size: .84rem; line-height: 1.55; }
+    .formula-card { margin-top: 16px; padding: 13px 15px; border: 1px solid #dbe4f2; border-radius: 15px; background: #f8faff; color: #304665; }
+    .formula-card p { margin: 0 0 8px; font-size: .8rem; font-weight: 800; }
+    .formula-card math { display: block; font-size: 1.35rem; }
+    .formula-card .formula-caption { margin: 8px 0 0; color: var(--muted); font-size: .79rem; font-weight: 600; }
+
+    .learning-footer { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 17px; }
+    .learning-card { padding: 18px 20px; border: 1px solid var(--line); border-radius: 18px; background: #fff; }
+    .learning-card h2 { margin: 0 0 8px; font-size: 1.03rem; }
+    .learning-card p { margin: 0; color: var(--muted); font-size: .9rem; line-height: 1.65; }
+    .learning-card strong { color: var(--ink); }
+    .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+
+    .svg-label { font: 700 13px Pretendard, "Noto Sans KR", sans-serif; fill: #3d506b; }
+    .svg-small { font: 600 11px Pretendard, "Noto Sans KR", sans-serif; fill: #708099; }
+    .svg-big { font: 900 15px Pretendard, "Noto Sans KR", sans-serif; fill: #172033; }
+    .svg-target { stroke: #6d7f98; stroke-width: 3; stroke-dasharray: 8 7; }
+    .svg-rope { stroke: #b2784d; stroke-width: 8; stroke-linecap: round; }
+    .svg-force { stroke: var(--orange); stroke-width: 6; stroke-linecap: round; }
+    .svg-component { stroke: var(--blue); stroke-width: 5; stroke-linecap: round; }
+    .svg-sum { stroke: var(--teal); stroke-width: 7; stroke-linecap: round; }
+    .svg-resistance { stroke: #8b5cc7; stroke-width: 5; stroke-linecap: round; }
+    .svg-angle { fill: none; stroke: #526b93; stroke-width: 2.5; }
+    .svg-ground { fill: #e6edf6; }
+    .svg-grid { stroke: #dce5f1; stroke-width: 1; }
+    .person-body { fill: #4e76c4; stroke: #254d94; stroke-width: 2; }
+    .opponent-body { fill: #f08a43; stroke: #a34d17; stroke-width: 2; }
+    .team-body { fill: #26a9a2; stroke: #087c7a; stroke-width: 2; }
+    .drag-dot { fill: #fff; stroke: var(--orange); stroke-width: 5; }
+    .drag-dot.blue { stroke: var(--blue); }
+
+    @media (max-width: 930px) {
+      .hero { grid-template-columns: 1fr; }
+      .hero-callout { max-width: none; }
+      .workspace { grid-template-columns: 1fr; }
+      .visual-column { border-right: 0; border-bottom: 1px solid var(--line); }
+    }
+
+    @media (max-width: 620px) {
+      .app-shell { padding: 16px 12px 32px; }
+      .mode-bar { overflow-x: auto; }
+      .mode-tab { min-width: 150px; }
+      .visual-column, .control-column { padding: 14px; }
+      #stage { min-height: 285px; }
+      .metric-grid { grid-template-columns: repeat(2, 1fr); }
+      .learning-footer { grid-template-columns: 1fr; }
+      .button-row { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <main class="app-shell">
+    <a class="back-link" href="../">← 영재원 수업 웹앱</a>
+
+    <header class="hero">
+      <div>
+        <p class="eyebrow">Vector Strategy Lab</p>
+        <h1>줄다리기 벡터 전략 게임</h1>
+        <p class="lead">같은 크기의 힘이라도 방향이 달라지면 결과가 달라집니다. 내 힘을 목표 방향으로 얼마나 잘 모으는지 직접 조절해 보세요.</p>
+      </div>
+      <div class="hero-callout"><strong>오늘의 전략</strong>상대보다 힘이 작아도, 내 힘의 유효한 방향 성분을 크게 만들면 줄을 움직일 수 있습니다.</div>
+    </header>
+
+    <section class="app-board" aria-label="줄다리기 벡터 전략 게임">
+      <nav class="mode-bar" aria-label="학습 모드">
+        <button class="mode-tab" data-mode="sum" type="button">모드 A · 벡터 합<span>두 힘을 한 방향으로 모으기</span></button>
+        <button class="mode-tab active" data-mode="side" type="button">모드 B · 옆모습<span>수평 성분으로 상대 끌어오기</span></button>
+        <button class="mode-tab" data-mode="top" type="button">모드 C · 항공뷰<span>팀의 힘을 줄 방향으로 정렬하기</span></button>
+      </nav>
+
+      <div class="workspace">
+        <section class="visual-column">
+          <div class="visual-heading">
+            <div>
+              <h2 id="mode-title">모드 B · 옆모습 줄다리기</h2>
+              <p id="mode-description">지면과 나란히 당길수록 수평 성분이 커집니다.</p>
+            </div>
+            <span id="live-badge" class="live-badge">방향을 드래그하세요</span>
+          </div>
+          <div class="stage-wrap">
+            <svg id="stage" viewBox="0 0 860 430" role="img" aria-labelledby="stage-title stage-desc">
+              <title id="stage-title">줄다리기 벡터 시각화</title>
+              <desc id="stage-desc">힘 벡터와 목표 방향 성분, 상대의 이동을 보여주는 그림입니다.</desc>
+              <defs>
+                <marker id="arrow-orange" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#ef7d32" /></marker>
+                <marker id="arrow-blue" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#2864d7" /></marker>
+                <marker id="arrow-teal" markerWidth="11" markerHeight="11" refX="9" refY="5.5" orient="auto"><path d="M0,0 L11,5.5 L0,11 z" fill="#08949c" /></marker>
+                <marker id="arrow-purple" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#8b5cc7" /></marker>
+              </defs>
+              <g id="scene"></g>
+            </svg>
+          </div>
+          <p class="stage-hint">주황색 힘 벡터의 끝에 있는 흰색 손잡이를 드래그해 방향을 바꿔 보세요.</p>
+
+          <div class="metric-grid" aria-live="polite">
+            <div class="metric"><span class="label">내 힘의 크기</span><strong class="value" id="force-value">500 N</strong></div>
+            <div class="metric primary"><span class="label">목표 방향 유효 힘</span><strong class="value" id="effective-value">410 N</strong></div>
+            <div class="metric"><span class="label">상대 저항</span><strong class="value" id="resistance-value">400 N</strong></div>
+            <div class="metric" id="net-metric"><span class="label">순 유효 힘</span><strong class="value" id="net-value">+10 N</strong></div>
+          </div>
+
+          <div class="status-panel" id="status-panel" aria-live="polite">
+            <div class="status-icon" id="status-icon">→</div>
+            <div><strong id="status-title">상대가 천천히 끌려오는 중</strong><p id="status-copy">목표 방향 성분이 상대 저항보다 조금 큽니다.</p></div>
+          </div>
+        </section>
+
+        <aside class="control-column">
+          <section class="control-section">
+            <h3>게임 설정</h3>
+            <p class="mode-note" id="mode-note">옆모습에서는 목표 방향이 수평입니다. 위나 아래로 당기면 힘의 일부가 수평 방향에 기여하지 못합니다.</p>
+            <label class="control-label" for="force-range"><span>내 힘의 크기</span><output id="force-output">500 N</output></label>
+            <input id="force-range" type="range" min="200" max="700" step="10" value="500" />
+            <div class="range-help"><span>작은 힘</span><span>큰 힘</span></div>
+            <div id="resistance-control">
+              <label class="control-label" for="resistance-range"><span>상대의 고정 저항</span><output id="resistance-output">400 N</output></label>
+              <input id="resistance-range" type="range" min="250" max="850" step="10" value="400" />
+              <div class="range-help"><span>가벼운 상대</span><span>강한 상대</span></div>
+            </div>
+            <div class="button-row">
+              <button class="primary-button" id="start-button" type="button">▶ 시작</button>
+              <button id="pause-button" type="button">Ⅱ 일시정지</button>
+              <button id="reset-button" type="button">↺ 초기화</button>
+            </div>
+          </section>
+
+          <section class="control-section" id="team-section" hidden>
+            <h3>우리 팀 인원</h3>
+            <div class="team-choice" aria-label="팀원 수 선택">
+              <button type="button" data-team="2">2명</button>
+              <button type="button" data-team="3" class="active">3명</button>
+              <button type="button" data-team="4">4명</button>
+              <button type="button" data-team="5">5명</button>
+            </div>
+          </section>
+
+          <section class="control-section">
+            <h3>수학으로 읽기</h3>
+            <div class="formula-card" id="formula-card">
+              <p id="formula-title">내 힘이 목표 방향에 기여하는 크기</p>
+              <math id="projection-formula" display="block" aria-label="F 곱하기 코사인 세타">
+                <mi>F</mi><mo>cos</mo><mi>θ</mi><mo>=</mo><mtext id="formula-force">500</mtext><mo>cos</mo><mtext id="formula-angle">35°</mtext><mo>≈</mo><mtext id="formula-effective">410</mtext><mtext> N</mtext>
+              </math>
+              <math id="sum-formula" display="block" aria-label="두 벡터의 합의 크기" hidden>
+                <mo>|</mo><msub><mi>F</mi><mn>1</mn></msub><mo>+</mo><msub><mi>F</mi><mn>2</mn></msub><mo>|</mo><mo>≈</mo><mtext id="sum-effective">988</mtext><mtext> N</mtext>
+              </math>
+              <math id="team-formula" display="block" aria-label="팀 유효 힘의 합" hidden>
+                <munderover><mo>Σ</mo><mrow><mi>i</mi><mo>=</mo><mn>1</mn></mrow><mi>n</mi></munderover><msub><mi>F</mi><mi>i</mi></msub><mo>cos</mo><msub><mi>θ</mi><mi>i</mi></msub><mo>=</mo><mtext id="team-effective">1451</mtext><mtext> N</mtext>
+              </math>
+              <p class="formula-caption" id="formula-caption">θ는 내 힘과 목표 방향 사이의 각입니다.</p>
+            </div>
+          </section>
+        </aside>
+      </div>
+    </section>
+
+    <section class="learning-footer">
+      <article class="learning-card">
+        <h2>관찰 질문</h2>
+        <p id="question-copy"><strong>힘의 크기는 그대로인데</strong> 방향을 바꾸면 왜 상대가 움직이는 정도가 달라질까요?</p>
+      </article>
+      <article class="learning-card">
+        <h2>현실과 게임의 차이</h2>
+        <p>이 게임은 벡터의 방향 성분을 보기 위한 단순화된 모델입니다. 실제 줄다리기에는 마찰, 자세, 무게중심, 힘의 작용점도 영향을 줍니다.</p>
+      </article>
+    </section>
+  </main>
+
+  <script>
+    (() => {
+      "use strict";
+
+      const SVG_NS = "http://www.w3.org/2000/svg";
+      const scene = document.getElementById("scene");
+      const stage = document.getElementById("stage");
+      const modeTitle = document.getElementById("mode-title");
+      const modeDescription = document.getElementById("mode-description");
+      const modeNote = document.getElementById("mode-note");
+      const liveBadge = document.getElementById("live-badge");
+      const teamSection = document.getElementById("team-section");
+      const formulaCaption = document.getElementById("formula-caption");
+      const questionCopy = document.getElementById("question-copy");
+      const forceRange = document.getElementById("force-range");
+      const resistanceRange = document.getElementById("resistance-range");
+      const resistanceControl = document.getElementById("resistance-control");
+      const forceOutput = document.getElementById("force-output");
+      const resistanceOutput = document.getElementById("resistance-output");
+      const forceValue = document.getElementById("force-value");
+      const effectiveValue = document.getElementById("effective-value");
+      const resistanceValue = document.getElementById("resistance-value");
+      const netValue = document.getElementById("net-value");
+      const netMetric = document.getElementById("net-metric");
+      const formulaForce = document.getElementById("formula-force");
+      const formulaAngle = document.getElementById("formula-angle");
+      const formulaEffective = document.getElementById("formula-effective");
+      const formulaTitle = document.getElementById("formula-title");
+      const projectionFormula = document.getElementById("projection-formula");
+      const sumFormula = document.getElementById("sum-formula");
+      const teamFormula = document.getElementById("team-formula");
+      const sumEffective = document.getElementById("sum-effective");
+      const teamEffective = document.getElementById("team-effective");
+      const statusPanel = document.getElementById("status-panel");
+      const statusIcon = document.getElementById("status-icon");
+      const statusTitle = document.getElementById("status-title");
+      const statusCopy = document.getElementById("status-copy");
+      const startButton = document.getElementById("start-button");
+      const pauseButton = document.getElementById("pause-button");
+      const resetButton = document.getElementById("reset-button");
+
+      const modeInfo = {
+        sum: {
+          title: "모드 A · 벡터 합 연습",
+          description: "두 힘을 같은 방향으로 모으면 합벡터가 커집니다.",
+          note: "두 벡터의 크기는 고정되어 있습니다. 흰색 손잡이를 움직여 합벡터의 변화를 관찰하세요.",
+          question: "두 벡터의 방향이 같아질수록 합벡터의 크기가 어떻게 변하나요?",
+          badge: "벡터를 정렬하세요"
+        },
+        side: {
+          title: "모드 B · 옆모습 줄다리기",
+          description: "지면과 나란히 당길수록 수평 성분이 커집니다.",
+          note: "옆모습에서는 목표 방향이 수평입니다. 위나 아래로 당기면 힘의 일부가 수평 방향에 기여하지 못합니다.",
+          question: "힘의 크기는 그대로인데 방향을 바꾸면 왜 상대가 움직이는 정도가 달라질까요?",
+          badge: "방향을 드래그하세요"
+        },
+        top: {
+          title: "모드 C · 항공뷰 팀 전략",
+          description: "모든 팀원의 힘을 줄 방향으로 모으면 팀의 유효 합력이 커집니다.",
+          note: "항공뷰에서는 줄 방향이 목표 방향입니다. 옆으로 새는 힘보다 줄 방향으로 모이는 힘이 중요합니다.",
+          question: "팀원들의 힘을 어느 방향으로 정렬해야 상대를 가장 잘 끌어올 수 있을까요?",
+          badge: "팀의 힘을 정렬하세요"
+        }
+      };
+
+      const state = {
+        mode: "side",
+        force: 500,
+        resistance: 400,
+        angle: 35,
+        teamCount: 3,
+        teamAngles: [0, 18, -18, 28, -28],
+        running: false,
+        frameId: null,
+        progress: 0,
+        activeDrag: null
+      };
+
+      const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
+      const radians = degrees => degrees * Math.PI / 180;
+      const rounded = value => Math.round(value);
+      const formatSigned = value => `${value >= 0 ? "+" : "−"}${Math.abs(rounded(value))} N`;
+      const svgEl = (tag, attrs = {}, text = "") => {
+        const node = document.createElementNS(SVG_NS, tag);
+        Object.entries(attrs).forEach(([key, value]) => node.setAttribute(key, value));
+        if (text) node.textContent = text;
+        return node;
+      };
+      const append = (parent, tag, attrs = {}, text = "") => {
+        const node = svgEl(tag, attrs, text);
+        parent.appendChild(node);
+        return node;
+      };
+      const polarEndpoint = (x, y, length, angle) => ({
+        x: x - length * Math.cos(radians(angle)),
+        y: y + length * Math.sin(radians(angle))
+      });
+      const targetAngleFromPoint = (origin, point) => {
+        const dx = origin.x - point.x;
+        const dy = point.y - origin.y;
+        return clamp(Math.atan2(dy, dx) * 180 / Math.PI, -65, 65);
+      };
+
+      function setText(id, value) { document.getElementById(id).textContent = value; }
+
+      function drawArrow(parent, origin, endpoint, className, marker, label, labelOffset = { x: 0, y: 0 }) {
+        append(parent, "line", { x1: origin.x, y1: origin.y, x2: endpoint.x, y2: endpoint.y, class: className, "marker-end": `url(#${marker})` });
+        if (label) append(parent, "text", { x: endpoint.x + labelOffset.x, y: endpoint.y + labelOffset.y, class: "svg-label" }, label);
+      }
+
+      function drawPerson(parent, x, y, type = "person", scale = 1) {
+        const cls = type === "opponent" ? "opponent-body" : type === "team" ? "team-body" : "person-body";
+        const group = append(parent, "g", { transform: `translate(${x} ${y}) scale(${scale})` });
+        append(group, "circle", { cx: 0, cy: -30, r: 16, class: cls });
+        append(group, "rect", { x: -16, y: -12, width: 32, height: 52, rx: 14, class: cls });
+        append(group, "line", { x1: -10, y1: 39, x2: -17, y2: 68, stroke: "#344968", "stroke-width": 7, "stroke-linecap": "round" });
+        append(group, "line", { x1: 10, y1: 39, x2: 17, y2: 68, stroke: "#344968", "stroke-width": 7, "stroke-linecap": "round" });
+        return group;
+      }
+
+      function drawGrid() {
+        for (let x = 40; x < 860; x += 40) append(scene, "line", { x1: x, y1: 20, x2: x, y2: 410, class: "svg-grid" });
+        for (let y = 20; y < 430; y += 40) append(scene, "line", { x1: 0, y1: y, x2: 860, y2: y, class: "svg-grid" });
+      }
+
+      function drawSide() {
+        drawGrid();
+        append(scene, "rect", { x: 0, y: 325, width: 860, height: 105, class: "svg-ground" });
+        append(scene, "line", { x1: 40, y1: 325, x2: 820, y2: 325, stroke: "#9bb0c8", "stroke-width": 3 });
+        append(scene, "line", { x1: 170, y1: 226, x2: 710, y2: 226, class: "svg-target" });
+        append(scene, "text", { x: 54, y: 249, class: "svg-small" }, "목표 방향 ← 우리 팀");
+        const opponentX = 655 - state.progress * 255;
+        const playerX = 185;
+        append(scene, "line", { x1: playerX + 35, y1: 230, x2: opponentX - 30, y2: 230, class: "svg-rope" });
+        append(scene, "circle", { cx: 425, cy: 230, r: 10, fill: "#fff", stroke: "#b2784d", "stroke-width": 4 });
+        append(scene, "text", { x: 392, y: 260, class: "svg-small" }, "줄 중앙");
+        drawPerson(scene, playerX, 278, "person", 1.02);
+        const opponent = drawPerson(scene, opponentX, 278, "opponent", 1.2);
+        opponent.setAttribute("transform", `translate(${opponentX} 278) rotate(${-state.progress * 16} 0 0) scale(1.2)`);
+        append(scene, "text", { x: opponentX - 47, y: 375, class: "svg-big" }, "상대");
+        append(scene, "text", { x: playerX - 35, y: 375, class: "svg-big" }, "나");
+        const origin = { x: playerX + 18, y: 226 };
+        const fullEnd = polarEndpoint(origin.x, origin.y, 150, state.angle);
+        const componentEnd = { x: origin.x - 150 * Math.cos(radians(state.angle)), y: origin.y };
+        drawArrow(scene, origin, componentEnd, "svg-component", "arrow-blue", `수평 성분 ${rounded(state.force * Math.cos(radians(state.angle)))} N`, { x: -20, y: -12 });
+        drawArrow(scene, origin, fullEnd, "svg-force", "arrow-orange", "내 힘 F", { x: -8, y: state.angle > 0 ? 23 : -10 });
+        append(scene, "path", { d: `M ${origin.x - 54} ${origin.y} A 54 54 0 0 1 ${origin.x - 54 * Math.cos(radians(state.angle))} ${origin.y + 54 * Math.sin(radians(state.angle))}`, class: "svg-angle" });
+        append(scene, "text", { x: origin.x - 88, y: origin.y + (state.angle > 0 ? 25 : -14), class: "svg-label" }, `θ = ${rounded(state.angle)}°`);
+        const handle = append(scene, "circle", { cx: fullEnd.x, cy: fullEnd.y, r: 11, class: "drag-dot drag-handle", tabindex: "0", role: "slider", "aria-label": "내 힘의 방향 조절", "aria-valuemin": "-65", "aria-valuemax": "65", "aria-valuenow": String(rounded(state.angle)) });
+        handle.dataset.dragType = "side";
+        append(scene, "line", { x1: opponentX + 4, y1: 190, x2: opponentX + 4, y2: 265, class: "svg-resistance", "marker-end": "url(#arrow-purple)" });
+        append(scene, "text", { x: opponentX - 54, y: 177, class: "svg-label" }, `상대 저항 ${state.resistance} N`);
+        append(scene, "text", { x: 52, y: 72, class: "svg-big" }, "옆에서 본 장면");
+        append(scene, "text", { x: 52, y: 93, class: "svg-small" }, "수평 방향으로 기여하는 성분만 줄을 움직입니다.");
+      }
+
+      function drawSum() {
+        drawGrid();
+        const origin = { x: 215, y: 270 };
+        const length = 130;
+        const a1 = state.teamAngles[0] || 0;
+        const a2 = state.teamAngles[1] || 18;
+        const end1 = polarEndpoint(origin.x, origin.y, length, a1);
+        const end2 = polarEndpoint(origin.x, origin.y, length, a2);
+        const vectorLength = 280;
+        const sumX = 2 * 330 - (length * Math.cos(radians(a1)) + length * Math.cos(radians(a2)));
+        const sumY = 2 * origin.y + (length * Math.sin(radians(a1)) + length * Math.sin(radians(a2)));
+        const sumEnd = { x: origin.x + (sumX - 2 * origin.x) * .7, y: origin.y + (sumY - 2 * origin.y) * .7 };
+        append(scene, "line", { x1: origin.x, y1: origin.y, x2: 650, y2: origin.y, class: "svg-target" });
+        append(scene, "text", { x: 600, y: origin.y - 13, class: "svg-small" }, "기준 방향");
+        drawArrow(scene, origin, end1, "svg-force", "arrow-orange", "벡터 1", { x: -8, y: -9 });
+        drawArrow(scene, origin, end2, "svg-component", "arrow-blue", "벡터 2", { x: -8, y: 22 });
+        drawArrow(scene, origin, sumEnd, "svg-sum", "arrow-teal", "합벡터", { x: -10, y: -12 });
+        const h1 = append(scene, "circle", { cx: end1.x, cy: end1.y, r: 11, class: "drag-dot drag-handle", tabindex: "0", role: "slider", "aria-label": "첫 번째 벡터 방향 조절", "aria-valuenow": String(rounded(a1)) });
+        const h2 = append(scene, "circle", { cx: end2.x, cy: end2.y, r: 11, class: "drag-dot blue drag-handle", tabindex: "0", role: "slider", "aria-label": "두 번째 벡터 방향 조절", "aria-valuenow": String(rounded(a2)) });
+        h1.dataset.dragType = "sum-0";
+        h2.dataset.dragType = "sum-1";
+        append(scene, "circle", { cx: origin.x, cy: origin.y, r: 8, fill: "#172033" });
+        append(scene, "text", { x: 52, y: 72, class: "svg-big" }, "두 벡터를 한 방향으로");
+        append(scene, "text", { x: 52, y: 93, class: "svg-small" }, "합벡터가 어떻게 달라지는지 확인하세요.");
+        const angleBetween = Math.abs(a2 - a1);
+        const vectorSum = Math.sqrt(Math.pow(length * Math.cos(radians(a1)) + length * Math.cos(radians(a2)), 2) + Math.pow(length * Math.sin(radians(a1)) + length * Math.sin(radians(a2)), 2));
+        append(scene, "text", { x: 536, y: 356, class: "svg-label" }, `두 벡터 사이의 각: ${rounded(angleBetween)}°`);
+        append(scene, "text", { x: 536, y: 378, class: "svg-label" }, `합벡터의 크기: ${rounded(vectorSum / length * state.force)} N`);
+      }
+
+      function drawTop() {
+        drawGrid();
+        append(scene, "rect", { x: 0, y: 150, width: 860, height: 125, fill: "#eef6f5" });
+        append(scene, "line", { x1: 80, y1: 215, x2: 780, y2: 215, class: "svg-target" });
+        append(scene, "text", { x: 52, y: 133, class: "svg-big" }, "항공뷰: 줄 방향으로 힘 모으기");
+        append(scene, "text", { x: 52, y: 354, class: "svg-small" }, "옆 방향 성분은 줄 이동에 직접 기여하지 않습니다.");
+        const opponentX = 690 - state.progress * 255;
+        const ropeStart = 120;
+        append(scene, "line", { x1: ropeStart, y1: 215, x2: opponentX - 32, y2: 215, class: "svg-rope" });
+        append(scene, "circle", { cx: 420, cy: 215, r: 10, fill: "#fff", stroke: "#b2784d", "stroke-width": 4 });
+        const spacing = state.teamCount === 2 ? 86 : 66;
+        const startX = 125;
+        let effective = 0;
+        for (let i = 0; i < state.teamCount; i += 1) {
+          const x = startX + i * spacing;
+          const y = 215;
+          const angle = state.teamAngles[i] || 0;
+          const endpoint = polarEndpoint(x, y, 105, angle);
+          effective += state.force * Math.cos(radians(angle));
+          drawPerson(scene, x, 220, "team", .55);
+          drawArrow(scene, { x, y }, endpoint, "svg-force", "arrow-orange", `F${i + 1}`, { x: -5, y: angle > 0 ? 19 : -8 });
+          const componentEnd = { x: x - 105 * Math.cos(radians(angle)), y };
+          append(scene, "line", { x1: x, y1: y, x2: componentEnd.x, y2: componentEnd.y, class: "svg-component", "stroke-dasharray": "5 4" });
+          const handle = append(scene, "circle", { cx: endpoint.x, cy: endpoint.y, r: 10, class: "drag-dot drag-handle", tabindex: "0", role: "slider", "aria-label": `${i + 1}번 팀원 방향 조절`, "aria-valuemin": "-65", "aria-valuemax": "65", "aria-valuenow": String(rounded(angle)) });
+          handle.dataset.dragType = `team-${i}`;
+          append(scene, "text", { x: x - 16, y: 296, class: "svg-small" }, `팀원 ${i + 1}`);
+        }
+        const opponent = drawPerson(scene, opponentX, 220, "opponent", .95);
+        opponent.setAttribute("transform", `translate(${opponentX} 220) rotate(${-state.progress * 16} 0 0) scale(.95)`);
+        append(scene, "text", { x: opponentX - 28, y: 310, class: "svg-big" }, "상대");
+        append(scene, "text", { x: opponentX - 72, y: 110, class: "svg-label" }, `상대 저항 ${state.resistance} N`);
+        append(scene, "line", { x1: opponentX, y1: 125, x2: opponentX, y2: 193, class: "svg-resistance", "marker-end": "url(#arrow-purple)" });
+        drawArrow(scene, { x: 390, y: 384 }, { x: 390 + Math.min(190, effective / 4), y: 384 }, "svg-sum", "arrow-teal", `팀 유효 힘 ${rounded(effective)} N`, { x: -10, y: -12 });
+      }
+
+      function currentMetrics() {
+        if (state.mode === "sum") {
+          const a1 = state.teamAngles[0] || 0;
+          const a2 = state.teamAngles[1] || 18;
+          const sum = Math.sqrt(Math.pow(state.force * Math.cos(radians(a1)) + state.force * Math.cos(radians(a2)), 2) + Math.pow(state.force * Math.sin(radians(a1)) + state.force * Math.sin(radians(a2)), 2));
+          return { effective: sum, resistance: 0, net: sum, angle: Math.abs(a2 - a1), label: "합벡터의 크기" };
+        }
+        if (state.mode === "top") {
+          const effective = state.teamAngles.slice(0, state.teamCount).reduce((total, angle) => total + state.force * Math.cos(radians(angle)), 0);
+          return { effective, resistance: state.resistance, net: effective - state.resistance, angle: Math.abs(state.teamAngles[0] || 0), label: "팀 유효 힘" };
+        }
+        const effective = state.force * Math.cos(radians(state.angle));
+        return { effective, resistance: state.resistance, net: effective - state.resistance, angle: Math.abs(state.angle), label: "목표 방향 유효 힘" };
+      }
+
+      function updateControls() {
+        const metrics = currentMetrics();
+        const info = modeInfo[state.mode];
+        modeTitle.textContent = info.title;
+        modeDescription.textContent = info.description;
+        modeNote.textContent = info.note;
+        questionCopy.innerHTML = `<strong>${state.mode === "sum" ? "벡터의 방향이" : "힘의 크기는 그대로인데 방향을"}</strong> ${state.mode === "sum" ? "같아지면" : "바꾸면"} 어떤 변화가 나타날까요?`;
+        liveBadge.textContent = info.badge;
+        teamSection.hidden = state.mode !== "top";
+        resistanceControl.hidden = state.mode === "sum";
+        forceOutput.textContent = `${state.force} N`;
+        resistanceOutput.textContent = `${state.resistance} N`;
+        forceValue.textContent = `${state.force} N`;
+        effectiveValue.textContent = `${rounded(metrics.effective)} N`;
+        resistanceValue.textContent = state.mode === "sum" ? "없음" : `${state.resistance} N`;
+        netValue.textContent = state.mode === "sum" ? `${rounded(metrics.net)} N` : formatSigned(metrics.net);
+        formulaForce.textContent = state.force;
+        formulaAngle.textContent = `${rounded(metrics.angle)}°`;
+        formulaEffective.textContent = rounded(metrics.effective);
+        sumEffective.textContent = rounded(metrics.effective);
+        teamEffective.textContent = rounded(metrics.effective);
+        projectionFormula.hidden = state.mode !== "side";
+        sumFormula.hidden = state.mode !== "sum";
+        teamFormula.hidden = state.mode !== "top";
+        formulaTitle.textContent = state.mode === "sum" ? "두 벡터의 합의 크기" : state.mode === "top" ? "팀이 줄 방향으로 만드는 유효 힘" : "내 힘이 목표 방향에 기여하는 크기";
+        formulaCaption.textContent = state.mode === "sum" ? "두 벡터 사이의 각이 작을수록 합벡터가 커집니다." : state.mode === "top" ? "각 팀원의 줄 방향 성분을 모두 더한 값입니다." : "θ는 내 힘과 목표 방향 사이의 각입니다.";
+        if (state.mode === "sum") {
+          netMetric.className = "metric good";
+        } else {
+          netMetric.className = `metric ${metrics.net > 0 ? "good" : metrics.net < 0 ? "warn" : ""}`;
+        }
+        statusPanel.className = "status-panel";
+        if (state.mode === "sum") {
+          statusIcon.textContent = "Σ";
+          statusTitle.textContent = metrics.angle < 10 ? "합벡터가 거의 최대입니다" : "벡터 방향을 더 맞춰 보세요";
+          statusCopy.textContent = `두 벡터 사이의 각은 ${rounded(metrics.angle)}°입니다. 같은 방향일수록 합벡터가 커집니다.`;
+          if (metrics.angle < 10) statusPanel.classList.add("good");
+        } else if (metrics.net > 8) {
+          statusIcon.textContent = "→";
+          statusTitle.textContent = state.mode === "top" ? "팀의 힘이 상대를 밀어냅니다" : "상대가 천천히 끌려오는 중";
+          statusCopy.textContent = "목표 방향 성분이 상대 저항보다 큽니다.";
+          statusPanel.classList.add("good");
+        } else if (metrics.net < -8) {
+          statusIcon.textContent = "←";
+          statusTitle.textContent = "내 쪽이 밀리는 중";
+          statusCopy.textContent = "힘의 방향을 목표 방향으로 더 모으거나, 내 힘을 키워 보세요.";
+          statusPanel.classList.add("warn");
+        } else {
+          statusIcon.textContent = "＝";
+          statusTitle.textContent = "줄이 거의 움직이지 않음";
+          statusCopy.textContent = "목표 방향 유효 힘과 상대 저항이 비슷합니다.";
+        }
+        startButton.classList.toggle("is-running", state.running);
+        startButton.textContent = state.running ? "▶ 실행 중" : "▶ 시작";
+      }
+
+      function render() {
+        scene.replaceChildren();
+        if (state.mode === "sum") drawSum();
+        else if (state.mode === "top") drawTop();
+        else drawSide();
+        updateControls();
+        if (state.running) {
+          const metrics = currentMetrics();
+          if (state.mode !== "sum") {
+            state.progress += clamp(metrics.net / 22000, -0.008, 0.014);
+            state.progress = clamp(state.progress, -0.14, 1);
+            if (state.progress >= 1) {
+              state.running = false;
+              liveBadge.textContent = "상대가 선을 넘었습니다";
+            }
+          }
+        }
+      }
+
+      function animationLoop() {
+        render();
+        if (state.running) state.frameId = requestAnimationFrame(animationLoop);
+        else state.frameId = null;
+      }
+
+      function startAnimation() {
+        if (state.running) return;
+        state.running = true;
+        if (!state.frameId) state.frameId = requestAnimationFrame(animationLoop);
+      }
+
+      function pauseAnimation() {
+        state.running = false;
+        if (state.frameId) cancelAnimationFrame(state.frameId);
+        state.frameId = null;
+        render();
+      }
+
+      function resetAnimation() {
+        pauseAnimation();
+        state.progress = 0;
+        render();
+      }
+
+      function pointerToSvg(event) {
+        const point = stage.createSVGPoint();
+        point.x = event.clientX;
+        point.y = event.clientY;
+        const inverse = stage.getScreenCTM().inverse();
+        return point.matrixTransform(inverse);
+      }
+
+      function updateDrag(event) {
+        if (!state.activeDrag) return;
+        const point = pointerToSvg(event);
+        if (state.activeDrag === "side") {
+          state.angle = targetAngleFromPoint({ x: 203, y: 226 }, point);
+        } else if (state.activeDrag.startsWith("sum-")) {
+          const index = Number(state.activeDrag.slice(4));
+          state.teamAngles[index] = targetAngleFromPoint({ x: 215, y: 270 }, point);
+        } else if (state.activeDrag.startsWith("team-")) {
+          const index = Number(state.activeDrag.slice(5));
+          const spacing = state.teamCount === 2 ? 86 : 66;
+          const origin = { x: 125 + index * spacing, y: 215 };
+          state.teamAngles[index] = targetAngleFromPoint(origin, point);
+        }
+        render();
+      }
+
+      stage.addEventListener("pointerdown", event => {
+        const target = event.target.closest?.(".drag-handle");
+        if (!target) return;
+        state.activeDrag = target.dataset.dragType;
+        stage.setPointerCapture(event.pointerId);
+        event.preventDefault();
+      });
+      stage.addEventListener("pointermove", event => {
+        if (state.activeDrag) updateDrag(event);
+      });
+      stage.addEventListener("pointerup", event => {
+        state.activeDrag = null;
+        try { stage.releasePointerCapture(event.pointerId); } catch (_) { /* pointer may already be released */ }
+      });
+      stage.addEventListener("pointercancel", () => { state.activeDrag = null; });
+
+      document.querySelectorAll(".mode-tab").forEach(tab => {
+        tab.addEventListener("click", () => {
+          pauseAnimation();
+          state.mode = tab.dataset.mode;
+          state.progress = 0;
+          document.querySelectorAll(".mode-tab").forEach(item => item.classList.toggle("active", item === tab));
+          render();
+        });
+      });
+      document.querySelectorAll("[data-team]").forEach(button => {
+        button.addEventListener("click", () => {
+          state.teamCount = Number(button.dataset.team);
+          document.querySelectorAll("[data-team]").forEach(item => item.classList.toggle("active", item === button));
+          resetAnimation();
+        });
+      });
+      forceRange.addEventListener("input", () => { state.force = Number(forceRange.value); render(); });
+      resistanceRange.addEventListener("input", () => { state.resistance = Number(resistanceRange.value); render(); });
+      startButton.addEventListener("click", startAnimation);
+      pauseButton.addEventListener("click", pauseAnimation);
+      resetButton.addEventListener("click", resetAnimation);
+
+      render();
+    })();
+  </script>
+</body>
+</html>
