@@ -1,0 +1,499 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="수레를 끄는 힘의 방향을 바꾸며 이동 방향 성분과 힘이 한 일을 비교해 벡터의 내적이 코사인을 곱하는 이유를 탐구하는 수학 웹앱입니다." />
+  <title>끄는 방향과 벡터의 내적</title>
+  <link rel="icon" href="../../favicon.ico" sizes="16x16 32x32 48x48" />
+  <link rel="icon" href="../../assets/favicon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="../../assets/apple-touch-icon.png" />
+  <link rel="stylesheet" href="../../assets/common.css" />
+  <!-- MathJax: 일반식(내적의 정의와 성분 분해)을 교과서식으로 한 번 렌더링한다. 인터넷 연결이 필요하다. -->
+  <script>
+    window.MathJax = {
+      tex: { inlineMath: [['\\(', '\\)']], displayMath: [['\\[', '\\]']] },
+      options: { skipHtmlTags: ['script', 'noscript', 'style', 'textarea'] }
+    };
+  </script>
+  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+  <style>
+    :root {
+      --ink: #172033;
+      --muted: #5f6b7b;
+      --line: #dbe2ee;
+      --force: #1f5fd1;
+      --force-soft: #e8f0ff;
+      --comp: #e8770c;
+      --comp-soft: #fff1e4;
+      --move: #1f9d55;
+      --aux: #8a8f98;
+      --neg: #b83a3a;
+      --neg-soft: #fdecec;
+      --shadow: 0 18px 45px rgba(34, 52, 84, .10);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: linear-gradient(180deg, #f4f7fc 0%, #ffffff 58%);
+      font-family: Pretendard, "Noto Sans KR", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    button, input { font: inherit; }
+
+    .app-shell { max-width: 1280px; margin: 0 auto; padding: 8px 22px 40px; }
+    .back-link { color: #3f5e93; text-decoration: none; font-weight: 700; }
+    .back-link:hover { text-decoration: underline; }
+
+    .hero { margin: 8px 0 12px; }
+    .eyebrow { margin: 0 0 4px; color: var(--force); font-size: .74rem; font-weight: 900; letter-spacing: .12em; text-transform: uppercase; }
+    h1 { margin: 0; font-size: clamp(1.55rem, 2.8vw, 2.2rem); letter-spacing: -.04em; line-height: 1.12; }
+    .lead { margin: 6px 0 0; color: var(--muted); font-size: 1rem; line-height: 1.5; }
+    .lead strong { color: var(--ink); }
+
+    .board { border: 1px solid var(--line); border-radius: 22px; background: #fff; box-shadow: var(--shadow); overflow: hidden; }
+
+    .visual-row { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); }
+    .panel { min-width: 0; padding: 10px 14px 6px; }
+    .panel + .panel { border-left: 1px solid var(--line); }
+    .panel-title { margin: 0; font-size: .95rem; font-weight: 800; color: var(--muted); }
+    .panel svg { display: block; width: 100%; height: auto; }
+
+    .svg-label { font-family: inherit; font-weight: 800; paint-order: stroke; stroke: #fff; stroke-width: 5px; stroke-linejoin: round; }
+    .svg-note { font-family: inherit; font-size: 13px; fill: var(--muted); }
+
+    .control-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; padding: 10px 16px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); background: #fbfcff; }
+    .angle-control { display: flex; align-items: center; gap: 12px; flex: 1 1 300px; }
+    .angle-control label { font-weight: 800; white-space: nowrap; }
+    .angle-control input { flex: 1; min-width: 160px; height: 34px; accent-color: var(--force); }
+    .angle-readout { min-width: 3.4em; font-size: 1.35rem; font-weight: 900; text-align: right; font-variant-numeric: tabular-nums; }
+    .preset-group, .run-group { display: flex; flex-wrap: wrap; gap: 6px; }
+    .btn { min-height: 42px; padding: 6px 12px; border: 1px solid #c7d3e8; border-radius: 10px; background: #fff; color: var(--ink); font-weight: 800; cursor: pointer; }
+    .btn:hover:not(:disabled) { background: #eef3fb; }
+    .btn:disabled { opacity: .45; cursor: default; }
+    .btn.active { border-color: var(--force); background: var(--force-soft); color: #174aab; }
+    .btn-primary { border-color: var(--force); background: var(--force); color: #fff; }
+    .btn-primary:hover:not(:disabled) { background: #194fb1; }
+
+    .result-row { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); gap: 14px; padding: 12px 16px 14px; }
+    .value-cards { display: grid; grid-template-columns: .8fr .95fr 1.3fr .9fr 1.05fr; gap: 8px; }
+    .value-card { padding: 7px 9px; border: 1px solid var(--line); border-radius: 12px; background: #fbfcff; }
+    .value-card span { display: block; color: var(--muted); font-size: .78rem; font-weight: 700; }
+    .value-card b { display: block; margin-top: 2px; font-size: 1.25rem; font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .value-card.force b { color: var(--force); }
+    .value-card.comp b { color: var(--comp); }
+    .value-card.move b { color: var(--move); }
+    .value-card.work { border-width: 2px; border-color: #9fb6e2; background: var(--force-soft); }
+    .value-card.work.zero { border-color: #b9bec7; background: #f2f3f5; }
+    .value-card.work.negative { border-color: #e2a3a3; background: var(--neg-soft); }
+    .value-card.work.negative b { color: var(--neg); }
+
+    .explain { margin-top: 10px; padding: 9px 12px; border-left: 5px solid var(--force); border-radius: 8px; background: var(--force-soft); font-size: 1rem; line-height: 1.5; }
+    .explain.zero { border-left-color: var(--aux); background: #f2f3f5; }
+    .explain.negative { border-left-color: var(--neg); background: var(--neg-soft); }
+    .explain strong { margin-right: 4px; }
+
+    .formula-box { padding: 4px 12px 8px; border: 1px solid var(--line); border-radius: 12px; }
+    .formula-box mjx-container { margin: 6px 0 !important; }
+    .calc-line { margin: 4px 0 0; font-size: 1.05rem; font-variant-numeric: tabular-nums; }
+    .calc-line i { font-family: "Times New Roman", serif; font-size: 1.12em; }
+    .calc-line .comp { color: var(--comp); font-weight: 800; }
+    .calc-line .work { font-weight: 900; }
+
+    .after { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; margin-top: 14px; }
+    .after section, .after details { padding: 12px 16px; border: 1px solid var(--line); border-radius: 16px; background: #fff; }
+    .after h2, .after summary { margin: 0 0 6px; font-size: 1.05rem; font-weight: 900; }
+    .after summary { cursor: pointer; }
+    .after ol, .after ul { margin: 6px 0 0; padding-left: 1.3em; line-height: 1.65; }
+
+    @media (max-width: 900px) {
+      .visual-row, .result-row, .after { grid-template-columns: 1fr; }
+      .panel + .panel { border-left: 0; border-top: 1px solid var(--line); }
+      #plane { max-width: 440px; margin: 0 auto; }
+    }
+    @media (max-width: 560px) {
+      .app-shell { padding: 10px 12px 32px; }
+      .value-cards { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    }
+  </style>
+</head>
+<body>
+  <main class="app-shell">
+    <a class="back-link" href="../">← 기하 웹앱</a>
+
+    <header class="hero">
+      <p class="eyebrow">Geometry · 벡터의 내적</p>
+      <h1>끄는 방향과 벡터의 내적</h1>
+      <p class="lead"><strong>같은 20 N의 힘으로 수레를 끌어도, 끄는 방향이 달라지면 이동 방향으로 하는 일은 어떻게 달라질까?</strong> 각도 θ를 바꾸며 이동 방향 성분 <b style="color:var(--comp)">Fx</b>와 일 W를 비교해 보세요.</p>
+    </header>
+
+    <section class="board" aria-label="끄는 방향과 내적 실험">
+      <div class="visual-row">
+        <div class="panel">
+          <h2 class="panel-title">상황 그림 · 수레가 오른쪽으로 2 m 이동하는 동안 끈을 당기는 힘</h2>
+          <svg id="scene" viewBox="0 0 720 390" role="img" aria-label="수레와 끄는 힘의 벡터"></svg>
+        </div>
+        <div class="panel">
+          <h2 class="panel-title">벡터 도식 · 이동 방향을 x축으로 둔 좌표평면</h2>
+          <svg id="plane" viewBox="0 0 420 300" role="img" aria-label="좌표평면 위의 힘 벡터와 성분"></svg>
+        </div>
+      </div>
+
+      <div class="control-bar">
+        <div class="angle-control">
+          <label for="angle">각도 θ</label>
+          <input id="angle" type="range" min="0" max="180" step="1" value="30" aria-describedby="explain" />
+          <output id="angle-readout" class="angle-readout" for="angle">30°</output>
+        </div>
+        <div class="preset-group" id="presets" aria-label="각도 바로 선택"></div>
+        <div class="run-group">
+          <button class="btn btn-primary" id="play" type="button">▶ 자동 실행</button>
+          <button class="btn" id="stop" type="button" disabled>■ 정지</button>
+        </div>
+      </div>
+
+      <div class="result-row">
+        <div>
+          <div class="value-cards">
+            <div class="value-card"><span>각도 θ</span><b id="v-angle">30°</b></div>
+            <div class="value-card force"><span>힘의 크기 F</span><b>20 N</b></div>
+            <div class="value-card comp"><span>이동 방향 성분 Fx</span><b id="v-fx">17.3 N</b></div>
+            <div class="value-card move"><span>이동 거리 s</span><b>2 m</b></div>
+            <div class="value-card work" id="card-w"><span>일 W (내적)</span><b id="v-w">34.6 J</b></div>
+          </div>
+          <p class="explain" id="explain" aria-live="polite"></p>
+        </div>
+        <div class="formula-box">
+          \[ \vec F\cdot\vec s=|\vec F|\,|\vec s|\cos\theta=\underbrace{\left(|\vec F|\cos\theta\right)}_{F_x}\times|\vec s| \]
+          <p class="calc-line" id="calc-fx"></p>
+          <p class="calc-line" id="calc-w"></p>
+        </div>
+      </div>
+    </section>
+
+    <div class="after">
+      <section>
+        <h2>생각해 볼 질문</h2>
+        <ol>
+          <li>힘의 크기는 20 N 그대로인데 이동 방향 성분 Fx는 왜 달라질까?</li>
+          <li>힘이 이동 방향에 수직(90°)일 때 내적이 0인 이유는?</li>
+          <li>내적(일)이 음수라는 것은 어떤 의미일까? 이때도 수레는 오른쪽으로 2 m 이동했다.</li>
+          <li>수직 성분 Fy는 일을 할까? 그 이유는?</li>
+        </ol>
+      </section>
+      <details>
+        <summary>이 모델의 약속 (유의사항)</summary>
+        <ul>
+          <li>마찰과 공기 저항은 무시하고, 끈이 묶인 한 점에 힘이 작용한다고 본다.</li>
+          <li>실제 수레에서는 힘의 수직 성분 때문에 바닥이 미는 힘(수직항력)과 마찰이 달라질 수 있다.</li>
+          <li>이 앱은 수레가 어떻게 움직일지 예측하지 않는다. <b>오른쪽으로 2 m 이동한 변위는 정해져 있고</b>, 그동안 이 힘 하나가 한 일을 계산한다. 둔각일 때는 다른 힘(예: 뒤에서 미는 사람)이 수레를 오른쪽으로 옮긴다고 생각한다.</li>
+          <li>내적(일)은 합력, 가속도, 움직이기 쉬운 정도를 뜻하지 않는다.</li>
+        </ul>
+      </details>
+    </div>
+  </main>
+
+  <script>
+    // ── 수학 모델 ───────────────────────────────────────
+    const FORCE = 20;          // |F| (N)
+    const DIST = 2;            // |s| (m)
+    const PRESETS = [0, 30, 60, 90, 120, 150, 180];
+    const AUTO_DURATION = 8000; // 0°→180° 자동 실행 시간(ms)
+
+    // 부동소수점 오차로 cos 90° 같은 값이 0이 아닌 작은 수가 되지 않게 정리한다.
+    function cosDeg(deg) {
+      const c = Math.cos(deg * Math.PI / 180);
+      return Math.abs(c) < 1e-12 ? 0 : c;
+    }
+    function sinDeg(deg) {
+      const s = Math.sin(deg * Math.PI / 180);
+      return Math.abs(s) < 1e-12 ? 0 : s;
+    }
+    function compute(deg) {
+      const c = cosDeg(deg);
+      const fx = FORCE * c;
+      return { deg, c, s: sinDeg(deg), fx, fy: FORCE * sinDeg(deg), work: fx * DIST };
+    }
+
+    // 소수 첫째 자리까지, 정수면 소수점 없이, −0은 0으로 표시한다.
+    function fmt(value, digits = 1) {
+      const p = 10 ** digits;
+      let r = Math.round(value * p) / p;
+      if (Object.is(r, -0) || r === 0) return '0';
+      const text = Math.abs(r).toFixed(digits).replace(/\.?0+$/, '');
+      return (r < 0 ? '−' : '') + text;
+    }
+    function isExact(value) {
+      return Math.abs(value * 10 - Math.round(value * 10)) < 1e-6;
+    }
+
+    // ── 상황 그림(수레) 배치 ────────────────────────────
+    // 원본 그림은 수레 몸체 경계에 맞춰 잘라 두었다. 바닥 = 그림 아래 끝, 상자 윗면 = 그림 위 끝.
+    const CART = { src: './assets/cart.png', w: 600, h: 254, boxCenterX: 300, boxTop: 2.5 };
+    const SCENE = { ground: 322, left: 190, cartWidth: 220, forceLen: 150, moveLen: 260 };
+    // forceLen: 20 N 화살표 길이(px). moveLen: 2 m 변위 화살표 길이(px). 단위가 달라 축척이 다르다.
+
+    const scene = document.getElementById('scene');
+    const plane = document.getElementById('plane');
+    const NS = 'http://www.w3.org/2000/svg';
+
+    function el(tag, attrs, parent, text) {
+      const node = document.createElementNS(NS, tag);
+      for (const [k, v] of Object.entries(attrs)) node.setAttribute(k, v);
+      if (text !== undefined) node.textContent = text;
+      if (parent) parent.appendChild(node);
+      return node;
+    }
+    // 좌표축 끝의 작은 화살촉
+    function axisMarker(svg, id) {
+      const m = el('marker', { id, viewBox: '0 0 10 10', refX: 7.5, refY: 5, markerWidth: 4, markerHeight: 4, orient: 'auto' }, el('defs', {}, svg));
+      el('path', { d: 'M0,0 L10,5 L0,10 z', fill: '#4b5563' }, m);
+    }
+    // 벡터 화살표: 화살촉 끝이 정확히 벡터의 끝점에 오도록 몸통과 촉을 직접 그린다.
+    function makeArrow(parent, color, width, extra = {}) {
+      const g = el('g', {}, parent);
+      const line = el('line', { stroke: color, 'stroke-width': width, ...extra }, g);
+      const head = el('polygon', { fill: color }, g);
+      return { g, line, head, headLen: width * 2 + 10, headHalf: width * 1.1 + 4 };
+    }
+    function setArrow(a, x1, y1, x2, y2) {
+      const len = Math.hypot(x2 - x1, y2 - y1);
+      a.g.style.display = len < 1.5 ? 'none' : '';
+      if (len < 1.5) return;
+      const ux = (x2 - x1) / len, uy = (y2 - y1) / len;
+      const h = Math.min(a.headLen, len), w = a.headHalf * h / a.headLen;   // 아주 짧은 벡터는 촉도 줄인다
+      const bx = x2 - ux * h, by = y2 - uy * h;
+      setLine(a.line, x1, y1, bx + ux, by + uy);
+      a.line.style.display = len > h ? '' : 'none';
+      a.head.setAttribute('points', `${x2},${y2} ${bx - uy * w},${by + ux * w} ${bx + uy * w},${by - ux * w}`);
+    }
+    function setLine(line, x1, y1, x2, y2) {
+      line.setAttribute('x1', x1); line.setAttribute('y1', y1);
+      line.setAttribute('x2', x2); line.setAttribute('y2', y2);
+    }
+    function arcPath(cx, cy, r, deg) {
+      if (deg < 0.5) return '';
+      const ex = cx + r * cosDeg(deg), ey = cy - r * sinDeg(deg);
+      return `M${cx + r},${cy} A${r},${r} 0 0 0 ${ex},${ey}`;
+    }
+
+    // 상황 그림의 고정 요소
+    const sceneParts = (() => {
+      const k = SCENE.cartWidth / CART.w, ch = CART.h * k;
+      const top = SCENE.ground - ch;
+      const ax = SCENE.left + CART.boxCenterX * k, ay = top + CART.boxTop * k - 7;
+
+      el('image', { href: CART.src, x: SCENE.left + SCENE.moveLen, y: top, width: SCENE.cartWidth, height: ch, opacity: .22 }, scene);
+      el('text', { class: 'svg-note', x: SCENE.left + SCENE.moveLen + SCENE.cartWidth / 2, y: top - 12, 'text-anchor': 'middle' }, scene, '2 m 이동한 뒤');
+      el('image', { href: CART.src, x: SCENE.left, y: top, width: SCENE.cartWidth, height: ch }, scene);
+      el('line', { x1: 14, y1: SCENE.ground, x2: 706, y2: SCENE.ground, stroke: '#6b7280', 'stroke-width': 3 }, scene);
+
+      // 변위 s (고정)
+      const sy = SCENE.ground + 32;
+      setArrow(makeArrow(scene, '#1f9d55', 7), SCENE.left, sy, SCENE.left + SCENE.moveLen, sy);
+      el('text', { class: 'svg-label', x: SCENE.left + SCENE.moveLen + 14, y: sy + 7, fill: '#1f9d55', 'font-size': 19 }, scene, '변위 s = 2 m (고정)');
+
+      // 기준선(이동 방향)과 끈
+      el('line', { x1: ax - 175, y1: ay, x2: ax + 175, y2: ay, stroke: '#8a8f98', 'stroke-width': 1.5, 'stroke-dasharray': '6 6' }, scene);
+      const rope = el('line', { stroke: '#8b7a66', 'stroke-width': 3, 'stroke-linecap': 'round' }, scene);
+      const drop = el('line', { stroke: '#8a8f98', 'stroke-width': 2, 'stroke-dasharray': '7 6' }, scene);
+      const arc = el('path', { fill: 'none', stroke: '#333', 'stroke-width': 2 }, scene);
+      const theta = el('text', { class: 'svg-label', 'font-size': 20, 'text-anchor': 'middle', fill: '#222', 'font-style': 'italic' }, scene, 'θ');
+      const fx = makeArrow(scene, '#e8770c', 9);
+      const f = makeArrow(scene, '#1f5fd1', 5);
+      el('circle', { cx: ax, cy: ay, r: 6, fill: 'none', stroke: '#555', 'stroke-width': 2.5 }, scene);
+      el('circle', { cx: ax, cy: ay, r: 3, fill: '#172033' }, scene);
+      const fLabel = el('text', { class: 'svg-label', 'font-size': 22, fill: '#1f5fd1', 'font-style': 'italic' }, scene, 'F');
+      const fxLabel = el('text', { class: 'svg-label', 'font-size': 20, fill: '#e8770c', 'font-style': 'italic', 'text-anchor': 'middle' }, scene, 'Fx');
+      el('text', { class: 'svg-note', x: 16, y: 384 }, scene, '힘(N)과 변위(m)는 단위가 달라 화살표 축척이 다릅니다.');
+      return { ax, ay, rope, drop, arc, theta, fx, f, fLabel, fxLabel };
+    })();
+
+    function drawScene(m) {
+      const p = sceneParts, L = SCENE.forceLen;
+      const tipX = p.ax + L * m.c, tipY = p.ay - L * m.s;
+      const fxX = p.ax + L * m.c;
+      setLine(p.rope, p.ax, p.ay, p.ax + (L + 60) * m.c, p.ay - (L + 60) * m.s);
+      setArrow(p.f, p.ax, p.ay, tipX, tipY);
+      setArrow(p.fx, p.ax, p.ay, fxX, p.ay);
+      setLine(p.drop, tipX, tipY, fxX, p.ay);
+      p.drop.style.display = m.s < 0.01 ? 'none' : '';
+      p.arc.setAttribute('d', arcPath(p.ax, p.ay, 40, m.deg));
+      const half = m.deg / 2;
+      p.theta.setAttribute('x', p.ax + 60 * cosDeg(half));
+      p.theta.setAttribute('y', p.ay - 60 * sinDeg(half) + 7);
+      p.theta.style.display = m.deg < 15 ? 'none' : '';
+      // F 라벨: 화살표 끝 바깥쪽
+      p.fLabel.setAttribute('x', p.ax + (L + 22) * m.c);
+      p.fLabel.setAttribute('y', p.ay - (L + 22) * m.s + 8);
+      p.fLabel.setAttribute('text-anchor', m.c > 0.3 ? 'start' : m.c < -0.3 ? 'end' : 'middle');
+      // Fx 라벨: 기준선 아래, 성분 화살표 가운데
+      p.fxLabel.setAttribute('x', p.ax + (L * m.c) / 2);
+      p.fxLabel.setAttribute('y', p.ay + 28);
+      p.fxLabel.style.display = Math.abs(m.c) < 0.12 ? 'none' : '';
+    }
+
+    // ── 벡터 도식(좌표평면) ─────────────────────────────
+    const PLANE = { ox: 210, oy: 214, r: 160, moveLen: 100 }; // r: 20 N, moveLen: 2 m
+    const planeParts = (() => {
+      axisMarker(plane, 'pl-axis');
+      const { ox, oy, r } = PLANE, unit = r / FORCE;
+      // |F| = 20 N 이 일정함을 보여 주는 반원
+      el('path', { d: `M${ox + r},${oy} A${r},${r} 0 0 0 ${ox - r},${oy}`, fill: 'none', stroke: '#c9ced6', 'stroke-width': 1.5, 'stroke-dasharray': '4 6' }, plane);
+      el('line', { x1: 20, y1: oy, x2: 400, y2: oy, stroke: '#4b5563', 'stroke-width': 1.6, 'marker-end': 'url(#pl-axis)' }, plane);
+      el('line', { x1: ox, y1: oy + 8, x2: ox, y2: 26, stroke: '#4b5563', 'stroke-width': 1.6, 'marker-end': 'url(#pl-axis)' }, plane);
+      el('text', { class: 'svg-label', x: 404, y: oy + 22, 'text-anchor': 'end', 'font-size': 16, 'font-style': 'italic', fill: '#4b5563' }, plane, 'x');
+      el('text', { class: 'svg-label', x: ox - 10, y: 32, 'text-anchor': 'end', 'font-size': 16, 'font-style': 'italic', fill: '#4b5563' }, plane, 'y');
+      for (let n = -20; n <= 20; n += 5) {
+        const x = ox + n * unit;
+        el('line', { x1: x, y1: oy - 5, x2: x, y2: oy + 5, stroke: '#4b5563', 'stroke-width': n % 10 === 0 ? 2 : 1 }, plane);
+      }
+      el('text', { class: 'svg-note', x: ox + r, y: oy + 22, 'text-anchor': 'middle' }, plane, '20 N');
+      el('text', { class: 'svg-note', x: ox - r, y: oy + 22, 'text-anchor': 'middle' }, plane, '−20 N');
+
+      const sy = oy + 50;
+      setArrow(makeArrow(plane, '#1f9d55', 6), ox, sy, ox + PLANE.moveLen, sy);
+      el('text', { class: 'svg-label', x: ox + PLANE.moveLen + 12, y: sy + 6, fill: '#1f9d55', 'font-size': 16 }, plane, 's (2 m)');
+
+      const fy = makeArrow(plane, '#7d838c', 3, { 'stroke-dasharray': '7 5' });
+      const arc = el('path', { fill: 'none', stroke: '#333', 'stroke-width': 1.8 }, plane);
+      const theta = el('text', { class: 'svg-label', 'font-size': 17, 'text-anchor': 'middle', 'font-style': 'italic' }, plane, 'θ');
+      const fx = makeArrow(plane, '#e8770c', 9);
+      const f = makeArrow(plane, '#1f5fd1', 5);
+      el('circle', { cx: ox, cy: oy, r: 4, fill: '#172033' }, plane);
+      const fLabel = el('text', { class: 'svg-label', 'font-size': 19, fill: '#1f5fd1', 'font-style': 'italic' }, plane, 'F');
+      const fxLabel = el('text', { class: 'svg-label', 'font-size': 17, fill: '#e8770c', 'font-style': 'italic', 'text-anchor': 'middle' }, plane, 'Fx');
+      const fyLabel = el('text', { class: 'svg-label', 'font-size': 16, fill: '#5f6570', 'font-style': 'italic' }, plane, 'Fy');
+      return { fy, arc, theta, fx, f, fLabel, fxLabel, fyLabel };
+    })();
+
+    function drawPlane(m) {
+      const { ox, oy, r } = PLANE, p = planeParts;
+      const tipX = ox + r * m.c, tipY = oy - r * m.s;
+      setArrow(p.f, ox, oy, tipX, tipY);
+      setArrow(p.fx, ox, oy, tipX, oy);
+      setArrow(p.fy, tipX, oy, tipX, tipY);
+      p.arc.setAttribute('d', arcPath(ox, oy, 32, m.deg));
+      p.theta.setAttribute('x', ox + 50 * cosDeg(m.deg / 2));
+      p.theta.setAttribute('y', oy - 50 * sinDeg(m.deg / 2) + 6);
+      p.theta.style.display = m.deg < 15 ? 'none' : '';
+      if (Math.abs(m.c) < 0.3) {
+        // 거의 수직일 때는 y축 라벨과 겹치지 않게 화살표 끝의 오른쪽에 둔다.
+        p.fLabel.setAttribute('x', tipX + 12);
+        p.fLabel.setAttribute('y', tipY + 8);
+        p.fLabel.setAttribute('text-anchor', 'start');
+      } else {
+        p.fLabel.setAttribute('x', ox + (r + 18) * m.c);
+        p.fLabel.setAttribute('y', oy - (r + 18) * m.s + 7 - (m.s < 0.3 ? 12 : 0));
+        p.fLabel.setAttribute('text-anchor', m.c > 0 ? 'start' : 'end');
+      }
+      p.fxLabel.setAttribute('x', ox + (r * m.c) / 2);
+      p.fxLabel.setAttribute('y', oy + 24);
+      p.fxLabel.style.display = Math.abs(m.c) < 0.12 ? 'none' : '';
+      p.fyLabel.setAttribute('x', tipX + (m.c >= 0 ? 8 : -8));
+      p.fyLabel.setAttribute('y', oy - (r * m.s) / 2 + 6);
+      p.fyLabel.setAttribute('text-anchor', m.c >= 0 ? 'start' : 'end');
+      p.fyLabel.style.display = m.s < 0.26 ? 'none' : '';
+    }
+
+    // ── 수치·설명 ───────────────────────────────────────
+    const ui = {
+      slider: document.getElementById('angle'),
+      readout: document.getElementById('angle-readout'),
+      vAngle: document.getElementById('v-angle'),
+      vFx: document.getElementById('v-fx'),
+      vW: document.getElementById('v-w'),
+      cardW: document.getElementById('card-w'),
+      explain: document.getElementById('explain'),
+      calcFx: document.getElementById('calc-fx'),
+      calcW: document.getElementById('calc-w'),
+      presets: document.getElementById('presets'),
+      play: document.getElementById('play'),
+      stop: document.getElementById('stop'),
+    };
+
+    function explanation(m) {
+      const d = m.deg;
+      if (d === 0) return ['zero-angle', '0°:', '힘 전체가 이동 방향이라 Fx = F이고, 일이 가장 크다(40 J).'];
+      if (d < 90) return ['positive', '예각:', '힘이 이동 방향 성분(Fx > 0)을 가져 양(+)의 일을 한다. θ가 커질수록 Fx와 일이 줄어든다.'];
+      if (d === 90) return ['zero', '직각:', '힘이 이동 방향에 수직이라 이동 방향 성분이 0이다. 그래서 한 일(내적)도 0이다.'];
+      if (d < 180) return ['negative', '둔각:', '힘이 이동 방향과 반대쪽 성분(Fx < 0)을 가져 음(−)의 일을 한다. 수레는 여전히 오른쪽으로 2 m 이동했다.'];
+      return ['negative', '180°:', '힘 전체가 이동 방향과 반대라 Fx = −F이고, 일이 가장 작다(−40 J).'];
+    }
+
+    function renderNumbers(m) {
+      const deg = `${m.deg}°`;
+      ui.readout.textContent = deg;
+      ui.vAngle.textContent = deg;
+      ui.vFx.textContent = `${fmt(m.fx)} N`;
+      ui.vW.textContent = `${fmt(m.work)} J`;
+
+      const sign = fmt(m.work) === '0' ? 'zero' : m.work < 0 ? 'negative' : 'positive';
+      ui.cardW.className = `value-card work ${sign === 'positive' ? '' : sign}`;
+      const [, head, body] = explanation(m);
+      ui.explain.className = `explain ${sign === 'positive' ? '' : sign}`;
+      ui.explain.innerHTML = `<strong>${head}</strong>${body}`;
+
+      const fxEq = isExact(m.fx) ? '=' : '≈';
+      const wEq = isExact(m.work) ? '=' : '≈';
+      ui.calcFx.innerHTML = `<i>F</i><sub>x</sub> = 20 × cos ${deg} ${fxEq} <span class="comp">${fmt(m.fx)} N</span>`;
+      ui.calcW.innerHTML = `<i>W</i> = <i>F</i><sub>x</sub> × <i>s</i> = 20 × 2 × cos ${deg} ${wEq} <span class="work">${fmt(m.work)} J</span> <span style="color:var(--muted);font-size:.85em">(J = N·m)</span>`;
+
+      for (const btn of ui.presets.children) btn.classList.toggle('active', +btn.dataset.deg === m.deg);
+    }
+
+    function render(deg) {
+      const m = compute(deg);
+      drawScene(m);
+      drawPlane(m);
+      renderNumbers(m);
+    }
+
+    // ── 조작과 자동 실행 ────────────────────────────────
+    let rafId = null;
+
+    function setAngle(deg) {
+      ui.slider.value = deg;
+      render(deg);
+    }
+    function stopAuto() {
+      if (rafId !== null) cancelAnimationFrame(rafId);
+      rafId = null;
+      ui.play.disabled = false;
+      ui.stop.disabled = true;
+    }
+    function startAuto() {
+      stopAuto();
+      ui.play.disabled = true;
+      ui.stop.disabled = false;
+      const start = performance.now();
+      let last = -1;
+      const step = (now) => {
+        const deg = Math.min(180, Math.round(180 * (now - start) / AUTO_DURATION));
+        if (deg !== last) { setAngle(deg); last = deg; }
+        if (deg >= 180) { stopAuto(); return; }
+        rafId = requestAnimationFrame(step);
+      };
+      rafId = requestAnimationFrame(step);
+    }
+
+    for (const d of PRESETS) {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'btn';
+      b.dataset.deg = d;
+      b.textContent = `${d}°`;
+      b.addEventListener('click', () => { stopAuto(); setAngle(d); });
+      ui.presets.appendChild(b);
+    }
+    ui.slider.addEventListener('input', () => { stopAuto(); render(+ui.slider.value); });
+    ui.play.addEventListener('click', startAuto);
+    ui.stop.addEventListener('click', stopAuto);
+
+    render(+ui.slider.value);
+  </script>
+</body>
+</html>
