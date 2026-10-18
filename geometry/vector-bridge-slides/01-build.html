@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="ko" data-theme="blueprint">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="robots" content="noindex, nofollow">
+<title>1차시 기본 구조 제작</title>
+<link rel="icon" href="../../favicon.ico" sizes="16x16 32x32 48x48">
+<link rel="icon" href="../../assets/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="../../assets/apple-touch-icon.png">
+<link rel="stylesheet" href="lib/reveal/reset.css">
+<link rel="stylesheet" href="lib/reveal/reveal.css">
+<link rel="stylesheet" href="lib/katex/katex.min.css">
+<link rel="stylesheet" href="lib/pretendard/pretendardvariable-dynamic-subset.css">
+<link rel="stylesheet" href="css/deck.css?v=20261018review2">
+<style>
+.reveal .session-footer { position:absolute; left:0; right:0; bottom:84px; }
+.reveal .session-footer.flow { font-size:22px; }
+.reveal .session-footer.flow em { display:block; margin:0; }
+.reveal .session-list { margin:22px 0; padding-left:1.2em; font-size:27px; line-height:1.55; }
+.reveal .session-list li { margin-bottom:14px; }
+.reveal .types { width:100%; border-collapse:collapse; font-size:23px; }
+.reveal .types th { font-size:20px; background:var(--th-bg); color:var(--th-ink); }
+.reveal .types th,.reveal .types td { border:1.5px solid var(--cell-line); padding:5px 10px; vertical-align:middle; }
+.reveal .types td .fig { background:none; padding:0; }
+.reveal .types .fig svg { width:245px; display:block; }
+.reveal .types img { width:142px; height:70px; object-fit:contain; display:block; margin:auto; }
+.reveal .types td:last-child { text-align:center; font-size:22px; }
+.reveal .setup { display:grid; grid-template-columns:1fr 1fr; gap:14px 26px; font-size:26px; margin-top:24px; }
+.reveal .setup p { border-bottom:1px solid var(--cell-line); padding-bottom:10px; }
+.reveal .two-views { display:grid; grid-template-columns:1fr 1.25fr; gap:18px; align-items:start; margin-top:26px; }
+.reveal .two-views .fig { padding:8px 0; }
+.reveal .two-views h3 { font-size:26px; }
+.reveal .two-views .cap { margin-top:18px; text-align:left; }
+</style>
+</head>
+<body>
+<div id="tools" aria-label="화면 도구">
+  <button data-act="open" title="이 화면의 칸을 모두 연다">칸 열기</button>
+  <button data-act="close" title="이 화면의 칸을 모두 닫는다">칸 닫기</button>
+  <button data-act="pause" title="화면을 검게 한다(B 키). 화면을 누르면 돌아온다">화면 끄기</button>
+  <button data-act="full" title="전체 화면">전체</button>
+</div>
+<div class="reveal"><div class="slides">
+
+<section id="flow" data-timer="5" data-timer-label="소개·조건·역할">
+  <p class="crumb">1차시 · 기본 구조 제작</p>
+  <h2>오늘은 기본 구조 V1을 완성한다</h2>
+  <ol class="session-list">
+    <li>트러스 소개·조건·역할 확인 <b>5분</b></li>
+    <li>모둠별 구조물 제작 <b>35분</b></li>
+    <li>촬영·웹앱 입력·도면 정리 <b>10분</b></li>
+  </ol>
+  <p class="rule">역할은 나누어도, 학습지에는 <b>각자</b> 기록한다.</p>
+  <p class="small">왼쪽 아래 시계를 눌러 시작·멈춤. ↺를 누르면 다시 맞춤.</p>
+  <div class="flow session-footer" data-now="0"></div>
+  <aside class="notes">근거: v0.5 01_제작_교사용 운영 안내. 소개부터 역할 확인까지 합계 5분이다. 완성품의 외형과 버틴 하중의 크기는 평가하지 않는다.</aside>
+</section>
+
+<section id="rigidity">
+  <p class="crumb">1차시 · 트러스 소개</p>
+  <h2>변의 길이가 정해지면 모양도 정해질까?</h2>
+  <p>트러스는 곧은 막대의 끝을 이음점에서 이어,<br>삼각형을 이어 붙여 만든 구조이다.</p>
+  <div class="fig" data-fig="rigidity" style="width:900px;margin:0 auto"></div>
+  <span class="fragment custom" data-anim="rigidity" data-fragment-index="0" data-dur="1800"></span>
+  <p class="cap fragment" data-fragment-index="0">삼각형은 모양이 정해지지만(SSS 합동), 사각형은 모양이 바뀐다.</p>
+  <div class="flow session-footer" data-now="0"></div>
+  <aside class="notes">근거: 학생용 1절과 rigidity.svg. 사각형의 네 변 길이는 변형 전후 동일하다. 대각선 추가 그림이나 추가 제작 조건을 제시하지 않는다.</aside>
+</section>
+
+<section id="types">
+  <p class="crumb">1차시 · 트러스 소개</p>
+  <h2>네 가지 트러스 모양</h2>
+  <table class="types">
+    <colgroup><col style="width:15%"><col style="width:28%"><col style="width:36%"><col style="width:21%"></colgroup>
+    <thead><tr><th>종류</th><th>모양</th><th>특징</th><th>쓰이는 곳</th></tr></thead>
+    <tbody>
+      <tr><td>와렌</td><td><div class="fig" data-fig="t_warren"></div></td><td>정삼각형을 위아래로<br>번갈아 잇는다.</td><td><img src="img/c1_use_warren_color.jpg" alt="와렌 구조 철교 삽화">철교·크레인 팔</td></tr>
+      <tr><td>프랫</td><td><div class="fig" data-fig="t_pratt"></div></td><td>대각선이 가운데 쪽으로<br>내려간다.</td><td><img src="img/c1_use_pratt_color.jpg" alt="프랫 구조 철교 삽화">철교</td></tr>
+      <tr><td>하우</td><td><div class="fig" data-fig="t_howe"></div></td><td>프랫과 대각선 방향이<br>반대이다.</td><td><img src="img/c1_use_howe_color.jpg" alt="하우 구조 다리 삽화">다리</td></tr>
+      <tr><td>X자<br><span class="small">더블 와렌</span></td><td><div class="fig" data-fig="t_x"></div></td><td>대각선 두 개가<br>X자로 교차한다.</td><td><img src="img/c1_use_tower_color.jpg" alt="X자 구조 송전탑 삽화">송전탑</td></tr>
+    </tbody>
+  </table>
+  <div class="flow session-footer" data-now="0"></div>
+  <aside class="notes">근거: 학생용 1절 표. 정해진 4종의 모양과 수채화 채색본을 사용한다. 종류 선택 자체는 점수와 관계없다.</aside>
+</section>
+
+<section id="conditions">
+  <p class="crumb">1차시 · 제작 조건</p>
+  <h2>완성한 뒤 학습지에 확인 표시한다</h2>
+  <ul class="check">
+    <li>길이 $18\,\mathrm{cm}$인 빨대와 나누어 준 연결 재료만 쓴다.</li>
+    <li>다리의 길이(아래쪽 막대 전체)는 $38\,\mathrm{cm}$ 이상이다.</li>
+    <li>다리의 폭(두 측면 트러스 사이)은 $5\,\mathrm{cm}$ 이상이다.</li>
+    <li>다리의 높이(아래쪽에서 위쪽 막대까지)는 $7\,\mathrm{cm}$ 이상이다.</li>
+    <li>$30\,\mathrm{cm}$ 떨어진 두 책상에 걸친다.<br>양 끝의 아래쪽 이음점을 책상 위 받침 조각에 올린다.</li>
+    <li>윗면이 평평하여 하중을 가하는 판을 올릴 수 있다.</li>
+    <li>칸은 정삼각형·직각이등변삼각형·정사각형으로 만든다.</li>
+    <li>두 측면 트러스는 같은 모양으로 만든다.</li>
+  </ul>
+  <div class="flow session-footer" data-now="0"></div>
+  <aside class="notes">근거: 학생용 2절 체크리스트 8항목. 학습지에서 길이의 뜻과 조건을 확인한다. 별도의 대각선 조건은 추가하지 않는다.</aside>
+</section>
+
+<section id="setup">
+  <p class="crumb">1차시 · 칸의 모양과 재료</p>
+  <h2>한 측면 트러스 안에서는 한 계열로 만든다</h2>
+  <p class="rule">정삼각형 칸과 나머지 두 모양의 칸은 섞지 않는다.</p>
+  <p class="small">아래쪽 직선의 내부 이음점에서 빈틈없이 모인 칸들의 각의 합은 $180^\circ$이다.</p>
+  <div class="setup">
+    <p>칸 수·기본 막대 길이<br>교사 안내: ______</p>
+    <p>연결 재료·지급 수량<br>교사 안내: ______</p>
+    <p>허용 수정·테이프 규칙<br>교사 안내: ______</p>
+    <p>양 끝의 받침 조각<br>교사 안내: ______</p>
+    <p>판·받침 조각·추<br>교사 안내: ______</p>
+    <p>하중 도구·증가·중단 기준<br>교사 안내: ______</p>
+  </div>
+  <div class="flow session-footer" data-now="0"></div>
+  <aside class="notes">근거: 학생용 1절 마지막 문단, 교사용 사전 제작 후 확정 조건 표. 빈칸은 교사가 사전 제작 후 확정하며 임의의 수치로 채우지 않는다.</aside>
+</section>
+
+<section id="plate-3d">
+  <p class="crumb">1차시 · 다리와 판의 구조</p>
+  <h2>판 위 추의 무게는 두 트러스가 절반씩</h2>
+  <div class="fig" data-fig="plate_3d" style="width:840px;margin:0 auto"></div>
+  <p class="cap">같은 모양의 측면 트러스 두 개 위에 판을 올린다.</p>
+  <div class="flow session-footer" data-now="0"></div>
+  <aside class="notes">근거: 학생용 3절 plate_3d.svg. 두 트러스가 하중을 절반씩 나누어 받는 단순화 모형이다. 원본 좌표·막대 연결·시점 표시를 유지한다.</aside>
+</section>
+
+<section id="plate-views">
+  <p class="crumb">1차시 · 한쪽 트러스를 해석한다</p>
+  <h2>다리 끝에서 본 모습과 옆에서 본 모습</h2>
+  <div class="two-views">
+    <div><h3>다리 끝에서 보면</h3><div class="fig" data-fig="plate_half"></div><p class="cap">판이 두 트러스에<br>추의 무게를 절반씩 전달한다.</p></div>
+    <div><h3>옆에서 보면</h3><div class="fig" data-fig="plate_side"></div><p class="cap">위쪽 이음점마다 같은 하중.<br>V1 그림은 이 방향에서 그린다.</p></div>
+  </div>
+  <p class="small" style="margin-top:30px">오른쪽은 정삼각형 3칸의 예이다. 다른 종류도 같은 방향에서 그린다.</p>
+  <div class="flow session-footer" data-now="0"></div>
+  <aside class="notes">근거: 학생용 3절 plate_half.svg·plate_side.svg, 교사용 하중 그림 안내. 옆모습은 같은 7개 이음점·11개 막대·한쪽 고정/반대쪽 바퀴 받침을 유지하고 라벨만 화면용으로 재배치했다.</aside>
+</section>
+
+<section id="build" data-timer="35" data-timer-label="제작">
+  <p class="crumb">1차시 · 모둠 제작</p>
+  <h2>역할을 나누어 V1 제작하기</h2>
+  <ol class="session-list">
+    <li>모둠이 고른 트러스 종류와 조원을 기록한다.</li>
+    <li>각자 맡을 작업의 대상과 범위를 정한다.</li>
+    <li>두 측면 트러스를 같은 모양으로 만든다.</li>
+    <li>제작 조건 화면으로 돌아가 하나씩 확인한다.</li>
+  </ol>
+  <p class="rule">내가 실제로 만든 부분과 한 일을 순서대로 기록한다.</p>
+  <p class="small">AI는 교사가 제공한 구조해석 웹앱만 사용한다.</p>
+  <div class="flow session-footer" data-now="1"></div>
+  <aside class="notes">근거: 학생용 3·4절, 교사용 운영 안내. 제작 35분 타이머는 조건 화면으로 돌아가도 유지된다. 제작 방법이나 구조 개선의 예시는 제시하지 않는다.</aside>
+</section>
+
+<section id="record" data-timer="10" data-timer-label="촬영·입력·도면">
+  <p class="crumb">1차시 · V1 기록과 확인</p>
+  <h2>사진·웹앱 입력·도면을 서로 맞춘다</h2>
+  <ol class="session-list">
+    <li>모둠에서 한 번 촬영하고 웹앱에 구조를 입력한다.</li>
+    <li>사진에서 읽은 구조를 실제 구조·V1 그림과 대조한다.</li>
+    <li>각자 V1을 옆모습으로 그리고 필요한 표시를 한다.</li>
+  </ol>
+  <p class="rule">이음점 이름 · 칸의 모양 · 막대 길이($\mathrm{cm}$)<br>받침 위치 · 위쪽 이음점(판이 누르는 곳)</p>
+  <p class="small">이음점 이름은 모둠 안에서 통일한다. 웹앱 접속 · 교사 안내: ______</p>
+  <div class="flow session-footer" data-now="2"></div>
+  <aside class="notes">근거: 학생용 3절과 교사용 구조 입력 안내. 사진만으로 연결을 확정하지 않는다. 실제 웹앱의 확인 절차에 따라 교사가 구조를 확인한다.</aside>
+</section>
+
+<section id="submit">
+  <p class="crumb">1차시 · 마무리와 다음 단계</p>
+  <h2>기록을 마무리하고 제출한다</h2>
+  <ul class="check">
+    <li>조원과 트러스 종류</li>
+    <li>표시가 빠짐없이 들어간 V1 구조 그림</li>
+    <li>고른 구조의 이유와 제작에서 신경 쓴 점</li>
+    <li>4번: 내가 맡아 완성한 범위와 실제로 한 일의 순서</li>
+  </ul>
+  <p class="rule" style="margin-top:22px">해석지 조기 시작은 <b>구조가 승인된 모둠만</b>.<br>해석지를 받으면 구조를 고정한다.</p>
+  <p class="small">구조를 고치면 다시 입력·승인받는다. 수업 끝에 학습지를 제출한다.</p>
+  <div class="flow session-footer" data-now="2"></div>
+  <aside class="notes">근거: 교사용 운영 안내. 교사가 해석 단계를 열어 둔 경우에만 조기 시작한다. 2차시 처음에 모든 학생에게 최소 10분의 해석 시간을 보장한다.</aside>
+</section>
+
+</div></div>
+<script src="lib/reveal/reveal.js"></script>
+<script src="lib/katex/katex.min.js"></script>
+<script src="lib/katex/auto-render.min.js"></script>
+<script src="js/figs.js?v=20261018review1"></script>
+<script src="js/comic.js?v=20261018j"></script>
+<script src="js/warp.js?v=20261018j"></script>
+<script src="js/deck.js?v=20261018j"></script>
+<script>const FLOW = [['소개·조건·역할',5],['제작',35],['촬영·입력·도면',10]];</script>
+<script src="js/session.js?v=20261018review1"></script>
+</body>
+</html>

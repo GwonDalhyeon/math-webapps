@@ -1,0 +1,264 @@
+/* 벡터 구조물 수업 화면 공통 스타일 (4:3, 1024x768 기준)
+   프로젝터를 화이트보드에 비추고 마커로 쓰는 환경을 전제로 한다.
+   - 밝은 배경, 진한 글자, 색은 당김(파랑)·누름(빨강)·합(초록)에만 쓴다.
+   - 칸을 열거나 그림이 움직여도 배치가 바뀌지 않게 한다(판서 위치 유지). */
+
+:root {
+  /* 기본(흑백) 테마. 다른 테마는 아래 [data-theme]에서 같은 이름의 변수만 바꾼다 */
+  --bg: #ffffff;  --ink: #111;  --sub: #333;  --faint: #555;
+  --title: #111;           /* 제목 글자 */
+  --accent: #8a8a8a;       /* 번호·머리글·표지 장식(선·띠) */
+  --accent-text: #444;     /* 강조색 글자(번호·차시): 프로젝터에서도 읽히게 진하게 */
+  --hl: transparent;       /* 핵심 용어 형광펜 */
+  --th-bg: #efefef;  --th-ink: #111;  --cell-line: #555;
+  --tap: #f2f5fa;          /* 열 수 있는 칸 */
+  --box: #f6f6f3;  --box-line: #111;
+  --frame: #ddd;
+  --pull: #1d5fbf;  --push: #c63d2f;  --sum: #0b7a6f;   /* 당김·누름·합: 모든 테마에서 파랑·빨강·초록 계열 유지 */
+  --fig-ink: #111;  --fig-soft: #333;  --fig-comp: #666;  --fig-bar: #c4c4c4;  --fig-grid: #e4e4e4;  --fig-axis: #888;
+  --paper: none;           /* 배경 무늬 */
+  --band: transparent;     /* 화면 위 색 띠 */
+  --fig-bg: transparent;  --halo: #fff;   /* 그림 바탕판과 글자 테두리 */
+  --font: "Pretendard Variable", Pretendard, "Malgun Gothic", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+}
+/* A. 설계도: 남색 머리띠 표, 옅은 모눈 배경, 핵심어는 주황 형광펜 */
+html[data-theme="blueprint"] {
+  --bg: #fbfcfe;  --ink: #0f1a27;  --sub: #26364a;  --faint: #3b5170;
+  --title: #16325a;  --accent: #e08a1e;  --accent-text: #b25400;  --hl: #ffe1a1;
+  --th-bg: #1d3b63;  --th-ink: #fff;  --cell-line: #7f95b3;  --tap: #e8eff8;
+  --box: #eef3f9;  --box-line: #1d3b63;  --frame: #1d3b63;
+  --pull: #1b5fc2;  --push: #c4321f;  --sum: #0b7552;
+  --fig-ink: #14202e;  --fig-soft: #2c3e55;  --fig-comp: #5d6f86;  --fig-bar: #b7c6da;  --fig-grid: #d9e3ef;  --fig-axis: #7d8fa6;
+  --band: #1d3b63;  --fig-bg: #edf2f9;  --halo: #edf2f9;
+  --paper: linear-gradient(rgba(40, 90, 160, .06) 1px, transparent 1px) 0 0 / 32px 32px, linear-gradient(90deg, rgba(40, 90, 160, .06) 1px, transparent 1px) 0 0 / 32px 32px;
+}
+/* B. 보라 노트: 선명한 보라 포인트, 연보라 표 머리, 노란 형광펜 */
+html[data-theme="violet"] {
+  --bg: #ffffff;  --ink: #141126;  --sub: #2f2a4c;  --faint: #4b4470;
+  --title: #2e2170;  --accent: #6a4be0;  --accent-text: #4f30c4;  --hl: #fff0a0;
+  --th-bg: #ece7fd;  --th-ink: #3a2a8f;  --cell-line: #a99ddc;  --tap: #f4f1fe;
+  --box: #f5f2fe;  --box-line: #6a4be0;  --frame: #6a4be0;
+  --pull: #1f6fd1;  --push: #e0452f;  --sum: #11876a;
+  --band: linear-gradient(90deg, #6a4be0, #b39cf5);  --fig-bg: #f5f2ff;  --halo: #f5f2ff;
+  --fig-ink: #1a1730;  --fig-soft: #3b355c;  --fig-comp: #6e6890;  --fig-bar: #d3cbef;  --fig-grid: #ece8f8;  --fig-axis: #9289b8;
+}
+/* C. 종이·빨대: 따뜻한 종이색, 빨대 노랑(겨자) 포인트, 막대도 빨대색 */
+html[data-theme="straw"] {
+  --bg: #fbf7ef;  --ink: #221b14;  --sub: #43382b;  --faint: #5e4f3c;
+  --title: #2b241c;  --accent: #d0901a;  --accent-text: #8f5a00;  --hl: #f9dc8f;
+  --th-bg: #f1e2bf;  --th-ink: #5a4318;  --cell-line: #b9a57f;  --tap: #f6ecd6;
+  --box: #f6eedb;  --box-line: #d0901a;  --frame: #d0901a;
+  --pull: #2a68c4;  --push: #c4402e;  --sum: #2f7d4a;
+  --band: repeating-linear-gradient(90deg, #d0901a 0 46px, #e9b949 46px 52px);  --fig-bg: #f3e8cf;  --halo: #f3e8cf;
+  --fig-ink: #2b241c;  --fig-soft: #4a3f33;  --fig-comp: #7d6e5c;  --fig-bar: #e5c27a;  --fig-grid: #ebe1cc;  --fig-axis: #a8977a;
+}
+
+html, body { background: var(--bg); touch-action: manipulation; }
+.reveal-viewport, .reveal { background: var(--paper), var(--bg); }
+
+.reveal { font-family: var(--font); font-size: 26px; color: var(--ink); line-height: 1.5; }
+.reveal .slides { text-align: left; }
+.reveal .slides section { height: 100%; padding: 0; box-sizing: border-box; }
+.reveal .katex { font-size: 1.05em; }
+
+/* 머리글 */
+.reveal .crumb { font-size: 17px; font-weight: 600; color: var(--faint); letter-spacing: .02em; margin: 0 0 4px; padding-left: 10px; border-left: 4px solid var(--accent); line-height: 1.2; }
+.reveal h2 { font-size: 34px; font-weight: 700; margin: 0 0 14px; line-height: 1.25; color: var(--title); }
+.reveal h2 .num { color: var(--accent-text); font-weight: 700; margin-right: .3em; }
+.reveal h3 { font-size: 26px; font-weight: 700; margin: 0 0 8px; }
+.reveal p { margin: 0 0 12px; }
+.reveal b, .reveal strong { font-weight: 700; background: linear-gradient(transparent 58%, var(--hl) 58%); padding: 0 .08em; }
+.reveal .small { font-size: 22px; color: var(--sub); }
+.reveal .pull { color: var(--pull); }
+.reveal .push { color: var(--push); }
+.reveal .sumc { color: var(--sum); }
+.reveal b.pull, .reveal b.push { background: none; }
+
+/* 표지 */
+.reveal .cover { display: flex; flex-direction: column; justify-content: center; height: 100%; }
+.reveal .cover .tag { font-size: 21px; font-weight: 500; color: var(--sub); line-height: 1.5; margin-bottom: 26px; }
+.reveal .cover .ses { font-size: 30px; font-weight: 800; color: var(--accent-text); }
+.reveal .cover h1 { font-size: 56px; font-weight: 800; margin: 4px 0 0; line-height: 1.2; color: var(--title); }
+.reveal .cover-fig { position: absolute; left: 0; right: 0; bottom: 30px; background: none; }
+.reveal .cover h1::after { content: ''; display: block; width: 140px; height: 8px; border-radius: 4px; margin-top: 22px; background: var(--accent); }
+
+/* 그림 색(js/figs.js의 s-·f- 클래스) */
+.reveal svg .s-ink { stroke: var(--fig-ink); }   .reveal svg .f-ink { fill: var(--fig-ink); }
+.reveal svg .s-soft { stroke: var(--fig-soft); } .reveal svg .f-soft { fill: var(--fig-soft); }
+.reveal svg .s-comp { stroke: var(--fig-comp); }
+.reveal svg .s-bar { stroke: var(--fig-bar); }
+.reveal svg .s-grid { stroke: var(--fig-grid); }
+.reveal svg .s-axis { stroke: var(--fig-axis); } .reveal svg .f-axis { fill: var(--fig-axis); }
+.reveal svg .s-pull { stroke: var(--pull); }     .reveal svg .f-pull { fill: var(--pull); }
+.reveal svg .s-push { stroke: var(--push); }     .reveal svg .f-push { fill: var(--push); }
+.reveal svg .s-sum { stroke: var(--sum); }       .reveal svg .f-sum { fill: var(--sum); }
+.reveal svg .halo { stroke: var(--halo); }
+
+/* 2단 배치: 왼쪽 내용, 오른쪽 판서 공간 */
+.reveal .cols { display: grid; gap: 24px; align-items: start; }
+.reveal .c-55 { grid-template-columns: 55fr 45fr; }
+.reveal .c-60 { grid-template-columns: 60fr 40fr; }
+.reveal .c-50 { grid-template-columns: 1fr 1fr; }
+
+/* 판서 공간 표시: 화면에는 아주 옅게만 보인다 */
+.reveal .writespace { min-height: 200px; }
+
+/* 상자 */
+.reveal .rule { background: var(--box); border-left: 6px solid var(--box-line); padding: 10px 16px; margin: 0 0 12px; }
+.reveal .rule.pull { border-color: var(--pull); }
+.reveal .rule.push { border-color: var(--push); }
+.reveal .promise { border: 2px solid var(--box-line); background: var(--box); border-radius: 8px; padding: 10px 16px; }
+
+/* 그림 */
+.reveal .fig { background: var(--fig-bg); border-radius: 12px; }
+.reveal .slides > section:not(#cover)::before { content: ''; position: absolute; left: -40px; right: -40px; top: -20px; height: 8px; background: var(--band); }
+.reveal .fig svg { display: block; width: 100%; height: auto; overflow: visible; }
+.reveal .fig.center svg { margin: 0 auto; }
+.reveal img.illust { display: block; max-width: 100%; margin: 0 auto; }
+.reveal .cap { font-size: 22px; color: var(--sub); text-align: center; margin-top: 6px; }
+
+/* 도입 만화: 장면을 차례로 확대(.cam)하고, 장면 안의 움직임은 js/warp.js가 캔버스에 그린다(그림틀 전체는 흔들지 않는다) */
+.reveal .comic { position: relative; overflow: hidden; width: 840px; margin: 0 auto; aspect-ratio: 1536 / 1024;
+  border-radius: 6px; background: #fff; box-shadow: 0 0 0 2px var(--frame); }
+.reveal .comic .cam { position: absolute; inset: 0; transform-origin: 0 0; transition: transform 1.2s cubic-bezier(.6, 0, .25, 1); }
+.reveal .comic .life { position: absolute; inset: 0; width: auto; margin: 0; }
+.reveal .comic .life > img { width: 100%; height: 100%; }
+.reveal .comic img { width: 100%; height: 100%; display: block; margin: 0; }
+.reveal .comic .fxlayer { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.reveal .comic .fx { opacity: 0; transition: opacity .4s; }
+.reveal .comic-cap { display: grid; margin-top: 10px; }
+.reveal .comic-cap > .cap { grid-area: 1 / 1; margin: 0; font-size: 25px; color: var(--ink); }
+.reveal .comic-cap > .cap.q { font-size: 28px; font-weight: 700; }
+
+/* 장면 1: 잔잔히 흔들림 + 반짝임 */
+.reveal .comic[data-panel="1"] .fx-1 { opacity: 1; }
+.reveal .comic .spark { fill: #f2b705; stroke: #fff; stroke-width: 2; paint-order: stroke; transform-box: fill-box; transform-origin: center; animation: twinkle 1.6s ease-in-out infinite; }
+.reveal .comic .spark.s2 { animation-delay: .5s; }
+.reveal .comic .spark.s3 { animation-delay: 1s; }
+/* 장면 2: 추를 올리는 긴장 - 천천히 다가감 + 누르는 선 */
+.reveal .comic[data-panel="2"] .fx-2 { opacity: 1; }
+.reveal .comic .press { stroke: #333; stroke-width: 4; stroke-linecap: round; fill: none; animation: press 1.1s ease-in infinite; }
+/* 장면 3: 휘는 순간 - 짧게 떨림 */
+.reveal .comic[data-panel="3"] .fx-3 { opacity: 1; }
+.reveal .comic .burst { stroke: #c63d2f; stroke-width: 5; stroke-linecap: round; fill: none; animation: flash .9s steps(2) infinite; }
+/* 장면 4: 버티는 이음점 - 잔떨림 + 땀방울 */
+.reveal .comic[data-panel="4"] .fx-4 { opacity: 1; }
+.reveal .comic .drop { fill: #7fc4f0; stroke: #fff; stroke-width: 2; paint-order: stroke; animation: drip 1.5s ease-in infinite; }
+
+@keyframes bob { 0%, 100% { transform: translateY(0) rotate(0); } 50% { transform: translateY(-3px) rotate(-.25deg); } }
+@keyframes twinkle { 0%, 100% { opacity: .15; transform: scale(.6); } 50% { opacity: 1; transform: scale(1.1); } }
+@keyframes push { 0%, 100% { transform: scale(1) translateY(0); } 50% { transform: scale(1.025) translateY(2px); } }
+@keyframes press { 0% { transform: translateY(-8px); opacity: 0; } 30% { opacity: 1; } 100% { transform: translateY(10px); opacity: 0; } }
+@keyframes shake { 0%, 62%, 100% { transform: translate(0, 0); } 66% { transform: translate(-3px, 1px) rotate(-.3deg); }
+  70% { transform: translate(3px, -1px) rotate(.3deg); } 74% { transform: translate(-2px, 1px); } 78% { transform: translate(2px, 0); } 82% { transform: translate(0, 0); } }
+@keyframes flash { 0% { opacity: 1; } 100% { opacity: .2; } }
+@keyframes strain { 0% { transform: translate(0, 0); } 25% { transform: translate(.8px, -.5px); } 50% { transform: translate(-.6px, .6px); }
+  75% { transform: translate(.5px, .5px); } 100% { transform: translate(0, 0); } }
+@keyframes drip { 0% { transform: translateY(-6px); opacity: 0; } 20% { opacity: 1; } 80% { opacity: 1; } 100% { transform: translateY(26px); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .reveal .comic .life, .reveal .comic .fx * { animation: none !important; } }
+
+/* 힘의 표 */
+.reveal table.ft { border-collapse: collapse; width: 100%; font-size: 25px; table-layout: fixed; margin: 0 0 10px; }
+.reveal table.ft th, .reveal table.ft td { border: 1.5px solid var(--cell-line); padding: 5px 6px; text-align: center; vertical-align: middle; height: 46px; }
+.reveal table.ft th { background: var(--th-bg); color: var(--th-ink); font-weight: 700; font-size: 20px; line-height: 1.2; }
+.reveal table.ft caption { caption-side: top; text-align: left; font-weight: 700; font-size: 23px; padding: 0 0 4px; }
+.reveal table.ft.compact { font-size: 23px; }
+.reveal table.ft.compact th { font-size: 18.5px; }
+.reveal table.ft.compact td { height: 42px; padding: 3px 4px; }
+
+/* 눌러서 여는 칸: 닫혀 있으면 비어 보인다(판서 가능). 크기는 그대로 유지한다. */
+.reveal .tap { background: var(--tap); cursor: pointer; user-select: none; -webkit-user-select: none; }
+.reveal .tap > .a { visibility: hidden; opacity: 0; transition: opacity .25s; }
+.reveal .tap.open { background: transparent; }
+.reveal .tap.open > .a { visibility: visible; opacity: 1; }
+.reveal .tap.open > .a.pull { color: var(--pull); }
+.reveal span.tap { display: inline-block; min-width: 4.2em; padding: 0 .3em; border-bottom: 2px solid var(--ink); text-align: center; }
+
+/* 단계적으로 나타나는 수식·설명 */
+.reveal .eq { font-size: 26px; margin: 6px 0 10px; }
+.reveal .step { margin: 0 0 8px; }
+
+/* SVG 조각 움직임 (reveal.js fragment의 custom 형식) */
+.reveal svg .fragment.custom { transition: opacity .35s ease; }
+.reveal svg .fx-fade { opacity: 0; }
+.reveal svg .fx-fade.visible { opacity: 1; }
+.reveal svg .fx-out.visible { opacity: 0; }
+/* 화살표 그리기: 선이 자라고 끝에 화살촉이 붙는다 */
+.reveal svg .fx-draw .ln { stroke-dasharray: var(--len) 9999; stroke-dashoffset: var(--len); transition: stroke-dashoffset .7s ease-out; }
+.reveal svg .fx-draw .hd { opacity: 0; transition: opacity .2s ease .6s; }
+.reveal svg .fx-draw .lb { opacity: 0; transition: opacity .3s ease .6s; }
+.reveal svg .fx-draw.visible .ln { stroke-dashoffset: 0; }
+.reveal svg .fx-draw.visible .hd, .reveal svg .fx-draw.visible .lb { opacity: 1; }
+/* 화살표 옮기기: 복사본이 나타나 목표 위치로 미끄러진다(필요하면 뒤집힌다) */
+.reveal svg .fx-move { opacity: 0; transform-box: fill-box; transform-origin: center;
+  transition: opacity .2s ease, transform 1.1s ease-in-out .1s; }
+.reveal svg .fx-move.visible { opacity: 1; transform: translate(var(--tx), var(--ty)) rotate(var(--rot, 0deg)); }
+/* 출발점으로 돌아옴을 알리는 고리 */
+.reveal svg .fx-ring { opacity: 0; transform-box: fill-box; transform-origin: center; transform: scale(.4);
+  transition: opacity .3s ease 1.1s, transform .5s ease 1.1s; }
+.reveal svg .fx-ring.visible { opacity: 1; transform: scale(1); }
+
+/* 한 점을 축으로 돌리기(--ox, --oy는 그림 좌표): 줄을 다른 고리로 옮기거나 화살표를 뒤집을 때 */
+.reveal svg .fx-rot { transform-box: view-box; transform-origin: var(--ox) var(--oy); transition: transform 1.2s ease-in-out; }
+.reveal svg .fx-rot.visible { transform: rotate(var(--rot)); }
+
+/* 화면 도구 (태블릿 조작용, 화면에는 옅게) */
+#tools { position: fixed; top: 8px; right: 10px; z-index: 40; display: flex; gap: 6px; opacity: .3; transition: opacity .2s; }
+#tools:hover, #tools:focus-within { opacity: 1; }
+#tools button { font: 600 13px/1 var(--font); color: #333; background: #fff; border: 1px solid #bbb; border-radius: 6px; padding: 7px 9px; cursor: pointer; }
+#tools button:active { background: #eee; }
+
+/* reveal.js 기본 요소 */
+.reveal .controls { color: #888; }
+.reveal .progress { color: #999; height: 4px; }
+.reveal .slide-number { background: transparent; color: #999; font: 14px var(--font); }
+
+@media print { #tools { display: none; } }
+
+/* 검토용 삽입(iframe) 화면: 도구 숨김 */
+html.embed #tools { display: none; }
+
+/* 짧은 요점 목록 */
+.reveal ul.pts { margin: 0 0 10px; padding-left: 1.1em; font-size: 26px; line-height: 1.45; }
+.reveal ul.pts li { margin: 0 0 2px; }
+.reveal ul.pts li::marker { color: var(--accent); }
+
+/* 삽화 안의 움직임(js/warp.js): WebGL이 되면 같은 크기의 캔버스를 그림 위에 겹친다 */
+.reveal .warpbox { position: relative; width: fit-content; margin: 0 auto; }
+.reveal .warpbox > img { display: block; }
+.reveal .warpbox > canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: none; }
+.reveal .warpbox.live > canvas { display: block; }
+
+/* 진행 순서 띠(① → ② → ③) */
+.reveal .flow { display: flex; gap: 10px; font-size: 22px; font-weight: 700; }
+.reveal .flow > span { flex: 1; background: var(--box); border: 2px solid var(--box-line); border-radius: 8px; padding: 8px 10px; text-align: center; position: relative; }
+.reveal .flow > span + span::before { content: '→'; position: absolute; left: -12px; top: 50%; transform: translate(-50%, -50%); color: var(--accent-text); }
+.reveal .flow > span.now { background: var(--hl); }
+/* 웹앱 주소·QR 자리 */
+.reveal .qr { border: 2px dashed var(--cell-line); border-radius: 10px; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; font-weight: 700; color: var(--sub); padding: 10px; }
+.reveal .flow > span em { font-style: normal; font-weight: 600; margin-left: .35em; color: var(--sub); }
+.reveal .flow.mini { font-size: 18px; gap: 8px; margin: 0 0 12px; }
+.reveal .flow.mini > span { padding: 4px 6px; border-width: 1.5px; }
+.reveal .flow.mini > span + span::before { left: -8px; }
+/* 체크리스트(학습지의 ☐ 조건) */
+.reveal ul.check { list-style: none; padding: 0; margin: 0; font-size: 26px; line-height: 1.4; }
+.reveal ul.check li { position: relative; padding: 6px 0 6px 40px; border-bottom: 1px solid var(--frame); }
+.reveal ul.check li::before { content: ''; position: absolute; left: 4px; top: 11px; width: 22px; height: 22px; border: 2.5px solid var(--ink); border-radius: 3px; }
+/* 교사가 사전 제작 후 채울 자리 */
+.reveal .tbd { display: inline-block; min-width: 7em; border-bottom: 2px dashed var(--cell-line); color: var(--sub); font-size: .9em; padding: 0 .3em; }
+/* 표 안의 그림 */
+.reveal table.ft td.img { padding: 3px; }
+.reveal table.ft td.img img, .reveal table.ft td.img svg { display: block; margin: 0 auto; max-height: 92px; max-width: 100%; }
+.reveal table.ft td.left { text-align: left; }
+
+/* 타이머(js/session.js): 화면 왼쪽 아래. 눌러서 시작·멈춤 */
+#timer { position: fixed; left: 1.2vw; bottom: 1.6vh; z-index: 45; display: none; align-items: center; gap: .6vh;
+  font-family: var(--font); background: #fff; border: 2px solid var(--box-line, #1d3b63); border-radius: 1.2vh; padding: .5vh 1vh .5vh 1.4vh;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, .12); cursor: pointer; user-select: none; -webkit-user-select: none; }
+#timer.show { display: flex; }
+#timer .lab { font-size: 2.2vh; font-weight: 700; color: var(--sub, #333); margin-right: .4vh; }
+#timer .t { font-size: 5.4vh; font-weight: 800; font-variant-numeric: tabular-nums; color: var(--ink, #111); min-width: 3.2em; text-align: center; line-height: 1.1; }
+#timer:not(.run):not(.done) .t { color: var(--sub, #333); }
+#timer.run { border-color: var(--sum, #0b7552); }
+#timer.done .t { color: var(--push, #c4321f); animation: flash 1s steps(2) infinite; }
+#timer .rs { font: 700 2.6vh/1 var(--font); border: 1px solid #bbb; background: #fff; border-radius: .8vh; padding: .6vh .8vh; cursor: pointer; color: #333; }

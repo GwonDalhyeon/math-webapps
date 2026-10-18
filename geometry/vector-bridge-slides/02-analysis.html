@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="ko" data-theme="blueprint">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="robots" content="noindex, nofollow">
+<title>2차시 해석·예측·실험</title>
+<link rel="icon" href="../../favicon.ico" sizes="16x16 32x32 48x48">
+<link rel="icon" href="../../assets/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="../../assets/apple-touch-icon.png">
+<link rel="stylesheet" href="lib/reveal/reset.css">
+<link rel="stylesheet" href="lib/reveal/reveal.css">
+<link rel="stylesheet" href="lib/katex/katex.min.css">
+<link rel="stylesheet" href="lib/pretendard/pretendardvariable-dynamic-subset.css">
+<link rel="stylesheet" href="css/deck.css?v=20261018review2">
+<style>
+.reveal .session-flow { position: absolute; left: 0; right: 0; bottom: 96px; }
+.reveal .session-flow.flow.mini { font-size: 19px; }
+.reveal .session-flow.flow > span em { display: block; margin: 0; }
+.reveal .session-list { margin: 0; padding-left: 1.15em; font-size: 27px; line-height: 1.55; }
+.reveal .session-list li { margin-bottom: 15px; }
+.reveal .session-list li::marker { color: var(--accent-text); font-weight: 700; }
+.reveal .changes { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-top: 36px; }
+.reveal .changes figure { margin: 0; background: var(--box); border: 1.5px solid var(--cell-line); border-radius: 10px; padding: 12px 6px; }
+.reveal .changes img { display: block; width: 100%; height: 260px; object-fit: contain; margin: 0 auto; }
+.reveal .changes figcaption { font-size: 23px; text-align: center; font-weight: 700; margin-top: 12px; line-height: 1.4; }
+.reveal .session-blank { font-size: 26px; line-height: 1.6; }
+.reveal .session-blank p { border-bottom: 1px solid var(--cell-line); padding: 4px 0 10px; }
+.reveal .record-fields { display: grid; grid-template-columns: 1fr 1.45fr 1.6fr 1.5fr; gap: 10px; margin: 28px 0; }
+.reveal .record-fields div { background: var(--box); border: 2px solid var(--box-line); border-radius: 8px; padding: 16px 8px; text-align: center; font-size: 26px; font-weight: 700; }
+</style>
+</head>
+<body>
+<div id="tools" aria-label="화면 도구">
+  <button data-act="open" title="이 화면의 칸을 모두 연다">칸 열기</button>
+  <button data-act="close" title="이 화면의 칸을 모두 닫는다">칸 닫기</button>
+  <button data-act="pause" title="화면을 검게 한다(B 키). 화면을 누르면 돌아온다">화면 끄기</button>
+  <button data-act="full" title="전체 화면">전체</button>
+</div>
+<div class="reveal"><div class="slides">
+
+<section id="session-flow">
+  <p class="crumb">2차시 · 벡터를 활용한 구조물 설계와 힘의 해석</p>
+  <h2>오늘은 해석하고, 예측하고, 관찰한다</h2>
+  <ol class="session-list">
+    <li><b>해석지</b> · 15분<br><span class="small">모든 학생에게 해석 시간 최소 10분 보장</span></li>
+    <li><b>예측·실험지 1번</b> · 5분</li>
+    <li><b>하중 실험 · 2번</b> · 20분</li>
+    <li><b>기록 정리</b> · 5분 + 여유 5분</li>
+  </ol>
+  <p class="small" style="margin-top:18px">왼쪽 아래 시간 숫자를 눌러 시작·멈춤. ↺는 다시 맞춤.</p>
+  <div class="flow mini session-flow" data-now=""></div>
+  <aside class="notes">근거: 작업명세서 §6.2, v0.5 02-1·02-2 교사용 운영 안내. 1차시 V1 그림을 재배부한다. 해석지는 모든 학생에게 최소 10분을 보장한다.</aside>
+</section>
+
+<section id="analysis-start" data-timer="15" data-timer-label="해석">
+  <p class="crumb">2차시 · 해석지</p>
+  <h2>이음점 하나를 골라 시작한다</h2>
+  <ol class="session-list">
+    <li>승인된 V1에서 <b>이음점 하나</b>를 고른다.</li>
+    <li>웹앱이 준 값을 <b>고치지 않고 그대로</b> 옮겨 적는다.</li>
+    <li>그 이음점에 대해 해석지 1번을 각자 작성한다.</li>
+  </ol>
+  <div class="rule" style="margin-top:26px">해석 요청은 한 사람당 2회<br><span class="small">하나는 해석지에, 다른 하나는 예측 근거 등에 사용</span></div>
+  <p class="small">웹앱 접속 · 교사 안내: ______</p>
+  <div class="flow mini session-flow" data-now="0"></div>
+  <aside class="notes">입력: v0.5 02-1 해석지 학생용·교사용 운영 안내. 교사 패널에서 해석 단계를 연다. 해석지를 받으면 구조를 고정하며, 고치면 다시 입력·승인을 받는다. 15분 타이머는 눌러 시작한다.</aside>
+</section>
+
+<section id="analysis-individual">
+  <p class="crumb">2차시 · 해석지</p>
+  <h2>웹앱 출력과 나의 판단을 구분한다</h2>
+  <div class="rule">‘웹앱이 준 해석’ 칸 → 출력 그대로<br>해석지 1번 → <b>나의 그림·계산·판단</b></div>
+  <p style="margin-top:24px">웹앱이 준 막대의 힘 가운데 하나에는 오류가 있다.<br>하중과 받침이 주는 힘은 맞는 값이다.</p>
+  <p style="margin-top:24px">선택한 이음점에 대해 학습지의 순서대로 작성한다.</p>
+  <p class="small">해석지는 예측·실험지와 함께 수업 끝에 제출한다.</p>
+  <div class="flow mini session-flow" data-now="0"></div>
+  <aside class="notes">입력: v0.5 02-1 학생용의 공개 발문과 교사용 운영 안내. 학생이 선택한 이음점 하나만 다룬다. 이 화면으로 넘겨도 진행 중인 해석 타이머는 유지된다.</aside>
+</section>
+
+<section id="prediction-start" data-timer="5" data-timer-label="예측">
+  <p class="crumb">2차시 · 예측·실험지 1번</p>
+  <h2>하중을 가하기 전에 예측부터 쓴다</h2>
+  <ol class="session-list">
+    <li>먼저 변할 것으로 예상하는 <b>곳 한 곳</b>을 쓴다.<br><span class="small">이음점이나 막대의 이름 + 예상하는 변화 모습</span></li>
+    <li><b>힘의 방향·크기 또는 크기 차이</b>로 이유를 쓴다.<br><span class="small">해석지에서 바로잡은 결과 또는 두 번째 이음점 해석 사용</span></li>
+    <li><b>교사 확인 뒤</b> 하중 실험을 시작한다.</li>
+  </ol>
+  <div class="promise" style="margin-top:22px">실험 뒤에는 예측을 고쳐 쓰지 않는다.</div>
+  <div class="flow mini session-flow" data-now="1"></div>
+  <aside class="notes">입력: v0.5 02-2 학생용 1번·교사용 운영 안내. 예측 원본은 실험 전 교사가 확인·보존한다. 촬영 또는 수거 후 재배부는 교사가 운영한다.</aside>
+</section>
+
+<section id="change-vocabulary">
+  <p class="crumb">2차시 · 예측과 관찰에 쓰는 말</p>
+  <h2>변화 모습은 이렇게 구분하여 쓴다</h2>
+  <div class="changes">
+    <figure><img src="img/c2_change_1_color.jpg" alt="막대가 휜 모습"><figcaption>막대가<br>휨</figcaption></figure>
+    <figure><img src="img/c2_change_2_color.jpg" alt="이음점이 벌어진 모습"><figcaption>이음점이<br>벌어짐</figcaption></figure>
+    <figure><img src="img/c2_change_3_color.jpg" alt="연결이 빠진 모습"><figcaption>연결이<br>빠짐</figcaption></figure>
+    <figure><img src="img/c2_change_4_color.jpg" alt="막대가 꺾인 모습"><figcaption>막대가<br>꺾임</figcaption></figure>
+    <figure><img src="img/c2_change_5_color.jpg" alt="막대가 끊어진 모습"><figcaption>막대가<br>끊어짐</figcaption></figure>
+  </div>
+  <p class="cap">예측과 관찰 기록에서 같은 말로 변화 모습을 표현한다.</p>
+  <div class="flow mini session-flow" data-now="1"></div>
+  <aside class="notes">입력: v0.5 02-2 학생용의 변화 모습 다섯 가지. 원본과 같은 순서의 수채화 그림을 사용한다. 이 그림은 변화 모습의 명칭 안내이다.</aside>
+</section>
+
+<section id="experiment-conditions">
+  <p class="crumb">2차시 · 하중 실험 준비</p>
+  <h2>실험 조건과 안전 안내를 먼저 확인한다</h2>
+  <div class="session-blank">
+    <p>하중 도구 · 교사 안내: ______</p>
+    <p>하중 증가 단위 · 교사 안내: ______</p>
+    <p>힘 환산값 · 교사 안내: ______</p>
+    <p>안전 수칙 · 교사 안내: ______</p>
+    <p>중단 기준 · 교사 안내: ______</p>
+  </div>
+  <div class="promise">예측 확인과 실험 안내가 끝난 뒤 시작한다.</div>
+  <div class="flow mini session-flow" data-now="2"></div>
+  <aside class="notes">입력: 작업명세서 §6.2와 v0.5 02-2 교사용 운영 안내. 도구·증가 단위·안전 수칙·중단 기준은 교사가 사전 실험 후 확정하여 안내한다. 미확정 수치를 채우지 않았다.</aside>
+</section>
+
+<section id="experiment-start" data-timer="20" data-timer-label="하중 실험">
+  <p class="crumb">2차시 · 예측·실험지 2번</p>
+  <h2>한 단계씩 관찰하며 기록한다</h2>
+  <ol class="session-list">
+    <li>교사가 안내한 조건으로 하중을 가한다.</li>
+    <li>각 단계의 <b>판 위 전체 하중</b>을 확인한다.</li>
+    <li>변화가 나타난 <b>위치와 모습</b>을 관찰·기록한다.</li>
+    <li>정해진 증가 단위로 반복하고,<br>중단 기준에 따라 멈춘다.</li>
+  </ol>
+  <p class="small" style="margin-top:18px">질량을 읽었다면 교사가 안내한 힘 환산값($\mathrm{N}$)을 쓴다.</p>
+  <div class="flow mini session-flow" data-now="2"></div>
+  <aside class="notes">입력: v0.5 02-2 학생용 2번·교사용 운영 안내. 실험 전 예측 보존과 조건 안내를 마친다. 실험 타이머는 이 화면에서 눌러 시작한다.</aside>
+</section>
+
+<section id="observation-record">
+  <p class="crumb">2차시 · 실험 관찰 기록</p>
+  <h2>단계·하중·위치·모습을 구분한다</h2>
+  <div class="record-fields"><div>단계</div><div>판 위<br>전체 하중</div><div>위치<br><span class="small">이음점·막대</span></div><div>변화 모습</div></div>
+  <ul class="session-list">
+    <li><b>변화가 없는 단계도</b> 기록한다.</li>
+    <li>하중값은 모둠 공통 기록을 써도 된다.<br><b>위치와 모습은 각자</b> 기록한다.</li>
+    <li>처음 뚜렷한 변화의 단계·위치·모습을 쓴다.</li>
+  </ul>
+  <p class="small">끝까지 변화가 없다면 관찰한 하중 범위와 멈춘 이유를 쓴다.</p>
+  <div class="flow mini session-flow" data-now="2"></div>
+  <aside class="notes">입력: v0.5 02-2 학생용 2번 및 교사용 운영 안내. 기록 구분만 안내하며 관찰 결과의 예시는 제시하지 않는다. 진행 중인 하중 실험 타이머는 유지된다.</aside>
+</section>
+
+<section id="submit" data-timer="5" data-timer-label="기록 정리">
+  <p class="crumb">2차시 · 기록 정리와 제출</p>
+  <h2>각자 기록을 마무리하여 제출한다</h2>
+  <ul class="check">
+    <li>해석지: 웹앱 출력과 나의 해석 기록 확인</li>
+    <li>예측·실험지: 실험 전 예측 원본 유지</li>
+    <li>실험 기록: 단계별 하중·위치·모습 확인</li>
+    <li>3번: 해석 준비와 실험에서 직접 한 일 작성</li>
+    <li>확인이 필요했던 일과 처리 방법 작성<br><span class="small">그런 일이 없었다면 확인한 절차 작성</span></li>
+  </ul>
+  <div class="promise" style="margin-top:22px"><b>해석지 + 예측·실험지</b>를 함께 제출한다.</div>
+  <p class="small" style="margin-top:12px">기록 정리 5분 · 여유 5분은 교사 안내에 따라 사용한다.</p>
+  <div class="flow mini session-flow" data-now="3"></div>
+  <aside class="notes">입력: v0.5 02-1·02-2 교사용 수거 메모, 02-2 학생용 3번. 해석지·예측 원본·실험 기록을 확보하여 3차시에 재배부한다. 여유 시간은 전체 일정에 따라 운영한다.</aside>
+</section>
+
+</div></div>
+<script src="lib/reveal/reveal.js"></script>
+<script src="lib/katex/katex.min.js"></script>
+<script src="lib/katex/auto-render.min.js"></script>
+<script src="js/figs.js?v=20261018review1"></script>
+<script src="js/comic.js?v=20261018j"></script>
+<script src="js/warp.js?v=20261018j"></script>
+<script src="js/deck.js?v=20261018j"></script>
+<script>const FLOW = [['해석',15],['예측',5],['하중 실험',20],['기록 정리',5],['여유',5]];</script>
+<script src="js/session.js?v=20261018review1"></script>
+</body>
+</html>

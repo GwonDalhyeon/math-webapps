@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="ko" data-theme="blueprint">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="robots" content="noindex, nofollow">
+<title>3차시 해석 검증과 구조 개선</title>
+<link rel="icon" href="../../favicon.ico" sizes="16x16 32x32 48x48">
+<link rel="icon" href="../../assets/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="../../assets/apple-touch-icon.png">
+<link rel="stylesheet" href="lib/reveal/reset.css">
+<link rel="stylesheet" href="lib/reveal/reveal.css">
+<link rel="stylesheet" href="lib/katex/katex.min.css">
+<link rel="stylesheet" href="lib/pretendard/pretendardvariable-dynamic-subset.css">
+<link rel="stylesheet" href="css/deck.css?v=20261018review2">
+<style>
+.reveal .session-content { margin-top: 28px; }
+.reveal .session-list { margin: 0; padding-left: 1.25em; line-height: 1.6; }
+.reveal .session-list li { margin-bottom: 13px; }
+.reveal .session-footer { position: absolute; left: 0; right: 0; bottom: 84px; }
+.reveal .session-footer.flow { font-size: 22px; gap: 10px; }
+.reveal .session-footer.flow > span { padding: 8px 4px; }
+.reveal .session-footer.flow em { display: block; margin: 0; }
+.reveal .session-note { margin-top: 24px; }
+.reveal .session-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin: 24px 0; }
+.reveal .session-pair .promise { min-height: 140px; }
+</style>
+</head>
+<body>
+<div id="tools" aria-label="화면 도구">
+  <button data-act="open" title="이 화면의 칸을 모두 연다">칸 열기</button>
+  <button data-act="close" title="이 화면의 칸을 모두 닫는다">칸 닫기</button>
+  <button data-act="pause" title="화면을 검게 한다(B 키). 화면을 누르면 돌아온다">화면 끄기</button>
+  <button data-act="full" title="전체 화면">전체</button>
+</div>
+<div class="reveal"><div class="slides">
+
+<section id="flow">
+  <p class="crumb">3차시 · 해석 검증과 구조 개선</p>
+  <h2>오늘은 각자 검증하고 개선한다</h2>
+  <div class="session-content">
+    <p class="rule"><b>추측을 먼저 남기고</b>, 검증한 결과와 비교한다.</p>
+    <ul class="session-list">
+      <li>준비: 2차시 해석지·예측·실험지, 1차시 V1 그림</li>
+      <li>검증 과제도, 개선 도면도 <b>각자</b> 작성한다.</li>
+      <li>수업이 끝날 때 3차시 학습지를 제출한다.</li>
+    </ul>
+    <p class="small session-note">왼쪽 아래 시간 숫자를 눌러 시작·멈춤. ↺는 다시 맞춤.</p>
+  </div>
+  <div class="flow session-footer" data-now=""></div>
+  <aside class="notes">근거: 03_검증개선_교사용.md v0.5 운영 안내. 이전 학습지와 V1 그림을 재배부한다. 작업명세서 §6.3의 50분 흐름을 적용한다.</aside>
+</section>
+
+<section id="guess" data-timer="5" data-timer-label="추측">
+  <p class="crumb">3차시 · 1번 (1)</p>
+  <h2>웹앱을 쓰기 전에, 나의 추측 쓰기</h2>
+  <div class="session-content">
+    <p class="rule"><b>지금은 웹앱을 쓰지 않는다.</b></p>
+    <ul class="session-list">
+      <li>2차시 기록을 보고 고른 곳과 관찰한 변화를 적는다.</li>
+      <li>검증할 이음점을 정하고, (1)의 물음에 답한다.</li>
+      <li>추측을 다 쓰면 교사에게 확인받는다.</li>
+    </ul>
+    <p class="small session-note">실험에서 변화가 없었다면, 가장 큰 힘을 받을 것으로 예상한 막대를 고른다.</p>
+  </div>
+  <div class="flow session-footer" data-now="0"></div>
+  <aside class="notes">근거: 학생용 1번 (1), 교사용 운영 안내. 교사가 (1)을 썼는지 확인한 뒤 웹앱 검증 단계를 연다. 일괄 개방이 어려우면 개별 확인 표시 뒤 과제를 받게 한다.</aside>
+</section>
+
+<section id="task" data-timer="5" data-timer-label="검증 과제">
+  <p class="crumb">3차시 · 나의 검증 과제</p>
+  <h2>받은 과제를 그대로 남기기</h2>
+  <div class="session-content">
+    <p class="rule">교사 확인 뒤, 웹앱의 <b>검증 단계</b>에서 과제를 받는다.</p>
+    <ul class="session-list">
+      <li>(1)에서 정한 검증할 이음점으로 과제를 받는다.</li>
+      <li>인쇄한 과제를 붙이거나, 화면을 그대로 옮겨 적는다.</li>
+      <li><b>과제 번호</b>·이음점·그림·제시된 힘을 빠짐없이 기록한다.</li>
+    </ul>
+    <p class="small session-note">웹앱 접속: 교사가 안내하는 주소를 사용한다.</p>
+  </div>
+  <div class="flow session-footer" data-now="1"></div>
+  <aside class="notes">근거: 학생용 나의 검증 과제 칸, 교사용 운영 안내. 웹앱 주소는 미확정이므로 링크를 만들지 않았다. 개인별 인쇄가 불가능하면 동일 칸에 옮겨 적게 한다.</aside>
+</section>
+
+<section id="task-check">
+  <p class="crumb">3차시 · 검증 과제 받기 계속</p>
+  <h2>이음점을 바꾸게 되었다면</h2>
+  <div class="session-content">
+    <ul class="session-list">
+      <li>웹앱이 막는 이음점이면 교사에게 알린다.</li>
+      <li>바뀐 이음점도 (1)의 표에 함께 적는다.</li>
+      <li><b>(1)에 쓴 추측은 고쳐 쓰지 않는다.</b></li>
+      <li>과제를 두 번 받았다면, 답할 과제의 번호를 적는다.</li>
+    </ul>
+    <p class="rule session-note">「나의 검증 과제」 칸의 웹앱 값은 <b>고치지 않고</b> 남긴다.</p>
+  </div>
+  <div class="flow session-footer" data-now="1"></div>
+  <aside class="notes">근거: 교사용 운영 안내의 이음점 변경·과제 번호 기록·추측 보존 규칙. 이 화면에는 별도 타이머를 두지 않아 앞 화면의 검증 과제 시간이 이어진다.</aside>
+</section>
+
+<section id="verify" data-timer="15" data-timer-label="검증·비교">
+  <p class="crumb">3차시 · 1번 (2)~(5)</p>
+  <h2>검증하고, 바로잡고, 추측과 비교하기</h2>
+  <div class="session-content">
+    <p>학습지 <b>1번 (2)~(5)</b>를 각자 작성한다.</p>
+    <div class="session-pair">
+      <div class="promise"><h3>(2)~(4)</h3><p>학습지의 물음에 따라<br>과제를 검증한다.</p></div>
+      <div class="promise"><h3>(5)</h3><p>처음 쓴 추측과<br>확인한 해석을 비교한다.</p></div>
+    </div>
+    <p class="rule">받침이 주는 힘과 하중은 <b>맞는 값</b>이므로 바꾸지 않는다.</p>
+    <p class="small session-note">1번 작성을 마치면 교사에게 확인받는다.</p>
+  </div>
+  <div class="flow session-footer" data-now="2"></div>
+  <aside class="notes">근거: 학생용 1번 (2)~(5) 및 맞는 값 조건, 교사용 운영 안내. 1번을 쓴 뒤 교사가 개선 단계를 연다. 과제의 답·풀이·수정 예시는 제공하지 않는다.</aside>
+</section>
+
+<section id="improve" data-timer="15" data-timer-label="개선 도면">
+  <p class="crumb">3차시 · 2번 (1)</p>
+  <h2>개선할 한 곳을 정해 V2 그리기</h2>
+  <div class="session-content">
+    <ul class="session-list">
+      <li>확인한 해석과 2차시 실험 기록을 근거로 정한다.</li>
+      <li>V1과 V2를 나란히 그리고, 바꾼 위치와 방법을 표시한다.</li>
+      <li>그곳을 바꾸는 이유를 쓴다.</li>
+    </ul>
+    <p class="rule"><b>V2의 칸도</b> 정삼각형·직각이등변삼각형·정사각형으로만 그린다.</p>
+    <p class="small session-note">각자의 도면으로 제안한다. 실물 수정은 필수가 아니며, 개선 후 재실험은 하지 않는다.</p>
+  </div>
+  <div class="flow session-footer" data-now="3"></div>
+  <aside class="notes">근거: 학생용 2번 (1)의 도면·근거·칸 모양 규칙, 교사용 운영 안내의 개별 도면과 재실험 없음. 개선 방법의 예시는 화면과 노트에 넣지 않는다.</aside>
+</section>
+
+<section id="v2" data-timer="10" data-timer-label="V2 해석">
+  <p class="crumb">3차시 · 2번 (2)</p>
+  <h2>V2를 해석하고 예상 효과 쓰기</h2>
+  <div class="session-content">
+    <p class="rule">교사가 연 <b>개선 단계</b>에서 V2를 입력한다.</p>
+    <ul class="session-list">
+      <li>개선한 곳과 관련된 이음점 하나를 해석하여 표를 채운다.</li>
+      <li>V1과 힘의 방향·크기를 비교하고, 예상 효과를 쓴다.</li>
+      <li><b>실험으로 확인한 사실</b>과 <b>아직 확인하지 않은 예상</b>을 구분한다.</li>
+    </ul>
+    <p class="small session-note">웹앱은 입력한 V2를 해석한다. 개선안은 각자 제안한다.</p>
+  </div>
+  <div class="flow session-footer" data-now="4"></div>
+  <aside class="notes">근거: 학생용 2번 (2), 교사용 운영 안내의 개선 단계. 비교할 V1 값은 해석지와 1번에서 확인한 값을 사용한다. 관련 V1 값이 없거나 웹앱 범위 밖인 경우의 운영은 교사가 원문 기준으로 안내한다.</aside>
+</section>
+
+<section id="submit">
+  <p class="crumb">3차시 · 제출</p>
+  <h2>기록을 확인하고 제출하기</h2>
+  <div class="session-content">
+    <ul class="session-list">
+      <li>처음 쓴 추측과, 답한 검증 과제 번호가 남아 있는가?</li>
+      <li>검증 기록과 추측을 비교한 내용이 있는가?</li>
+      <li>V1·V2 도면에 바뀐 곳과 이유가 드러나는가?</li>
+      <li>확인한 사실과 아직 확인하지 않은 예상을 구분했는가?</li>
+    </ul>
+    <p class="rule session-note"><b>3차시 학습지를 제출한다.</b></p>
+  </div>
+  <div class="flow session-footer" data-now="4"></div>
+  <aside class="notes">근거: 학생용 1·2번 기록 항목, 교사용 운영 안내의 수업 종료 시 제출. 추가 제출물이나 별도 수행 조건을 만들지 않는다.</aside>
+</section>
+
+</div></div>
+<script src="lib/reveal/reveal.js"></script>
+<script src="lib/katex/katex.min.js"></script>
+<script src="lib/katex/auto-render.min.js"></script>
+<script src="js/figs.js?v=20261018review1"></script>
+<script src="js/comic.js?v=20261018j"></script>
+<script src="js/warp.js?v=20261018j"></script>
+<script src="js/deck.js?v=20261018j"></script>
+<script>const FLOW = [['추측',5],['검증 과제',5],['검증·비교',15],['개선 도면',15],['V2 해석',10]];</script>
+<script src="js/session.js?v=20261018review1"></script>
+</body>
+</html>
