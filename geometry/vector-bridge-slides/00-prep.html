@@ -13,7 +13,7 @@
 <link rel="stylesheet" href="lib/reveal/reveal.css">
 <link rel="stylesheet" href="lib/katex/katex.min.css">
 <link rel="stylesheet" href="lib/pretendard/pretendardvariable-dynamic-subset.css">
-<link rel="stylesheet" href="css/deck.css?v=20261018review2">
+<link rel="stylesheet" href="css/deck.css?v=20261019v08">
 </head>
 <body>
 <div id="tools" aria-label="화면 도구">
@@ -103,11 +103,11 @@
       <p class="step fragment small" data-fragment-index="2" style="color:#111">합이 $\vec{0}$이 아니면 그 점은 <b>합의 방향으로 움직이려 한다.</b></p>
       <p class="step fragment" data-fragment-index="3">$\vec{F}_3=(-3,\,-4)$도 받는다면?</p>
       <p class="step eq fragment" data-fragment-index="4">$\vec{F}_1+\vec{F}_2+\vec{F}_3=(4-1-3,\ 1+3-4)=$ <span class="sumc">$(0,\,0)=\vec{0}$</span></p>
-      <p class="step fragment small" data-fragment-index="4" style="color:#111">합이 영벡터 $\vec{0}$이면 힘이 서로 비겨 <b>그 점은 움직이지 않는다.</b><br>화살표를 이으면 출발점으로 돌아온다.</p>
+      <p class="step fragment small" data-fragment-index="4" style="color:#111">합이 영벡터 $\vec{0}$이면 힘이 서로 비겨,<br>처음에 정지해 있던 점은 <b>정지 상태를 유지한다.</b><br>화살표를 이으면 출발점으로 돌아온다.</p>
     </div>
     <div class="fig" data-fig="sum"></div>
   </div>
-  <aside class="notes">"가로끼리, 세로끼리"라고 직관을 준 뒤 교과서 용어 "x성분, y성분"으로 정리한다. 이 화면의 수치는 설명용 예이며 학습지에는 없다.</aside>
+  <aside class="notes">"가로끼리, 세로끼리"라고 직관을 준 뒤 교과서 용어 "x성분, y성분"으로 정리한다. 이 화면의 수치는 설명용 예이며 학습지에는 없다. 학습지는 처음에 정지해 있는 점만 다룬다. 이미 움직이던 물체는 합이 영벡터여도 일정한 속도로 움직일 수 있으므로 "합이 0이면 정지한다"로 단정하지 않는다(교사용 정지 조건 보완).</aside>
 </section>
 
 <section id="along">
@@ -166,14 +166,14 @@
       <p class="small" style="margin-bottom:8px">당김 / 누름은 <b>막대</b>가 주는 힘에만 쓴다. 하중·받침은 "—"</p>
       <table class="ft" data-point="O">
         <colgroup><col style="width:12%"><col style="width:27%"><col style="width:24%"><col style="width:13%"><col style="width:24%"></colgroup>
-        <tr><th>힘</th><th>작용하는 것</th><th>벡터</th><th>크기</th><th>막대의<br>당김 / 누름</th></tr>
+        <tr><th>힘</th><th>힘을 주는 것</th><th>벡터</th><th>크기</th><th>막대의<br>당김 / 누름</th></tr>
         <tr><td>$\vec{F}_1$</td><td>막대 $\overline{\mathrm{OL}}$</td><td>$(3,\,4)$</td><td class="tap"><span class="a">$5$</span></td><td class="tap"><span class="a">누름</span></td></tr>
         <tr><td>$\vec{F}_2$</td><td>막대 $\overline{\mathrm{OR}}$</td><td>$(-3,\,4)$</td><td class="tap"><span class="a">$5$</span></td><td class="tap"><span class="a">누름</span></td></tr>
         <tr><td>$\vec{F}_3$</td><td>하중</td><td>$(0,\,-8)$</td><td class="tap"><span class="a">$8$</span></td><td>—</td></tr>
       </table>
       <p class="eq fragment" data-fragment-index="2" style="font-size:26px">$\vec{F}_1+\vec{F}_2+\vec{F}_3=(3-3+0,\ 4+4-8)=$ <span class="sumc">$(0,\,0)=\vec{0}$</span></p>
       <p class="fragment" data-fragment-index="4" style="font-size:26px">화살표를 이으면 출발점 $\mathrm{O}$로 돌아온다.</p>
-      <p class="fragment" data-fragment-index="5" style="font-size:26px">→ 점 $\mathrm{O}$는 움직이지 않는다.<br>$\vec{F}_1$은 막대 $\overline{\mathrm{OL}}$ <b>반대쪽</b>을 향한다 → $\overline{\mathrm{OL}}$은 <b class="push">누름</b> ($\overline{\mathrm{OR}}$도 같다)</p>
+      <p class="fragment" data-fragment-index="5" style="font-size:26px">→ 처음에 정지해 있던 점 $\mathrm{O}$는 정지 상태를 유지한다.<br>$\vec{F}_1$은 막대 $\overline{\mathrm{OL}}$ <b>반대쪽</b>을 향한다 → $\overline{\mathrm{OL}}$은 <b class="push">누름</b> ($\overline{\mathrm{OR}}$도 같다)</p>
     </div>
     <div class="fig" data-fig="ex1sol"></div>
   </div>
@@ -193,21 +193,21 @@
       <table class="ft compact" data-point="L">
         <caption>점 $\mathrm{L}$이 받는 힘</caption>
         <colgroup><col style="width:13%"><col style="width:26%"><col style="width:26%"><col style="width:13%"><col style="width:22%"></colgroup>
-        <tr><th>힘</th><th>작용하는 것</th><th>벡터</th><th>크기</th><th>당김 / 누름</th></tr>
+        <tr><th>힘</th><th>힘을 주는 것</th><th>벡터</th><th>크기</th><th>막대의<br>당김 / 누름</th></tr>
         <tr><td class="tap"><span class="a">$\vec{G}_1$</span></td><td>막대 $\overline{\mathrm{OL}}$</td><td class="tap"><span class="a">$(-3,\,-4)$</span></td><td class="tap"><span class="a">$5$</span></td><td class="tap"><span class="a">누름</span></td></tr>
         <tr><td class="tap"><span class="a">$\vec{G}_2$</span></td><td>받침</td><td class="tap"><span class="a">$(3,\,4)$</span></td><td class="tap"><span class="a">$5$</span></td><td class="tap"><span class="a">—</span></td></tr>
       </table>
       <table class="ft compact" data-point="R">
         <caption>점 $\mathrm{R}$이 받는 힘</caption>
         <colgroup><col style="width:13%"><col style="width:26%"><col style="width:26%"><col style="width:13%"><col style="width:22%"></colgroup>
-        <tr><th>힘</th><th>작용하는 것</th><th>벡터</th><th>크기</th><th>당김 / 누름</th></tr>
+        <tr><th>힘</th><th>힘을 주는 것</th><th>벡터</th><th>크기</th><th>막대의<br>당김 / 누름</th></tr>
         <tr><td class="tap"><span class="a">$\vec{H}_1$</span></td><td>막대 $\overline{\mathrm{OR}}$</td><td class="tap"><span class="a">$(3,\,-4)$</span></td><td class="tap"><span class="a">$5$</span></td><td class="tap"><span class="a">누름</span></td></tr>
         <tr><td class="tap"><span class="a">$\vec{H}_2$</span></td><td>받침</td><td class="tap"><span class="a">$(-3,\,4)$</span></td><td class="tap"><span class="a">$5$</span></td><td class="tap"><span class="a">—</span></td></tr>
       </table>
     </div>
     <div class="fig" data-fig="ex1LR"></div>
   </div>
-  <p style="margin-top:4px">받침의 힘의 $x$성분을 보면, 받침은 다리 끝 $\mathrm{L}$, $\mathrm{R}$을 <span class="tap" data-blank="inward"><span class="a">안쪽</span></span> 쪽으로 붙잡는다.</p>
+  <p style="margin-top:4px">받침이 주는 힘의 $x$성분을 보면, 받침은 두 다리의 끝 $\mathrm{L}$, $\mathrm{R}$을 <span class="tap" data-blank="inward"><span class="a">안쪽</span></span>으로 붙잡아야 한다.</p>
   <aside class="notes">학습지 문장: "한 막대가 양 끝의 두 이음점에 주는 힘은 크기가 같다. 누름을 받는 막대는 양 끝의 이음점을 모두 막대 반대쪽으로 밀고, 당김을 받는 막대는 양 끝의 이음점을 모두 막대 쪽으로 당긴다. 점 L, R은 움직이지 않으므로, 받침은 막대가 미는 힘과 더하여 0이 되는 힘을 주어야 한다." 점 L: 막대가 왼쪽 아래로 크기 5로 민다 → 받침은 −(−3,−4)=(3,4). 점 R은 대칭. 받침의 힘의 x성분이 L에서 +3, R에서 −3이므로 받침은 다리 끝이 벌어지지 않게 안쪽으로 붙잡는다. 받침 행의 당김/누름 칸은 "—".</aside>
 </section>
 
@@ -246,7 +246,7 @@
       <table class="ft compact" data-point="p1A">
         <caption>점 $\mathrm{A}$가 받는 힘</caption>
         <colgroup><col style="width:12%"><col style="width:27%"><col style="width:22%"><col style="width:13%"><col style="width:26%"></colgroup>
-        <tr><th>힘</th><th>작용하는 것</th><th>벡터</th><th>크기</th><th>막대·줄의<br>당김 / 누름</th></tr>
+        <tr><th>힘</th><th>힘을 주는 것</th><th>벡터</th><th>크기</th><th>막대·줄의<br>당김 / 누름</th></tr>
         <tr><td>$\vec{F}_1$</td><td>물체</td><td>$(0,\,-4)$</td><td class="tap"><span class="a">$4$</span></td><td class="tap"><span class="a">—</span></td></tr>
         <tr><td>$\vec{F}_2$</td><td>줄 $\overline{\mathrm{AC}}$</td><td>$(3,\,4)$</td><td class="tap"><span class="a">$5$</span></td><td class="tap"><span class="a">당김</span></td></tr>
         <tr><td>$\vec{F}_3$</td><td>막대 $\overline{\mathrm{AB}}$</td><td class="tap"><span class="a">$(-3,\,0)$</span></td><td class="tap"><span class="a">$3$</span></td><td class="tap"><span class="a">누름</span></td></tr>
@@ -254,7 +254,7 @@
       <table class="ft compact" data-point="p1B">
         <caption>점 $\mathrm{B}$가 받는 힘</caption>
         <colgroup><col style="width:12%"><col style="width:27%"><col style="width:22%"><col style="width:13%"><col style="width:26%"></colgroup>
-        <tr><th>힘</th><th>작용하는 것</th><th>벡터</th><th>크기</th><th>막대·줄의<br>당김 / 누름</th></tr>
+        <tr><th>힘</th><th>힘을 주는 것</th><th>벡터</th><th>크기</th><th>막대·줄의<br>당김 / 누름</th></tr>
         <tr><td>$\vec{G}_1$</td><td>물체</td><td>$(0,\,-4)$</td><td class="tap"><span class="a">$4$</span></td><td class="tap"><span class="a">—</span></td></tr>
         <tr><td>$\vec{G}_2$</td><td>줄 $\overline{\mathrm{BC}}$</td><td>$(-3,\,4)$</td><td class="tap"><span class="a">$5$</span></td><td class="tap"><span class="a">당김</span></td></tr>
         <tr><td>$\vec{G}_3$</td><td>막대 $\overline{\mathrm{AB}}$</td><td class="tap"><span class="a">$(3,\,0)$</span></td><td class="tap"><span class="a">$3$</span></td><td class="tap"><span class="a">누름</span></td></tr>
@@ -304,13 +304,13 @@
     <div>
       <table class="ft compact" data-point="p2P">
         <colgroup><col style="width:12%"><col style="width:27%"><col style="width:22%"><col style="width:13%"><col style="width:26%"></colgroup>
-        <tr><th>힘</th><th>작용하는 것</th><th>벡터</th><th>크기</th><th>막대의<br>당김 / 누름</th></tr>
+        <tr><th>힘</th><th>힘을 주는 것</th><th>벡터</th><th>크기</th><th>막대의<br>당김 / 누름</th></tr>
         <tr><td>$\vec{F}_1$</td><td class="tap"><span class="a">막대 $\overline{\mathrm{PA}}$</span></td><td class="tap"><span class="a">$(-8,\,0)$</span></td><td class="tap"><span class="a">$8$</span></td><td class="tap"><span class="a">당김</span></td></tr>
         <tr><td>$\vec{F}_2$</td><td class="tap"><span class="a">막대 $\overline{\mathrm{PB}}$</span></td><td class="tap"><span class="a">$(8,\,6)$</span></td><td class="tap"><span class="a">$10$</span></td><td class="tap"><span class="a">누름</span></td></tr>
         <tr><td>$\vec{F}_3$</td><td class="tap"><span class="a">하중</span></td><td class="tap"><span class="a">$(0,\,-6)$</span></td><td class="tap"><span class="a">$6$</span></td><td class="tap"><span class="a">—</span></td></tr>
       </table>
       <p class="eq fragment" data-fragment-index="2" style="font-size:26px">$\vec{F}_1+\vec{F}_2+\vec{F}_3=(-8+8+0,\ 0+6-6)=$ <span class="sumc">$\vec{0}$</span></p>
-      <p class="fragment" data-fragment-index="2" style="font-size:26px">→ 점 $\mathrm{P}$는 움직이지 않는다.</p>
+      <p class="fragment" data-fragment-index="2" style="font-size:26px">→ 점 $\mathrm{P}$는 정지 상태를 유지한다.</p>
       <ul class="pts fragment" data-fragment-index="3">
         <li>$\vec{F}_1$은 막대 $\overline{\mathrm{PA}}$ <b>쪽</b>(왼쪽)을 향한다 → <b class="pull">당김</b></li>
         <li>$\vec{F}_2$는 막대 $\overline{\mathrm{PB}}$ <b>반대쪽</b>(오른쪽 위)을 향한다 → <b class="push">누름</b></li>
@@ -330,14 +330,14 @@
       <table class="ft compact" data-point="p2A">
         <caption>점 $\mathrm{A}$가 받는 힘</caption>
         <colgroup><col style="width:12%"><col style="width:27%"><col style="width:22%"><col style="width:13%"><col style="width:26%"></colgroup>
-        <tr><th>힘</th><th>작용하는 것</th><th>벡터</th><th>크기</th><th>막대의<br>당김 / 누름</th></tr>
+        <tr><th>힘</th><th>힘을 주는 것</th><th>벡터</th><th>크기</th><th>막대의<br>당김 / 누름</th></tr>
         <tr><td class="tap"><span class="a">$\vec{G}_1$</span></td><td class="tap"><span class="a">막대 $\overline{\mathrm{PA}}$</span></td><td class="tap"><span class="a">$(8,\,0)$</span></td><td class="tap"><span class="a">$8$</span></td><td class="tap"><span class="a">당김</span></td></tr>
         <tr><td class="tap"><span class="a">$\vec{G}_2$</span></td><td class="tap"><span class="a">벽</span></td><td class="tap"><span class="a">$(-8,\,0)$</span></td><td class="tap"><span class="a">$8$</span></td><td class="tap"><span class="a">—</span></td></tr>
       </table>
       <table class="ft compact" data-point="p2B">
         <caption>점 $\mathrm{B}$가 받는 힘</caption>
         <colgroup><col style="width:12%"><col style="width:27%"><col style="width:22%"><col style="width:13%"><col style="width:26%"></colgroup>
-        <tr><th>힘</th><th>작용하는 것</th><th>벡터</th><th>크기</th><th>막대의<br>당김 / 누름</th></tr>
+        <tr><th>힘</th><th>힘을 주는 것</th><th>벡터</th><th>크기</th><th>막대의<br>당김 / 누름</th></tr>
         <tr><td class="tap"><span class="a">$\vec{H}_1$</span></td><td class="tap"><span class="a">막대 $\overline{\mathrm{PB}}$</span></td><td class="tap"><span class="a">$(-8,\,-6)$</span></td><td class="tap"><span class="a">$10$</span></td><td class="tap"><span class="a">누름</span></td></tr>
         <tr><td class="tap"><span class="a">$\vec{H}_2$</span></td><td class="tap"><span class="a">벽</span></td><td class="tap"><span class="a">$(8,\,6)$</span></td><td class="tap"><span class="a">$10$</span></td><td class="tap"><span class="a">—</span></td></tr>
       </table>
@@ -386,7 +386,7 @@
     </div>
     <div class="fig" data-fig="ex2"></div>
   </div>
-  <aside class="notes">바퀴 받침의 원 두 개는 바퀴로, 옆으로 미끄러질 수 있어 위아래 방향으로만 받친다는 표시이다. 두 받침을 모두 고정 받침으로 두면 밑변의 힘이 하나로 정해지지 않으므로 웹앱도 이 모형을 쓴다. 1차시 옆모습 그림에도 같은 기호가 나온다.</aside>
+  <aside class="notes">바퀴 받침의 원 두 개는 바퀴로, 옆으로 미끄러질 수 있어 위아래 방향으로만 받친다는 표시이다. 두 받침을 모두 고정 받침으로 두면 평형만으로 밑변의 힘이 하나로 정해지지 않으므로 0차시 연습 웹앱도 이 모형을 쓴다. 1~3차시에서 받침 접촉점을 고르는 것과는 구분한다. 1차시 옆모습 그림에도 같은 기호가 나온다.</aside>
 </section>
 
 <section id="ex2-C">
@@ -415,7 +415,7 @@
     <div>
       <table class="ft compact" data-point="ex2A">
         <colgroup><col style="width:12%"><col style="width:27%"><col style="width:24%"><col style="width:14%"><col style="width:23%"></colgroup>
-        <tr><th>힘</th><th>작용하는 것</th><th>벡터</th><th>크기</th><th>막대의<br>당김 / 누름</th></tr>
+        <tr><th>힘</th><th>힘을 주는 것</th><th>벡터</th><th>크기</th><th>막대의<br>당김 / 누름</th></tr>
         <tr><td class="tap"><span class="a">$\vec{G}_1$</span></td><td class="tap"><span class="a">막대 $\overline{\mathrm{AC}}$</span></td><td class="tap"><span class="a">$(-\sqrt{3},\,-3)$</span></td><td class="tap"><span class="a">$2\sqrt{3}$</span></td><td class="tap"><span class="a">누름</span></td></tr>
         <tr><td class="tap"><span class="a">$\vec{G}_2$</span></td><td class="tap"><span class="a">받침</span></td><td class="tap"><span class="a">$(0,\,3)$</span></td><td class="tap"><span class="a">$3$</span></td><td class="tap"><span class="a">—</span></td></tr>
         <tr><td class="tap"><span class="a">$\vec{G}_3$</span></td><td class="tap"><span class="a">막대 $\overline{\mathrm{AB}}$</span></td><td class="tap"><span class="a">$(\sqrt{3},\,0)$</span></td><td class="tap"><span class="a">$\sqrt{3}$</span></td><td class="tap"><span class="a">당김</span></td></tr>
@@ -438,10 +438,10 @@
   <p style="margin-top:14px">예제 2의 구조에서</p>
   <ul class="pts" style="font-size:26px">
     <li>(1) 하중을 $(0,\,-12)$로 두 배로 늘리면, 막대 $\overline{\mathrm{AC}}$가 점 $\mathrm{C}$에 주는 힘은 어떻게 되는가?</li>
-    <li>(2) 꼭대기 $\mathrm{C}$를 낮추어 두 밑각이 $45^\circ$인 직각이등변삼각형으로 바꾸면, 빗변의 누름과 밑변의 당김은 각각 커지는가, 작아지는가?</li>
+    <li>(2) 밑변의 길이와 하중은 그대로 두고 꼭대기 $\mathrm{C}$를 낮추어 두 밑각이 $45^\circ$인 직각이등변삼각형으로 바꾸면, 빗변의 누름과 밑변의 당김은 각각 커지는가, 작아지는가?</li>
   </ul>
   <div class="cols c-60" style="margin-top:10px;align-items:stretch">
-    <div class="rule" style="font-size:26px">모양을 바꿀 때 <b>밑변 4와 하중은 그대로</b> 둔다.<br>결과는 "바꾸기 전 → 바꾼 뒤"로 적는다.</div>
+    <div class="rule" style="font-size:26px">웹앱에서도 <b>밑변 4와 하중은 그대로</b> 둔다.<br>결과는 "바꾸기 전 → 바꾼 뒤"로 적는다.</div>
     <div class="qr">웹앱 주소 · QR<br><span class="small">(웹앱 완성 후 넣음)</span></div>
   </div>
   <aside class="notes">교사 패널에서 "0차시 연습" 단계를 열어 둔다(요청 제한 없음, 오류 꺼짐, 기록 남기지 않음, 당김·누름 표시). 예상은 맞고 틀림을 따지지 않는다. 웹앱 결과를 예상 칸에 옮겨 쓰지 않도록 예상을 먼저 쓰고 확인하게 한다. (1)에서 "하중이 두 배이니 힘은 네 배"처럼 근거 없이 쓰는 경우 y성분의 합으로 다시 생각하게 한다. (2)의 결과는 문제 4에서 손으로 확인한다. 결과와 답은 이 화면에 넣지 않는다.</aside>
@@ -469,7 +469,7 @@
       <table class="ft compact" data-point="p4C">
         <caption>점 $\mathrm{C}$가 받는 힘</caption>
         <colgroup><col style="width:12%"><col style="width:27%"><col style="width:22%"><col style="width:15%"><col style="width:24%"></colgroup>
-        <tr><th>힘</th><th>작용하는 것</th><th>벡터</th><th>크기</th><th>막대의<br>당김 / 누름</th></tr>
+        <tr><th>힘</th><th>힘을 주는 것</th><th>벡터</th><th>크기</th><th>막대의<br>당김 / 누름</th></tr>
         <tr><td class="tap"><span class="a">$\vec{F}_1$</span></td><td class="tap"><span class="a">막대 $\overline{\mathrm{AC}}$</span></td><td class="tap"><span class="a">$(3,\,3)$</span></td><td class="tap"><span class="a">$3\sqrt{2}$</span></td><td class="tap"><span class="a">누름</span></td></tr>
         <tr><td class="tap"><span class="a">$\vec{F}_2$</span></td><td class="tap"><span class="a">막대 $\overline{\mathrm{BC}}$</span></td><td class="tap"><span class="a">$(-3,\,3)$</span></td><td class="tap"><span class="a">$3\sqrt{2}$</span></td><td class="tap"><span class="a">누름</span></td></tr>
         <tr><td class="tap"><span class="a">$\vec{W}$</span></td><td class="tap"><span class="a">하중</span></td><td class="tap"><span class="a">$(0,\,-6)$</span></td><td class="tap"><span class="a">$6$</span></td><td class="tap"><span class="a">—</span></td></tr>
@@ -478,7 +478,7 @@
       <table class="ft compact" data-point="p4A">
         <caption>점 $\mathrm{A}$가 받는 힘</caption>
         <colgroup><col style="width:12%"><col style="width:27%"><col style="width:22%"><col style="width:15%"><col style="width:24%"></colgroup>
-        <tr><th>힘</th><th>작용하는 것</th><th>벡터</th><th>크기</th><th>막대의<br>당김 / 누름</th></tr>
+        <tr><th>힘</th><th>힘을 주는 것</th><th>벡터</th><th>크기</th><th>막대의<br>당김 / 누름</th></tr>
         <tr><td class="tap"><span class="a">$\vec{G}_1$</span></td><td class="tap"><span class="a">막대 $\overline{\mathrm{AC}}$</span></td><td class="tap"><span class="a">$(-3,\,-3)$</span></td><td class="tap"><span class="a">$3\sqrt{2}$</span></td><td class="tap"><span class="a">누름</span></td></tr>
         <tr><td class="tap"><span class="a">$\vec{G}_2$</span></td><td class="tap"><span class="a">받침</span></td><td class="tap"><span class="a">$(0,\,3)$</span></td><td class="tap"><span class="a">$3$</span></td><td class="tap"><span class="a">—</span></td></tr>
         <tr><td class="tap"><span class="a">$\vec{G}_3$</span></td><td class="tap"><span class="a">막대 $\overline{\mathrm{AB}}$</span></td><td class="tap"><span class="a">$(3,\,0)$</span></td><td class="tap"><span class="a">$3$</span></td><td class="tap"><span class="a">당김</span></td></tr>
@@ -540,7 +540,7 @@
 <script src="lib/reveal/reveal.js"></script>
 <script src="lib/katex/katex.min.js"></script>
 <script src="lib/katex/auto-render.min.js"></script>
-<script src="js/figs.js?v=20261018review1"></script>
+<script src="js/figs.js?v=20261019v08"></script>
 <script src="js/comic.js?v=20261018i"></script>
 <script src="js/warp.js?v=20261018i"></script>
 <script src="js/deck.js?v=20261018i"></script>

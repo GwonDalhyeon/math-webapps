@@ -13,7 +13,7 @@
 <link rel="stylesheet" href="lib/reveal/reveal.css">
 <link rel="stylesheet" href="lib/katex/katex.min.css">
 <link rel="stylesheet" href="lib/pretendard/pretendardvariable-dynamic-subset.css">
-<link rel="stylesheet" href="css/deck.css?v=20261018review2">
+<link rel="stylesheet" href="css/deck.css?v=20261019v08">
 <style>
 .reveal .session-flow { position: absolute; left: 0; right: 0; bottom: 96px; }
 .reveal .session-flow.flow.mini { font-size: 19px; }
@@ -21,6 +21,8 @@
 .reveal .session-list { margin: 0; padding-left: 1.15em; font-size: 27px; line-height: 1.55; }
 .reveal .session-list li { margin-bottom: 15px; }
 .reveal .session-list li::marker { color: var(--accent-text); font-weight: 700; }
+.reveal .session-list.steps4 { list-style: none; padding-left: 0; font-size: 25px; margin-bottom: 18px; }
+.reveal .session-list.steps4 li { margin-bottom: 10px; }
 .reveal .changes { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-top: 36px; }
 .reveal .changes figure { margin: 0; background: var(--box); border: 1.5px solid var(--cell-line); border-radius: 10px; padding: 12px 6px; }
 .reveal .changes img { display: block; width: 100%; height: 260px; object-fit: contain; margin: 0 auto; }
@@ -39,7 +41,6 @@
   <button data-act="full" title="전체 화면">전체</button>
 </div>
 <div class="reveal"><div class="slides">
-
 <section id="session-flow">
   <p class="crumb">2차시 · 벡터를 활용한 구조물 설계와 힘의 해석</p>
   <h2>오늘은 해석하고, 예측하고, 관찰한다</h2>
@@ -51,32 +52,36 @@
   </ol>
   <p class="small" style="margin-top:18px">왼쪽 아래 시간 숫자를 눌러 시작·멈춤. ↺는 다시 맞춤.</p>
   <div class="flow mini session-flow" data-now=""></div>
-  <aside class="notes">근거: 작업명세서 §6.2, v0.5 02-1·02-2 교사용 운영 안내. 1차시 V1 그림을 재배부한다. 해석지는 모든 학생에게 최소 10분을 보장한다.</aside>
+  <aside class="notes">근거: v0.8 02-1·02-2 교사용 운영 안내(해석 15분, 예측 5분, 실험 20분, 정리 5분, 여유 5분을 참고하되 오류 수정 시간을 확보한다). 1차시 학습지(V1 그림)를 재배부한다. 해석지는 모든 학생에게 최소 10분을 보장한다.</aside>
 </section>
 
 <section id="analysis-start" data-timer="15" data-timer-label="해석">
-  <p class="crumb">2차시 · 해석지</p>
-  <h2>이음점 하나를 골라 시작한다</h2>
+  <p class="crumb">2차시 · 해석지 1번</p>
+  <h2>V1 구조를 열고 이음점 하나를 고른다</h2>
   <ol class="session-list">
-    <li>승인된 V1에서 <b>이음점 하나</b>를 고른다.</li>
-    <li>웹앱이 준 값을 <b>고치지 않고 그대로</b> 옮겨 적는다.</li>
-    <li>그 이음점에 대해 해석지 1번을 각자 작성한다.</li>
+    <li>웹앱에서 우리 모둠의 <b>V1 구조</b>를 열고 <b>이음점 하나</b>를 선택한다.</li>
+    <li>웹앱이 제시한 힘의 벡터를 <b>고치지 말고 그대로</b> (2)의 표에 옮긴다.</li>
+    <li>고른 이음점 하나로 (1)~(4)를 각자 이어 쓴다.</li>
   </ol>
-  <div class="rule" style="margin-top:26px">해석 요청은 한 사람당 2회<br><span class="small">하나는 해석지에, 다른 하나는 예측 근거 등에 사용</span></div>
+  <div class="rule" style="margin-top:26px">해석 요청은 한 사람당 2회<br><span class="small">첫 번째는 해석지에, 두 번째는 예측 근거에 쓸 수 있다</span></div>
   <p class="small">웹앱 접속 · 교사 안내: ______</p>
   <div class="flow mini session-flow" data-now="0"></div>
-  <aside class="notes">입력: v0.5 02-1 해석지 학생용·교사용 운영 안내. 교사 패널에서 해석 단계를 연다. 해석지를 받으면 구조를 고정하며, 고치면 다시 입력·승인을 받는다. 15분 타이머는 눌러 시작한다.</aside>
+  <aside class="notes">근거: v0.8 02-1 해석지 학생용 1번 머리글, 교사용 운영 안내. 교사 패널에서 해석 단계를 연다(오류 켬, 힘 화살표 끔, 요청 한도 2회). 구조가 확정된 모둠만 요청할 수 있고, 첫 요청 때 구조가 잠긴다. 첫 요청 뒤 구조를 고쳐야 하면 교사가 잠금을 풀고 기존 과제와의 대응을 확인한 뒤 동등 과제를 제공한다. 15분 타이머는 눌러 시작한다.</aside>
 </section>
 
 <section id="analysis-individual">
-  <p class="crumb">2차시 · 해석지</p>
-  <h2>웹앱 출력과 나의 판단을 구분한다</h2>
-  <div class="rule">‘웹앱이 준 해석’ 칸 → 출력 그대로<br>해석지 1번 → <b>나의 그림·계산·판단</b></div>
-  <p style="margin-top:24px">웹앱이 준 막대의 힘 가운데 하나에는 오류가 있다.<br>하중과 받침이 주는 힘은 맞는 값이다.</p>
-  <p style="margin-top:24px">선택한 이음점에 대해 학습지의 순서대로 작성한다.</p>
-  <p class="small">해석지는 예측·실험지와 함께 수업 끝에 제출한다.</p>
+  <p class="crumb">2차시 · 해석지 1번</p>
+  <h2>해석지 1번은 이 순서로 쓴다</h2>
+  <ol class="session-list steps4">
+    <li><b>(1) 이음점과 힘 나타내기</b> · 받는 힘을 모두 화살표로, 이름 $\vec{F}_1,\ \vec{F}_2,\ \cdots$</li>
+    <li><b>(2) 웹앱이 제시한 값 정리하기</b> · 벡터를 고치지 말고 그대로</li>
+    <li><b>(3) 오류 찾아 수정하기</b> · 성분별 합, 수정한 벡터와 수정 근거</li>
+    <li><b>(4) 수정한 힘의 의미 해석하기</b> · 크기와 당김·누름, 가장 큰 힘</li>
+  </ol>
+  <div class="rule"><b>제시된 막대의 힘에는 오류가 포함되어 있다.</b><br>하중과 받침이 주는 힘은 맞는 값이다.</div>
+  <p class="small">힘이 $0$이면 화살표 대신 그 힘의 이름과 $\vec{0}$을 적고, 크기는 $0$, 당김·누름은 “힘 없음”으로 쓴다.</p>
   <div class="flow mini session-flow" data-now="0"></div>
-  <aside class="notes">입력: v0.5 02-1 학생용의 공개 발문과 교사용 운영 안내. 학생이 선택한 이음점 하나만 다룬다. 이 화면으로 넘겨도 진행 중인 해석 타이머는 유지된다.</aside>
+  <aside class="notes">근거: v0.8 02-1 학생용 1번 (1)~(4), 교사용 운영 안내. 오류의 내용은 미리 알려 주지 않는다. 학생이 막대 방향과 평형을 일관되게 만족하는 다른 수정안을 내면 근거를 검토한다. 이 화면으로 넘겨도 진행 중인 해석 타이머는 유지된다.</aside>
 </section>
 
 <section id="prediction-start" data-timer="5" data-timer-label="예측">
@@ -84,12 +89,12 @@
   <h2>하중을 가하기 전에 예측부터 쓴다</h2>
   <ol class="session-list">
     <li>먼저 변할 것으로 예상하는 <b>곳 한 곳</b>을 쓴다.<br><span class="small">이음점이나 막대의 이름 + 예상하는 변화 모습</span></li>
-    <li><b>힘의 방향·크기 또는 크기 차이</b>로 이유를 쓴다.<br><span class="small">해석지에서 바로잡은 결과 또는 두 번째 이음점 해석 사용</span></li>
+    <li><b>힘의 방향·크기 또는 크기 차이</b>로 이유를 쓴다.<br><span class="small">해석지 또는 웹앱의 두 번째 해석 결과를 근거로 든다</span></li>
     <li><b>교사 확인 뒤</b> 하중 실험을 시작한다.</li>
   </ol>
   <div class="promise" style="margin-top:22px">실험 뒤에는 예측을 고쳐 쓰지 않는다.</div>
   <div class="flow mini session-flow" data-now="1"></div>
-  <aside class="notes">입력: v0.5 02-2 학생용 1번·교사용 운영 안내. 예측 원본은 실험 전 교사가 확인·보존한다. 촬영 또는 수거 후 재배부는 교사가 운영한다.</aside>
+  <aside class="notes">근거: v0.8 02-2 학생용 1번·교사용 운영 안내. 예측 원본은 실험 전 교사가 확인·보존한다(촬영 또는 수거 후 재배부). 막대 길이만으로 이유를 쓰지 않게 한다.</aside>
 </section>
 
 <section id="change-vocabulary">
@@ -104,22 +109,22 @@
   </div>
   <p class="cap">예측과 관찰 기록에서 같은 말로 변화 모습을 표현한다.</p>
   <div class="flow mini session-flow" data-now="1"></div>
-  <aside class="notes">입력: v0.5 02-2 학생용의 변화 모습 다섯 가지. 원본과 같은 순서의 수채화 그림을 사용한다. 이 그림은 변화 모습의 명칭 안내이다.</aside>
+  <aside class="notes">근거: v0.8 02-2 학생용의 변화 모습 다섯 가지. 원본과 같은 순서의 수채화 그림을 사용한다. 변형(휨·벌어짐)과 파손(꺾임·끊어짐·빠짐)의 구분은 1번 (1) 발문에 있다.</aside>
 </section>
 
 <section id="experiment-conditions">
   <p class="crumb">2차시 · 하중 실험 준비</p>
   <h2>실험 조건과 안전 안내를 먼저 확인한다</h2>
   <div class="session-blank">
-    <p>하중 도구 · 교사 안내: ______</p>
-    <p>하중 증가 단위 · 교사 안내: ______</p>
+    <p>판·받침 조각·추 · 교사 안내: ______</p>
+    <p>하중 도구 · 증가 단위 · 교사 안내: ______</p>
     <p>힘 환산값 · 교사 안내: ______</p>
     <p>안전 수칙 · 교사 안내: ______</p>
     <p>중단 기준 · 교사 안내: ______</p>
   </div>
   <div class="promise">예측 확인과 실험 안내가 끝난 뒤 시작한다.</div>
   <div class="flow mini session-flow" data-now="2"></div>
-  <aside class="notes">입력: 작업명세서 §6.2와 v0.5 02-2 교사용 운영 안내. 도구·증가 단위·안전 수칙·중단 기준은 교사가 사전 실험 후 확정하여 안내한다. 미확정 수치를 채우지 않았다.</aside>
+  <aside class="notes">근거: v0.8 02-2 교사용 운영 안내, 01 교사용 운영 메모(판·받침 조각·추, 하중 도구·증가 단위·중단 기준). 교사가 사전 실험 후 정하여 안내한다. 미확정 수치를 채우지 않았다. 추는 판 가운데에 둔다.</aside>
 </section>
 
 <section id="experiment-start" data-timer="20" data-timer-label="하중 실험">
@@ -133,7 +138,7 @@
   </ol>
   <p class="small" style="margin-top:18px">질량을 읽었다면 교사가 안내한 힘 환산값($\mathrm{N}$)을 쓴다.</p>
   <div class="flow mini session-flow" data-now="2"></div>
-  <aside class="notes">입력: v0.5 02-2 학생용 2번·교사용 운영 안내. 실험 전 예측 보존과 조건 안내를 마친다. 실험 타이머는 이 화면에서 눌러 시작한다.</aside>
+  <aside class="notes">근거: v0.8 02-2 학생용 2번·교사용 운영 안내. 실험 전 예측 보존과 조건 안내를 마친다. 실험 타이머는 이 화면에서 눌러 시작한다.</aside>
 </section>
 
 <section id="observation-record">
@@ -145,32 +150,32 @@
     <li>하중값은 모둠 공통 기록을 써도 된다.<br><b>위치와 모습은 각자</b> 기록한다.</li>
     <li>처음 뚜렷한 변화의 단계·위치·모습을 쓴다.</li>
   </ul>
-  <p class="small">끝까지 변화가 없다면 관찰한 하중 범위와 멈춘 이유를 쓴다.</p>
+  <p class="small">끝까지 변화가 없다면 관찰한 하중의 범위와 실험을 멈춘 이유를 쓴다.</p>
   <div class="flow mini session-flow" data-now="2"></div>
-  <aside class="notes">입력: v0.5 02-2 학생용 2번 및 교사용 운영 안내. 기록 구분만 안내하며 관찰 결과의 예시는 제시하지 않는다. 진행 중인 하중 실험 타이머는 유지된다.</aside>
+  <aside class="notes">근거: v0.8 02-2 학생용 2번 (1)·(2) 및 교사용 운영 안내. 기록 구분만 안내하며 관찰 결과의 예시는 제시하지 않는다. 진행 중인 하중 실험 타이머는 유지된다.</aside>
 </section>
 
 <section id="submit" data-timer="5" data-timer-label="기록 정리">
   <p class="crumb">2차시 · 기록 정리와 제출</p>
   <h2>각자 기록을 마무리하여 제출한다</h2>
   <ul class="check">
-    <li>해석지: 웹앱 출력과 나의 해석 기록 확인</li>
+    <li>해석지: 1번 (1)~(4)를 모두 썼는지 확인</li>
     <li>예측·실험지: 실험 전 예측 원본 유지</li>
     <li>실험 기록: 단계별 하중·위치·모습 확인</li>
-    <li>3번: 해석 준비와 실험에서 직접 한 일 작성</li>
-    <li>확인이 필요했던 일과 처리 방법 작성<br><span class="small">그런 일이 없었다면 확인한 절차 작성</span></li>
+    <li>3번 (1): 해석 준비와 실험에서 직접 한 일</li>
+    <li>3번 (2): 확인이 필요했던 일과 처리 방법<br><span class="small">그런 일이 없었다면 확인한 절차 작성</span></li>
   </ul>
   <div class="promise" style="margin-top:22px"><b>해석지 + 예측·실험지</b>를 함께 제출한다.</div>
   <p class="small" style="margin-top:12px">기록 정리 5분 · 여유 5분은 교사 안내에 따라 사용한다.</p>
   <div class="flow mini session-flow" data-now="3"></div>
-  <aside class="notes">입력: v0.5 02-1·02-2 교사용 수거 메모, 02-2 학생용 3번. 해석지·예측 원본·실험 기록을 확보하여 3차시에 재배부한다. 여유 시간은 전체 일정에 따라 운영한다.</aside>
+  <aside class="notes">근거: v0.8 02-1·02-2 교사용 수거 메모, 02-2 학생용 3번. 해석지·예측 원본·실험 기록을 확보하여 3차시에 재배부한다. 여유 시간은 전체 일정에 따라 운영한다.</aside>
 </section>
 
 </div></div>
 <script src="lib/reveal/reveal.js"></script>
 <script src="lib/katex/katex.min.js"></script>
 <script src="lib/katex/auto-render.min.js"></script>
-<script src="js/figs.js?v=20261018review1"></script>
+<script src="js/figs.js?v=20261019v08"></script>
 <script src="js/comic.js?v=20261018j"></script>
 <script src="js/warp.js?v=20261018j"></script>
 <script src="js/deck.js?v=20261018j"></script>

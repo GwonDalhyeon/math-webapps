@@ -655,7 +655,7 @@ function mountFigs(root = document) {
 }
 
 /* SESSION_FIGS_START */
-/* 1차시: v0.5 원본의 좌표와 막대 연결을 유지한다. */
+/* 1차시: v0.8 원본의 좌표와 막대 연결을 유지한다. */
 FIGS.t_warren = () => themeable(`<svg role="img" aria-label="t_warren" xmlns="http://www.w3.org/2000/svg" height="83.76" viewBox="0 0 300 83.76"><defs><marker id="t_warren-ar" markerWidth="21.6" markerHeight="21.6" refX="17.28" refY="7.02" orient="auto" markerUnits="userSpaceOnUse"><path d="M0,0 L19.44,7.02 L0,14.04 Z" fill="#111"/></marker><marker id="t_warren-ars" markerWidth="8" markerHeight="8" refX="5" refY="2.5" orient="auto"><path d="M0,0 L5,2.5 L0,5 Z" fill="#111"/></marker></defs><rect width="100%" height="100%" fill="white"/>
 <path d="M12 71.76 L81 71.76" stroke="#111" stroke-width="5.29" stroke-linecap="round"/>
 <path d="M81 71.76 L150 71.76" stroke="#111" stroke-width="5.29" stroke-linecap="round"/>
@@ -769,6 +769,12 @@ FIGS.t_x = () => themeable(`<svg role="img" aria-label="t_x" xmlns="http://www.w
 <circle cx="150" cy="12" r="3.7" fill="white" stroke="#111" stroke-width="3.7"/>
 <circle cx="219" cy="12" r="3.7" fill="white" stroke="#111" stroke-width="3.7"/>
 <circle cx="288" cy="12" r="3.7" fill="white" stroke="#111" stroke-width="3.7"/>
+</svg>`);
+FIGS.t_short = () => themeable(`<svg role="img" aria-label="t_short" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+<g fill="none" stroke="#111" stroke-width="6" stroke-linecap="round" stroke-linejoin="round">
+<path stroke="#111" d="M20 20H180V180H20Z M20 20L100 100L180 180 M20 180L100 100"/>
+</g>
+<g fill="white" stroke="#111" stroke-width="4"><circle fill="white" stroke="#111" cx="20" cy="20" r="6"/><circle fill="white" stroke="#111" cx="180" cy="20" r="6"/><circle fill="white" stroke="#111" cx="180" cy="180" r="6"/><circle fill="white" stroke="#111" cx="20" cy="180" r="6"/><circle fill="white" stroke="#111" cx="100" cy="100" r="6"/></g>
 </svg>`);
 FIGS.plate_3d = () => themeable(`<svg role="img" aria-label="plate_3d" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 830 420"><defs><marker id="plate_3d-ar" markerWidth="14.98" markerHeight="14.98" refX="11.98" refY="4.87" orient="auto" markerUnits="userSpaceOnUse"><path d="M0,0 L13.48,4.87 L0,9.73 Z" fill="#111"/></marker><marker id="plate_3d-ars" markerWidth="8" markerHeight="8" refX="5" refY="2.5" orient="auto"><path d="M0,0 L5,2.5 L0,5 Z" fill="#111"/></marker></defs><rect width="100%" height="100%" fill="white"/>
 <polygon points="100,334.96 190,334.96 304,252.88 214,252.88" fill="#f2f2f2" stroke="#b5b5b5" stroke-width="1.5"/>

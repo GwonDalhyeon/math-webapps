@@ -79,7 +79,7 @@ html, body { background: var(--bg); touch-action: manipulation; }
 .reveal .cover .tag { font-size: 21px; font-weight: 500; color: var(--sub); line-height: 1.5; margin-bottom: 26px; }
 .reveal .cover .ses { font-size: 30px; font-weight: 800; color: var(--accent-text); }
 .reveal .cover h1 { font-size: 56px; font-weight: 800; margin: 4px 0 0; line-height: 1.2; color: var(--title); }
-.reveal .cover-fig { position: absolute; left: 0; right: 0; bottom: 30px; background: none; }
+.reveal .cover-fig { position: absolute; left: 0; right: 0; bottom: 70px; background: none; }
 .reveal .cover h1::after { content: ''; display: block; width: 140px; height: 8px; border-radius: 4px; margin-top: 22px; background: var(--accent); }
 
 /* 그림 색(js/figs.js의 s-·f- 클래스) */
@@ -211,7 +211,8 @@ html, body { background: var(--bg); touch-action: manipulation; }
 /* reveal.js 기본 요소 */
 .reveal .controls { color: #888; }
 .reveal .progress { color: #999; height: 4px; }
-.reveal .slide-number { background: transparent; color: #999; font: 14px var(--font); }
+/* 페이지 번호는 오른쪽 아래 화살표(오른쪽 끝에서 약 100px) 왼쪽에 둔다. 왼쪽 아래는 타이머 자리. */
+.reveal .slide-number { background: transparent; color: #999; font: 14px var(--font); right: 112px; bottom: 26px; }
 
 @media print { #tools { display: none; } }
 
