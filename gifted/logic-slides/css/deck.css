@@ -1,0 +1,226 @@
+/* 「0과 1로 판단하기」 수업 화면 공통 스타일 (4:3, 1024x768 기준)
+   기준 구현: 벡터 구조물 수업 화면(css/deck.css). 명세서 §3·§5.
+   프로젝터를 화이트보드에 비추고 마커로 쓰는 환경을 전제로 한다.
+   - 밝은 배경, 진한 글자. 의미색은 1(--on)과 0(--off) 두 가지만 쓴다.
+   - 칸을 열거나 그림이 움직여도 배치가 바뀌지 않게 한다(판서 위치 유지).
+   - 부품(회로·평면)의 스타일은 css/circuit.css, css/plane.css에 둔다(명세서 §7-7). */
+
+:root {
+  /* 기본(흑백) 테마. 설계도 테마는 아래 [data-theme]에서 같은 이름의 변수만 바꾼다 */
+  --bg: #ffffff;  --ink: #111;  --sub: #333;  --faint: #555;
+  --title: #111;           /* 제목 글자 */
+  --accent: #8a8a8a;       /* 머리글·표지 장식(선·띠). 글자에는 쓰지 않는다 */
+  --accent-text: #444;     /* 강조색 글자: 프로젝터에서도 읽히게 진하게 */
+  --hl: transparent;       /* 핵심 용어 형광펜 */
+  --th-bg: #efefef;  --th-ink: #111;  --cell-line: #555;
+  --tap: #f2f5fa;          /* 눌러서 여는 칸 */
+  --box: #f6f6f3;  --box-line: #111;
+  --frame: #ddd;
+  --on: #e08f00;  --on-text: #8f5400;  --on-fill: #ffd54a;   /* 1: 전기가 흐름·켜짐 (선, 글자, 켜진 전구) */
+  --off: #4f5f73;          /* 0: 흐르지 않음 (진한 회청색, 옅은 회색 금지) */
+  --ui-run: #0b7552;  --ui-alert: #c4321f;                     /* 타이머 등 화면 도구 상태색(의미색 아님) */
+  --fig-ink: #111;  --fig-soft: #333;  --fig-grid: #e4e4e4;  --fig-axis: #888;
+  --paper: none;           /* 배경 무늬 */
+  --band: transparent;     /* 화면 위 색 띠 */
+  --fig-bg: transparent;  --halo: #fff;   /* 그림 바탕판과 글자 테두리 */
+  --font: "Pretendard Variable", Pretendard, "Malgun Gothic", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+}
+/* 설계도: 남색 머리띠 표, 옅은 모눈 배경. 장식 강조색은 청록(명세서 D2: 주황·노랑은 1의 색이라 장식에 쓰지 않는다) */
+html[data-theme="blueprint"] {
+  --bg: #fbfcfe;  --ink: #0f1a27;  --sub: #26364a;  --faint: #3b5170;
+  --title: #16325a;  --accent: #1d8a99;  --accent-text: #0e6470;  --hl: #c6ebee;
+  --th-bg: #1d3b63;  --th-ink: #fff;  --cell-line: #7f95b3;  --tap: #e8eff8;
+  --box: #eef3f9;  --box-line: #1d3b63;  --frame: #1d3b63;
+  --on: #e08f00;  --on-text: #8f5400;  --on-fill: #ffd54a;  --off: #4f5f73;
+  --fig-ink: #14202e;  --fig-soft: #2c3e55;  --fig-grid: #d9e3ef;  --fig-axis: #7d8fa6;
+  --band: #1d3b63;  --fig-bg: #edf2f9;  --halo: #edf2f9;
+  --paper: linear-gradient(rgba(40, 90, 160, .06) 1px, transparent 1px) 0 0 / 32px 32px, linear-gradient(90deg, rgba(40, 90, 160, .06) 1px, transparent 1px) 0 0 / 32px 32px;
+}
+
+html, body { background: var(--bg); touch-action: manipulation; }
+.reveal-viewport, .reveal { background: var(--paper), var(--bg); }
+
+.reveal { font-family: var(--font); font-size: 26px; color: var(--ink); line-height: 1.5; }
+.reveal .slides { text-align: left; }
+.reveal .slides section { height: 100%; padding: 0; box-sizing: border-box; }
+.reveal .katex { font-size: 1.05em; }
+
+/* 머리글 */
+.reveal .crumb { font-size: 17px; font-weight: 600; color: var(--faint); letter-spacing: .02em; margin: 0 0 4px; padding-left: 10px; border-left: 4px solid var(--accent); line-height: 1.2; }
+.reveal h2 { font-size: 34px; font-weight: 700; margin: 0 0 14px; line-height: 1.25; color: var(--title); }
+.reveal h2 .num { color: var(--accent-text); font-weight: 700; margin-right: .3em; }
+.reveal h3 { font-size: 26px; font-weight: 700; margin: 0 0 8px; }
+.reveal p { margin: 0 0 12px; }
+.reveal b, .reveal strong { font-weight: 700; background: linear-gradient(transparent 58%, var(--hl) 58%); padding: 0 .08em; }
+.reveal .small { font-size: 22px; color: var(--sub); }
+.reveal .on { color: var(--on-text); }
+.reveal .off { color: var(--off); }
+
+/* 표지 */
+.reveal .cover { display: flex; flex-direction: column; justify-content: center; height: 100%; }
+.reveal .cover .tag { font-size: 21px; font-weight: 500; color: var(--sub); line-height: 1.5; margin-bottom: 26px; }
+.reveal .cover .ses { font-size: 30px; font-weight: 800; color: var(--accent-text); }
+.reveal .cover h1 { font-size: 56px; font-weight: 800; margin: 4px 0 0; line-height: 1.2; color: var(--title); }
+.reveal .cover h1::after { content: ''; display: block; width: 140px; height: 8px; border-radius: 4px; margin-top: 22px; background: var(--accent); }
+.reveal .cover .goal { font-size: 24px; color: var(--sub); margin-top: 26px; max-width: 760px; }
+.reveal #cover .mascot { position: absolute; right: 10px; bottom: 60px; width: 220px; }
+
+/* 정적 그림(js/figs_static.js)의 색 클래스 */
+.reveal svg .s-ink { stroke: var(--fig-ink); }   .reveal svg .f-ink { fill: var(--fig-ink); }
+.reveal svg .s-soft { stroke: var(--fig-soft); } .reveal svg .f-soft { fill: var(--fig-soft); }
+.reveal svg .s-grid { stroke: var(--fig-grid); }
+.reveal svg .s-axis { stroke: var(--fig-axis); } .reveal svg .f-axis { fill: var(--fig-axis); }
+.reveal svg .halo { stroke: var(--halo); }
+
+/* 2단 배치: 왼쪽 내용, 오른쪽 판서 공간 */
+.reveal .cols { display: grid; gap: 24px; align-items: start; }
+.reveal .c-55 { grid-template-columns: 55fr 45fr; }
+.reveal .c-60 { grid-template-columns: 60fr 40fr; }
+.reveal .c-50 { grid-template-columns: 1fr 1fr; }
+
+/* 상자: 규칙·약속, 학습지의 「용어」 상자, 「쓰임」 상자(마스코트) */
+.reveal .rule { background: var(--box); border-left: 6px solid var(--box-line); padding: 10px 16px; margin: 0 0 12px; }
+.reveal .promise { border: 2px solid var(--box-line); background: var(--box); border-radius: 8px; padding: 10px 16px; }
+.reveal .term { border: 2.5px solid var(--box-line); border-radius: 10px; padding: 10px 16px; margin: 0 0 12px; background: #fff; }
+.reveal .term > .name { display: inline-block; font-weight: 800; color: var(--th-ink); background: var(--th-bg); border-radius: 6px; padding: 1px 10px; margin-right: 10px; }
+.reveal .use { display: grid; grid-template-columns: 120px 1fr; gap: 14px; align-items: start; border: 2px dashed var(--accent); border-radius: 12px; padding: 12px 16px; background: #fff; }
+.reveal .use > img { width: 120px; display: block; }
+
+/* 그림 */
+.reveal .fig { background: var(--fig-bg); border-radius: 12px; }
+.reveal .slides > section:not(#cover)::before { content: ''; position: absolute; left: -40px; right: -40px; top: -20px; height: 8px; background: var(--band); }
+.reveal .fig svg { display: block; width: 100%; height: auto; overflow: visible; }
+.reveal .fig.center svg { margin: 0 auto; }
+.reveal img.illust { display: block; max-width: 100%; margin: 0 auto; }
+.reveal .cap { font-size: 22px; color: var(--sub); text-align: center; margin-top: 6px; }
+
+/* 만화: 장면을 차례로 확대(.cam)하고, 장면 안의 움직임은 js/warp.js·덧그림이 맡는다(그림틀 전체는 흔들지 않는다).
+   가로세로비는 js/comic.js가 만화마다 --comic-ar로 넣는다 */
+.reveal .comic { position: relative; overflow: hidden; height: var(--comic-h, 560px); aspect-ratio: var(--comic-ar, 1); margin: 0 auto;
+  border-radius: 6px; background: #fff; box-shadow: 0 0 0 2px var(--frame); }
+.reveal .comic .cam { position: absolute; inset: 0; transform-origin: 0 0; transition: transform 1.2s cubic-bezier(.6, 0, .25, 1); }
+.reveal .comic .life { position: absolute; inset: 0; width: auto; margin: 0; }
+.reveal .comic .life > img { width: 100%; height: 100%; }
+.reveal .comic img { width: 100%; height: 100%; display: block; margin: 0; }
+.reveal .comic .fxlayer { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.reveal .comic .fx { opacity: 0; transition: opacity .4s; }
+.reveal .comic[data-panel="1"] .fx-1, .reveal .comic[data-panel="2"] .fx-2,
+.reveal .comic[data-panel="3"] .fx-3, .reveal .comic[data-panel="4"] .fx-4 { opacity: 1; }
+.reveal .comic-cap { display: grid; margin-top: 10px; }
+.reveal .comic-cap > .cap { grid-area: 1 / 1; margin: 0; font-size: 25px; color: var(--ink); }
+.reveal .comic-cap > .cap.q { font-size: 28px; font-weight: 700; }
+/* 덧그림 움직임(명세서 §8-5): 빛이 은은하게 밝아졌다 어두워짐, 별 반짝임 */
+.reveal .comic .glow { fill: var(--on-fill); mix-blend-mode: multiply; animation: glow 2.8s ease-in-out infinite; }
+.reveal .comic .star { fill: #ffe27a; stroke: #fff; stroke-width: 2; paint-order: stroke; transform-box: fill-box; transform-origin: center; animation: twinkle 1.6s ease-in-out infinite; }
+@keyframes glow { 0%, 100% { opacity: 0; } 50% { opacity: .35; } }
+@keyframes twinkle { 0%, 100% { opacity: .15; transform: scale(.6); } 50% { opacity: 1; transform: scale(1.1); } }
+@keyframes nod { 0%, 100% { transform: rotate(0); } 50% { transform: rotate(-3deg); } }
+@keyframes flash { 0% { opacity: 1; } 100% { opacity: .2; } }
+.reveal .mascot.nod, .reveal .use > img { transform-origin: 50% 90%; animation: nod 2.8s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { .reveal .comic .fx *, .reveal .mascot.nod, .reveal .use > img { animation: none !important; } }
+
+/* 진리표 등 답 칸이 있는 표 */
+.reveal table.tt { border-collapse: collapse; font-size: 25px; margin: 0 0 10px; }
+.reveal table.tt th, .reveal table.tt td { border: 1.5px solid var(--cell-line); padding: 5px 10px; text-align: center; vertical-align: middle; height: 46px; min-width: 64px; }
+.reveal table.tt th { background: var(--th-bg); color: var(--th-ink); font-weight: 700; font-size: 20px; line-height: 1.2; }
+.reveal table.tt caption { caption-side: top; text-align: left; font-weight: 700; font-size: 23px; padding: 0 0 4px; }
+.reveal table.tt.wide { width: 100%; table-layout: fixed; }
+.reveal table.tt.compact { font-size: 23px; }
+.reveal table.tt.compact th { font-size: 18.5px; }
+.reveal table.tt.compact td { height: 40px; padding: 3px 6px; }
+.reveal table.tt td.left { text-align: left; }
+
+/* 눌러서 여는 칸: 닫혀 있으면 비어 보인다(판서 가능). 크기는 그대로 유지한다. */
+.reveal .tap { background: var(--tap); cursor: pointer; user-select: none; -webkit-user-select: none; }
+.reveal .tap > .a { visibility: hidden; opacity: 0; transition: opacity .25s; }
+.reveal .tap.open { background: transparent; }
+.reveal .tap.open > .a { visibility: visible; opacity: 1; }
+.reveal span.tap { display: inline-block; min-width: 4.2em; padding: 0 .3em; border-bottom: 2px solid var(--ink); text-align: center; }
+
+/* 단계적으로 나타나는 수식·설명 */
+.reveal .eq { font-size: 26px; margin: 6px 0 10px; }
+.reveal .step { margin: 0 0 8px; }
+
+/* SVG 조각 움직임 (정적 그림의 단계) */
+.reveal svg .fragment.custom { transition: opacity .35s ease; }
+.reveal svg .fx-fade { opacity: 0; }
+.reveal svg .fx-fade.visible { opacity: 1; }
+.reveal svg .fx-out.visible { opacity: 0; }
+.reveal svg .fx-draw .ln { stroke-dasharray: var(--len) 9999; stroke-dashoffset: var(--len); transition: stroke-dashoffset .7s ease-out; }
+.reveal svg .fx-draw.visible .ln { stroke-dashoffset: 0; }
+
+/* 화면 도구 (태블릿 조작용, 화면에는 옅게) */
+#tools { position: fixed; top: 8px; right: 10px; z-index: 40; display: flex; gap: 6px; opacity: .3; transition: opacity .2s; }
+#tools:hover, #tools:focus-within { opacity: 1; }
+#tools button { font: 600 13px/1 var(--font); color: #333; background: #fff; border: 1px solid #bbb; border-radius: 6px; padding: 7px 9px; cursor: pointer; }
+#tools button:active { background: #eee; }
+#tools button[data-act="reset"] { color: var(--ui-alert); }
+
+/* reveal.js 기본 요소 */
+.reveal .controls { color: #888; }
+.reveal .progress { color: #999; height: 4px; }
+/* 페이지 번호는 오른쪽 아래 화살표(오른쪽 끝에서 약 100px) 왼쪽에 둔다. 왼쪽 아래는 타이머 자리. */
+.reveal .slide-number { background: transparent; color: #999; font: 14px var(--font); right: 112px; bottom: 26px; }
+
+@media print { #tools { display: none; } }
+
+/* 검토용 삽입(iframe) 화면: 도구 숨김 */
+html.embed #tools { display: none; }
+
+/* 짧은 요점 목록 */
+.reveal ul.pts { margin: 0 0 10px; padding-left: 1.1em; font-size: 26px; line-height: 1.45; }
+.reveal ul.pts li { margin: 0 0 2px; }
+.reveal ul.pts li::marker { color: var(--accent); }
+
+/* 삽화 안의 움직임(js/warp.js): WebGL이 되면 같은 크기의 캔버스를 그림 위에 겹친다 */
+.reveal .warpbox { position: relative; width: fit-content; margin: 0 auto; }
+.reveal .warpbox > img { display: block; }
+.reveal .warpbox > canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: none; }
+.reveal .warpbox.live > canvas { display: block; }
+
+/* 흐름 띠(js/session.js): 절 단위, 현재 절 강조 */
+.reveal .flow { display: flex; gap: 10px; font-size: 22px; font-weight: 700; }
+.reveal .flow > span { flex: 1; background: var(--box); border: 2px solid var(--box-line); border-radius: 8px; padding: 8px 10px; text-align: center; position: relative; }
+.reveal .flow > span + span::before { content: '→'; position: absolute; left: -12px; top: 50%; transform: translate(-50%, -50%); color: var(--accent-text); }
+.reveal .flow > span.now { background: var(--hl); }
+.reveal .flow > span em { font-style: normal; font-weight: 600; margin-left: .35em; color: var(--sub); }
+.reveal .flow.mini { font-size: 18px; gap: 8px; margin: 0 0 12px; }
+.reveal .flow.mini > span { padding: 4px 6px; border-width: 1.5px; }
+.reveal .flow.mini > span + span::before { left: -8px; }
+.reveal .flow.foot { position: absolute; left: 0; right: 0; bottom: 84px; }
+.reveal .flow.foot em { display: block; margin: 0; }
+
+/* 타이머(js/session.js): 화면 왼쪽 아래. 눌러서 시작·멈춤. 타이머가 있는 활동의 화면에서만 보인다(명세서 D10) */
+#timer { position: fixed; left: 1.2vw; bottom: 1.6vh; z-index: 45; display: none; align-items: center; gap: .6vh;
+  font-family: var(--font); background: #fff; border: 2px solid var(--box-line, #1d3b63); border-radius: 1.2vh; padding: .5vh 1vh .5vh 1.4vh;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, .12); cursor: pointer; user-select: none; -webkit-user-select: none; }
+#timer.show { display: flex; }
+#timer .lab { font-size: 2.2vh; font-weight: 700; color: var(--sub, #333); margin-right: .4vh; }
+#timer .t { font-size: 5.4vh; font-weight: 800; font-variant-numeric: tabular-nums; color: var(--ink, #111); min-width: 3.2em; text-align: center; line-height: 1.1; }
+#timer:not(.run):not(.done) .t { color: var(--sub, #333); }
+#timer.run { border-color: var(--ui-run); }
+#timer.done .t { color: var(--ui-alert); animation: flash 1s steps(2) infinite; }
+#timer .rs { font: 700 2.6vh/1 var(--font); border: 1px solid #bbb; background: #fff; border-radius: .8vh; padding: .6vh .8vh; cursor: pointer; color: #333; }
+
+/* ---- 화면 조립(index.html)에 쓰는 것 (2026-10-27) ---- */
+/* 정적 그림(js/figs_static.js)의 먹색 = currentColor */
+.reveal .fig svg { color: var(--fig-ink); }
+.reveal .fig.pad { padding: 10px 14px; }
+/* 단계에서 문장에 밑줄 긋기(2-3의 「단, 경비를 해제해 두었다면」): fragment custom이 보이면 밑줄 */
+.reveal .ul-step { text-decoration: none; transition: background-size .5s; background: linear-gradient(var(--on), var(--on)) 0 100% / 0 3px no-repeat; }
+.reveal .ul-step.visible { background-size: 100% 3px; }
+/* 차례로 나타나는 순서 목록(「목표표에서 회로 찾기」) */
+.reveal ol.steps { margin: 0; padding-left: 1.4em; font-size: 26px; line-height: 1.5; }
+.reveal ol.steps li { margin: 0 0 6px; }
+.reveal ol.steps li::marker { font-weight: 800; color: var(--accent-text); }
+/* 질문 한 줄(화면 가운데 큰 글씨) */
+.reveal .ask { font-size: 32px; font-weight: 700; text-align: center; margin: 18px 0; color: var(--title); }
+/* 줄글 문단을 조금 작게(학습지 본문을 그대로 옮긴 긴 문단) */
+.reveal p.lead { font-size: 23px; line-height: 1.55; color: var(--ink); }
+/* 표를 가운데에 */
+.reveal table.tt.mid { margin-left: auto; margin-right: auto; }
+/* 문항 줄: (1) 같은 머리 번호 */
+.reveal .qn { font-weight: 700; color: var(--accent-text); margin-right: .25em; }
+/* 가로로 늘어놓기 */
+.reveal .row { display: flex; gap: 24px; align-items: flex-start; }
+.reveal .row > * { flex: none; }

@@ -1,0 +1,124 @@
+/* 회로 부품 스타일 — 세션 A. 명세서 §7-7: 클래스·변수는 lc- 접두사, 색은 deck.css 변수(--ink, --sub, --title, --bg, --fig-bg, --tap, --on, --off, --accent)만 쓴다.
+   그 밖에 deck.css의 --on-text(1의 글자), --on-fill(켜진 전구)을 쓴다. 부품에만 필요한 색은 --lc- 변수로 둔다. */
+:root {
+  --lc-diff: #c4321f;   /* 대결판·확인표에서 목표와 다른 칸, 지우기 모드 테두리(판정 문구 대신 빨간 동그라미) */
+}
+
+/* ---------------------------------------------------------------- 공통 SVG */
+.reveal svg.lc-svg { display: block; width: 100%; height: auto; overflow: visible; font-family: var(--font); }
+.reveal svg.lc-svg text { fill: var(--ink); }
+.reveal svg.lc-svg .lc-v { font-family: KaTeX_Math, "Times New Roman", serif; font-style: italic; }
+.reveal .lc-vi { font-family: KaTeX_Math, "Times New Roman", serif; font-style: italic; }
+.reveal svg.lc-svg .lc-strong { font-weight: 800; }
+
+/* 선: 값을 구하기 전에는 먹색(학습지 그림과 같다), 값을 보이면 1은 --on, 0은 --off */
+.reveal svg .lc-w { fill: none; stroke: var(--ink); stroke-width: 2.4; stroke-linejoin: round; stroke-linecap: round; }
+.reveal svg .lc-w.v1 { stroke: var(--on); stroke-width: 4.2; }
+.reveal svg .lc-w.v0 { stroke: var(--off); stroke-width: 3.2; }
+.reveal svg .lc-lever { stroke-width: 3; }
+.reveal svg .lc-lever.v1 { stroke-width: 4.6; }
+.reveal svg .lc-dot, .reveal svg .lc-term, .reveal svg .lc-jn { fill: var(--ink); stroke: none; }
+.reveal svg .lc-bat { stroke: var(--ink); stroke-width: 2.6; fill: none; }
+.reveal svg .lc-bat2 { stroke-width: 4.5; }
+
+/* 게이트: 영어 이름이 적힌 둥근 상자 */
+.reveal svg .lc-g rect { fill: var(--bg); stroke: var(--ink); stroke-width: 2.2; }
+.reveal svg .lc-gn { font-weight: 800; }
+
+/* 전구: 켜지면 --on-fill과 빛살 */
+.reveal svg .lc-bulb circle { fill: var(--bg); stroke: var(--ink); stroke-width: 2.2; }
+.reveal svg .lc-bulb path { fill: none; stroke: var(--ink); stroke-width: 1.8; }
+.reveal svg .lc-bulb.off circle { stroke: var(--off); }
+.reveal svg .lc-bulb.on circle { fill: var(--on-fill); stroke: var(--on); stroke-width: 3; }
+.reveal svg .lc-bulb.on path { stroke: var(--on-text); }
+.reveal svg .lc-bulb.on .lc-ray { stroke: var(--on); stroke-width: 3; stroke-linecap: round; }
+
+/* 선 위의 값 */
+.reveal svg .lc-bd rect { fill: var(--bg); stroke-width: 2.6; }
+.reveal svg .lc-bd text { font-weight: 800; }
+.reveal svg .lc-bd.v1 rect { stroke: var(--on); }
+.reveal svg .lc-bd.v1 text { fill: var(--on-text); }
+.reveal svg .lc-bd.v0 rect { stroke: var(--off); }
+.reveal svg .lc-bd.v0 text { fill: var(--off); }
+.reveal svg .lc-bd.fix rect { stroke-width: 5; }
+
+/* 누르는 곳(보이지 않는 넓은 영역, 화면에서 44px 이상) */
+.reveal svg .lc-hit { fill: transparent; stroke: none; cursor: pointer; }
+
+/* ---------------------------------------------------------------- 읽기용 회로·스위치 */
+.reveal .lc-read, .reveal .lc-switch { background: var(--fig-bg); border-radius: 12px; padding: 8px 10px; box-sizing: border-box; }
+.reveal .lc-switch svg { cursor: pointer; }
+/* 논리식 그림: 식은 자리만 잡아 두고 단계에서 나타난다 */
+.reveal svg .lc-ex { opacity: 0; transition: opacity .35s; }
+.reveal svg .lc-ex.show { opacity: 1; }
+
+/* ---------------------------------------------------------------- 회로판 (§7-2) */
+.reveal .lc-board { position: relative; user-select: none; -webkit-user-select: none; }
+.reveal .lc-tools { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 6px; }
+.reveal .lc-tools .lc-gap { width: 6px; }
+.reveal .lc-tools button, .reveal .lc-ov-h button, .reveal .lc-pk-tools button {
+  font: 700 19px/1 var(--font); min-height: 44px; min-width: 52px; padding: 0 12px; box-sizing: border-box;
+  color: var(--ink); background: var(--bg); border: 2px solid var(--ink); border-radius: 8px; cursor: pointer; touch-action: manipulation; }
+.reveal .lc-tools button[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
+.reveal .lc-tools button[data-t="del"][aria-pressed="true"] { background: var(--lc-diff); border-color: var(--lc-diff); }
+.reveal .lc-tools button:disabled { opacity: .3; cursor: default; }
+.reveal svg.lc-bsvg { touch-action: none; }
+.reveal svg .lc-frame { fill: var(--fig-bg); stroke: none; }
+.reveal svg .lc-frame.del { stroke: var(--lc-diff); stroke-width: 4; stroke-dasharray: 12 8; }
+.reveal svg .lc-tg { fill: var(--bg); stroke: var(--ink); stroke-width: 2.2; cursor: pointer; }
+.reveal svg .lc-port { fill: var(--bg); stroke: var(--ink); stroke-width: 2.2; }
+.reveal svg .lc-port.on { fill: var(--ink); }
+.reveal svg .lc-port.armed { fill: var(--accent); stroke: var(--accent); }
+.reveal svg .lc-bg.del rect { stroke-dasharray: 8 5; }
+.reveal svg .lc-whit { fill: none; stroke: transparent; stroke-width: 26; cursor: pointer; }
+.reveal svg .lc-rub { stroke: var(--accent); stroke-width: 3; stroke-dasharray: 8 6; }
+.reveal svg .lc-cnt { font-weight: 700; }
+.reveal svg text.lc-cnt, .reveal svg text.lc-hint { fill: var(--sub); }
+.reveal svg text.lc-msg { font-weight: 700; paint-order: stroke; stroke: var(--fig-bg); stroke-width: 6; }
+
+/* ---------------------------------------------------------------- 대결판 (§7-3): 왼쪽 2×2 칸, 오른쪽 비교표 */
+.reveal .lc-battle { display: flex; gap: 14px; align-items: flex-start; }
+.reveal .lc-bt-grid { display: grid; grid-template-columns: 300px 300px; gap: 8px; flex: none; }
+.reveal .lc-cell { width: 300px; height: 268px; box-sizing: border-box; border: 2px solid var(--ink); border-radius: 10px; background: var(--fig-bg); cursor: pointer; overflow: hidden; }
+.reveal .lc-cell.empty { border-style: dashed; }
+.reveal .lc-cell-h { display: flex; justify-content: space-between; align-items: center; height: 36px; padding: 0 10px; font-size: 20px; line-height: 1; border-bottom: 1.5px solid var(--ink); background: var(--bg); }
+.reveal .lc-cell-h b { background: none; padding: 0; }
+.reveal .lc-cell svg.lc-svg { width: 300px; height: 228px; }
+.reveal table.lc-bt-t { flex: none; margin: 0; }
+.reveal table.lc-bt-t { table-layout: fixed; width: 396px; }
+.reveal table.lc-bt-t th, .reveal table.lc-bt-t td { min-width: 0; padding: 3px 0; height: 38px; }
+.reveal table.lc-bt-t td.lc-goal { font-weight: 700; }
+.reveal td.lc-none { background: transparent; }
+/* 목표와 다른 칸: 열었을 때만 빨간 동그라미(판정 문구는 쓰지 않는다) */
+.reveal td.tap.lc-diff.open > .a { display: inline-block; min-width: 1.4em; border: 3px solid var(--lc-diff); border-radius: 999px; line-height: 1.2; }
+/* 편집 화면: 회로 칸을 누르면 화면 전체로 커진 회로판 */
+.reveal .lc-ov { position: absolute; inset: 0; z-index: 30; background: var(--bg); display: flex; flex-direction: column; padding: 4px 0 0; box-sizing: border-box; }
+.reveal .lc-ov-h { display: flex; gap: 24px; align-items: center; margin: 0 0 6px; font-size: 26px; }
+.reveal .lc-ov-h b { background: none; color: var(--title); }
+.reveal .lc-ov-h .lc-done { background: var(--ink); color: var(--bg); min-width: 110px; font-size: 22px; }
+.reveal .lc-ov .lc-board { flex: 1; min-height: 0; }
+.reveal .lc-ov svg.lc-bsvg { width: auto; height: 556px; max-width: 100%; margin: 0 auto; }
+
+/* ---------------------------------------------------------------- 두 회로 비교(lc-pick), 회로 보기(lc-view) */
+.reveal .lc-pick { user-select: none; -webkit-user-select: none; }
+.reveal .lc-pk-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.reveal .lc-pk { border: 2px solid var(--ink); border-radius: 10px; background: var(--fig-bg); overflow: hidden; }
+.reveal .lc-pk.empty { border-style: dashed; }
+.reveal .lc-pk-h { display: flex; justify-content: space-between; align-items: center; height: 46px; padding: 0 12px; font-size: 23px; background: var(--bg); border-bottom: 1.5px solid var(--ink); }
+.reveal .lc-pk-h b { background: none; padding: 0; }
+.reveal .lc-pk-h span.tap.lc-n { min-width: 1.6em; }
+.reveal .lc-pk-e { height: 54px; padding: 4px 12px 8px; box-sizing: border-box; background: var(--bg); }
+.reveal .lc-pk-e span.tap.lc-ex { display: block; width: 100%; box-sizing: border-box; font-size: 24px; line-height: 40px; min-width: 0; white-space: nowrap; }
+.reveal .lc-pk-tools { display: flex; flex-wrap: wrap; gap: 6px 16px; align-items: center; margin-top: 8px; }
+.reveal .lc-pk-ch { display: flex; gap: 16px; opacity: .55; }
+.reveal .lc-pk-ch:hover, .reveal .lc-pk-ch:focus-within { opacity: 1; }
+.reveal .lc-ch { font-size: 18px; color: var(--sub); display: flex; gap: 4px; align-items: center; }
+.reveal .lc-pk-tools .lc-ch button { min-width: 44px; padding: 0 6px; font-size: 18px; }
+.reveal .lc-pk-tools button[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
+.reveal .lc-view { background: var(--fig-bg); border-radius: 12px; }
+
+/* ---------------------------------------------------------------- 행 표시(rowmark, §7-4): 누른 행을 둥글게 두른다 */
+.reveal table.rowmark tbody tr { cursor: pointer; }
+.reveal table.rowmark tr > td:first-child { position: relative; }
+.reveal table.rowmark tr.lc-mk > td:first-child::after { content: ''; position: absolute; left: -6px; top: 2px; bottom: 2px; width: calc(var(--lc-roww, 300px) + 12px);
+  border: 3.5px solid var(--accent); border-radius: 999px; pointer-events: none; box-sizing: border-box; }

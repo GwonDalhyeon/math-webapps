@@ -1,0 +1,72 @@
+/* 평면 부품 스타일 — 세션 B. 명세서 §7-7: 클래스·변수는 pl- 접두사, 색은 deck.css 변수(--ink, --sub, --title, --bg, --fig-bg, --tap, --on, --off, --accent)만 쓴다. 반평면 색은 --pl-side-a, --pl-side-b로 이 파일에 둔다. */
+
+/* 부품에만 쓰는 색. 반평면 두 색은 1·0(--on, --off)이나 ●○의 뜻이 아니라 「이쪽·저쪽」이므로 주황·회청과 다른 옅은 초록·보라로 한다 */
+:root {
+  --pl-side-a: #cfead8;   /* 직선의 한쪽 */
+  --pl-side-b: #e8d9f2;   /* 직선의 다른 쪽 */
+  --pl-flap: #d3dae3;     /* 접혀 넘어간 종이의 뒷면(학습지의 회색) */
+  --pl-band: #d2ecef;     /* 펼친 뒤 남은 띠 */
+}
+
+.reveal .pl-plane, .reveal .pl-totable, .reveal .pl-fold { position: relative; }
+.reveal .pl-plane svg, .reveal .pl-totable svg, .reveal .pl-fold svg {
+  display: block; width: 100%; height: auto; overflow: visible;
+  touch-action: none; user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent;
+}
+
+/* 글자: 그림 안 글자는 viewBox 22(문자는 26) */
+.reveal .pl-t { fill: var(--ink); font-family: var(--font); }
+.reveal .pl-halo { stroke: var(--bg); stroke-width: 6px; stroke-linejoin: round; paint-order: stroke; }
+.reveal .pl-v { font-family: KaTeX_Math, "Times New Roman", serif; font-style: italic; }
+.reveal .pl-b { font-weight: 700; }
+
+/* 평면 */
+.reveal .pl-paper { fill: var(--bg); stroke: var(--ink); stroke-width: 2px; stroke-linejoin: round; }
+.reveal .pl-plane .pl-paper, .reveal .pl-totable .pl-paper { stroke: var(--off); stroke-width: 1.5px; stroke-opacity: .45; }
+.reveal .pl-axes line { stroke: var(--ink); stroke-width: 2px; }
+.reveal .pl-axes polygon { fill: var(--ink); }
+.reveal .pl-dot { fill: var(--bg); stroke: var(--ink); stroke-width: 2.5px; }
+.reveal .pl-dot.on { fill: var(--ink); }
+.reveal .pl-side-a { fill: var(--pl-side-a); }
+.reveal .pl-side-b { fill: var(--pl-side-b); }
+.reveal .pl-line { stroke: var(--ink); stroke-width: 3.5px; stroke-linecap: round; }
+.reveal .pl-ring { fill: none; stroke: var(--accent); stroke-width: 4px; }
+.reveal .pl-handle { fill: var(--bg); fill-opacity: .4; stroke: var(--accent); stroke-width: 4px; }   /* 손잡이를 점 위에 놓아도 점이 보이게 */
+.reveal .pl-pending { fill: var(--accent); stroke: var(--bg); stroke-width: 2px; }
+.reveal .pl-frame { fill: none; stroke: var(--off); stroke-width: 1.5px; stroke-opacity: .45; }
+.reveal .pl-seg { stroke: var(--ink); stroke-width: 4px; stroke-linecap: round; }
+.reveal .pl-seg.off { stroke-dasharray: 12 8; stroke-linecap: butt; }
+
+/* 직선 지우기, 시도 횟수: 자리를 미리 잡아 두어 그림이 움직이지 않게 한다 */
+.reveal .pl-bar { display: flex; align-items: center; justify-content: space-between; height: 56px; margin-top: 4px; }
+.reveal .pl-btn { min-width: 104px; min-height: 50px; padding: 0 18px; font: 700 22px/1 var(--font); color: var(--ink);
+  background: var(--bg); border: 2px solid var(--sub); border-radius: 10px; cursor: pointer; touch-action: manipulation; }
+.reveal .pl-btn:active { background: var(--tap); }
+.reveal .pl-count { font-size: 20px; font-weight: 600; color: var(--sub); font-variant-numeric: tabular-nums; }
+
+/* 단계로 나타나는 것 */
+.reveal .pl-k { opacity: 0; transition: opacity .45s ease; }
+.reveal .pl-k.on { opacity: 1; }
+.reveal .pl-k.pl-late.on { transition-delay: .75s; }
+.reveal .pl-tok { opacity: 0; transition: transform .9s cubic-bezier(.5, 0, .3, 1), opacity .25s; }
+.reveal .pl-tok.on { opacity: 1; }
+.reveal .pl-jump .pl-k, .reveal .pl-jump .pl-tok { transition: none !important; }
+
+/* 진리표(그림 안) */
+.reveal .pl-th { fill: var(--fig-bg); stroke: var(--ink); stroke-width: 1.5px; }
+.reveal .pl-td { fill: var(--bg); stroke: var(--ink); stroke-width: 1.5px; }
+.reveal .pl-thv { stroke: var(--fig-bg); }
+.reveal .pl-rowhi { fill: var(--tap); stroke: var(--accent); stroke-width: 4px; }
+
+/* 접기: 종이 면과 변을 따로 그린다(접는 선 위의 변은 접은 뒤에만) */
+.reveal .pl-fold .pl-paper { stroke: none; }
+.reveal .pl-edge { fill: none; stroke: var(--ink); stroke-width: 2.2px; stroke-linecap: round; }
+.reveal .pl-paper.back { fill: var(--pl-flap); }
+.reveal .pl-ghost { fill: none; stroke: var(--ink); stroke-width: 1.4px; stroke-dasharray: 5 6; }
+.reveal .pl-crease { stroke: var(--ink); stroke-width: 2.4px; stroke-dasharray: 11 7; }
+.reveal .pl-cutline { stroke: var(--ink); stroke-width: 4.5px; stroke-linecap: round; }
+.reveal .pl-band { fill: var(--pl-band); stroke: none; }
+.reveal .pl-arrow { fill: none; stroke: var(--ink); stroke-width: 2.4px; stroke-linecap: round; }
+.reveal .pl-arrowhead { fill: var(--ink); }
+
+@media (prefers-reduced-motion: reduce) { .reveal .pl-k, .reveal .pl-tok { transition: none !important; } }
