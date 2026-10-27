@@ -6,16 +6,16 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="robots" content="noindex, nofollow">
 <title>0과 1로 판단하기</title>
-<link rel="icon" href="../../favicon.ico" sizes="16x16 32x32 48x48">
-<link rel="icon" href="../../assets/favicon.svg" type="image/svg+xml">
-<link rel="apple-touch-icon" href="../../assets/apple-touch-icon.png">
+<link rel="icon" href="img/favicon.ico" sizes="16x16 32x32 48x48">
+<link rel="icon" href="img/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="img/apple-touch-icon.png">
 <link rel="stylesheet" href="lib/reveal/reset.css">
 <link rel="stylesheet" href="lib/reveal/reveal.css">
 <link rel="stylesheet" href="lib/katex/katex.min.css">
 <link rel="stylesheet" href="lib/pretendard/pretendardvariable-dynamic-subset.css">
-<link rel="stylesheet" href="css/deck.css?v=20261027a">
-<link rel="stylesheet" href="css/circuit.css?v=20261027a">
-<link rel="stylesheet" href="css/plane.css?v=20261027a">
+<link rel="stylesheet" href="css/deck.css?v=20261027b">
+<link rel="stylesheet" href="css/circuit.css?v=20261027d">
+<link rel="stylesheet" href="css/plane.css?v=20261027d">
 </head>
 <body>
 <div id="tools" aria-label="화면 도구">
@@ -219,7 +219,7 @@
   <span class="fragment" data-fragment-index="1" data-expr-step="1"></span>
   <span class="fragment" data-fragment-index="2" data-expr-step="2"></span>
   <span class="fragment" data-fragment-index="3" data-expr-step="3"></span>
-  <ul class="pts fragment" data-fragment-index="4" style="font-size: 23px; margin-top: 8px;">
+  <ul class="pts fragment" data-fragment-index="4" style="font-size: 26px; margin-top: 8px;">
     <li>문자에는 0 또는 1이 들어가고, AND, OR, NOT은 $+$, $\times$ 같은 연산 기호에 해당합니다.</li>
     <li>앞 게이트의 출력이 다음 게이트로 들어가면, 앞의 식을 <b>괄호로 묶어</b> 그대로 넣습니다. 괄호 안은 먼저 거치는 게이트입니다.</li>
   </ul>
@@ -234,17 +234,17 @@
     <tr><th>선 ①</th><th>출력 (①을 써서)</th><th>출력 ($A$, $B$만으로)</th></tr>
     <tr><td class="tap" style="min-width: 200px;"><span class="a">NOT $A$</span></td><td style="min-width: 200px;">① AND $B$</td><td class="tap" style="min-width: 290px;"><span class="a">(NOT $A$) AND $B$</span></td></tr>
   </table>
-  <p class="fragment" style="text-align: center; font-size: 24px;">① 자리에 선 ①의 식을 괄호로 묶어 넣는다 → <b>대입</b></p>
+  <p class="fragment" style="text-align: center; font-size: 26px;">① 자리에 선 ①의 식을 괄호로 묶어 넣는다 → <b>대입</b></p>
 </section>
 
 <section id="q2-2-2">
   <p class="crumb">2. 회로 읽기와 짓기</p>
   <h2><span class="num">2-2</span>도어락 회로 (가)</h2>
-  <p class="lead" style="font-size: 21px; margin-bottom: 8px;">지문과 비밀번호를 <b>둘 다</b> 맞혀야 열리도록 이중 인증으로 설정한 도어락이 있습니다. 관리사무소 직원은 지문이나 비밀번호 없이 관리자 카드만 대도 문을 엽니다.</p>
+  <p class="lead" style="font-size: 26px; margin-bottom: 8px;">지문과 비밀번호를 <b>둘 다</b> 맞혀야 열리도록 이중 인증으로 설정한 도어락이 있습니다. 관리사무소 직원은 지문이나 비밀번호 없이 관리자 카드만 대도 문을 엽니다.</p>
   <div class="row" style="gap: 20px; align-items: center;">
     <div class="warpbox"><img class="illust" src="img/m2_door_lock_color.jpg" alt="왼쪽은 주민이 두 손으로 지문 센서와 비밀번호를 함께 누르고, 오른쪽은 관리사무소 직원이 카드만 대는 그림" style="width: 400px;" draggable="false"><canvas class="warp" data-warp="m2" aria-hidden="true"></canvas></div>
     <div style="flex: 1;">
-      <ul class="pts" style="font-size: 23px;">
+      <ul class="pts" style="font-size: 26px;">
         <li>$A$ = 지문이 맞다</li>
         <li>$B$ = 비밀번호가 맞다</li>
         <li>$C$ = 관리자 카드를 댔다</li>
@@ -263,7 +263,7 @@
     <div class="lc-read" data-id="q2-2a" data-fix="C=1"></div>
     <div>
       <p>(가)의 출력은 $A$, $B$의 값과 관계없이 하나로 정해진다. 그 값과 까닭을 OR의 뜻을 근거로 쓰시오.</p>
-      <div class="tap" style="padding: 8px 12px; min-height: 130px; font-size: 23px;"><span class="a">출력은 1이다. OR은 입력 중 하나 이상이 1이면 1이므로, $C=1$이면 다른 입력($A$ AND $B$)의 값과 관계없이 1이다.</span></div>
+      <div class="tap" style="padding: 8px 12px; min-height: 130px; font-size: 26px;"><span class="a">출력은 1이다. OR은 입력 중 하나 이상이 1이면 1이므로, $C=1$이면 다른 입력($A$ AND $B$)의 값과 관계없이 1이다.</span></div>
     </div>
   </div>
   <span class="fragment" data-live="q2-2a"></span>
@@ -359,7 +359,7 @@
   <h2><span class="num">2-4-나</span>모둠 대결</h2>
   <div class="cols c-50">
     <div>
-      <ul class="pts" style="font-size: 24px;">
+      <ul class="pts" style="font-size: 26px;">
         <li>AND와 OR만 써서 <b>게이트 4개 이하</b></li>
         <li>여덟 경우의 확인은 모둠원이 나누어 맡고, 확인한 사람이 이름을 쓴다</li>
         <li>여덟 경우를 모두 확인한 회로만 칠판(화면)에</li>
@@ -418,7 +418,7 @@
 <!-- ============================================================ 3. XOR을 만들어라 -->
 <section id="stair">
   <p class="crumb">3. XOR을 만들어라</p>
-  <p class="lead" style="font-size: 21px; margin-bottom: 6px;">계단 아래와 위에 스위치가 하나씩 있고, 전등은 계단 가운데 천장에 있습니다. 어느 쪽 스위치를 눌러도 전등이 켜지거나 꺼집니다. 스위치는 누를 때마다 0에서 1로, 또는 1에서 0으로 바뀝니다. <b>처음에는 두 스위치가 모두 0이고 전등은 꺼져 있었습니다.</b></p>
+  <p class="lead" style="font-size: 26px; margin-bottom: 6px;">계단 아래와 위에 스위치가 하나씩 있고, 전등은 계단 가운데 천장에 있습니다. 어느 쪽 스위치를 눌러도 전등이 켜지거나 꺼집니다. 스위치는 누를 때마다 0에서 1로, 또는 1에서 0으로 바뀝니다. <b>처음에는 두 스위치가 모두 0이고 전등은 꺼져 있었습니다.</b></p>
   <div class="comic" data-comic="m3" data-src="img/m3_stair_light_color.jpg" data-alt="계단 아래 스위치로 켜고, 올라가서 위 스위치로 끄고, 다른 사람이 아래 스위치로 다시 켜는 4컷 만화" style="--comic-h: 470px;"></div>
   <span class="fragment custom" data-fragment-index="1" data-panel="1"></span>
   <span class="fragment custom" data-fragment-index="2" data-panel="2"></span>
@@ -473,7 +473,7 @@
   <h2>XOR이 쓰이는 또 다른 곳 — 틀린 그림 찾기</h2>
   <div class="use">
     <img src="img/mascot-explain.png" alt="">
-    <p style="font-size: 23px; margin: 0;">흑백 그림을 작은 칸으로 나누어 검은 칸은 1, 흰 칸은 0으로 나타냅니다. 두 그림의 같은 자리 칸끼리 XOR하면, 두 그림이 <b>다른 칸만 1</b>로 남습니다. 컴퓨터는 이런 방법으로 사진 두 장에서 달라진 곳을 한 번에 찾아냅니다.</p>
+    <p style="font-size: 26px; margin: 0;">흑백 그림을 작은 칸으로 나누어 검은 칸은 1, 흰 칸은 0으로 나타냅니다. 두 그림의 같은 자리 칸끼리 XOR하면, 두 그림이 <b>다른 칸만 1</b>로 남습니다. 컴퓨터는 이런 방법으로 사진 두 장에서 달라진 곳을 한 번에 찾아냅니다.</p>
   </div>
   <div class="fig pad" data-fig="fig21" style="width: 820px; margin: 16px auto 0;"></div>
 </section>
@@ -504,7 +504,7 @@
   <div class="term"><span class="name">반가산기</span>한 자리 이진수 두 개를 더해 합과 올림을 내는 회로. XOR 게이트 하나(합)와 AND 게이트 하나(올림)로 만듭니다.</div>
   <div class="use" style="margin-top: 14px;">
     <img src="img/mascot-explain.png" alt="">
-    <div style="font-size: 23px;">
+    <div style="font-size: 26px;">
       <p><b>덧셈 회로는 얼마나 빨라졌을까</b></p>
       <p class="fragment">1946년에 만든 컴퓨터 ENIAC은 진공관 약 1만 7천 개로 큰 방 하나를 가득 채웠고(무게 약 30톤), 1초에 덧셈을 약 5천 번 했습니다.</p>
       <p class="fragment">지금 스마트폰 안의 칩은 손톱만 한 크기로 1초에 덧셈을 수십억 번 합니다.</p>
@@ -591,12 +591,12 @@
     <div class="pl-plane" data-id="xor-seg" data-labels="0110"></div>
     <div>
       <p>● 두 점을 잇는 선분과 ○ 두 점을 잇는 선분을 그으시오. 두 선분이 만나는 점의 좌표는?<br><span class="tap" style="margin-top: 8px; min-width: 6em;"><span class="a">$(0.5,\,0.5)$</span></span></p>
-      <p class="fragment" data-fragment-index="4" style="font-size: 23px;">직선의 같은 쪽에 있는 두 점을 이은 선분은 그 직선을 건너지 않는다.</p>
+      <p class="fragment small" data-fragment-index="4">직선의 같은 쪽에 있는 두 점을 이은 선분은 그 직선을 건너지 않는다.</p>
     </div>
   </div>
   <span class="fragment" data-fragment-index="1" data-pl-step="1"></span><span class="fragment" data-fragment-index="2" data-pl-step="2"></span>
   <span class="fragment" data-fragment-index="3" data-pl-step="3"></span><span class="fragment" data-fragment-index="4" data-pl-step="4"></span>
-  <div class="rule fragment" data-fragment-index="5" style="font-size: 22px; margin-top: 8px;">직선 하나로 ●와 ○를 가른다면, ● 두 점을 이은 선분은 통째로 ● 쪽에, ○ 두 점을 이은 선분은 통째로 ○ 쪽에 있어야 합니다. 그런데 두 선분은 (2)의 점에서 만나므로, 그 점은 ● 쪽이면서 동시에 ○ 쪽이어야 합니다. 그럴 수는 없으므로 <b>XOR은 직선 하나로 나눌 수 없습니다.</b></div>
+  <div class="rule fragment small" data-fragment-index="5" style="font-size: 22px; margin-top: 8px;">직선 하나로 ●와 ○를 가른다면, ● 두 점을 이은 선분은 통째로 ● 쪽에, ○ 두 점을 이은 선분은 통째로 ○ 쪽에 있어야 합니다. 그런데 두 선분은 (2)의 점에서 만나므로, 그 점은 ● 쪽이면서 동시에 ○ 쪽이어야 합니다. 그럴 수는 없으므로 <b>XOR은 직선 하나로 나눌 수 없습니다.</b></div>
 </section>
 
 <section id="fold">
@@ -673,7 +673,7 @@
     <tr><td>넷째</td><td>0</td><td>0</td><td class="tap"><span class="a">1</span></td><td class="tap"><span class="a">1</span></td><td class="tap"><span class="a">0</span></td></tr>
   </table>
   <div class="fig" data-fig="fig12" style="width: 940px; margin: 6px auto 0; padding: 4px 10px;"></div>
-  <p class="small" style="margin: 6px 0 0;">(2) 반가산기를 두 번 쓰는 까닭은? <span class="tap" style="min-width: 24em; font-size: 20px;"><span class="a">먼저 $A$와 $B$를 더하고(반가산기 ①), 그 합에 아래에서 온 올림을 더해야(반가산기 ②) 하기 때문이다.</span></span></p>
+  <p class="small" style="margin: 6px 0 0;">(2) 반가산기를 두 번 쓰는 까닭은? <span class="tap" style="min-width: 0; display: block; font-size: 22px; text-align: left;"><span class="a">먼저 $A$와 $B$를 더하고(반가산기 ①), 그 합에 아래에서 온 올림을 더해야(반가산기 ②) 하기 때문이다.</span></span></p>
 </section>
 
 <section id="q3-6">
@@ -694,13 +694,13 @@
 <script src="lib/reveal/reveal.js"></script>
 <script src="lib/katex/katex.min.js"></script>
 <script src="lib/katex/auto-render.min.js"></script>
-<script src="js/figs_static.js?v=20261027a"></script>
-<script src="js/circuit.js?v=20261027a"></script>
-<script src="js/plane.js?v=20261027a"></script>
-<script src="js/comic.js?v=20261027a"></script>
-<script src="js/warp.js?v=20261027a"></script>
-<script src="js/deck.js?v=20261027a"></script>
+<script src="js/figs_static.js?v=20261027b"></script>
+<script src="js/circuit.js?v=20261027d"></script>
+<script src="js/plane.js?v=20261027d"></script>
+<script src="js/comic.js?v=20261027b"></script>
+<script src="js/warp.js?v=20261027b"></script>
+<script src="js/deck.js?v=20261027b"></script>
 <script>const FLOW = [['1. 기계의 판단', 18], ['2. 회로 읽기·짓기', 41], ['3. XOR 만들기', 18], ['4. 직선 하나로', 24], ['오늘의 정리', 7]];</script>
-<script src="js/session.js?v=20261027a"></script>
+<script src="js/session.js?v=20261027b"></script>
 </body>
 </html>

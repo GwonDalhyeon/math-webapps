@@ -219,7 +219,9 @@
     svg.addEventListener('pointerdown', (ev) => {
       if (ev.button > 0) return;
       const [x, y] = svgPoint(svg, ev);
-      const near = (p) => Math.hypot(PM.X(p[0]) - x, PM.Y(p[1]) - y) <= HIT;
+      const matrix = svg.getScreenCTM(), scale = matrix ? Math.hypot(matrix.a, matrix.b) : 1;
+      const radius = Math.max(HIT, 22 / (scale || 1));
+      const near = (p) => Math.hypot(PM.X(p[0]) - x, PM.Y(p[1]) - y) <= radius;
       let kind = null, which = null;
       if (st.line) which = ['p', 'q'].filter((k) => near(st.line[k])).sort((a, b) =>
         Math.hypot(PM.X(st.line[a][0]) - x, PM.Y(st.line[a][1]) - y) - Math.hypot(PM.X(st.line[b][0]) - x, PM.Y(st.line[b][1]) - y))[0] || null;
@@ -234,7 +236,9 @@
       ev.preventDefault();
       ev.stopPropagation();
       svg.setPointerCapture(ev.pointerId);
-      st.press = { kind, which, id: ev.pointerId, x, y, start: clampP(PM.inv(x, y)), moved: false };
+      st.press = { kind, which, id: ev.pointerId, x, y, start: clampP(PM.inv(x, y)), moved: false,
+        beforeLine: st.line ? { p: st.line.p.slice(), q: st.line.q.slice() } : null,
+        beforePending: st.pending ? st.pending.slice() : null };
     });
     svg.addEventListener('pointermove', (ev) => {
       const pr = st.press;
@@ -254,7 +258,7 @@
       const pr = st.press;
       if (!pr || pr.id !== ev.pointerId) return;
       st.press = null;
-      if (cancel) { if (pr.drawing) st.line = null; drawPlane(st); return; }
+      if (cancel) { st.line = pr.beforeLine; st.pending = pr.beforePending; drawPlane(st); return; }
       const p = clampP(PM.inv(...svgPoint(svg, ev)));
       if (pr.kind === 'point' && !pr.moved) {
         st.marks[pr.which] = 1 - st.marks[pr.which];

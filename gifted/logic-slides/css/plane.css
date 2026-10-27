@@ -38,8 +38,8 @@
 .reveal .pl-seg.off { stroke-dasharray: 12 8; stroke-linecap: butt; }
 
 /* 직선 지우기, 시도 횟수: 자리를 미리 잡아 두어 그림이 움직이지 않게 한다 */
-.reveal .pl-bar { display: flex; align-items: center; justify-content: space-between; height: 56px; margin-top: 4px; }
-.reveal .pl-btn { min-width: 104px; min-height: 50px; padding: 0 18px; font: 700 22px/1 var(--font); color: var(--ink);
+.reveal .pl-bar { display: flex; align-items: center; justify-content: space-between; height: max(56px, calc(44px / var(--slide-scale, 1))); margin-top: 4px; }
+.reveal .pl-btn { min-width: 104px; min-height: max(50px, calc(44px / var(--slide-scale, 1))); padding: 0 18px; font: 700 22px/1 var(--font); color: var(--ink);
   background: var(--bg); border: 2px solid var(--sub); border-radius: 10px; cursor: pointer; touch-action: manipulation; }
 .reveal .pl-btn:active { background: var(--tap); }
 .reveal .pl-count { font-size: 20px; font-weight: 600; color: var(--sub); font-variant-numeric: tabular-nums; }

@@ -58,11 +58,11 @@ html, body { background: var(--bg); touch-action: manipulation; }
 
 /* 표지 */
 .reveal .cover { display: flex; flex-direction: column; justify-content: center; height: 100%; }
-.reveal .cover .tag { font-size: 21px; font-weight: 500; color: var(--sub); line-height: 1.5; margin-bottom: 26px; }
+.reveal .cover .tag { font-size: 22px; font-weight: 500; color: var(--sub); line-height: 1.5; margin-bottom: 26px; }
 .reveal .cover .ses { font-size: 30px; font-weight: 800; color: var(--accent-text); }
 .reveal .cover h1 { font-size: 56px; font-weight: 800; margin: 4px 0 0; line-height: 1.2; color: var(--title); }
 .reveal .cover h1::after { content: ''; display: block; width: 140px; height: 8px; border-radius: 4px; margin-top: 22px; background: var(--accent); }
-.reveal .cover .goal { font-size: 24px; color: var(--sub); margin-top: 26px; max-width: 760px; }
+.reveal .cover .goal { font-size: 26px; color: var(--sub); margin-top: 26px; max-width: 760px; }
 .reveal #cover .mascot { position: absolute; right: 10px; bottom: 60px; width: 220px; }
 
 /* 정적 그림(js/figs_static.js)의 색 클래스 */
@@ -150,9 +150,9 @@ html, body { background: var(--bg); touch-action: manipulation; }
 .reveal svg .fx-draw.visible .ln { stroke-dashoffset: 0; }
 
 /* 화면 도구 (태블릿 조작용, 화면에는 옅게) */
-#tools { position: fixed; top: 8px; right: 10px; z-index: 40; display: flex; gap: 6px; opacity: .3; transition: opacity .2s; }
+#tools { position: fixed; top: 0; right: 10px; z-index: 40; display: flex; gap: 6px; opacity: 1; transition: opacity .2s; }
 #tools:hover, #tools:focus-within { opacity: 1; }
-#tools button { font: 600 13px/1 var(--font); color: #333; background: #fff; border: 1px solid #bbb; border-radius: 6px; padding: 7px 9px; cursor: pointer; }
+#tools button { font: 600 18px/1 var(--font); min-height: 44px; min-width: 44px; box-sizing: border-box; color: var(--sub); background: #fff; border: 1px solid #bbb; border-radius: 6px; padding: 7px 9px; cursor: pointer; }
 #tools button:active { background: #eee; }
 #tools button[data-act="reset"] { color: var(--ui-alert); }
 
@@ -200,7 +200,7 @@ html.embed #tools { display: none; }
 #timer:not(.run):not(.done) .t { color: var(--sub, #333); }
 #timer.run { border-color: var(--ui-run); }
 #timer.done .t { color: var(--ui-alert); animation: flash 1s steps(2) infinite; }
-#timer .rs { font: 700 2.6vh/1 var(--font); border: 1px solid #bbb; background: #fff; border-radius: .8vh; padding: .6vh .8vh; cursor: pointer; color: #333; }
+#timer .rs { font: 700 2.6vh/1 var(--font); min-height: 44px; min-width: 44px; border: 1px solid #bbb; background: #fff; border-radius: .8vh; padding: .6vh .8vh; cursor: pointer; color: #333; }
 
 /* ---- 화면 조립(index.html)에 쓰는 것 (2026-10-27) ---- */
 /* 정적 그림(js/figs_static.js)의 먹색 = currentColor */
@@ -215,8 +215,8 @@ html.embed #tools { display: none; }
 .reveal ol.steps li::marker { font-weight: 800; color: var(--accent-text); }
 /* 질문 한 줄(화면 가운데 큰 글씨) */
 .reveal .ask { font-size: 32px; font-weight: 700; text-align: center; margin: 18px 0; color: var(--title); }
-/* 줄글 문단을 조금 작게(학습지 본문을 그대로 옮긴 긴 문단) */
-.reveal p.lead { font-size: 23px; line-height: 1.55; color: var(--ink); }
+/* 줄글도 본문 최소 크기를 유지한다. 공간은 문장과 배치로 조정한다. */
+.reveal p.lead { font-size: 26px; line-height: 1.5; color: var(--ink); }
 /* 표를 가운데에 */
 .reveal table.tt.mid { margin-left: auto; margin-right: auto; }
 /* 문항 줄: (1) 같은 머리 번호 */

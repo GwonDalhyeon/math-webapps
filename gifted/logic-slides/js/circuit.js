@@ -53,6 +53,27 @@
     return v;
   }
 
+  /* 화면의 값 보기: 미연결 입력에서 나온 값은 0으로 확정하지 않는다.
+     완성된 회로의 계산은 evaluate와 같고, 미정 선은 null로 남긴다. */
+  function evaluateKnown(c, vals) {
+    const by = Object.fromEntries(c.nodes.map((n) => [n.id, n])), memo = {}, active = new Set();
+    const get = (id) => {
+      if (id == null || !by[id]) return null;
+      if (Object.prototype.hasOwnProperty.call(memo, id)) return memo[id];
+      if (active.has(id)) throw new Error('circuit has a cycle');
+      const n = by[id];
+      if (n.type === 'IN') return (memo[id] = vals && vals[id] === 1 ? 1 : 0);
+      active.add(id);
+      const ins = n.inputs.map(get);
+      const v = ins.length !== ARITY[n.type] || ins.some((x) => x == null) ? null
+        : n.type === 'OUT' ? ins[0] : GATE_FN[n.type](ins);
+      active.delete(id);
+      return (memo[id] = v);
+    };
+    c.nodes.forEach((n) => get(n.id));
+    return memo;
+  }
+
   /* 진리표: 입력이 k개면 2^k행, (0,…,0)부터 이진수 순서. 행마다 모든 선의 값(vals)을 함께 준다 */
   function truthTable(c) {
     const k = c.inputs.length, rows = [];
@@ -257,7 +278,7 @@
     return s;
   }
 
-  const LC = { GATE_FN, ARITY, mk, evaluate, truthTable, column, wouldCreateCycle, isComplete, gateCount, deriveExpr, parseExpr, evalExpr, exprColumn, arrange, Board, READ_CIRCUITS, readCircuit, teacherBoard };
+  const LC = { GATE_FN, ARITY, mk, evaluate, evaluateKnown, truthTable, column, wouldCreateCycle, isComplete, gateCount, deriveExpr, parseExpr, evalExpr, exprColumn, arrange, Board, READ_CIRCUITS, readCircuit, teacherBoard };
 
   if (typeof module === 'object' && module.exports) module.exports = LC;
   if (typeof window === 'undefined' || typeof document === 'undefined') return;
@@ -279,7 +300,7 @@
   const dot = (x, y, r, cls) => `<circle class="${cls || 'lc-dot'}" cx="${f1(x)}" cy="${f1(y)}" r="${r}"/>`;
   /* 선 위의 값 표시: 흰 바탕 둥근 칸에 0·1 (1은 --on, 0은 --off). fix: 고정한 입력(테두리 굵게) */
   const badge = (x, y, v, fix) =>
-    `<g class="lc-bd v${v}${fix ? ' fix' : ''}"><rect x="${f1(x - 14)}" y="${f1(y - 14)}" width="28" height="28" rx="7"/>${tx(x, y + 1, v, 20)}</g>`;
+    `<g class="lc-bd ${v == null ? 'unknown' : `v${v}`}${fix ? ' fix' : ''}"><rect x="${f1(x - 14)}" y="${f1(y - 14)}" width="28" height="28" rx="7"/>${tx(x, y + 1, v == null ? '?' : v, 20)}</g>`;
   /* 전구(학습지 bulb: 원 + X). on이면 켜진 색과 빛살 */
   function bulb(x, y, r, on) {
     const d = r * 0.7071;
@@ -332,6 +353,10 @@
     if (!m) return { x: 0, y: 0 };
     const p = new DOMPoint(ev.clientX, ev.clientY).matrixTransform(m.inverse());
     return { x: p.x, y: p.y };
+  };
+  const hitRadius = (svg) => {
+    const m = svg.getScreenCTM(), scale = m ? Math.hypot(m.a, m.b) : 1;
+    return Math.max(22, 22 / (scale || 1));
   };
   const CIRC = ['①', '②', '③', '④'];
 
@@ -513,6 +538,13 @@
     r.draw = () => {
       svg.innerHTML = kind === 'sw' ? drawSwitchCircuit(fig, r.live, r.vals)
         : kind === 'gate' ? drawGateCircuit(id, fig, r.live, r.vals, fix) : drawExpr(r.step);
+      const side = hitRadius(svg) * 2;
+      svg.querySelectorAll('rect.lc-hit').forEach((hit) => {
+        const w = +hit.getAttribute('width'), h = +hit.getAttribute('height');
+        hit.setAttribute('x', +hit.getAttribute('x') - Math.max(0, side - w) / 2);
+        hit.setAttribute('y', +hit.getAttribute('y') - Math.max(0, side - h) / 2);
+        hit.setAttribute('width', Math.max(w, side)); hit.setAttribute('height', Math.max(h, side));
+      });
     };
     r.setLive = (on) => { if (kind === 'expr' || on === r.live) return; r.live = on; r.init(); r.draw(); };
     r.setStep = (n) => { if (kind !== 'expr' || n === r.step) return; r.step = n; r.draw(); };
@@ -548,7 +580,7 @@
     return g ? { x: g.x + GW / 2, y: g.y } : { x: IN_PX, y: inY(s.inputs.indexOf(id), s.inputs.length) };
   };
   const portXY = (s, h) => (h.kind === 'out' ? portOut(s, h.id) : h.id === 'OUT' ? { x: OUT_PX, y: OUT_Y } : portIn(Board.gate(s, h.id), h.port));
-  const safeEval = (s) => { try { return evaluate(Board.circuit(s), s.vals); } catch (e) { return null; } };
+  const safeEval = (s) => { try { return evaluateKnown(Board.circuit(s), s.vals); } catch (e) { return null; } };
 
   function boardWires(s) {
     const ws = [];
@@ -562,7 +594,18 @@
   }
 
   /* 누른 곳 찾기: 입력 단자(값 바꾸기·출력 포트), 출력 전구(입력 포트), 게이트(왼쪽 = 입력 포트, 오른쪽 = 출력 포트, 가운데 = 몸통) */
-  function boardHit(s, p) {
+  function boardHit(s, p, radius = 22) {
+    /* reveal 확대율과 무관하게 포트의 누름 반지름을 실제 화면 22px 이상으로 유지한다.
+       가까운 두 입력의 누름 영역이 겹치면 더 가까운 포트를 고른다. */
+    const ports = s.inputs.map((id, i) => ({ kind: 'out', id, x: IN_PX, y: inY(i, s.inputs.length) }));
+    ports.push({ kind: 'in', id: 'OUT', port: 0, x: OUT_PX, y: OUT_Y });
+    s.gates.forEach((g) => {
+      g.inputs.forEach((_, port) => ports.push({ kind: 'in', id: g.id, port, ...portIn(g, port) }));
+      ports.push({ kind: 'out', id: g.id, x: g.x + GW / 2, y: g.y });
+    });
+    const near = ports.map((q) => ({ ...q, distance: Math.hypot(q.x - p.x, q.y - p.y) }))
+      .filter((q) => q.distance <= radius).sort((a, b) => a.distance - b.distance)[0];
+    if (near) return near;
     const n = s.inputs.length;
     for (let i = 0; i < n; i++) {
       if (Math.abs(p.y - inY(i, n)) >= 30) continue;
@@ -610,7 +653,7 @@
       o += pd(g.x + GW / 2, g.y, fed.has(g.id), sameHit(a, { kind: 'out', id: g.id }));
     });
     o += `<path class="${vcls(val ? val.OUT : null)}" d="M${OUT_PX} ${OUT_Y}H${BULB_X - 24}"/>` + bulb(BULB_X, OUT_Y, 24, val ? val.OUT : null);
-    o += pd(OUT_PX, OUT_Y, s.out != null, sameHit(a, { kind: 'in', id: 'OUT', port: 0 })) + tx(BULB_X, OUT_Y + 50, '출력', 22);
+    o += pd(OUT_PX, OUT_Y, s.out != null, sameHit(a, { kind: 'in', id: 'OUT', port: 0 })) + tx(BULB_X, OUT_Y + 50, val && val.OUT == null ? '출력 ?' : '출력', 22);
     if (val) s.gates.forEach((g) => { o += badge(g.x + GW / 2 + 20, g.y, val[g.id]); });
     if (ui.del) ws.forEach((w) => { o += `<path class="lc-whit" data-to="${w.to}" data-port="${w.port}" d="${w.d}"/>`; });
     if (ui.rubber) o += `<line class="lc-rub" x1="${f1(ui.rubber.x1)}" y1="${f1(ui.rubber.y1)}" x2="${f1(ui.rubber.x2)}" y2="${f1(ui.rubber.y2)}"/>`;
@@ -698,7 +741,7 @@
       ev.preventDefault();
       ev.stopPropagation();
       const p = svgPoint(svg, ev);
-      let h = boardHit(ui.st, p);
+      let h = boardHit(ui.st, p, hitRadius(svg));
       const w = ev.target.closest && ev.target.closest('[data-to]');
       if (w && (!h || h.kind === 'body')) h = { kind: 'wire', id: w.dataset.to, port: +w.dataset.port };
       ui.down = { p, h, moved: false, id: ev.pointerId };
@@ -731,11 +774,14 @@
       if (!d || ev.pointerId !== d.id) return;
       ui.down = null;
       ui.rubber = null;
-      if (cancel) { render(); return; }
+      if (cancel) {
+        if (d.before) Object.assign(ui.st, JSON.parse(d.before));
+        render(); return;
+      }
       if (!d.moved) { tap(d.h); return; }
       if (d.off) { undo.push(d.before); changed(); return; }
       if (d.h && !ui.del && (d.h.kind === 'out' || d.h.kind === 'in')) {
-        const e = boardHit(ui.st, svgPoint(svg, ev));
+        const e = boardHit(ui.st, svgPoint(svg, ev), hitRadius(svg));
         if (e && (e.kind === 'out' || e.kind === 'in') && e.kind !== d.h.kind) { ui.armed = null; if (d.h.kind === 'out') link(d.h, e); else link(e, d.h); return; }
       }
       render();
@@ -935,11 +981,16 @@
         if (hasTeacher(B)) {
           B.st.extra = null;
           B.st.cells = B.st.cells.map((s) => (s && s.teacher ? null : s));
+          B.st.pick = null;
         } else {
           const t = teacherBoard(B.o), i = B.st.cells.indexOf(null);
-          if (i >= 0) B.st.cells[i] = t; else B.st.extra = t;
+          if (i >= 0) { B.st.cells[i] = t; B.st.pick = null; }
+          else {
+            const left = pickPair(B).pair[0];
+            B.st.extra = t;
+            B.st.pick = [left ? left.key : null, 'x'];
+          }
         }
-        B.st.pick = null;
       } else if (b.dataset.j != null) {
         const { pair } = pickPair(B), keys = pair.map((c) => (c ? c.key : null));
         keys[+b.dataset.j] = b.dataset.k;

@@ -40,6 +40,7 @@
 .reveal svg .lc-bd.v1 text { fill: var(--on-text); }
 .reveal svg .lc-bd.v0 rect { stroke: var(--off); }
 .reveal svg .lc-bd.v0 text { fill: var(--off); }
+.reveal svg .lc-bd.unknown rect { stroke: var(--ink); stroke-dasharray: 3 2; }
 .reveal svg .lc-bd.fix rect { stroke-width: 5; }
 
 /* 누르는 곳(보이지 않는 넓은 영역, 화면에서 44px 이상) */
@@ -57,7 +58,7 @@
 .reveal .lc-tools { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 6px; }
 .reveal .lc-tools .lc-gap { width: 6px; }
 .reveal .lc-tools button, .reveal .lc-ov-h button, .reveal .lc-pk-tools button {
-  font: 700 19px/1 var(--font); min-height: 44px; min-width: 52px; padding: 0 12px; box-sizing: border-box;
+  font: 700 19px/1 var(--font); min-height: max(44px, calc(44px / var(--slide-scale, 1))); min-width: max(52px, calc(44px / var(--slide-scale, 1))); padding: 0 12px; box-sizing: border-box;
   color: var(--ink); background: var(--bg); border: 2px solid var(--ink); border-radius: 8px; cursor: pointer; touch-action: manipulation; }
 .reveal .lc-tools button[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
 .reveal .lc-tools button[data-t="del"][aria-pressed="true"] { background: var(--lc-diff); border-color: var(--lc-diff); }
@@ -113,7 +114,7 @@
 .reveal .lc-pk-ch { display: flex; gap: 16px; opacity: .55; }
 .reveal .lc-pk-ch:hover, .reveal .lc-pk-ch:focus-within { opacity: 1; }
 .reveal .lc-ch { font-size: 18px; color: var(--sub); display: flex; gap: 4px; align-items: center; }
-.reveal .lc-pk-tools .lc-ch button { min-width: 44px; padding: 0 6px; font-size: 18px; }
+.reveal .lc-pk-tools .lc-ch button { min-width: max(44px, calc(44px / var(--slide-scale, 1))); padding: 0 6px; font-size: 18px; }
 .reveal .lc-pk-tools button[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
 .reveal .lc-view { background: var(--fig-bg); border-radius: 12px; }
 
