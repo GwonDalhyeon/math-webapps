@@ -58,6 +58,11 @@ p {
   gap: 20px;
 }
 
+/* 강의 목록은 카드가 적어도 한 칸 너비를 유지한다 */
+.lectures-page .card-grid {
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+}
+
 .card {
   display: block;
   padding: 24px;
@@ -78,7 +83,8 @@ p {
 .ai-math-page .subject-card,
 .icebreaking-page .subject-card,
 .geometry-page .subject-card,
-.probability-page .subject-card {
+.probability-page .subject-card,
+.lectures-page .subject-card {
   display: flex;
   height: 100%;
   padding: 0;
@@ -91,7 +97,8 @@ p {
 .ai-math-page .subject-card:hover,
 .icebreaking-page .subject-card:hover,
 .geometry-page .subject-card:hover,
-.probability-page .subject-card:hover {
+.probability-page .subject-card:hover,
+.lectures-page .subject-card:hover {
   border-color: #cbd5e1;
 }
 
@@ -99,7 +106,8 @@ p {
 .ai-math-page .subject-card:focus-visible,
 .icebreaking-page .subject-card:focus-visible,
 .geometry-page .subject-card:focus-visible,
-.probability-page .subject-card:focus-visible {
+.probability-page .subject-card:focus-visible,
+.lectures-page .subject-card:focus-visible {
   outline: 3px solid #2563eb;
   outline-offset: 3px;
 }
@@ -136,7 +144,8 @@ p {
   .ai-math-page .subject-card,
   .icebreaking-page .subject-card,
   .geometry-page .subject-card,
-  .probability-page .subject-card {
+  .probability-page .subject-card,
+  .lectures-page .subject-card {
     transition: none;
   }
 }
