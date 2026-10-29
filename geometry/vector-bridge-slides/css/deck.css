@@ -212,7 +212,7 @@ html, body { background: var(--bg); touch-action: manipulation; }
 .reveal .controls { color: #888; }
 .reveal .progress { color: #999; height: 4px; }
 /* 페이지 번호는 오른쪽 아래 화살표(오른쪽 끝에서 약 100px) 왼쪽에 둔다. 왼쪽 아래는 타이머 자리. */
-.reveal .slide-number { background: transparent; color: #999; font: 14px var(--font); right: 112px; bottom: 26px; }
+.reveal .slide-number { background: transparent; color: #999; font: 14px var(--font); right: 150px; bottom: 26px; }
 
 @media print { #tools { display: none; } }
 
