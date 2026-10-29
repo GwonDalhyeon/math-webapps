@@ -1,0 +1,20 @@
+/* 부품 A · 줄 실험실 (명세 2-6: 줄 칸은 가로 : 세로 = 3 : 2 안팎, 여러 줄은 가로로 나란히) */
+.string-lab .sl-row { display: flex; gap: 18px; }
+.string-lab .sl-panel { flex: 1; background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 10px 10px 8px; display: flex; flex-direction: column; }
+.string-lab .sl-panel canvas { width: 100%; aspect-ratio: 3 / 2; display: block; }
+.string-lab .sl-wide { flex: 1.9; }
+/* 이동하는 물결은 가로가 긴 칸을 쓰되 높이를 고정해 화면 안에 둔다 */
+.string-lab .sl-row:has(.sl-wide) canvas { aspect-ratio: auto; height: 330px; }
+.string-lab .sl-title { font-size: 24px; font-weight: 800; color: var(--axis, #26364a); text-align: center; }
+.string-lab .sl-title span { font-size: 19px; font-weight: 600; color: var(--sub); }
+.string-lab .sl-count { min-height: 28px; font-size: 20px; color: var(--time-text); font-weight: 700; text-align: center; }
+.string-lab .sl-note { font-size: 18px; color: var(--sub); margin-top: 6px; }
+
+/* 멈춘 장면(L9) */
+.string-lab .sl-frames { flex-direction: column; gap: 8px; }
+.string-lab .sl-fline { display: flex; gap: 8px; align-items: center; }
+.string-lab .sl-fname { width: 120px; flex: none; font-size: 21px; font-weight: 800; color: var(--title); line-height: 1.2; }
+.string-lab .sl-fname span { display: block; font-size: 17px; font-weight: 600; color: var(--sub); }
+.string-lab .sl-fcell { flex: 1; background: #fff; border: 1px solid var(--line); border-radius: 6px; }
+.string-lab .sl-fcanvas { width: 100%; aspect-ratio: 3 / 2; display: block; }
+.string-lab .sl-fhead .sl-fcell { background: none; border: none; text-align: center; font-size: 19px; font-weight: 700; color: var(--sub); }

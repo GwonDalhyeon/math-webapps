@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 320" width="760" height="320" font-family="Pretendard, 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif">
+<defs></defs>
+<rect width="100%" height="100%" fill="white"/>
+<line x1="60" y1="40" x2="60" y2="260" stroke="#e5e7eb" stroke-width="1" stroke-linecap="round"/>
+<line x1="156.15" y1="40" x2="156.15" y2="260" stroke="#e5e7eb" stroke-width="1" stroke-linecap="round"/>
+<line x1="252.31" y1="40" x2="252.31" y2="260" stroke="#e5e7eb" stroke-width="1" stroke-linecap="round"/>
+<line x1="60" y1="260" x2="310" y2="260" stroke="#e5e7eb" stroke-width="1" stroke-linecap="round"/>
+<line x1="60" y1="207.62" x2="310" y2="207.62" stroke="#e5e7eb" stroke-width="1" stroke-linecap="round"/>
+<line x1="60" y1="155.24" x2="310" y2="155.24" stroke="#e5e7eb" stroke-width="1" stroke-linecap="round"/>
+<line x1="60" y1="102.86" x2="310" y2="102.86" stroke="#e5e7eb" stroke-width="1" stroke-linecap="round"/>
+<line x1="60" y1="50.48" x2="310" y2="50.48" stroke="#e5e7eb" stroke-width="1" stroke-linecap="round"/>
+<rect x="60" y="40" width="250" height="220" rx="0" fill="none" stroke="#9ca3af" stroke-width="1"/>
+<text x="60" y="276" font-size="12" fill="#6b7280" text-anchor="middle" font-weight="normal" dominant-baseline="auto">0</text>
+<text x="156.15" y="276" font-size="12" fill="#6b7280" text-anchor="middle" font-weight="normal" dominant-baseline="auto">1</text>
+<text x="252.31" y="276" font-size="12" fill="#6b7280" text-anchor="middle" font-weight="normal" dominant-baseline="auto">2</text>
+<text x="54" y="264" font-size="12" fill="#6b7280" text-anchor="end" font-weight="normal" dominant-baseline="auto">0</text>
+<text x="54" y="211.62" font-size="12" fill="#6b7280" text-anchor="end" font-weight="normal" dominant-baseline="auto">1</text>
+<text x="54" y="159.24" font-size="12" fill="#6b7280" text-anchor="end" font-weight="normal" dominant-baseline="auto">2</text>
+<text x="54" y="106.86" font-size="12" fill="#6b7280" text-anchor="end" font-weight="normal" dominant-baseline="auto">3</text>
+<text x="54" y="54.48" font-size="12" fill="#6b7280" text-anchor="end" font-weight="normal" dominant-baseline="auto">4</text>
+<text x="185" y="294" font-size="13" fill="#374151" text-anchor="middle" font-weight="normal" dominant-baseline="auto">x</text>
+<text x="185" y="32" font-size="13" fill="#374151" text-anchor="middle" font-weight="bold" dominant-baseline="auto">데이터와 후보 직선 y = ax</text>
+<polyline points="60,260 87.78,244.87 115.56,229.74 143.33,214.6 171.11,199.47 198.89,184.34 226.67,169.21 254.44,154.07 282.22,138.94 310,123.81" fill="none" stroke="#8a96a3" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/>
+<polyline points="60,260 87.78,229.74 115.56,199.47 143.33,169.21 171.11,138.94 198.89,108.68 226.67,78.41 254.44,48.15" fill="none" stroke="#8a96a3" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/>
+<polyline points="60,260 87.78,239.82 115.56,219.65 143.33,199.47 171.11,179.29 198.89,159.12 226.67,138.94 254.44,118.77 282.22,98.59 310,78.41" fill="none" stroke="#2e7d5b" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round" stroke-dasharray="6 4"/>
+<polyline points="60,260 87.78,238.81 115.56,217.63 143.33,196.44 171.11,175.26 198.89,154.07 226.67,132.89 254.44,111.7 282.22,90.52 310,69.33" fill="none" stroke="#d9822b" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"/>
+<text x="308" y="139.81" font-size="11" fill="#6b7280" text-anchor="end" font-weight="normal" dominant-baseline="auto">a = 1</text>
+<text x="255.92" y="52" font-size="11" fill="#6b7280" text-anchor="end" font-weight="normal" dominant-baseline="auto">a = 2</text>
+<circle cx="156.15" cy="207.62" r="6" fill="#111827" stroke="white" stroke-width="1.2"/>
+<circle cx="252.31" cy="102.86" r="6" fill="#111827" stroke="white" stroke-width="1.2"/>
+<line x1="495" y1="40" x2="495" y2="260" stroke="#e5e7eb" stroke-width="1" stroke-linecap="round"/>
+<line x1="570" y1="40" x2="570" y2="260" stroke="#e5e7eb" stroke-width="1" stroke-linecap="round"/>
+<line x1="682.5" y1="40" x2="682.5" y2="260" stroke="#e5e7eb" stroke-width="1" stroke-linecap="round"/>
+<line x1="420" y1="236.43" x2="720" y2="236.43" stroke="#e5e7eb" stroke-width="1" stroke-linecap="round"/>
+<line x1="420" y1="157.86" x2="720" y2="157.86" stroke="#e5e7eb" stroke-width="1" stroke-linecap="round"/>
+<line x1="420" y1="79.29" x2="720" y2="79.29" stroke="#e5e7eb" stroke-width="1" stroke-linecap="round"/>
+<rect x="420" y="40" width="300" height="220" rx="0" fill="none" stroke="#9ca3af" stroke-width="1"/>
+<text x="495" y="276" font-size="12" fill="#6b7280" text-anchor="middle" font-weight="normal" dominant-baseline="auto">1</text>
+<text x="570" y="276" font-size="12" fill="#6b7280" text-anchor="middle" font-weight="normal" dominant-baseline="auto">1.4</text>
+<text x="682.5" y="276" font-size="12" fill="#6b7280" text-anchor="middle" font-weight="normal" dominant-baseline="auto">2</text>
+<text x="414" y="240.43" font-size="12" fill="#6b7280" text-anchor="end" font-weight="normal" dominant-baseline="auto">0</text>
+<text x="414" y="161.86" font-size="12" fill="#6b7280" text-anchor="end" font-weight="normal" dominant-baseline="auto">0.5</text>
+<text x="414" y="83.29" font-size="12" fill="#6b7280" text-anchor="end" font-weight="normal" dominant-baseline="auto">1</text>
+<text x="570" y="294" font-size="13" fill="#374151" text-anchor="middle" font-weight="normal" dominant-baseline="auto">기울기 a</text>
+<text x="380" y="150" font-size="13" fill="#374151" text-anchor="middle" transform="rotate(-90 380 150)">L(a)</text>
+<text x="570" y="32" font-size="13" fill="#374151" text-anchor="middle" font-weight="bold" dominant-baseline="auto">손실함수 L(a) = ½[(a − 1)² + (2a − 3)²]</text>
+<polyline points="442.07,37.84 443.08,40.7 444.08,43.53 445.08,46.34 446.09,49.13 447.09,51.9 448.09,54.65 449.1,57.37 450.1,60.07 451.1,62.75 452.11,65.4 453.11,68.03 454.11,70.64 455.12,73.23 456.12,75.8 457.12,78.34 458.13,80.86 459.13,83.36 460.13,85.83 461.14,88.28 462.14,90.71 463.14,93.12 464.15,95.5 465.15,97.87 466.15,100.21 467.16,102.52 468.16,104.82 469.16,107.09 470.17,109.34 471.17,111.57 472.17,113.77 473.18,115.96 474.18,118.12 475.18,120.25 476.19,122.37 477.19,124.46 478.19,126.53 479.2,128.58 480.2,130.6 481.2,132.61 482.21,134.59 483.21,136.54 484.21,138.48 485.22,140.39 486.22,142.28 487.22,144.15 488.23,145.99 489.23,147.81 490.23,149.61 491.24,151.39 492.24,153.15 493.24,154.88 494.25,156.59 495.25,158.28 496.25,159.94 497.26,161.58 498.26,163.2 499.26,164.8 500.27,166.38 501.27,167.93 502.27,169.46 503.28,170.97 504.28,172.45 505.28,173.91 506.29,175.35 507.29,176.77 508.29,178.17 509.3,179.54 510.3,180.89 511.3,182.22 512.31,183.52 513.31,184.8 514.31,186.06 515.32,187.3 516.32,188.52 517.32,189.71 518.33,190.88 519.33,192.03 520.33,193.15 521.34,194.25 522.34,195.33 523.34,196.39 524.35,197.43 525.35,198.44 526.35,199.43 527.36,200.39 528.36,201.34 529.36,202.26 530.37,203.16 531.37,204.04 532.37,204.89 533.38,205.73 534.38,206.54 535.38,207.32 536.39,208.09 537.39,208.83 538.39,209.55 539.4,210.25 540.4,210.92 541.4,211.58 542.41,212.21 543.41,212.81 544.41,213.4 545.42,213.96 546.42,214.5 547.42,215.02 548.43,215.51 549.43,215.99 550.43,216.44 551.44,216.86 552.44,217.27 553.44,217.65 554.45,218.01 555.45,218.35 556.45,218.66 557.46,218.96 558.46,219.23 559.46,219.47 560.47,219.7 561.47,219.9 562.47,220.08 563.48,220.24 564.48,220.37 565.48,220.49 566.49,220.58 567.49,220.64 568.49,220.69 569.5,220.71 570.5,220.71 571.51,220.69 572.51,220.64 573.51,220.58 574.52,220.49 575.52,220.37 576.52,220.24 577.53,220.08 578.53,219.9 579.53,219.7 580.54,219.47 581.54,219.23 582.54,218.96 583.55,218.66 584.55,218.35 585.55,218.01 586.56,217.65 587.56,217.27 588.56,216.86 589.57,216.44 590.57,215.99 591.57,215.51 592.58,215.02 593.58,214.5 594.58,213.96 595.59,213.4 596.59,212.81 597.59,212.21 598.6,211.58 599.6,210.92 600.6,210.25 601.61,209.55 602.61,208.83 603.61,208.09 604.62,207.32 605.62,206.54 606.62,205.73 607.63,204.89 608.63,204.04 609.63,203.16 610.64,202.26 611.64,201.34 612.64,200.39 613.65,199.43 614.65,198.44 615.65,197.43 616.66,196.39 617.66,195.33 618.66,194.25 619.67,193.15 620.67,192.03 621.67,190.88 622.68,189.71 623.68,188.52 624.68,187.3 625.69,186.06 626.69,184.8 627.69,183.52 628.7,182.22 629.7,180.89 630.7,179.54 631.71,178.17 632.71,176.77 633.71,175.35 634.72,173.91 635.72,172.45 636.72,170.97 637.73,169.46 638.73,167.93 639.73,166.38 640.74,164.8 641.74,163.2 642.74,161.58 643.75,159.94 644.75,158.28 645.75,156.59 646.76,154.88 647.76,153.15 648.76,151.39 649.77,149.61 650.77,147.81 651.77,145.99 652.78,144.15 653.78,142.28 654.78,140.39 655.79,138.48 656.79,136.54 657.79,134.59 658.8,132.61 659.8,130.6 660.8,128.58 661.81,126.53 662.81,124.46 663.81,122.37 664.82,120.25 665.82,118.12 666.82,115.96 667.83,113.77 668.83,111.57 669.83,109.34 670.84,107.09 671.84,104.82 672.84,102.52 673.85,100.21 674.85,97.87 675.85,95.5 676.86,93.12 677.86,90.71 678.86,88.28 679.87,85.83 680.87,83.36 681.87,80.86 682.88,78.34 683.88,75.8 684.88,73.23 685.89,70.64 686.89,68.03 687.89,65.4 688.9,62.75 689.9,60.07 690.9,57.37 691.91,54.65 692.91,51.9 693.91,49.13 694.92,46.34 695.92,43.53 696.92,40.7 697.93,37.84" fill="none" stroke="#2f5d8a" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="495" cy="157.86" r="5" fill="#374151" stroke="white" stroke-width="1.2"/>
+<circle cx="682.5" cy="79.29" r="5" fill="#374151" stroke="white" stroke-width="1.2"/>
+<circle cx="557.5" cy="218.97" r="5" fill="#2e7d5b" stroke="white" stroke-width="1.2"/>
+<circle cx="570" cy="220.71" r="6" fill="#d9822b" stroke="white" stroke-width="1.2"/>
+<text x="487" y="161.86" font-size="11.5" fill="#6b7280" text-anchor="end" font-weight="normal" dominant-baseline="auto">0.5</text>
+<text x="690.5" y="83.29" font-size="11.5" fill="#6b7280" text-anchor="start" font-weight="normal" dominant-baseline="auto">1</text>
+<line x1="553.75" y1="215.83" x2="495" y2="189.29" stroke="#2e7d5b" stroke-width="1" stroke-linecap="round"/>
+<text x="491" y="187.29" font-size="11.5" fill="#2e7d5b" text-anchor="end" font-weight="bold" dominant-baseline="auto">a = 4/3: 0.111 (오차의 합 0)</text>
+<text x="578" y="238.71" font-size="11.5" fill="#d9822b" text-anchor="start" font-weight="bold" dominant-baseline="auto">a = 7/5: 0.1 (가장 작다)</text>
+<text x="60" y="312" font-size="12" fill="#6b7280" text-anchor="start" font-weight="normal" dominant-baseline="auto">회색: a = 1, 2.  초록 점선: 오차의 합이 0인 a = 4/3.  주황: 손실이 가장 작은 a = 7/5.</text>
+</svg>

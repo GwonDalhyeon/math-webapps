@@ -1,0 +1,20 @@
+/* 공용 그림 부품 */
+.part.fig { width: 100%; display: block; background: none; border: none; border-radius: 0; overflow: visible; }
+.part.fig .fg-row { display: flex; gap: 16px; }
+.part.fig .fg-row.fg-stack { flex-direction: column; }
+.part.fig canvas { flex: 1; min-width: 0; width: 100%; display: block; background: #fff; border: 1px solid var(--line); border-radius: 10px; }
+.part.fig .bar .rng input { width: 170px; accent-color: var(--title); }
+.part.fig .bar .seg { display: inline-flex; gap: 0; align-items: center; }
+.part.fig .bar .seg .lb { margin-right: 8px; color: var(--sub); }
+.part.fig .bar .seg button { border-radius: 0; margin-left: -1.5px; }
+.part.fig .bar .seg button:first-of-type { border-radius: 8px 0 0 8px; }
+.part.fig .bar .seg button:last-of-type { border-radius: 0 8px 8px 0; }
+.part.fig .bar .seg button.on { background: var(--title); color: #fff; }
+.part.fig .bar .ro { font-size: 20px; color: var(--sub); }
+.part.fig .bar .ro b { color: var(--title); }
+/* 눌러서 여는 칸(확인 질문 답 등) */
+.tap { background: var(--space-bg); border-radius: 6px; cursor: pointer; padding: 0 6px; }
+.tap .a { visibility: hidden; }
+.tap.open .a { visibility: visible; }
+td.tap { min-width: 3em; }
+.part.fig .fg-stack canvas { flex: none; }

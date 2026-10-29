@@ -1,0 +1,102 @@
+/* 경상국립대 수학교육과 특강 발표 화면 공통 스타일 (16:9, 1280×720 기준, 명세 slides_spec_v1.md)
+   의미색: 공간 = 파랑, 시간 = 주황, 정답·최적 = 초록, 터짐·현재 = 빨강, 정확한 해 = 회색 */
+:root {
+  --font: 'Pretendard Variable', Pretendard, 'Malgun Gothic', sans-serif;
+  --bg: #fbfcfe; --ink: #0f1a27; --sub: #26364a; --faint: #3b5170; --title: #16325a;
+  --line: #c9d5e3; --panel: #edf2f9; --hl: #ffe1a1;
+  --space: #2f5d8a; --space-bg: #e6eef7;
+  --time: #d9822b; --time-text: #a85a0c; --time-bg: #fdf3e6;
+  --good: #2e7d5b; --bad: #b03a2e; --exact: #8a96a3; --vel: #4b5563;
+}
+html, body { background: var(--bg); }
+.reveal { font-family: var(--font); font-size: 26px; color: var(--ink); }
+.reveal .slides { text-align: left; }
+.reveal .slides > section, .reveal .slides > section > section { padding: 0; height: 100%; }
+.reveal .backgrounds { background-color: var(--bg);
+  background-image: linear-gradient(#e9eef5 1px, transparent 1px), linear-gradient(90deg, #e9eef5 1px, transparent 1px);
+  background-size: 32px 32px; }
+.reveal .controls { color: #888; }
+.reveal .progress { color: #9fb3c8; height: 4px; }
+/* 화면 번호는 화살표와 40px 띄운다(화면 지침 3-3) */
+.reveal .slide-number { background: transparent; color: #7d8ea3; font: 15px var(--font); right: 150px; bottom: 26px; }
+
+.crumb { font-size: 17px; font-weight: 700; color: var(--faint); border-left: 5px solid var(--time); padding-left: 10px; }
+h2.t { font-size: 36px; font-weight: 800; color: var(--title); margin: 6px 0 14px; line-height: 1.25; }
+.small { font-size: 22px; color: var(--sub); line-height: 1.45; }
+.cap { font-size: 21px; color: var(--sub); }
+b.k, .k { background: linear-gradient(transparent 55%, var(--hl) 55%); font-weight: 700; }
+.pts { margin: 0 0 0 1.1em; padding: 0; } .pts li { margin: 6px 0; line-height: 1.45; }
+.sp { color: var(--space); font-weight: 800; } .tm { color: var(--time-text); font-weight: 800; }
+.good { color: var(--good); font-weight: 800; } .bad { color: var(--bad); font-weight: 800; }
+.ask { background: var(--time-bg); border: 2px solid var(--time); border-radius: 12px; padding: 12px 20px; font-size: 28px; font-weight: 700; color: #6b3a05; }
+.box { background: #fff; border: 1.5px solid var(--line); border-radius: 12px; padding: 14px 18px; }
+.recap { border-left: 8px solid var(--title); background: #eef3f8; padding: 16px 22px; border-radius: 0 12px 12px 0; font-size: 28px; line-height: 1.5; }
+.cols { display: grid; gap: 26px; } .c-40 { grid-template-columns: 40% 1fr; } .c-50 { grid-template-columns: 1fr 1fr; }
+.fig { background: #fff; border: 1px solid var(--line); border-radius: 10px; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+.fig img { max-width: 100%; max-height: 100%; }
+.reveal .fragment.fade-hold { opacity: 0; visibility: hidden; }
+
+/* 표지 */
+.cover { height: 100%; display: flex; flex-direction: column; justify-content: center; }
+.cover h1 { font-size: 60px; font-weight: 800; color: var(--title); line-height: 1.2; margin: 10px 0 0; }
+.cover .sub { font-size: 28px; color: var(--sub); margin-top: 16px; }
+.path { display: flex; gap: 10px; margin-top: 48px; }
+.path div { flex: 1; border-top: 6px solid var(--line); padding-top: 10px; font-size: 19px; color: var(--sub); font-weight: 600; }
+.path div.on { border-color: var(--time); color: var(--ink); }
+
+/* 진로 시간선 */
+.timeline { list-style: none; margin: 30px 0 0; padding: 0 0 0 34px; border-left: 4px solid var(--line); }
+.timeline li { position: relative; margin: 0 0 28px; font-size: 28px; line-height: 1.4; }
+.timeline li::before { content: ''; position: absolute; left: -46px; top: 10px; width: 18px; height: 18px; border-radius: 50%; background: var(--title); }
+.timeline li .d { display: block; font-size: 21px; color: var(--sub); margin-top: 2px; }
+
+/* 지도 */
+.map { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-top: 12px; }
+.map a, .map .legend { display: block; background: #fff; border: 1.5px solid var(--line); border-radius: 12px; padding: 14px 16px; color: var(--ink); text-decoration: none; min-height: 150px; }
+.map a .n { font-size: 30px; font-weight: 800; color: var(--time-text); }
+.map a .h { font-size: 23px; font-weight: 800; color: var(--title); margin: 2px 0 6px; }
+.map a .q { font-size: 19px; color: var(--sub); line-height: 1.4; }
+.map a.calc { border-top: 6px solid var(--space); } .map a.data { border-top: 6px solid var(--good); }
+.map .legend { display: flex; flex-direction: column; justify-content: center; gap: 10px; font-size: 20px; color: var(--sub); }
+.msg { margin-top: 22px; font-size: 26px; line-height: 1.5; }
+
+/* 조작 막대(부품 공통) */
+.bar { display: flex; gap: 10px; align-items: center; margin-top: 10px; font-size: 20px; flex-wrap: wrap; }
+.bar button { font: 700 20px var(--font); color: var(--title); background: #fff; border: 1.5px solid #9fb3c8; border-radius: 8px; padding: 6px 16px; min-height: 42px; cursor: pointer; }
+.bar button.go { background: var(--title); color: #fff; border-color: var(--title); }
+.bar button:disabled { opacity: .45; cursor: default; }
+.bar label { display: flex; align-items: center; gap: 8px; color: var(--sub); margin-left: 8px; cursor: pointer; }
+.bar input[type=checkbox] { width: 20px; height: 20px; accent-color: var(--title); }
+.bar .val { font-weight: 800; color: var(--title); min-width: 4.2em; }
+.bar .grow { flex: 1; }
+
+/* 실패 대비 그림: 부품이 오류를 내면 보인다 */
+.part > .fallback { display: none; max-width: 100%; }
+.part.failed > .fallback { display: block; }
+.part.failed > :not(.fallback) { display: none; }
+
+/* 두 가지 일·손잡이 상자 */
+.jobs { display: flex; align-items: stretch; justify-content: center; gap: 10px; margin-top: 16px; }
+.job { background: #f4f7fb; border: 1.5px solid #9fb3c8; border-radius: 10px; padding: 14px 18px; text-align: center; min-width: 250px; }
+.job b { display: block; font-size: 25px; color: var(--title); }
+.job span { display: block; font-size: 20px; color: var(--sub); margin-top: 4px; }
+.job.sp-b { border-color: var(--space); } .job.tm-b { border-color: var(--time); }
+.jarr { align-self: center; font-size: 34px; color: var(--space); }
+.knobs { display: flex; justify-content: center; gap: 40px; margin-top: 26px; }
+.knob { border-radius: 40px; padding: 14px 30px; text-align: center; min-width: 330px; border: 2px solid; }
+.knob b { display: block; font-size: 25px; } .knob span { display: block; font-size: 20px; color: var(--sub); margin-top: 4px; }
+.knob.sp-k { border-color: var(--space); background: var(--space-bg); } .knob.sp-k b { color: var(--space); }
+.knob.tm-k { border-color: var(--time); background: var(--time-bg); } .knob.tm-k b { color: var(--time-text); }
+/* 표 */
+table.ft { border-collapse: collapse; font-size: 22px; margin: 0 auto; }
+table.ft th, table.ft td { border: 1px solid #aab8c8; padding: 6px 14px; text-align: center; min-width: 70px; }
+table.ft th { background: #eef3f8; color: var(--title); }
+/* Taylor 전개에서 지워지는 홀수 항 */
+.fade-odd { color: #9aa7b6; }
+/* 학습 구조 흐름 */
+.flow { display: flex; align-items: stretch; justify-content: center; gap: 8px; margin-top: 30px; }
+.fstep { background: #f4f7fb; border: 1.5px solid #9fb3c8; border-radius: 10px; padding: 14px 10px; text-align: center; width: 190px; }
+.fstep b { display: block; font-size: 26px; color: var(--title); } .fstep span { display: block; font-size: 19px; color: var(--sub); margin-top: 4px; }
+.fstep.visible.current-fragment { border-color: var(--time); background: var(--time-bg); }
+.farr { align-self: center; font-size: 30px; color: var(--space); }
+.gtab td { min-width: 82px; height: 36px; font-weight: 700; color: var(--title); }

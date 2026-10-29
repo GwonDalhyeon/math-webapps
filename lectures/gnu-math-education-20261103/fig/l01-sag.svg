@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 300" width="760" height="300" font-family="Pretendard, 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif">
+<defs></defs>
+<rect width="100%" height="100%" fill="white"/>
+<text x="205" y="32" font-size="13" fill="#374151" text-anchor="middle" font-weight="bold" dominant-baseline="auto">고르게 무게를 건 줄이 처진 채 멈춘 모양</text>
+<line x1="40" y1="70.51" x2="370" y2="70.51" stroke="#e5e7eb" stroke-width="1" stroke-linecap="round"/>
+<polyline points="55,70.51 56.51,73.22 58.02,75.9 59.52,78.56 61.03,81.19 62.54,83.79 64.05,86.37 65.55,88.92 67.06,91.44 68.57,93.93 70.08,96.39 71.58,98.83 73.09,101.24 74.6,103.63 76.11,105.98 77.61,108.31 79.12,110.61 80.63,112.88 82.14,115.13 83.64,117.35 85.15,119.54 86.66,121.7 88.17,123.84 89.67,125.95 91.18,128.03 92.69,130.09 94.2,132.11 95.7,134.11 97.21,136.08 98.72,138.03 100.23,139.95 101.73,141.84 103.24,143.7 104.75,145.53 106.26,147.34 107.76,149.12 109.27,150.88 110.78,152.6 112.29,154.3 113.79,155.97 115.3,157.61 116.81,159.23 118.32,160.82 119.82,162.38 121.33,163.91 122.84,165.42 124.35,166.9 125.85,168.35 127.36,169.78 128.87,171.17 130.38,172.54 131.88,173.89 133.39,175.2 134.9,176.49 136.41,177.75 137.91,178.98 139.42,180.19 140.93,181.36 142.44,182.51 143.94,183.64 145.45,184.73 146.96,185.8 148.47,186.84 149.97,187.86 151.48,188.84 152.99,189.8 154.5,190.73 156.01,191.64 157.51,192.51 159.02,193.36 160.53,194.18 162.04,194.98 163.54,195.74 165.05,196.48 166.56,197.2 168.07,197.88 169.57,198.54 171.08,199.17 172.59,199.77 174.1,200.35 175.6,200.89 177.11,201.41 178.62,201.91 180.13,202.37 181.63,202.81 183.14,203.22 184.65,203.61 186.16,203.96 187.66,204.29 189.17,204.59 190.68,204.87 192.19,205.11 193.69,205.33 195.2,205.52 196.71,205.69 198.22,205.82 199.72,205.93 201.23,206.02 202.74,206.07 204.25,206.1 205.75,206.1 207.26,206.07 208.77,206.02 210.28,205.93 211.78,205.82 213.29,205.69 214.8,205.52 216.31,205.33 217.81,205.11 219.32,204.87 220.83,204.59 222.34,204.29 223.84,203.96 225.35,203.61 226.86,203.22 228.37,202.81 229.87,202.37 231.38,201.91 232.89,201.41 234.4,200.89 235.9,200.35 237.41,199.77 238.92,199.17 240.43,198.54 241.93,197.88 243.44,197.2 244.95,196.48 246.46,195.74 247.96,194.98 249.47,194.18 250.98,193.36 252.49,192.51 253.99,191.64 255.5,190.73 257.01,189.8 258.52,188.84 260.03,187.86 261.53,186.84 263.04,185.8 264.55,184.73 266.06,183.64 267.56,182.51 269.07,181.36 270.58,180.19 272.09,178.98 273.59,177.75 275.1,176.49 276.61,175.2 278.12,173.89 279.62,172.54 281.13,171.17 282.64,169.78 284.15,168.35 285.65,166.9 287.16,165.42 288.67,163.91 290.18,162.38 291.68,160.82 293.19,159.23 294.7,157.61 296.21,155.97 297.71,154.3 299.22,152.6 300.73,150.88 302.24,149.12 303.74,147.34 305.25,145.53 306.76,143.7 308.27,141.84 309.77,139.95 311.28,138.03 312.79,136.08 314.3,134.11 315.8,132.11 317.31,130.09 318.82,128.03 320.33,125.95 321.83,123.84 323.34,121.7 324.85,119.54 326.36,117.35 327.86,115.13 329.37,112.88 330.88,110.61 332.39,108.31 333.89,105.98 335.4,103.63 336.91,101.24 338.42,98.83 339.92,96.39 341.43,93.93 342.94,91.44 344.45,88.92 345.95,86.37 347.46,83.79 348.97,81.19 350.48,78.56 351.98,75.9 353.49,73.22 355,70.51" fill="none" stroke="#8a96a3" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round" stroke-dasharray="5 4"/>
+<line x1="55" y1="70.51" x2="130" y2="172.2" stroke="#2f5d8a" stroke-width="3" stroke-linecap="round"/>
+<line x1="130" y1="172.2" x2="205" y2="206.1" stroke="#2f5d8a" stroke-width="3" stroke-linecap="round"/>
+<line x1="205" y1="206.1" x2="280" y2="172.2" stroke="#2f5d8a" stroke-width="3" stroke-linecap="round"/>
+<line x1="280" y1="172.2" x2="355" y2="70.51" stroke="#2f5d8a" stroke-width="3" stroke-linecap="round"/>
+<circle cx="55" cy="70.51" r="5" fill="#374151" stroke="white" stroke-width="1.2"/>
+<line x1="130" y1="172.2" x2="130" y2="191.04" stroke="#6b7280" stroke-width="1.6" stroke-linecap="butt"/>
+<polygon points="130,198.2 125.6,190.04 134.4,190.04" fill="#6b7280"/>
+<circle cx="130" cy="172.2" r="7" fill="#d9822b" stroke="white" stroke-width="1.2"/>
+<text x="118" y="192.2" font-size="12.5" fill="#374151" text-anchor="end" font-weight="bold" dominant-baseline="auto">u₁ = 1.5</text>
+<line x1="205" y1="206.1" x2="205" y2="224.94" stroke="#6b7280" stroke-width="1.6" stroke-linecap="butt"/>
+<polygon points="205,232.1 200.6,223.94 209.4,223.94" fill="#6b7280"/>
+<circle cx="205" cy="206.1" r="7" fill="#d9822b" stroke="white" stroke-width="1.2"/>
+<text x="219" y="226.1" font-size="12.5" fill="#374151" text-anchor="start" font-weight="bold" dominant-baseline="auto">u₂ = 2</text>
+<line x1="280" y1="172.2" x2="280" y2="191.04" stroke="#6b7280" stroke-width="1.6" stroke-linecap="butt"/>
+<polygon points="280,198.2 275.6,190.04 284.4,190.04" fill="#6b7280"/>
+<circle cx="280" cy="172.2" r="7" fill="#d9822b" stroke="white" stroke-width="1.2"/>
+<text x="294" y="192.2" font-size="12.5" fill="#374151" text-anchor="start" font-weight="bold" dominant-baseline="auto">u₃ = 1.5</text>
+<circle cx="355" cy="70.51" r="5" fill="#374151" stroke="white" stroke-width="1.2"/>
+<text x="65" y="62.51" font-size="11.5" fill="#6b7280" text-anchor="start" font-weight="normal" dominant-baseline="auto">묶인 끝</text>
+<text x="560" y="40" font-size="14" fill="#374151" text-anchor="middle" font-weight="bold" dominant-baseline="auto">행렬 방정식  A u = b</text>
+<text x="441" y="70" font-size="11.5" fill="#6b7280" text-anchor="middle" font-weight="normal" dominant-baseline="auto">u₁</text>
+<text x="483" y="70" font-size="11.5" fill="#6b7280" text-anchor="middle" font-weight="normal" dominant-baseline="auto">u₂</text>
+<text x="525" y="70" font-size="11.5" fill="#6b7280" text-anchor="middle" font-weight="normal" dominant-baseline="auto">u₃</text>
+<rect x="420" y="78" width="42" height="42" rx="0" fill="#f6d9b8" stroke="#d9822b" stroke-width="0.8"/>
+<text x="441" y="104.4" font-size="15" fill="#111827" text-anchor="middle" font-weight="bold" dominant-baseline="auto">2</text>
+<rect x="462" y="78" width="42" height="42" rx="0" fill="#cfdeee" stroke="#2f5d8a" stroke-width="0.8"/>
+<text x="483" y="104.4" font-size="15" fill="#111827" text-anchor="middle" font-weight="bold" dominant-baseline="auto">−1</text>
+<rect x="504" y="78" width="42" height="42" rx="0" fill="white" stroke="#e5e7eb" stroke-width="0.8"/>
+<text x="525" y="104.4" font-size="15" fill="#6b7280" text-anchor="middle" font-weight="normal" dominant-baseline="auto">0</text>
+<rect x="420" y="120" width="42" height="42" rx="0" fill="#cfdeee" stroke="#2f5d8a" stroke-width="0.8"/>
+<text x="441" y="146.4" font-size="15" fill="#111827" text-anchor="middle" font-weight="bold" dominant-baseline="auto">−1</text>
+<rect x="462" y="120" width="42" height="42" rx="0" fill="#f6d9b8" stroke="#d9822b" stroke-width="0.8"/>
+<text x="483" y="146.4" font-size="15" fill="#111827" text-anchor="middle" font-weight="bold" dominant-baseline="auto">2</text>
+<rect x="504" y="120" width="42" height="42" rx="0" fill="#cfdeee" stroke="#2f5d8a" stroke-width="0.8"/>
+<text x="525" y="146.4" font-size="15" fill="#111827" text-anchor="middle" font-weight="bold" dominant-baseline="auto">−1</text>
+<rect x="420" y="162" width="42" height="42" rx="0" fill="white" stroke="#e5e7eb" stroke-width="0.8"/>
+<text x="441" y="188.4" font-size="15" fill="#6b7280" text-anchor="middle" font-weight="normal" dominant-baseline="auto">0</text>
+<rect x="462" y="162" width="42" height="42" rx="0" fill="#cfdeee" stroke="#2f5d8a" stroke-width="0.8"/>
+<text x="483" y="188.4" font-size="15" fill="#111827" text-anchor="middle" font-weight="bold" dominant-baseline="auto">−1</text>
+<rect x="504" y="162" width="42" height="42" rx="0" fill="#f6d9b8" stroke="#d9822b" stroke-width="0.8"/>
+<text x="525" y="188.4" font-size="15" fill="#111827" text-anchor="middle" font-weight="bold" dominant-baseline="auto">2</text>
+<path d="M421.0,75.0 Q409.0,141.0 421.0,207.0" fill="none" stroke="#374151" stroke-width="1.6"/>
+<path d="M545.0,75.0 Q557.0,141.0 545.0,207.0" fill="none" stroke="#374151" stroke-width="1.6"/>
+<text x="593" y="104.4" font-size="15" fill="#d9822b" text-anchor="middle" font-weight="bold" dominant-baseline="auto">u₁</text>
+<text x="593" y="146.4" font-size="15" fill="#d9822b" text-anchor="middle" font-weight="bold" dominant-baseline="auto">u₂</text>
+<text x="593" y="188.4" font-size="15" fill="#d9822b" text-anchor="middle" font-weight="bold" dominant-baseline="auto">u₃</text>
+<path d="M575.0,76.0 Q563.0,141.0 575.0,206.0" fill="none" stroke="#374151" stroke-width="1.6"/>
+<path d="M611.0,76.0 Q623.0,141.0 611.0,206.0" fill="none" stroke="#374151" stroke-width="1.6"/>
+<text x="640" y="147" font-size="20" fill="#111827" text-anchor="middle" font-weight="bold" dominant-baseline="auto">=</text>
+<text x="679" y="104.4" font-size="15" fill="#111827" text-anchor="middle" font-weight="bold" dominant-baseline="auto">1</text>
+<text x="679" y="146.4" font-size="15" fill="#111827" text-anchor="middle" font-weight="bold" dominant-baseline="auto">1</text>
+<text x="679" y="188.4" font-size="15" fill="#111827" text-anchor="middle" font-weight="bold" dominant-baseline="auto">1</text>
+<path d="M661.0,76.0 Q649.0,141.0 661.0,206.0" fill="none" stroke="#374151" stroke-width="1.6"/>
+<path d="M697.0,76.0 Q709.0,141.0 697.0,206.0" fill="none" stroke="#374151" stroke-width="1.6"/>
+<text x="483" y="230" font-size="12.5" fill="#374151" text-anchor="middle" font-weight="bold" dominant-baseline="auto">A (계수 행렬)</text>
+<text x="593" y="230" font-size="12.5" fill="#d9822b" text-anchor="middle" font-weight="bold" dominant-baseline="auto">u</text>
+<text x="679" y="230" font-size="12.5" fill="#374151" text-anchor="middle" font-weight="bold" dominant-baseline="auto">b</text>
+<text x="483" y="252" font-size="11.5" fill="#6b7280" text-anchor="middle" font-weight="normal" dominant-baseline="auto">주황 칸: 자기 자신,  파랑 칸: 바로 옆 점</text>
+<text x="40" y="292" font-size="11.5" fill="#6b7280" text-anchor="start" font-weight="normal" dominant-baseline="auto">주황 점: 처진 깊이를 구할 세 점,  파란 선: 바로 옆 점끼리의 연결,  점선: 세 점을 지나는 포물선 8x(1 − x)</text>
+</svg>

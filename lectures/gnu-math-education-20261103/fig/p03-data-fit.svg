@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 330" width="760" height="330" font-family="Pretendard, 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif">
+<defs></defs>
+<rect width="100%" height="100%" fill="white"/>
+<line x1="70" y1="34" x2="70" y2="264" stroke="#e5e7eb" stroke-width="1" stroke-linecap="round"/>
+<line x1="173.85" y1="34" x2="173.85" y2="264" stroke="#e5e7eb" stroke-width="1" stroke-linecap="round"/>
+<line x1="277.69" y1="34" x2="277.69" y2="264" stroke="#e5e7eb" stroke-width="1" stroke-linecap="round"/>
+<line x1="70" y1="264" x2="340" y2="264" stroke="#e5e7eb" stroke-width="1" stroke-linecap="round"/>
+<line x1="70" y1="209.24" x2="340" y2="209.24" stroke="#e5e7eb" stroke-width="1" stroke-linecap="round"/>
+<line x1="70" y1="154.48" x2="340" y2="154.48" stroke="#e5e7eb" stroke-width="1" stroke-linecap="round"/>
+<line x1="70" y1="99.71" x2="340" y2="99.71" stroke="#e5e7eb" stroke-width="1" stroke-linecap="round"/>
+<line x1="70" y1="44.95" x2="340" y2="44.95" stroke="#e5e7eb" stroke-width="1" stroke-linecap="round"/>
+<rect x="70" y="34" width="270" height="230" rx="0" fill="none" stroke="#9ca3af" stroke-width="1"/>
+<text x="70" y="280" font-size="12" fill="#6b7280" text-anchor="middle" font-weight="normal" dominant-baseline="auto">0</text>
+<text x="173.85" y="280" font-size="12" fill="#6b7280" text-anchor="middle" font-weight="normal" dominant-baseline="auto">1</text>
+<text x="277.69" y="280" font-size="12" fill="#6b7280" text-anchor="middle" font-weight="normal" dominant-baseline="auto">2</text>
+<text x="64" y="268" font-size="12" fill="#6b7280" text-anchor="end" font-weight="normal" dominant-baseline="auto">0</text>
+<text x="64" y="213.24" font-size="12" fill="#6b7280" text-anchor="end" font-weight="normal" dominant-baseline="auto">1</text>
+<text x="64" y="158.48" font-size="12" fill="#6b7280" text-anchor="end" font-weight="normal" dominant-baseline="auto">2</text>
+<text x="64" y="103.71" font-size="12" fill="#6b7280" text-anchor="end" font-weight="normal" dominant-baseline="auto">3</text>
+<text x="64" y="48.95" font-size="12" fill="#6b7280" text-anchor="end" font-weight="normal" dominant-baseline="auto">4</text>
+<text x="205" y="298" font-size="13" fill="#374151" text-anchor="middle" font-weight="normal" dominant-baseline="auto">x</text>
+<text x="205" y="26" font-size="13" fill="#374151" text-anchor="middle" font-weight="bold" dominant-baseline="auto">데이터와 직선 y = (7/5)x</text>
+<polyline points="70,264 100,241.85 130,219.7 160,197.56 190,175.41 220,153.26 250,131.11 280,108.96 310,86.81 340,64.67" fill="none" stroke="#2f5d8a" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round"/>
+<line x1="173.85" y1="209.24" x2="173.85" y2="187.33" stroke="#d9822b" stroke-width="2.4" stroke-linecap="round"/>
+<circle cx="173.85" cy="187.33" r="4" fill="#2f5d8a" stroke="white" stroke-width="1.2"/>
+<circle cx="173.85" cy="209.24" r="5.5" fill="#111827" stroke="white" stroke-width="1.2"/>
+<text x="181.85" y="202.29" font-size="11.5" fill="#d9822b" text-anchor="start" font-weight="bold" dominant-baseline="auto">세로 오차 0.4</text>
+<line x1="277.69" y1="99.71" x2="277.69" y2="110.67" stroke="#d9822b" stroke-width="2.4" stroke-linecap="round"/>
+<circle cx="277.69" cy="110.67" r="4" fill="#2f5d8a" stroke="white" stroke-width="1.2"/>
+<circle cx="277.69" cy="99.71" r="5.5" fill="#111827" stroke="white" stroke-width="1.2"/>
+<text x="285.69" y="109.19" font-size="11.5" fill="#d9822b" text-anchor="start" font-weight="bold" dominant-baseline="auto">세로 오차 0.2</text>
+<line x1="449.17" y1="34" x2="449.17" y2="264" stroke="#e5e7eb" stroke-width="1" stroke-linecap="round"/>
+<line x1="497.08" y1="34" x2="497.08" y2="264" stroke="#e5e7eb" stroke-width="1" stroke-linecap="round"/>
+<line x1="545" y1="34" x2="545" y2="264" stroke="#e5e7eb" stroke-width="1" stroke-linecap="round"/>
+<line x1="592.92" y1="34" x2="592.92" y2="264" stroke="#e5e7eb" stroke-width="1" stroke-linecap="round"/>
+<line x1="430" y1="244.83" x2="592.92" y2="244.83" stroke="#e5e7eb" stroke-width="1" stroke-linecap="round"/>
+<line x1="430" y1="196.92" x2="592.92" y2="196.92" stroke="#e5e7eb" stroke-width="1" stroke-linecap="round"/>
+<line x1="430" y1="149" x2="592.92" y2="149" stroke="#e5e7eb" stroke-width="1" stroke-linecap="round"/>
+<line x1="430" y1="101.08" x2="592.92" y2="101.08" stroke="#e5e7eb" stroke-width="1" stroke-linecap="round"/>
+<line x1="430" y1="53.17" x2="592.92" y2="53.17" stroke="#e5e7eb" stroke-width="1" stroke-linecap="round"/>
+<rect x="430" y="34" width="162.92" height="230" rx="0" fill="none" stroke="#9ca3af" stroke-width="1"/>
+<text x="449.17" y="280" font-size="12" fill="#6b7280" text-anchor="middle" font-weight="normal" dominant-baseline="auto">0</text>
+<text x="497.08" y="280" font-size="12" fill="#6b7280" text-anchor="middle" font-weight="normal" dominant-baseline="auto">1</text>
+<text x="545" y="280" font-size="12" fill="#6b7280" text-anchor="middle" font-weight="normal" dominant-baseline="auto">2</text>
+<text x="592.92" y="280" font-size="12" fill="#6b7280" text-anchor="middle" font-weight="normal" dominant-baseline="auto">3</text>
+<text x="424" y="248.83" font-size="12" fill="#6b7280" text-anchor="end" font-weight="normal" dominant-baseline="auto">0</text>
+<text x="424" y="200.92" font-size="12" fill="#6b7280" text-anchor="end" font-weight="normal" dominant-baseline="auto">1</text>
+<text x="424" y="153" font-size="12" fill="#6b7280" text-anchor="end" font-weight="normal" dominant-baseline="auto">2</text>
+<text x="424" y="105.08" font-size="12" fill="#6b7280" text-anchor="end" font-weight="normal" dominant-baseline="auto">3</text>
+<text x="424" y="57.17" font-size="12" fill="#6b7280" text-anchor="end" font-weight="normal" dominant-baseline="auto">4</text>
+<line x1="430" y1="244.83" x2="592.92" y2="244.83" stroke="#6b7280" stroke-width="1" stroke-linecap="round"/>
+<line x1="449.17" y1="264" x2="449.17" y2="34" stroke="#6b7280" stroke-width="1" stroke-linecap="round"/>
+<text x="511.46" y="26" font-size="13" fill="#374151" text-anchor="middle" font-weight="bold" dominant-baseline="auto">예측값을 모은 점과 실제 값을 모은 점</text>
+<polyline points="439.58,264 452.09,238.98 464.61,213.95 477.12,188.93 489.63,163.91 502.14,138.88 514.65,113.86 527.16,88.84 539.68,63.81 552.19,38.79" fill="none" stroke="#2f5d8a" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/>
+<line x1="516.25" y1="110.67" x2="497.08" y2="101.08" stroke="#d9822b" stroke-width="2.2" stroke-linecap="round"/>
+<circle cx="516.25" cy="110.67" r="5" fill="#2f5d8a" stroke="white" stroke-width="1.2"/>
+<circle cx="497.08" cy="101.08" r="6" fill="#111827" stroke="white" stroke-width="1.2"/>
+<text x="525.25" y="122.67" font-size="11.5" fill="#2f5d8a" text-anchor="start" font-weight="bold" dominant-baseline="auto">예측 (7/5, 14/5)</text>
+<text x="488.08" y="95.08" font-size="11.5" fill="#111827" text-anchor="end" font-weight="bold" dominant-baseline="auto">실제 (1, 3)</text>
+<text x="70" y="324" font-size="12" fill="#6b7280" text-anchor="start" font-weight="normal" dominant-baseline="auto">왼쪽 세로 오차의 제곱의 합 0.4² + 0.2² = 0.2는 오른쪽 주황 선분 길이의 제곱과 같다.</text>
+</svg>

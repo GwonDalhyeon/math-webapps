@@ -1,0 +1,73 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 300" width="760" height="300" font-family="Pretendard, 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif">
+<defs></defs>
+<rect width="100%" height="100%" fill="white"/>
+<text x="200" y="26" font-size="14" fill="#374151" text-anchor="middle" font-weight="bold" dominant-baseline="auto">r = 0.5: 한 걸음에 반 칸</text>
+<polygon points="200,60 177.0,190 223.0,190" fill="#d9822b" opacity="0.22"/>
+<line x1="200" y1="60" x2="177" y2="190" stroke="#d9822b" stroke-width="1.2" stroke-dasharray="4 3" stroke-linecap="round"/>
+<line x1="200" y1="60" x2="223" y2="190" stroke="#d9822b" stroke-width="1.2" stroke-dasharray="4 3" stroke-linecap="round"/>
+<circle cx="62" cy="60" r="3.5" fill="#cbd5e1" stroke="white" stroke-width="1.2"/>
+<circle cx="62" cy="190" r="3.5" fill="#cbd5e1" stroke="white" stroke-width="1.2"/>
+<circle cx="108" cy="60" r="3.5" fill="#cbd5e1" stroke="white" stroke-width="1.2"/>
+<circle cx="108" cy="190" r="3.5" fill="#cbd5e1" stroke="white" stroke-width="1.2"/>
+<circle cx="154" cy="60" r="3.5" fill="#cbd5e1" stroke="white" stroke-width="1.2"/>
+<circle cx="154" cy="190" r="3.5" fill="#cbd5e1" stroke="white" stroke-width="1.2"/>
+<circle cx="200" cy="60" r="3.5" fill="#cbd5e1" stroke="white" stroke-width="1.2"/>
+<circle cx="200" cy="190" r="3.5" fill="#cbd5e1" stroke="white" stroke-width="1.2"/>
+<circle cx="246" cy="60" r="3.5" fill="#cbd5e1" stroke="white" stroke-width="1.2"/>
+<circle cx="246" cy="190" r="3.5" fill="#cbd5e1" stroke="white" stroke-width="1.2"/>
+<circle cx="292" cy="60" r="3.5" fill="#cbd5e1" stroke="white" stroke-width="1.2"/>
+<circle cx="292" cy="190" r="3.5" fill="#cbd5e1" stroke="white" stroke-width="1.2"/>
+<circle cx="338" cy="60" r="3.5" fill="#cbd5e1" stroke="white" stroke-width="1.2"/>
+<circle cx="338" cy="190" r="3.5" fill="#cbd5e1" stroke="white" stroke-width="1.2"/>
+<line x1="154" y1="190" x2="197.44" y2="76.69" stroke="#2f5d8a" stroke-width="1.6" stroke-linecap="butt"/>
+<polygon points="200,70 201.19,79.19 192.97,76.04" fill="#2f5d8a"/>
+<circle cx="154" cy="190" r="7" fill="#2f5d8a" stroke="white" stroke-width="1.2"/>
+<line x1="200" y1="190" x2="200" y2="77.16" stroke="#2f5d8a" stroke-width="1.6" stroke-linecap="butt"/>
+<polygon points="200,70 204.4,78.16 195.6,78.16" fill="#2f5d8a"/>
+<circle cx="200" cy="190" r="7" fill="#2f5d8a" stroke="white" stroke-width="1.2"/>
+<line x1="246" y1="190" x2="202.56" y2="76.69" stroke="#2f5d8a" stroke-width="1.6" stroke-linecap="butt"/>
+<polygon points="200,70 207.03,76.04 198.81,79.19" fill="#2f5d8a"/>
+<circle cx="246" cy="190" r="7" fill="#2f5d8a" stroke="white" stroke-width="1.2"/>
+<circle cx="200" cy="60" r="8.5" fill="#d9822b" stroke="white" stroke-width="1.2"/>
+<text x="214" y="50" font-size="12" fill="#d9822b" text-anchor="start" font-weight="bold" dominant-baseline="auto">새 값</text>
+<text x="200" y="256" font-size="12.5" fill="#2e7d5b" text-anchor="middle" font-weight="bold" dominant-baseline="auto">영향 범위가 이웃 안에 있다</text>
+<text x="34.4" y="65" font-size="12" fill="#374151" text-anchor="end" font-weight="bold" dominant-baseline="auto">다음</text>
+<text x="34.4" y="195" font-size="12" fill="#374151" text-anchor="end" font-weight="bold" dominant-baseline="auto">지금</text>
+<text x="570" y="26" font-size="14" fill="#374151" text-anchor="middle" font-weight="bold" dominant-baseline="auto">r = 1.5: 한 걸음에 한 칸 반</text>
+<polygon points="570,60 501.0,190 639.0,190" fill="#d9822b" opacity="0.22"/>
+<line x1="570" y1="60" x2="501" y2="190" stroke="#d9822b" stroke-width="1.2" stroke-dasharray="4 3" stroke-linecap="round"/>
+<line x1="570" y1="60" x2="639" y2="190" stroke="#d9822b" stroke-width="1.2" stroke-dasharray="4 3" stroke-linecap="round"/>
+<circle cx="432" cy="60" r="3.5" fill="#cbd5e1" stroke="white" stroke-width="1.2"/>
+<circle cx="432" cy="190" r="3.5" fill="#cbd5e1" stroke="white" stroke-width="1.2"/>
+<circle cx="478" cy="60" r="3.5" fill="#cbd5e1" stroke="white" stroke-width="1.2"/>
+<circle cx="478" cy="190" r="3.5" fill="#cbd5e1" stroke="white" stroke-width="1.2"/>
+<circle cx="524" cy="60" r="3.5" fill="#cbd5e1" stroke="white" stroke-width="1.2"/>
+<circle cx="524" cy="190" r="3.5" fill="#cbd5e1" stroke="white" stroke-width="1.2"/>
+<circle cx="570" cy="60" r="3.5" fill="#cbd5e1" stroke="white" stroke-width="1.2"/>
+<circle cx="570" cy="190" r="3.5" fill="#cbd5e1" stroke="white" stroke-width="1.2"/>
+<circle cx="616" cy="60" r="3.5" fill="#cbd5e1" stroke="white" stroke-width="1.2"/>
+<circle cx="616" cy="190" r="3.5" fill="#cbd5e1" stroke="white" stroke-width="1.2"/>
+<circle cx="662" cy="60" r="3.5" fill="#cbd5e1" stroke="white" stroke-width="1.2"/>
+<circle cx="662" cy="190" r="3.5" fill="#cbd5e1" stroke="white" stroke-width="1.2"/>
+<circle cx="708" cy="60" r="3.5" fill="#cbd5e1" stroke="white" stroke-width="1.2"/>
+<circle cx="708" cy="190" r="3.5" fill="#cbd5e1" stroke="white" stroke-width="1.2"/>
+<line x1="524" y1="190" x2="567.44" y2="76.69" stroke="#2f5d8a" stroke-width="1.6" stroke-linecap="butt"/>
+<polygon points="570,70 571.19,79.19 562.97,76.04" fill="#2f5d8a"/>
+<circle cx="524" cy="190" r="7" fill="#2f5d8a" stroke="white" stroke-width="1.2"/>
+<line x1="570" y1="190" x2="570" y2="77.16" stroke="#2f5d8a" stroke-width="1.6" stroke-linecap="butt"/>
+<polygon points="570,70 574.4,78.16 565.6,78.16" fill="#2f5d8a"/>
+<circle cx="570" cy="190" r="7" fill="#2f5d8a" stroke="white" stroke-width="1.2"/>
+<line x1="616" y1="190" x2="572.56" y2="76.69" stroke="#2f5d8a" stroke-width="1.6" stroke-linecap="butt"/>
+<polygon points="570,70 577.03,76.04 568.81,79.19" fill="#2f5d8a"/>
+<circle cx="616" cy="190" r="7" fill="#2f5d8a" stroke="white" stroke-width="1.2"/>
+<circle cx="478" cy="190" r="9" fill="none" stroke="#b03a2e" stroke-width="2.2"/>
+<circle cx="662" cy="190" r="9" fill="none" stroke="#b03a2e" stroke-width="2.2"/>
+<text x="662" y="220" font-size="12" fill="#b03a2e" text-anchor="middle" font-weight="bold" dominant-baseline="auto">놓친 정보</text>
+<text x="478" y="220" font-size="12" fill="#b03a2e" text-anchor="middle" font-weight="bold" dominant-baseline="auto">놓친 정보</text>
+<circle cx="570" cy="60" r="8.5" fill="#d9822b" stroke="white" stroke-width="1.2"/>
+<text x="584" y="50" font-size="12" fill="#d9822b" text-anchor="start" font-weight="bold" dominant-baseline="auto">새 값</text>
+<text x="570" y="256" font-size="12.5" fill="#b03a2e" text-anchor="middle" font-weight="bold" dominant-baseline="auto">영향 범위가 이웃 밖으로 넘친다</text>
+<text x="404.4" y="65" font-size="12" fill="#374151" text-anchor="end" font-weight="bold" dominant-baseline="auto">다음</text>
+<text x="404.4" y="195" font-size="12" fill="#374151" text-anchor="end" font-weight="bold" dominant-baseline="auto">지금</text>
+<text x="30" y="290" font-size="12" fill="#6b7280" text-anchor="start" font-weight="normal" dominant-baseline="auto">색칠한 삼각형: 한 걸음 동안 파동이 올 수 있는 범위(양쪽으로 r칸).  파란 점: ③의 방법이 실제로 쓰는 값.</text>
+</svg>

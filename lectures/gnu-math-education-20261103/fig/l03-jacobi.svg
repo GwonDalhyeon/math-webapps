@@ -1,0 +1,87 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 300" width="760" height="300" font-family="Pretendard, 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif">
+<defs></defs>
+<rect width="100%" height="100%" fill="white"/>
+<line x1="66.35" y1="40" x2="66.35" y2="230" stroke="#e5e7eb" stroke-width="1" stroke-linecap="round"/>
+<line x1="145.67" y1="40" x2="145.67" y2="230" stroke="#e5e7eb" stroke-width="1" stroke-linecap="round"/>
+<line x1="225" y1="40" x2="225" y2="230" stroke="#e5e7eb" stroke-width="1" stroke-linecap="round"/>
+<line x1="304.33" y1="40" x2="304.33" y2="230" stroke="#e5e7eb" stroke-width="1" stroke-linecap="round"/>
+<line x1="383.65" y1="40" x2="383.65" y2="230" stroke="#e5e7eb" stroke-width="1" stroke-linecap="round"/>
+<line x1="60" y1="208.08" x2="390" y2="208.08" stroke="#e5e7eb" stroke-width="1" stroke-linecap="round"/>
+<line x1="60" y1="135" x2="390" y2="135" stroke="#e5e7eb" stroke-width="1" stroke-linecap="round"/>
+<line x1="60" y1="61.92" x2="390" y2="61.92" stroke="#e5e7eb" stroke-width="1" stroke-linecap="round"/>
+<line x1="60" y1="61.92" x2="390" y2="61.92" stroke="#6b7280" stroke-width="1" stroke-linecap="round"/>
+<rect x="60" y="40" width="330" height="190" rx="0" fill="none" stroke="#9ca3af" stroke-width="1"/>
+<text x="66.35" y="246" font-size="12" fill="#6b7280" text-anchor="middle" font-weight="normal" dominant-baseline="auto">0</text>
+<text x="145.67" y="246" font-size="12" fill="#6b7280" text-anchor="middle" font-weight="normal" dominant-baseline="auto">0.25</text>
+<text x="225" y="246" font-size="12" fill="#6b7280" text-anchor="middle" font-weight="normal" dominant-baseline="auto">0.5</text>
+<text x="304.33" y="246" font-size="12" fill="#6b7280" text-anchor="middle" font-weight="normal" dominant-baseline="auto">0.75</text>
+<text x="383.65" y="246" font-size="12" fill="#6b7280" text-anchor="middle" font-weight="normal" dominant-baseline="auto">1</text>
+<text x="54" y="212.08" font-size="12" fill="#6b7280" text-anchor="end" font-weight="normal" dominant-baseline="auto">−2</text>
+<text x="54" y="139" font-size="12" fill="#6b7280" text-anchor="end" font-weight="normal" dominant-baseline="auto">−1</text>
+<text x="54" y="65.92" font-size="12" fill="#6b7280" text-anchor="end" font-weight="normal" dominant-baseline="auto">0</text>
+<text x="225" y="264" font-size="13" fill="#374151" text-anchor="middle" font-weight="normal" dominant-baseline="auto">위치</text>
+<text x="225" y="32" font-size="13" fill="#374151" text-anchor="middle" font-weight="bold" dominant-baseline="auto">추측을 고칠 때마다 처진 모양</text>
+<polyline points="66.35,61.92 145.67,171.54 225,208.08 304.33,171.54 383.65,61.92" fill="none" stroke="#8a96a3" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round" stroke-dasharray="6 4"/>
+<polyline points="66.35,61.92 145.67,61.92 225,61.92 304.33,61.92 383.65,61.92" fill="none" stroke="#c7d2de" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="145.67" cy="61.92" r="3.8" fill="#c7d2de" stroke="white" stroke-width="1.2"/>
+<circle cx="225" cy="61.92" r="3.8" fill="#c7d2de" stroke="white" stroke-width="1.2"/>
+<circle cx="304.33" cy="61.92" r="3.8" fill="#c7d2de" stroke="white" stroke-width="1.2"/>
+<text x="225" y="53.92" font-size="11" fill="#c7d2de" text-anchor="middle" font-weight="bold" dominant-baseline="auto">0번</text>
+<polyline points="66.35,61.92 145.67,98.46 225,98.46 304.33,98.46 383.65,61.92" fill="none" stroke="#9fb3c8" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="145.67" cy="98.46" r="3.8" fill="#9fb3c8" stroke="white" stroke-width="1.2"/>
+<circle cx="225" cy="98.46" r="3.8" fill="#9fb3c8" stroke="white" stroke-width="1.2"/>
+<circle cx="304.33" cy="98.46" r="3.8" fill="#9fb3c8" stroke="white" stroke-width="1.2"/>
+<text x="225" y="90.46" font-size="11" fill="#9fb3c8" text-anchor="middle" font-weight="bold" dominant-baseline="auto">1번</text>
+<polyline points="66.35,61.92 145.67,116.73 225,135 304.33,116.73 383.65,61.92" fill="none" stroke="#7393b3" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="145.67" cy="116.73" r="3.8" fill="#7393b3" stroke="white" stroke-width="1.2"/>
+<circle cx="225" cy="135" r="3.8" fill="#7393b3" stroke="white" stroke-width="1.2"/>
+<circle cx="304.33" cy="116.73" r="3.8" fill="#7393b3" stroke="white" stroke-width="1.2"/>
+<text x="225" y="127" font-size="11" fill="#7393b3" text-anchor="middle" font-weight="bold" dominant-baseline="auto">2번</text>
+<polyline points="66.35,61.92 145.67,144.13 225,171.54 304.33,144.13 383.65,61.92" fill="none" stroke="#4f7aa3" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="145.67" cy="144.13" r="3.8" fill="#4f7aa3" stroke="white" stroke-width="1.2"/>
+<circle cx="225" cy="171.54" r="3.8" fill="#4f7aa3" stroke="white" stroke-width="1.2"/>
+<circle cx="304.33" cy="144.13" r="3.8" fill="#4f7aa3" stroke="white" stroke-width="1.2"/>
+<text x="225" y="163.54" font-size="11" fill="#4f7aa3" text-anchor="middle" font-weight="bold" dominant-baseline="auto">4번</text>
+<polyline points="66.35,61.92 145.67,168.11 225,203.51 304.33,168.11 383.65,61.92" fill="none" stroke="#2f5d8a" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="145.67" cy="168.11" r="3.8" fill="#2f5d8a" stroke="white" stroke-width="1.2"/>
+<circle cx="225" cy="203.51" r="3.8" fill="#2f5d8a" stroke="white" stroke-width="1.2"/>
+<circle cx="304.33" cy="168.11" r="3.8" fill="#2f5d8a" stroke="white" stroke-width="1.2"/>
+<text x="225" y="195.51" font-size="11" fill="#2f5d8a" text-anchor="middle" font-weight="bold" dominant-baseline="auto">10번</text>
+<line x1="483.58" y1="40" x2="483.58" y2="230" stroke="#e5e7eb" stroke-width="1" stroke-linecap="round"/>
+<line x1="522.39" y1="40" x2="522.39" y2="230" stroke="#e5e7eb" stroke-width="1" stroke-linecap="round"/>
+<line x1="561.19" y1="40" x2="561.19" y2="230" stroke="#e5e7eb" stroke-width="1" stroke-linecap="round"/>
+<line x1="600" y1="40" x2="600" y2="230" stroke="#e5e7eb" stroke-width="1" stroke-linecap="round"/>
+<line x1="638.81" y1="40" x2="638.81" y2="230" stroke="#e5e7eb" stroke-width="1" stroke-linecap="round"/>
+<line x1="677.61" y1="40" x2="677.61" y2="230" stroke="#e5e7eb" stroke-width="1" stroke-linecap="round"/>
+<line x1="716.42" y1="40" x2="716.42" y2="230" stroke="#e5e7eb" stroke-width="1" stroke-linecap="round"/>
+<line x1="470" y1="230" x2="730" y2="230" stroke="#e5e7eb" stroke-width="1" stroke-linecap="round"/>
+<line x1="470" y1="143.64" x2="730" y2="143.64" stroke="#e5e7eb" stroke-width="1" stroke-linecap="round"/>
+<line x1="470" y1="57.27" x2="730" y2="57.27" stroke="#e5e7eb" stroke-width="1" stroke-linecap="round"/>
+<rect x="470" y="40" width="260" height="190" rx="0" fill="none" stroke="#9ca3af" stroke-width="1"/>
+<text x="483.58" y="246" font-size="12" fill="#6b7280" text-anchor="middle" font-weight="normal" dominant-baseline="auto">0</text>
+<text x="522.39" y="246" font-size="12" fill="#6b7280" text-anchor="middle" font-weight="normal" dominant-baseline="auto">2</text>
+<text x="561.19" y="246" font-size="12" fill="#6b7280" text-anchor="middle" font-weight="normal" dominant-baseline="auto">4</text>
+<text x="600" y="246" font-size="12" fill="#6b7280" text-anchor="middle" font-weight="normal" dominant-baseline="auto">6</text>
+<text x="638.81" y="246" font-size="12" fill="#6b7280" text-anchor="middle" font-weight="normal" dominant-baseline="auto">8</text>
+<text x="677.61" y="246" font-size="12" fill="#6b7280" text-anchor="middle" font-weight="normal" dominant-baseline="auto">10</text>
+<text x="716.42" y="246" font-size="12" fill="#6b7280" text-anchor="middle" font-weight="normal" dominant-baseline="auto">12</text>
+<text x="464" y="234" font-size="12" fill="#6b7280" text-anchor="end" font-weight="normal" dominant-baseline="auto">0</text>
+<text x="464" y="147.64" font-size="12" fill="#6b7280" text-anchor="end" font-weight="normal" dominant-baseline="auto">0.5</text>
+<text x="464" y="61.27" font-size="12" fill="#6b7280" text-anchor="end" font-weight="normal" dominant-baseline="auto">1</text>
+<text x="600" y="264" font-size="13" fill="#374151" text-anchor="middle" font-weight="normal" dominant-baseline="auto">고친 횟수</text>
+<text x="600" y="32" font-size="13" fill="#374151" text-anchor="middle" font-weight="bold" dominant-baseline="auto">식을 가장 크게 어기는 정도</text>
+<rect x="476.58" y="57.27" width="14" height="172.73" rx="0" fill="#d9822b" stroke="none" stroke-width="1"/>
+<rect x="495.99" y="57.27" width="14" height="172.73" rx="0" fill="#d9822b" stroke="none" stroke-width="1"/>
+<rect x="515.39" y="143.64" width="14" height="86.36" rx="0" fill="#d9822b" stroke="none" stroke-width="1"/>
+<rect x="534.79" y="143.64" width="14" height="86.36" rx="0" fill="#d9822b" stroke="none" stroke-width="1"/>
+<rect x="554.19" y="186.82" width="14" height="43.18" rx="0" fill="#d9822b" stroke="none" stroke-width="1"/>
+<rect x="573.6" y="186.82" width="14" height="43.18" rx="0" fill="#d9822b" stroke="none" stroke-width="1"/>
+<rect x="593" y="208.41" width="14" height="21.59" rx="0" fill="#d9822b" stroke="none" stroke-width="1"/>
+<rect x="612.4" y="208.41" width="14" height="21.59" rx="0" fill="#d9822b" stroke="none" stroke-width="1"/>
+<rect x="631.81" y="219.2" width="14" height="10.8" rx="0" fill="#d9822b" stroke="none" stroke-width="1"/>
+<rect x="651.21" y="219.2" width="14" height="10.8" rx="0" fill="#d9822b" stroke="none" stroke-width="1"/>
+<rect x="670.61" y="224.6" width="14" height="5.4" rx="0" fill="#d9822b" stroke="none" stroke-width="1"/>
+<rect x="690.01" y="224.6" width="14" height="5.4" rx="0" fill="#d9822b" stroke="none" stroke-width="1"/>
+<rect x="709.42" y="227.3" width="14" height="2.7" rx="0" fill="#d9822b" stroke="none" stroke-width="1"/>
+<text x="60" y="290" font-size="12" fill="#6b7280" text-anchor="start" font-weight="normal" dominant-baseline="auto">회색 점선: 답 (1.5, 2, 1.5).  처음 추측은 모두 0.</text>
+</svg>

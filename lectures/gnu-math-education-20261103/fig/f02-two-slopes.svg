@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 320" width="760" height="320" font-family="Pretendard, 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif">
+<defs></defs>
+<rect width="100%" height="100%" fill="white"/>
+<line x1="130" y1="30" x2="130" y2="270" stroke="#e5e7eb" stroke-width="1" stroke-linecap="round"/>
+<line x1="205" y1="30" x2="205" y2="270" stroke="#e5e7eb" stroke-width="1" stroke-linecap="round"/>
+<line x1="280" y1="30" x2="280" y2="270" stroke="#e5e7eb" stroke-width="1" stroke-linecap="round"/>
+<line x1="355" y1="30" x2="355" y2="270" stroke="#e5e7eb" stroke-width="1" stroke-linecap="round"/>
+<line x1="430" y1="30" x2="430" y2="270" stroke="#e5e7eb" stroke-width="1" stroke-linecap="round"/>
+<line x1="70" y1="246.92" x2="490" y2="246.92" stroke="#e5e7eb" stroke-width="1" stroke-linecap="round"/>
+<line x1="70" y1="177.69" x2="490" y2="177.69" stroke="#e5e7eb" stroke-width="1" stroke-linecap="round"/>
+<line x1="70" y1="154.62" x2="490" y2="154.62" stroke="#e5e7eb" stroke-width="1" stroke-linecap="round"/>
+<line x1="70" y1="62.31" x2="490" y2="62.31" stroke="#e5e7eb" stroke-width="1" stroke-linecap="round"/>
+<rect x="70" y="30" width="420" height="240" rx="0" fill="none" stroke="#9ca3af" stroke-width="1"/>
+<text x="130" y="286" font-size="12" fill="#6b7280" text-anchor="middle" font-weight="normal" dominant-baseline="auto">0.5</text>
+<text x="205" y="286" font-size="12" fill="#6b7280" text-anchor="middle" font-weight="normal" dominant-baseline="auto">0.75</text>
+<text x="280" y="286" font-size="12" fill="#6b7280" text-anchor="middle" font-weight="normal" dominant-baseline="auto">1</text>
+<text x="355" y="286" font-size="12" fill="#6b7280" text-anchor="middle" font-weight="normal" dominant-baseline="auto">1.25</text>
+<text x="430" y="286" font-size="12" fill="#6b7280" text-anchor="middle" font-weight="normal" dominant-baseline="auto">1.5</text>
+<text x="64" y="250.92" font-size="12" fill="#6b7280" text-anchor="end" font-weight="normal" dominant-baseline="auto">0.25</text>
+<text x="64" y="181.69" font-size="12" fill="#6b7280" text-anchor="end" font-weight="normal" dominant-baseline="auto">1</text>
+<text x="64" y="158.62" font-size="12" fill="#6b7280" text-anchor="end" font-weight="normal" dominant-baseline="auto">1.25</text>
+<text x="64" y="66.31" font-size="12" fill="#6b7280" text-anchor="end" font-weight="normal" dominant-baseline="auto">2.25</text>
+<text x="280" y="304" font-size="13" fill="#374151" text-anchor="middle" font-weight="normal" dominant-baseline="auto">x</text>
+<polyline points="70,261.69 72.11,261.3 74.22,260.89 76.33,260.48 78.44,260.06 80.55,259.63 82.66,259.19 84.77,258.74 86.88,258.28 88.99,257.82 91.11,257.34 93.22,256.85 95.33,256.36 97.44,255.85 99.55,255.34 101.66,254.82 103.77,254.29 105.88,253.75 107.99,253.2 110.1,252.64 112.21,252.07 114.32,251.5 116.43,250.91 118.54,250.31 120.65,249.71 122.76,249.1 124.87,248.47 126.98,247.84 129.1,247.2 131.21,246.55 133.32,245.89 135.43,245.22 137.54,244.55 139.65,243.86 141.76,243.16 143.87,242.46 145.98,241.74 148.09,241.02 150.2,240.29 152.31,239.55 154.42,238.8 156.53,238.04 158.64,237.27 160.75,236.49 162.86,235.7 164.97,234.91 167.09,234.1 169.2,233.29 171.31,232.46 173.42,231.63 175.53,230.79 177.64,229.94 179.75,229.08 181.86,228.21 183.97,227.33 186.08,226.44 188.19,225.55 190.3,224.64 192.41,223.72 194.52,222.8 196.63,221.87 198.74,220.92 200.85,219.97 202.96,219.01 205.08,218.04 207.19,217.06 209.3,216.07 211.41,215.08 213.52,214.07 215.63,213.06 217.74,212.03 219.85,211 221.96,209.95 224.07,208.9 226.18,207.84 228.29,206.77 230.4,205.69 232.51,204.6 234.62,203.5 236.73,202.4 238.84,201.28 240.95,200.16 243.07,199.02 245.18,197.88 247.29,196.73 249.4,195.56 251.51,194.39 253.62,193.21 255.73,192.02 257.84,190.83 259.95,189.62 262.06,188.4 264.17,187.18 266.28,185.94 268.39,184.7 270.5,183.44 272.61,182.18 274.72,180.91 276.83,179.63 278.94,178.34 281.06,177.04 283.17,175.73 285.28,174.42 287.39,173.09 289.5,171.76 291.61,170.41 293.72,169.06 295.83,167.69 297.94,166.32 300.05,164.94 302.16,163.55 304.27,162.15 306.38,160.74 308.49,159.33 310.6,157.9 312.71,156.46 314.82,155.02 316.93,153.56 319.05,152.1 321.16,150.63 323.27,149.15 325.38,147.66 327.49,146.16 329.6,144.65 331.71,143.13 333.82,141.6 335.93,140.07 338.04,138.52 340.15,136.97 342.26,135.4 344.37,133.83 346.48,132.25 348.59,130.66 350.7,129.06 352.81,127.45 354.92,125.83 357.04,124.2 359.15,122.56 361.26,120.92 363.37,119.26 365.48,117.6 367.59,115.92 369.7,114.24 371.81,112.55 373.92,110.85 376.03,109.14 378.14,107.42 380.25,105.69 382.36,103.95 384.47,102.21 386.58,100.45 388.69,98.69 390.8,96.91 392.91,95.13 395.03,93.34 397.14,91.54 399.25,89.73 401.36,87.91 403.47,86.08 405.58,84.24 407.69,82.39 409.8,80.54 411.91,78.67 414.02,76.8 416.13,74.91 418.24,73.02 420.35,71.12 422.46,69.21 424.57,67.29 426.68,65.36 428.79,63.42 430.9,61.47 433.02,59.52 435.13,57.55 437.24,55.57 439.35,53.59 441.46,51.6 443.57,49.59 445.68,47.58 447.79,45.56 449.9,43.53 452.01,41.49 454.12,39.45 456.23,37.39 458.34,35.32 460.45,33.25 462.56,31.16 464.67,29.07" fill="none" stroke="#8a96a3" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+<line x1="130" y1="246.92" x2="280" y2="177.69" stroke="#2f5d8a" stroke-width="2.6" stroke-linecap="round"/>
+<line x1="280" y1="177.69" x2="430" y2="62.31" stroke="#d9822b" stroke-width="2.6" stroke-linecap="round"/>
+<circle cx="130" cy="246.92" r="5" fill="#374151" stroke="white" stroke-width="1.2"/>
+<circle cx="280" cy="177.69" r="5" fill="#374151" stroke="white" stroke-width="1.2"/>
+<circle cx="430" cy="62.31" r="5" fill="#374151" stroke="white" stroke-width="1.2"/>
+<text x="215" y="226.31" font-size="12" fill="#2f5d8a" text-anchor="start" font-weight="bold" dominant-baseline="auto">평균기울기 1.5</text>
+<text x="345" y="114" font-size="12" fill="#d9822b" text-anchor="end" font-weight="bold" dominant-baseline="auto">평균기울기 2.5</text>
+<line x1="130" y1="154.62" x2="430" y2="154.62" stroke="#6b7280" stroke-width="1.2" stroke-dasharray="5 4" stroke-linecap="round"/>
+<circle cx="280" cy="154.62" r="4.5" fill="white" stroke="#6b7280" stroke-width="1.2"/>
+<text x="132" y="147.62" font-size="11.5" fill="#6b7280" text-anchor="start" font-weight="normal" dominant-baseline="auto">양옆 평균 1.25</text>
+<text x="525" y="56" font-size="13" fill="#111827" text-anchor="start" font-weight="bold" dominant-baseline="auto">① 평균기울기</text>
+<text x="525" y="83" font-size="13" fill="#111827" text-anchor="start" font-weight="normal" dominant-baseline="auto">   왼쪽 1.5,  오른쪽 2.5</text>
+<text x="525" y="110" font-size="13" fill="#111827" text-anchor="start" font-weight="bold" dominant-baseline="auto">② 기울기가 늘어난 빠르기</text>
+<text x="525" y="137" font-size="13" fill="#111827" text-anchor="start" font-weight="normal" dominant-baseline="auto">   (2.5 − 1.5) ÷ 0.5 = 2</text>
+<text x="525" y="164" font-size="13" fill="#111827" text-anchor="start" font-weight="bold" dominant-baseline="auto">③ 직접 미분한 값 (x²)″ = 2와 같다</text>
+<text x="525" y="191" font-size="13" fill="#111827" text-anchor="start" font-weight="normal" dominant-baseline="auto"></text>
+<text x="525" y="218" font-size="13" fill="#6b7280" text-anchor="start" font-weight="normal" dominant-baseline="auto">가운데 1은 양옆 평균 1.25보다</text>
+<text x="525" y="245" font-size="13" fill="#6b7280" text-anchor="start" font-weight="normal" dominant-baseline="auto">0.25 낮다 → 아래로 볼록</text>
+</svg>
