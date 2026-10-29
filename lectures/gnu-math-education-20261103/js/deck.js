@@ -29,6 +29,40 @@
     plugins: typeof RevealNotes !== 'undefined' ? [RevealNotes] : [],   // 공개판에는 notes 플러그인이 없다
   });
 
+  /* 단원 탭: 화면은 가로 한 줄이고, 머리글(.crumb) 자리에 단원 탭과 단원 안의 위치 점을 둔다.
+     탭을 누르면 그 단원 첫 화면으로 간다(2026-10-30, 위아래 넘기기를 없앰) */
+  const SEC = [['들어가며', /^(d0|title)/], ['① 줄', /^(w0|u1)/], ['② 미분', /^(c0|u2)/], ['③ 계산', /^(f0|u3)/],
+    ['④ 계산법', /^(m0|u4)/], ['⑤ 행렬', /^(l0|u5)/], ['⑥ 정사영', /^(p0|u6)/], ['⑦ 학습', /^(g0|end)/]];
+  const slides = Reveal.getSlides();
+  const secOf = (s) => SEC.findIndex(([, re]) => re.test(s.id));
+  const first = SEC.map((_, k) => slides.find((s) => secOf(s) === k));
+  slides.forEach((s) => {
+    const cr = s.querySelector(':scope > .crumb'), k = secOf(s);
+    if (!cr || k < 0) return;
+    const mates = slides.filter((t) => secOf(t) === k);
+    const code = (cr.textContent.match(/[A-Z]\d\d/) || [''])[0];
+    const nav = document.createElement('nav');
+    nav.className = 'tabs';
+    nav.innerHTML = SEC.map(([name], j) => `<a href="#/${first[j].id}" class="${j === k ? 'on' : ''}${j >= 6 ? ' data' : ''}">${name}</a>`).join('')
+      + `<span class="sid"><span class="dots">${mates.map((t) => `<i class="${t === s ? 'on' : ''}${t.querySelector('.crumb .ext') ? ' ext' : ''}"></i>`).join('')}</span>${code}${cr.querySelector('.ext') ? '<span class="ext">확장</span>' : ''}</span>`;
+    cr.replaceWith(nav);
+  });
+
+  /* 남은 단계: 지금 화면에서 아직 열지 않은 단계(fragment) 수를 왼쪽 아래 구석에 작게 보인다(발표자 참고용) */
+  const steps = document.createElement('div');
+  steps.className = 'steps-left';
+  document.querySelector('.reveal').appendChild(steps);
+  const stepsLeft = () => {
+    const s = Reveal.getCurrentSlide();
+    if (!s) return;
+    const key = (f) => f.getAttribute('data-fragment-index') ?? f;
+    const all = new Set([...s.querySelectorAll('.fragment')].map(key)), shown = new Set([...s.querySelectorAll('.fragment.visible')].map(key));
+    const left = all.size - shown.size;
+    steps.innerHTML = left > 0 ? `남은 단계 <b>${left}</b>` : '이 화면 끝';
+    steps.classList.toggle('done', left === 0);
+  };
+  ['ready', 'slidechanged', 'fragmentshown', 'fragmenthidden'].forEach((e) => Reveal.on(e, stepsLeft));
+
   /* 칸(.tap)을 누르면 답이 열리고, 다시 누르면 닫힌다 */
   document.addEventListener('click', (ev) => {
     const cell = ev.target.closest('.tap');

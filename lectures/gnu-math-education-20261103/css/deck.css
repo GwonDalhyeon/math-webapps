@@ -102,3 +102,44 @@ table.ft th { background: #eef3f8; color: var(--title); }
 .gtab td { min-width: 82px; height: 36px; font-weight: 700; color: var(--title); }
 /* 확장 장면 표시(건너뛰어도 다음 화면이 이어짐, 검토 반영 2026-10-29) */
 .crumb .ext { display: inline-block; margin-left: 12px; padding: 0 10px; border-radius: 10px; border: 1.5px solid var(--faint); color: var(--sub); font-size: 17px; line-height: 1.4; }
+
+/* ---- 단원 탭(머리글 자리, js/deck.js가 만든다)과 남은 단계 표시 (2026-10-30) ---- */
+.tabs { display: flex; align-items: stretch; gap: 4px; height: 32px; margin: 0 0 4px; border-bottom: 2px solid var(--line); }
+.tabs a { display: flex; align-items: center; padding: 0 12px; font-size: 17px; font-weight: 700; color: var(--sub); text-decoration: none; border-radius: 8px 8px 0 0; white-space: nowrap; }
+.tabs a:hover { background: var(--panel); }
+.tabs a.on { color: #fff; background: var(--title); }
+.tabs a.on.data { background: var(--good); }
+.tabs .sid { margin-left: auto; display: flex; align-items: center; gap: 8px; font-size: 16px; font-weight: 700; color: var(--sub); }
+.tabs .sid .ext { font-size: 15px; padding: 0 8px; border: 1.5px solid var(--faint); border-radius: 10px; }
+.tabs .dots { display: flex; gap: 4px; align-items: center; margin-right: 6px; }
+.tabs .dots i { width: 7px; height: 7px; border-radius: 50%; background: var(--line); }
+.tabs .dots i.on { background: var(--time); }
+.tabs .dots i.ext { background: none; border: 1.5px solid var(--line); box-sizing: border-box; }
+.tabs .dots i.ext.on { border-color: var(--time); background: var(--time-bg); }
+.steps-left { position: fixed; left: 14px; bottom: 12px; z-index: 30; font: 600 14px var(--font); color: #55657a; background: rgba(255,255,255,.85); border: 1px solid var(--line); border-radius: 10px; padding: 3px 9px; pointer-events: none; }
+.steps-left b { color: var(--time-text); font-size: 15px; }
+.steps-left.done { opacity: .55; }
+.embed .steps-left { display: none; }
+
+/* ---- 강사 소개: 행 + 기간만큼 자라는 막대 ---- */
+.cv { margin-top: 34px; display: flex; flex-direction: column; gap: 10px; }
+.cv-row, .cv-axis { display: grid; grid-template-columns: 210px 1fr 520px; align-items: center; column-gap: 20px; }
+.cv-row { min-height: 82px; }
+.cv-d { font-size: 24px; font-weight: 800; color: var(--time-text); white-space: nowrap; }
+.cv-t { font-size: 27px; font-weight: 700; color: var(--ink); }
+.cv-t span { display: block; font-size: 20px; font-weight: 500; color: var(--sub); margin-top: 2px; }
+.cv-row.sub .cv-d { padding-left: 22px; font-size: 22px; }
+.cv-row.sub .cv-t { padding-left: 22px; }
+.cv-group { margin-top: 10px; font-size: 22px; font-weight: 800; color: var(--title); border-left: 5px solid var(--time); padding-left: 12px; }
+.cv-track { position: relative; height: 26px; background: linear-gradient(var(--line), var(--line)) 0 50% / 100% 2px no-repeat; }
+.gbar { position: absolute; top: 0; height: 26px; border-radius: 6px; transform-origin: left center; }
+.gbar.school { background: var(--space); }
+.gbar.grad { background: #f3c48f; border: 2px solid var(--time); box-sizing: border-box; }
+.gbar.dr { background: #e9a35a; }
+.reveal .slides section .fragment.grow { opacity: 1; visibility: visible; transform: scaleX(0); transition: transform .9s ease; }
+.reveal .slides section .fragment.grow.visible { transform: scaleX(1); }
+.gpin { position: absolute; top: -4px; width: 34px; height: 34px; margin-left: -17px; border-radius: 50%; background: var(--good); box-shadow: 0 0 0 5px #d7efe4; }
+.cv-axis { margin-top: 2px; }
+.cv-axis .cv-track { height: 30px; background: none; border-top: 2px solid var(--sub); }
+.cv-axis .cv-track span { position: absolute; top: 4px; transform: translateX(-50%); font-size: 18px; font-weight: 600; color: var(--sub); }
+.cv-axis .cv-track b { position: absolute; bottom: 30px; height: 420px; border-left: 2px dashed var(--time); }

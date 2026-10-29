@@ -12,9 +12,9 @@
 <link rel="stylesheet" href="lib/reveal/reveal.css">
 <link rel="stylesheet" href="lib/katex/katex.min.css">
 <link rel="stylesheet" href="lib/pretendard/pretendardvariable-dynamic-subset.css">
-<link rel="stylesheet" href="css/deck.css?v=20261029v">
-<link rel="stylesheet" href="css/parts/string-lab.css?v=20261029v">
-<link rel="stylesheet" href="css/parts/fig.css?v=20261029v">
+<link rel="stylesheet" href="css/deck.css?v=20261030b">
+<link rel="stylesheet" href="css/parts/string-lab.css?v=20261030b">
+<link rel="stylesheet" href="css/parts/fig.css?v=20261030b">
 </head>
 <body>
 <div class="reveal"><div class="slides">
@@ -31,13 +31,31 @@
 
 <section id="d00-career">
   <div class="crumb">들어가며 · D00</div>
-  <h2 class="t">수학을 공부한 길</h2>
-  <ul class="timeline">
-    <li class="fragment">서울대학교 수리과학부 석사</li>
-    <li class="fragment">서울대학교 수리과학부 박사<span class="d">수치해석(Numerical analysis), 계산물리(Computational physics)</span></li>
-    <li class="fragment">2010년 졸업과 함께 경상남도교육청 수학교사 임용시험 합격<span class="d">570명 응시, 30명 선발</span></li>
-    <li class="fragment">2023 대한민국 수학교육상<span class="d">한국과학창의재단</span></li>
-  </ul>
+  <h2 class="t">강사 소개</h2>
+  <div class="cv">
+    <div class="cv-row fragment" data-fragment-index="0">
+      <div class="cv-d">2010</div>
+      <div class="cv-t">경상남도교육청 수학교사 임용<span>570명 응시, 30명 선발</span></div>
+      <div class="cv-track"><i class="gbar school fragment grow" data-fragment-index="0" style="left:0.99%;width:11.83%"></i><i class="gbar school fragment grow" data-fragment-index="3" style="left:45.36%;width:54.24%"></i></div>
+    </div>
+    <div class="cv-group fragment" data-fragment-index="1">서울대학교 수리과학부 대학원 · 수치해석</div>
+    <div class="cv-row sub fragment" data-fragment-index="1">
+      <div class="cv-d">2012.3 – 2014.8</div>
+      <div class="cv-t">석사</div>
+      <div class="cv-track"><i class="gbar grad fragment grow" data-fragment-index="1" style="left:12.82%;width:14.79%"></i></div>
+    </div>
+    <div class="cv-row sub fragment" data-fragment-index="2">
+      <div class="cv-d">2014.9 – 2018.8</div>
+      <div class="cv-t">박사<span class="fragment" data-fragment-index="3">2017.9 학교에 복직해 가르치며 학위를 마침</span></div>
+      <div class="cv-track"><i class="gbar grad dr fragment grow" data-fragment-index="2" style="left:27.61%;width:23.67%"></i></div>
+    </div>
+    <div class="cv-row fragment" data-fragment-index="4">
+      <div class="cv-d">2023</div>
+      <div class="cv-t">대한민국 수학교육상<span>한국과학창의재단</span></div>
+      <div class="cv-track"><i class="gpin fragment" data-fragment-index="4" style="left:81.85%"></i></div>
+    </div>
+    <div class="cv-axis"><div></div><div></div><div class="cv-track"><span style="left:0.00%">2010</span><span style="left:23.67%">2014</span><span style="left:47.34%">2018</span><span style="left:71.01%">2022</span><span style="left:94.67%">2026</span><b class="fragment" data-fragment-index="3" style="left:45.36%"></b></div></div>
+  </div>
 </section>
 
 <section id="d01-map">
@@ -57,7 +75,7 @@
 </section>
 
 <!-- ======================= ① 출렁이는 줄과 예측 ======================= -->
-<section>
+
   <section id="w01-predict">
     <div class="crumb">① 출렁이는 줄과 예측 · W01</div>
     <h2 class="t">놓으면 어떻게 움직일까?</h2>
@@ -142,10 +160,9 @@
     <div class="recap">사인 모양의 줄은 제자리에서 출렁이고, 일부만 볼록한 줄은 나뉘어 이동한다.<br>추측 대신 <b class="k">가속도 $= c^2 \times$ 휜 정도</b>라는 법칙으로 모든 움직임을 정한다.</div>
     <div class="ask" style="margin-top:22px">다음 질문: 위치로 두 번 미분한 것은 왜 "휜 정도"이고, 시간으로 두 번 미분한 것은 왜 "가속도"일까?</div>
   </section>
-</section>
 
 <!-- ======================= ② 미분이 담고 있는 물리 ======================= -->
-<section>
+
   <section id="c01-slope">
     <div class="crumb">② 미분이 담고 있는 물리 · C01</div>
     <h2 class="t">두 번 미분은 휜 정도</h2>
@@ -224,10 +241,9 @@
     <div class="recap">두 번 미분은 <span class="sp">휜 정도(공간)</span>이자 <span class="tm">가속도(시간)</span>다. 사인 모양은 휜 정도가 높이에 비례해 제자리에서 출렁이고, 일반적으로는 <b class="k">모양이 가속도를 정한다</b>.</div>
     <div class="ask" style="margin-top:22px">다음 질문: 컴퓨터가 아는 것은 점 몇 개의 높이뿐이다. 이 법칙을 어떻게 계산할까?</div>
   </section>
-</section>
 
 <!-- ======================= ③ 컴퓨터로 계산하기 ======================= -->
-<section>
+
   <section id="f01-points">
     <div class="crumb">③ 컴퓨터로 출렁임을 계산하기 · F01</div>
     <h2 class="t">점 몇 개로 기억하기</h2>
@@ -316,10 +332,9 @@
     <div class="recap">줄을 점 몇 개로 기억하고, 휜 정도를 <span class="sp">공간</span>과 <span class="tm">시간</span>에 똑같이 써서<br>"다음 = 지금 + (지금 − 조금 전) + 휜 정도 보정"을 되풀이했다.</div>
     <div class="ask" style="margin-top:22px">다음 질문: 계산법을 바꾸면 무엇이 달라질까? 사슬처럼 연결된 수많은 점은 어떻게 다룰까?</div>
   </section>
-</section>
 
 <!-- ======================= ④ 같은 줄, 다른 계산법 ======================= -->
-<section>
+
   <section id="m00-knobs">
     <div class="crumb">④ 같은 줄, 다른 계산법 · M00</div>
     <h2 class="t">바꿀 수 있는 두 개의 손잡이</h2>
@@ -365,10 +380,9 @@
     <div class="recap">공간 손잡이(이웃의 수)와 시간 손잡이(어느 시각의 값)를 돌리면 정확도·버티는 힘·비용이 함께 바뀐다. 한꺼번에 푸는 방법은 <b class="k">걸음마다 연립방정식</b>을 풀어야 한다.</div>
     <div class="ask" style="margin-top:22px">다음 질문: 수많은 미지수가 얽힌 연립방정식은 어떻게 풀까?</div>
   </section>
-</section>
 
 <!-- ======================= ⑤ 연결된 점들이 행렬이 된다 ======================= -->
-<section>
+
   <section id="l01-assume">
     <div class="crumb">⑤ 연결된 점들이 행렬이 된다 · L01</div>
     <h2 class="t">처진 줄: 무엇을 가정하나</h2>
@@ -454,10 +468,9 @@
     <div class="recap">이웃 관계를 모으면 행렬이 되고 대부분이 0이다. 역행렬은 그 구조를 망가뜨리므로, <b class="k">띠 모양을 지키는 분해</b>로 풀고 한 번 쪼개면 다시 쓴다.</div>
     <div class="ask" style="margin-top:22px">다음 질문: 식이 미지수보다 많아서 모두를 만족하는 답이 없다면?</div>
   </section>
-</section>
 
 <!-- ======================= ⑥ 딱 맞출 수 없을 때 가장 가까운 것 ======================= -->
-<section>
+
   <section id="p01-span">
     <div class="crumb">⑥ 딱 맞출 수 없을 때 가장 가까운 것 · P01</div>
     <h2 class="t">만들 수 있는 것들</h2>
@@ -503,10 +516,9 @@
     <div class="recap">정확히 만들 수 없으면 가장 가까운 것을 찾는다: <b class="k">수선의 발</b>. 데이터 맞추기는 직선·평면에 수선의 발을 내리는 일이고, 그것은 <b class="k">오차 곡면의 바닥</b>이다.</div>
     <div class="ask" style="margin-top:22px">다음 질문: 그림을 그릴 수도, 식을 풀 수도 없을 때 이 그릇의 바닥을 미분으로 찾아 내려갈 수 있을까?</div>
   </section>
-</section>
 
 <!-- ======================= ⑦ 미분과 반복으로 찾기 ======================= -->
-<section>
+
   <section id="g01-good">
     <div class="crumb">⑦ 미분과 반복으로 찾기 · G01</div>
     <h2 class="t">좋은 추세선이란: 손실함수</h2>
@@ -577,7 +589,6 @@
       <li>⑤의 "추측하고 고치기"와 ⑦의 "비탈을 따라 내려가기"가 만나는 곳 (모든 연립방정식이 이렇지는 않다)</li>
     </ul>
   </section>
-</section>
 
 <section id="end">
   <div class="cover">
@@ -592,14 +603,14 @@
 <script src="lib/reveal/reveal.js"></script>
 <script src="lib/katex/katex.min.js"></script>
 <script src="lib/katex/auto-render.min.js"></script>
-<script src="js/core/wave1d.js?v=20261029v"></script>
-<script src="js/core/plot.js?v=20261029v"></script>
-<script src="js/parts/string-lab.js?v=20261029v"></script>
-<script src="js/figs/u12.js?v=20261029v"></script>
-<script src="js/figs/u34.js?v=20261029v"></script>
-<script src="js/figs/u5.js?v=20261029v"></script>
-<script src="js/figs/u67.js?v=20261029v"></script>
-<script src="js/parts/fig.js?v=20261029v"></script>
-<script src="js/deck.js?v=20261029v"></script>
+<script src="js/core/wave1d.js?v=20261030b"></script>
+<script src="js/core/plot.js?v=20261030b"></script>
+<script src="js/parts/string-lab.js?v=20261030b"></script>
+<script src="js/figs/u12.js?v=20261030b"></script>
+<script src="js/figs/u34.js?v=20261030b"></script>
+<script src="js/figs/u5.js?v=20261030b"></script>
+<script src="js/figs/u67.js?v=20261030b"></script>
+<script src="js/parts/fig.js?v=20261030b"></script>
+<script src="js/deck.js?v=20261030b"></script>
 </body>
 </html>
