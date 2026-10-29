@@ -78,7 +78,7 @@
   F['c02-zoom'] = {
     canvases: [{ h: 380 }],
     controls: [{ buttons: 'z', label: '확대', items: [['1배', 1], ['2배', 2], ['4배', 4], ['8배', 8]], value: 1 }],
-    readout: (s) => { const r = 1.2 / s.v.z; let m = 0; for (let i = 0; i <= 200; i++) { const x = 0.4 - r + 2 * r * i / 200; m = Math.max(m, Math.abs(fC(x) - par(x))); } return `보이는 범위에서 두 곡선의 가장 큰 차이 <b>${m.toExponential(1)}</b>`; },
+    readout: (s) => { const r = 1.2 / s.v.z; let m = 0; for (let i = 0; i <= 200; i++) { const x = 0.4 - r + 2 * r * i / 200; m = Math.max(m, Math.abs(fC(x) - par(x))); } return `보이는 범위에서 두 곡선의 가장 큰 차이 <b>${window.PLOT.sci(m, 1)}</b>`; },
     draw(st, [c]) {
       const r = 1.2 / st.v.z, x0 = 0.4;
       const P = Plot(c.g, box(c, 40, 30, 30, 30), [x0 - r, x0 + r], [fC(x0) - r * 0.8, fC(x0) + r * 0.8], { equal: true });
@@ -249,7 +249,7 @@
         if (Math.abs(a) > 3) P.arrowPx(x, f(x), 0, Math.max(-70, Math.min(70, a * 0.16)), COL.time, 2.6);
       }
       P.fn(f, COL.space, 4, 0, 0.8);
-      if (st.t === 0) { P.text(0.35, 1, '꼭대기: 아래로', { size: 18, col: COL.timeText, dx: 14, dy: 20 }); P.text(0.2796, 0.3, '기슭: 위로', { size: 18, col: COL.timeText, align: 'right', dx: -14 }); }
+      if (st.t === 0) { P.text(0.39, 1, '꼭대기: 아래로', { size: 19, col: COL.timeText, dy: 6 }); P.text(0.245, 0.5, '기슭: 위로', { size: 19, col: COL.timeText, align: 'right' }); }
     },
   };
 

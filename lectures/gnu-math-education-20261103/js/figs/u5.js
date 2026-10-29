@@ -1,7 +1,7 @@
 /* ⑤ 그림 정의 (원고 05-matrices.md, scripts/make_figures_04_05.py와 같은 수치) */
 (function () {
   const F = (window.FIGS = window.FIGS || {});
-  const { COL, Plot, text } = window.PLOT;
+  const { COL, Plot, text, arrowPx } = window.PLOT;
   const box = (c, l = 50, t = 40, r = 20, b = 40) => ({ x: l, y: t, w: c.w - l - r, h: c.h - t - b });
   const DIAG = '#f6d9b8', NB = '#cfdeee';
 
@@ -59,7 +59,7 @@
       { range: 'n', label: '크기', min: 3, max: 8, step: 1, value: 4, fmt: (v) => v }],
     init(st) { st.sel = null; },
     onclick(st, ci, x, y) { if (ci !== 0) return; const L = st.lay; if (!L) return; const i = Math.floor((y - L.y0) / L.cs); st.sel = i >= 0 && i < L.N ? i : null; },
-    readout: (s) => { const N = s.v.kind === 'line' ? s.v.n * 6 + 1 : s.v.n ** 2, nz = s.v.kind === 'line' ? 3 * N - 2 : N + 4 * s.v.n * (s.v.n - 1); return `${N} × ${N}: 0이 아닌 칸 <b>${nz}</b> / ${N * N} (<b>${(100 * nz / N / N).toFixed(1)}%</b>) · 줄 999 × 999면 2995 / 998001 (0.3%)`; },
+    readout: (s) => { const N = s.v.kind === 'line' ? s.v.n * 6 + 1 : s.v.n ** 2, nz = s.v.kind === 'line' ? 3 * N - 2 : N + 4 * s.v.n * (s.v.n - 1); return `${N} × ${N}: 0이 아닌 칸 <b>${nz}</b> / ${N * N} (<b>${(100 * nz / N / N).toFixed(1)}%</b>)`; },
     draw(st, [a, b]) {
       const line = st.v.kind === 'line', m = st.v.n, N = line ? m * 6 + 1 : m * m, ent = line ? tri : lap2(m);
       const cs = Math.min(18, Math.floor((a.h - 60) / N)), x0 = (a.w - N * cs) / 2, y0 = 40;
@@ -97,13 +97,13 @@
     readout: (s) => { const n = s.v.n; return `${n} × ${n}: A의 0 아닌 칸 <b>${3 * n - 2}</b>, A⁻¹의 0 아닌 칸 <b>${n * n}</b>`; },
     draw(st, [a, b]) {
       const n = 7, G = ginv(n), col = Array.from({ length: n }, (_, i) => G(i, st.j));
-      const P = Plot(a.g, box(a, 40, 40, 20, 30), [0, 8], [-2.2, 0.6]);
+      const P = Plot(a.g, box(a, 40, 40, 20, 30), [0, 8], [-2.3, 0.9]);
       P.frame({ title: `${st.j + 1}번 점을 누르면 줄 전체가 처진다 (점을 눌러 바꾸기)`, zero: false });
       const xs = [0, ...col.map((_, i) => i + 1), 8], ys = [0, ...col.map((v) => -v), 0];
       P.path(xs, ys, COL.space, 4);
       xs.forEach((x, i) => P.dot(x, ys[i], i === st.j + 1 ? 10 : 6, i === st.j + 1 ? COL.time : COL.space));
-      P.arrowPx(st.j + 1, -col[st.j], 0, -40, COL.time, 3.5);
-      P.text(4, -2.05, '처진 깊이 = A⁻¹의 한 열(0이 하나도 없다)', { size: 18, align: 'center', col: COL.axis });
+      arrowPx(a.g, P.X(st.j + 1), P.Y(-col[st.j]) - 52, P.X(st.j + 1), P.Y(-col[st.j]) - 12, COL.time, 3.5);
+      P.text(4, 0.62, '처진 깊이 = A⁻¹의 한 열(0이 하나도 없다)', { size: 19, align: 'center', col: COL.axis });
       const N = st.v.n, cs = Math.min(9, Math.floor((b.w - 60) / (2 * N))), y0 = 60, gap = 30, x1 = (b.w - (2 * N * cs + gap)) / 2;
       text(b.g, x1 + N * cs / 2, 40, 'A', { size: 20, bold: true, align: 'center' });
       text(b.g, x1 + N * cs + gap + N * cs / 2, 40, 'A⁻¹', { size: 20, bold: true, align: 'center' });

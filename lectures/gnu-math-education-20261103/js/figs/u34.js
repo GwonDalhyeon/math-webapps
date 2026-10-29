@@ -40,7 +40,7 @@
     readout: (s) => `간격 <b>1/${s.v.N - 1}</b>`,
     draw(st, [c]) {
       const N = st.v.N - 1, P = Plot(c.g, box(c, 60, 30, 30, 44), [-0.02, 1.02], [-0.1, 1.15]);
-      P.frame({ xt: [0, 0.5, 1], yt: [0, 0.5, 1], xl: '위치' });
+      P.frame({ xt: [0, 0.5, 1], yt: [0, 0.5, 1], xl: '위치', xlAt: 'top' });
       P.fn(sinp, COL.exact, 2.4, 0, 1, 300, [7, 6]);
       for (let i = 0; i <= N; i++) {
         const x = i / N, y = sinp(x);
@@ -72,9 +72,9 @@
   /* ---------- F02 Taylor: 오차는 h²에 비례 ---------- */
   const errAt = (h) => Math.abs((Math.sin(1 + h) - 2 * Math.sin(1) + Math.sin(1 - h)) / (h * h) + Math.sin(1));
   F['f02-taylor'] = {
-    canvases: [{ h: 300 }],
+    canvases: [{ h: 250 }],
     controls: [{ buttons: 'h', label: '간격 h', items: [['0.4', 0.4], ['0.2', 0.2], ['0.1', 0.1], ['0.05', 0.05]], value: 0.4 }],
-    readout: (s) => { const e = errAt(s.v.h), e2 = errAt(s.v.h * 2); return `y = sin x, x = 1에서 오차 <b>${e.toExponential(2)}</b>` + (s.v.h < 0.4 ? ` · 앞 칸의 <b>${(e / e2).toFixed(3)}</b>배` : ''); },
+    readout: (s) => { const e = errAt(s.v.h), e2 = errAt(s.v.h * 2); return `y = sin x, x = 1에서 오차 <b>${window.PLOT.sci(e, 2)}</b>` + (s.v.h < 0.4 ? ` · 앞 칸의 <b>${(e / e2).toFixed(3)}</b>배` : ''); },
     draw(st, [c]) {
       const hs = [0.4, 0.2, 0.1, 0.05], L = Math.log10;
       const P = Plot(c.g, box(c, 90, 26, 30, 50), [L(0.04), L(0.5)], [L(1e-4), L(0.03)]);
@@ -156,7 +156,7 @@
     readout: (s) => `걸음 <b>${s.k}</b> (t = ${s.k}/12) · 가운데 점 <b>${F5[s.k][3].toFixed(4).replace('-', '−')}</b> · 정확한 값 ${Math.cos(PI * s.k / 12).toFixed(4).replace('-', '−')}`,
     draw(st, [c]) {
       const P = Plot(c.g, box(c, 50, 24, 24, 40), [-0.02, 1.02], [-1.15, 1.15]);
-      P.frame({ xt: [0, 0.5, 1], yt: [-1, 0, 1], xl: '위치' });
+      P.frame({ xt: [0, 0.5, 1], yt: [-1, 0, 1], xl: '위치', xlAt: 'top' });
       P.fn((x) => W.uSine(1, x, st.k / 12), COL.exact, 2.4, 0, 1, 200, [7, 6]);
       const xs = F5[0].map((_, i) => i / 6);
       P.path(xs, F5[st.k], COL.space, 3.5); xs.forEach((x, i) => P.dot(x, F5[st.k][i], 7, COL.space));
@@ -214,7 +214,7 @@
       M1.three[k].forEach((v, i) => P.dot(i / 12, v, 6, COL.space));
       M1.five[k].forEach((v, i) => P.dot(i / 12, v, 5, COL.time));
       const Q = Plot(b.g, box(b, 40, 36, 16, 34), [Math.max(0, t - 1), Math.max(1, t)], [-1.25, 1.25]);
-      Q.frame({ yt: [-1, 0, 1], title: 'x = 1/6 인 점의 기록 (최근 1)' });
+      Q.frame({ yt: [-1, 0, 1], title: 'x = 1/6인 점의 높이 기록 (지난 시간 1만큼)' });
       const ts = [], e = [], th = [], fv = [];
       for (let j = Math.max(0, k - 100); j <= k; j++) { ts.push(j / 100); e.push(W.uSine(3, 1 / 6, j / 100)); th.push(M1.three[j][2]); fv.push(M1.five[j][2]); }
       Q.path(ts, e, COL.exact, 2.4); Q.path(ts, th, COL.space, 3); Q.path(ts, fv, COL.time, 2.4, [6, 4]);
@@ -239,7 +239,7 @@
     readout: (s) => `걸음 <b>${s.k}</b> · 지금만 쓰는 방법의 진폭 <b>${Math.hypot(...SP.eu[s.k]).toFixed(2)}배</b>${s.k === 63 ? ' (한 주기)' : s.k === 126 ? ' (두 주기)' : ''}`,
     draw(st, [a, b]) {
       const k = st.k, ts = Array.from({ length: k + 1 }, (_, j) => j * DT);
-      const P = Plot(a.g, box(a, 50, 30, 20, 44), [0, NS * DT], [-2.1, 2.1]);
+      const P = Plot(a.g, box(a, 50, 30, 46, 66), [0, NS * DT], [-2.1, 2.1]);
       P.frame({ xt: [0, 2 * PI, 4 * PI], xtl: ['0', '한 주기', '두 주기'], yt: [-2, -1, 0, 1, 2], title: '위치' });
       P.fn(Math.cos, COL.exact, 2.4, 0, Math.max(k * DT, 1e-6));
       P.path(ts, SP.eu.slice(0, k + 1).map((p) => p[0]), COL.bad, 3);
@@ -249,7 +249,7 @@
       Q.fn((x) => Math.sqrt(Math.max(0, 1 - x * x)), COL.exact, 2, -1, 1); Q.fn((x) => -Math.sqrt(Math.max(0, 1 - x * x)), COL.exact, 2, -1, 1);
       Q.path(SP.eu.slice(0, k + 1).map((p) => p[0]), SP.eu.slice(0, k + 1).map((p) => p[1]), COL.bad, 2.6);
       Q.path(SP.lf.slice(0, k + 1), SP.lv.slice(0, k + 1), COL.space, 2.6, [6, 4]);
-      text(a.g, a.w - 20, a.h - 6, '회색: 정확, 빨강: 지금의 정보만, 파랑 점선: ③의 방법', { size: 17, align: 'right', col: COL.muted });
+      text(a.g, a.w - 20, a.h - 8, '회색: 정확, 빨강: 지금의 정보만, 파랑 점선: ③의 방법', { size: 18, align: 'right', col: COL.muted });
     },
   };
 
@@ -292,7 +292,7 @@
     canvases: [{ h: 330 }, { h: 330 }],
     controls: [{ buttons: 'r', label: 'r = cΔt/h', items: [['0.5', 0.5], ['0.9', 0.9], ['1.1', 1.1], ['1.5', 1.5]], value: 0.5, act: (s) => { s.t = 0; } }, 'play', 'reset'],
     speed: 0.1, tmax: 0.5,
-    readout: (s) => { const B = blow(s.v.r), k = Math.min(B.ex.length - 1, Math.floor(s.t / B.dt)); return `가장 높은 점: ③의 방법 <b>${B.ex[k] > 1e4 ? B.ex[k].toExponential(1) : B.ex[k].toFixed(2)}</b> · 한꺼번에 <b>${B.im[k].toFixed(2)}</b>`; },
+    readout: (s) => { const B = blow(s.v.r), k = Math.min(B.ex.length - 1, Math.floor(s.t / B.dt)); return `가장 높은 점: ③의 방법 <b>${B.ex[k] > 1e4 ? window.PLOT.sci(B.ex[k], 1) : B.ex[k].toFixed(2)}</b> · 한꺼번에 <b>${B.im[k].toFixed(2)}</b>`; },
     draw(st, [a, b]) {
       const r = st.v.r, g = a.g, dx = 44, cx = a.w / 2, top = 70, bot = 220;
       text(g, cx, 32, `한 걸음에 파동이 가는 칸 수 r = ${r}`, { size: 20, bold: true, align: 'center', col: r > 1 ? COL.bad : COL.good });
@@ -305,12 +305,12 @@
       text(g, 30, top + 5, '다음', { size: 17, bold: true }); text(g, 30, bot + 5, '지금', { size: 17, bold: true });
       text(g, cx, a.h - 16, r > 1 ? '영향 범위가 이웃 밖으로 넘친다' : '영향 범위가 이웃 안에 있다', { size: 19, bold: true, align: 'center', col: r > 1 ? COL.bad : COL.good });
       const B = blow(r), k = Math.min(B.ex.length - 1, Math.floor(st.t / B.dt));
-      const P = Plot(b.g, box(b, 70, 36, 20, 44), [0, 0.5], [-0.5, 9.5]);
+      const P = Plot(b.g, box(b, 70, 36, 30, 50), [0, 0.5], [-0.5, 9.5]);
       P.frame({ xt: [0, 0.25, 0.5], yt: [0, 3, 6, 9], ytl: ['1', '1000', '100만', '10억'], title: '줄에서 가장 높은 점의 높이 (로그 눈금)', xl: '시간' });
       const ts = B.ex.slice(0, k + 1).map((_, j) => j * B.dt);
       P.path(ts, B.ex.slice(0, k + 1).map((v) => Math.log10(Math.max(v, 1e-3))), COL.bad, 3);
       P.path(ts, B.im.slice(0, k + 1).map((v) => Math.log10(Math.max(v, 1e-3))), COL.space, 3, [7, 5]);
-      text(b.g, b.w - 24, b.h - 10, '빨강: ③의 방법, 파랑 점선: 한꺼번에 푸는 방법', { size: 16, align: 'right', col: COL.muted });
+      text(b.g, P.x + 12, P.y + 24, '빨강: ③의 방법', { size: 18, col: COL.bad }); text(b.g, P.x + 12, P.y + 48, '파랑 점선: 한꺼번에 푸는 방법', { size: 18, col: COL.space });
     },
   };
 })();

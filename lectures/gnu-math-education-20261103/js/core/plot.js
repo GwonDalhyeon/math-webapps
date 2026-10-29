@@ -3,16 +3,24 @@
 (function (root) {
   const COL = {
     space: '#2f5d8a', time: '#d9822b', timeText: '#a85a0c', good: '#2e7d5b', bad: '#b03a2e',
-    exact: '#8a96a3', vel: '#4b5563', axis: '#374151', grid: '#e3e9f0', muted: '#5b6b7d', ink: '#0f1a27',
+    exact: '#8a96a3', vel: '#4b5563', axis: '#26364a', grid: '#e3e9f0', muted: '#3d4a59', ink: '#0f1a27',
     faint: '#c7d3e0', fill: '#eef3f8', white: '#ffffff', title: '#16325a',
   };
   const FONT = "'Pretendard Variable', Pretendard, 'Malgun Gothic', sans-serif";
 
-  /* 캔버스를 보이는 크기의 2배 해상도로 맞추고 2D 문맥을 돌려준다 */
+  /* 캔버스 해상도 배수: 보이는 크기 × Reveal 배율 × 기기 화소 비율(최소 2, 최대 4).
+     2로 고정하면 전체 화면(배율 1.5)·고배율 화면에서 그림 글자가 번진다(검토 명세 3-5) */
+  function density() {
+    const s = (typeof Reveal !== 'undefined' && Reveal.getScale) ? Reveal.getScale() : 1;
+    const dpr = (typeof window !== 'undefined' && window.devicePixelRatio) || 1;
+    return Math.min(4, Math.max(2, Math.ceil(s * dpr * 4) / 4));
+  }
+
+  /* 캔버스를 화면에 맞는 해상도로 맞추고 2D 문맥을 돌려준다 */
   function fit(c) {
     const w = c.clientWidth, h = c.clientHeight;
     if (!w || !h) return null;
-    const k = 2;
+    const k = density();
     if (c.width !== Math.round(w * k) || c.height !== Math.round(h * k)) { c.width = Math.round(w * k); c.height = Math.round(h * k); }
     const g = c.getContext('2d');
     g.setTransform(k, 0, 0, k, 0, 0);
@@ -21,13 +29,20 @@
     return { g, w, h };
   }
 
+  /* 글자에는 선·면용 밝은 색 대신 흰 바탕 대비 4.5 : 1 이상인 진한 색을 쓴다 */
+  const TEXTCOL = { '#d9822b': '#a85a0c', '#8a96a3': '#4f5b68', '#c7d3e0': '#4f5b68', '#2e7d5b': '#236347' };
+
+  /* 그림 글자: 18px 이상, 굵기 600 이상, 선 위에서도 읽히게 흰 테두리(halo: false로 끔) */
   function text(g, x, y, s, o = {}) {
     g.save();
-    g.font = `${o.bold ? 700 : 500} ${o.size || 18}px ${FONT}`;
-    g.fillStyle = o.col || COL.ink;
+    const size = Math.max(18, o.size || 20);
+    g.font = `${o.bold ? 700 : 600} ${size}px ${FONT}`;
+    const col = o.col || COL.ink;
+    g.fillStyle = TEXTCOL[String(col).toLowerCase()] || col;
     g.textAlign = o.align || 'left';
     g.textBaseline = o.base || 'alphabetic';
-    if (o.halo) { g.lineWidth = 5; g.strokeStyle = 'rgba(255,255,255,.9)'; g.strokeText(s, x, y); }
+    const light = /^#f|^#fff|white/i.test(String(col));
+    if (o.halo !== false && !light) { g.lineJoin = 'round'; g.lineWidth = 4; g.strokeStyle = 'rgba(255,255,255,.92)'; g.strokeText(s, x, y); }
     g.fillText(s, x, y);
     g.restore();
   }
@@ -62,12 +77,17 @@
         (o.yt || []).forEach((t) => { g.beginPath(); g.moveTo(x, P.Y(t)); g.lineTo(x + w, P.Y(t)); g.stroke(); });
         if (o.zero !== false && yr[0] < 0 && yr[1] > 0) { g.strokeStyle = '#9aa7b6'; g.lineWidth = 1.3; g.beginPath(); g.moveTo(x, P.Y(0)); g.lineTo(x + w, P.Y(0)); g.stroke(); }
         if (o.box !== false) { g.strokeStyle = '#b8c4d2'; g.lineWidth = 1; g.strokeRect(x, y, w, h); }
-        const fs = o.fs || 17;
-        (o.xt || []).forEach((t, i) => text(g, P.X(t), y + h + fs + 4, o.xtl ? o.xtl[i] : fmt(t), { size: fs, col: COL.muted, align: 'center' }));
-        (o.yt || []).forEach((t, i) => text(g, x - 7, P.Y(t) + fs * 0.35, o.ytl ? o.ytl[i] : fmt(t), { size: fs, col: COL.muted, align: 'right' }));
-        if (o.xl) text(g, x + w / 2, y + h + fs * 2 + 10, o.xl, { size: fs + 1, col: COL.axis, align: 'center' });
+        const fs = Math.max(19, o.fs || 19);
+        (o.xt || []).forEach((t, i) => text(g, P.X(t), y + h + fs + 4, o.xtl ? o.xtl[i] : fmt(t), { size: fs, col: COL.axis, align: 'center' }));
+        (o.yt || []).forEach((t, i) => text(g, x - 7, P.Y(t) + fs * 0.35, o.ytl ? o.ytl[i] : fmt(t), { size: fs, col: COL.axis, align: 'right' }));
+        if (o.xl) {
+          // 축 이름이 캔버스 아래로 잘리면 축 오른쪽 끝 위에 둔다
+          const H = g.canvas.height / (g.getTransform ? g.getTransform().d : 2), yb = y + h + fs * 2 + 8;
+          if (yb <= H - 3) text(g, x + w / 2, yb, o.xl, { size: fs + 1, col: COL.axis, align: 'center' });
+          else text(g, x + w - 8, o.xlAt === 'top' ? y + fs + 6 : y + h - 10, o.xl, { size: fs + 1, col: COL.axis, align: 'right', bold: true });
+        }
         if (o.yl) { g.translate(x - (o.ylo || 46), y + h / 2); g.rotate(-Math.PI / 2); text(g, 0, 0, o.yl, { size: fs + 1, col: COL.axis, align: 'center' }); }
-        if (o.title) text(g, x + w / 2, y - 10, o.title, { size: o.tfs || 20, col: COL.axis, align: 'center', bold: true });
+        if (o.title) text(g, x + w / 2, y - 10, o.title, { size: Math.max(20, o.tfs || 20), col: COL.axis, align: 'center', bold: true });
         g.restore();
       },
       path(xs, ys, col, lw = 3, dash) {
@@ -118,6 +138,13 @@
     return P;
   }
 
+  /* 큰 수·작은 수는 2.8 × 10⁻² 꼴로 쓴다(코드식 2.8e-2를 화면에 쓰지 않는다) */
+  function sci(v, d = 1) {
+    const [m, e] = v.toExponential(d).split('e');
+    const sup = { '-': '⁻', 0: '⁰', 1: '¹', 2: '²', 3: '³', 4: '⁴', 5: '⁵', 6: '⁶', 7: '⁷', 8: '⁸', 9: '⁹' };
+    return `${m.replace('-', '−')} × 10${[...String(+e)].map((c) => sup[c]).join('')}`;
+  }
+
   function fmt(v) {
     if (Math.abs(v) < 1e-12) return '0';
     const s = (+v.toFixed(3)).toString();
@@ -166,7 +193,7 @@
     g.beginPath(); pts.forEach((p, k) => { const [X, Y] = P(...p); k ? g.lineTo(X, Y) : g.moveTo(X, Y); }); g.stroke(); g.restore();
   }
 
-  const api = { COL, FONT, fit, text, arrowPx, Plot, Cam, surface, heightColor, polyline3, fmt };
+  const api = { COL, FONT, fit, density, sci, text, arrowPx, Plot, Cam, surface, heightColor, polyline3, fmt };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.PLOT = api;
 })(typeof window !== 'undefined' ? window : globalThis);

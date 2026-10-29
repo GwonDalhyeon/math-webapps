@@ -92,12 +92,14 @@
     if (st.bar) {
       st.bar.querySelectorAll('[data-rv]').forEach((s) => {
         const c = st.def.controls.find((q) => q.range === s.dataset.rv);
-        s.textContent = c && c.fmt ? c.fmt(st.v[c.range]) : st.v[s.dataset.rv];
+        s.textContent = minus(String(c && c.fmt ? c.fmt(st.v[c.range]) : st.v[s.dataset.rv]));
       });
       st.bar.querySelectorAll('[data-b]').forEach((g) => g.querySelectorAll('[data-bv]').forEach((b) => b.classList.toggle('on', String(st.v[g.dataset.b]) === b.dataset.bv)));
-      if (st.ro && st.def.readout) st.ro.innerHTML = st.def.readout(st);
+      if (st.ro && st.def.readout) st.ro.innerHTML = minus(st.def.readout(st));
     }
   }
+  /* 화면의 음수는 빼기 기호(−)로: 코드의 -1.10을 그대로 보이지 않는다 */
+  function minus(h) { return h.replace(/(^|[\s(>=:·,])-(?=\d)/g, '$1−'); }
   function req(st) { if (!st.dirty) { st.dirty = true; requestAnimationFrame(() => draw(st)); } }
 
   function loop(st, now) {

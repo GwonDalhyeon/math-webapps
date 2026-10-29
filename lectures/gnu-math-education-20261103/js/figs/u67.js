@@ -47,7 +47,7 @@
   /* ---------- P03 데이터 맞추기 = 같은 문제 ---------- */
   F['p03-same'] = {
     canvases: [{ h: 360 }, { h: 360 }],
-    controls: [{ range: 'a', label: '기울기 a', min: 0.5, max: 2.2, step: 0.01, value: 1, fmt: (v) => v.toFixed(2) }, { buttons: 'q', items: [['1', 1], ['7/5', 1.4], ['2', 2]], act: (s, v) => { s.v.a = v; s.el.querySelector('[data-r=a]').value = v; } }],
+    controls: [{ range: 'a', label: '기울기 a', min: 0.5, max: 2.2, step: 0.01, value: 0.8, fmt: (v) => v.toFixed(2) }, { buttons: 'q', items: [['1', 1], ['7/5', 1.4], ['2', 2]], act: (s, v) => { s.v.a = v; s.el.querySelector('[data-r=a]').value = v; } }],
     readout: (s) => { const a = s.v.a, e1 = 1 - a, e2 = 3 - 2 * a; return `세로 오차 ${fmt(e1, 2)}, ${fmt(e2, 2)} · 제곱의 합 <b>${(e1 * e1 + e2 * e2).toFixed(3)}</b> = 오른쪽 거리² <b>${(Math.hypot(a - 1, 2 * a - 3) ** 2).toFixed(3)}</b>`; },
     draw(st, [c, d]) {
       const a = st.v.a, P = Plot(c.g, box(c, 50, 36, 20, 40), [0, 2.6], [0, 4.4]);
@@ -94,7 +94,7 @@
       P.frame({ xt: [0, 1, 2, 3], yt: [0, 1, 2, 3, 4], title: `y = ${a.toFixed(2)}x + ${b.toFixed(2)}`, xl: 'x' });
       P.fn((x) => a * x + b, COL.space, 3);
       D3.forEach(([x, y]) => { P.seg(x, y, x, a * x + b, COL.time, 3); P.dot(x, y, 7, COL.ink); });
-      const C3 = Cam(d.w * 0.36, d.h * 0.82, Math.min(d.w, d.h) * 0.17, st.az, st.el3);
+      const C3 = Cam(d.w * 0.36, d.h * 0.72, Math.min(d.w, d.h) * 0.15, st.az, st.el3);
       planeScene(d.g, C3, a, b);
       text(d.g, d.w - 16, 28, '두 화살표가 만드는 평면 (끌어서 돌리기)', { size: 18, bold: true, align: 'right', col: COL.axis });
     },
@@ -109,7 +109,7 @@
     for (let b = -2; b <= 3.01; b += 0.5) polyline3(g, P, [[-0.25, b, 0], [2.25, b, 0]], '#e3e9f0', 1);
     polyline3(g, P, [[-0.25, -2, 0], [2.6, -2, 0]], COL.axis, 1.5); polyline3(g, P, [[-0.25, -2, 0], [-0.25, 3.4, 0]], COL.axis, 1.5);
     const [ax, ay] = P(2.7, -2, 0), [bx, by] = P(-0.25, 3.6, 0);
-    text(g, ax + 6, ay + 4, '기울기 a', { size: 16, bold: true }); text(g, bx - 6, by + 4, '절편 b', { size: 16, bold: true, align: 'right' });
+    text(g, Math.min(ax + 6, g.canvas.width / g.getTransform().a - 90), ay + 4, '기울기 a', { size: 18, bold: true }); text(g, Math.max(bx - 6, 74), by + 4, '절편 b', { size: 18, bold: true, align: 'right' });
     surface(g, P, 8, 40, (i, j) => at(i / 8, 2 * Math.PI * j / 40), (cz) => heightColor(Math.min(1, (cz / scale - smin) / C), 1), '#7b8794', 0.5);
     return smin * scale;
   }
@@ -125,9 +125,9 @@
       const P = Plot(c.g, box(c, 44, 40, 14, 40), [0, 3.6], [0, 4.4]);
       P.frame({ xt: [0, 1, 2, 3], yt: [0, 2, 4], title: '① 추세선', xl: 'x' });
       P.fn((x) => a * x + b, COL.space, 3); D3.forEach(([x, y]) => { P.seg(x, y, x, a * x + b, COL.time, 3); P.dot(x, y, 7, COL.ink); });
-      planeScene(d.g, Cam(d.w * 0.38, d.h * 0.84, Math.min(d.w, d.h) * 0.17, st.az + 120, st.el3), a, b, { small: true });
+      planeScene(d.g, Cam(d.w * 0.33, d.h * 0.74, Math.min(d.w, d.h) * 0.14, st.az + 120, st.el3), a, b, { small: true });
       text(d.g, d.w / 2, 28, '② 평면 위의 예측점', { size: 19, bold: true, align: 'center', col: COL.space });
-      const B = bowlCam(e, st.az, st.el3), zb = bowl(e.g, B, 1);
+      const B = bowlCam(e, st.az, st.el3, 0.86), zb = bowl(e.g, B, 1);
       const [X, Y] = B(a, b, S(a, b)), [X0, Y0] = B(a, b, 0);
       e.g.save(); e.g.strokeStyle = COL.muted; e.g.setLineDash([3, 3]); e.g.beginPath(); e.g.moveTo(X, Y); e.g.lineTo(X0, Y0); e.g.stroke(); e.g.restore();
       if (at) { const q = [[-1, -1], [1, -1], [1, 1], [-1, 1]].map(([sa, sb]) => B(1 + sa * 0.2, 1 / 3 + sb * 0.5, zb)); e.g.save(); e.g.globalAlpha = 0.45; e.g.fillStyle = COL.space; e.g.beginPath(); q.forEach(([x, y], k) => (k ? e.g.lineTo(x, y) : e.g.moveTo(x, y))); e.g.closePath(); e.g.fill(); e.g.restore(); }

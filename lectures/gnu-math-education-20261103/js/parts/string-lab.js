@@ -23,8 +23,8 @@
   function fit(c) {
     const w = c.clientWidth, h = c.clientHeight;
     if (!w || !h) return null;
-    const k = 2;
-    if (c.width !== w * k || c.height !== h * k) { c.width = w * k; c.height = h * k; }
+    const k = window.PLOT && window.PLOT.density ? window.PLOT.density() : 2;
+    if (c.width !== Math.round(w * k) || c.height !== Math.round(h * k)) { c.width = Math.round(w * k); c.height = Math.round(h * k); }
     const g = c.getContext('2d');
     g.setTransform(k, 0, 0, k, 0, 0);
     return { g, w, h };
