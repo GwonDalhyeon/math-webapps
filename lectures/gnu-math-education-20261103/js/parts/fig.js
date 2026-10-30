@@ -25,6 +25,11 @@
       if (s.w) { c.style.flex = 'none'; c.style.width = s.w + 'px'; }
       row.appendChild(c); st.cv.push(c);
     });
+    // 같은 조작 막대를 공유하는 두 캔버스 사이에 단계 공개 HTML을 둔다.
+    if (def.middle) {
+      const middle = el.querySelector(def.middle);
+      if (middle) row.insertBefore(middle, st.cv[1]);
+    }
     el.insertBefore(row, fb || null);
 
     const ctl = def.controls || [];

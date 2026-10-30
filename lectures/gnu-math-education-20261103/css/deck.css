@@ -127,7 +127,7 @@ table.ft th { background: #eef3f8; color: var(--title); }
 .cv-row { min-height: 82px; }
 .cv-d { font-size: 24px; font-weight: 800; color: var(--time-text); white-space: nowrap; }
 .cv-t { font-size: 27px; font-weight: 700; color: var(--ink); }
-.cv-t span { display: block; font-size: 20px; font-weight: 500; color: var(--sub); margin-top: 2px; }
+.cv-t span { display: block; font-size: 22px; font-weight: 500; color: var(--sub); margin-top: 2px; }
 .cv-row.sub .cv-d { padding-left: 22px; font-size: 22px; }
 .cv-row.sub .cv-t { padding-left: 22px; }
 .cv-group { margin-top: 10px; font-size: 22px; font-weight: 800; color: var(--title); border-left: 5px solid var(--time); padding-left: 12px; }
@@ -173,12 +173,8 @@ table.cost td.bad { color: var(--bad); font-weight: 700; } table.cost td.good { 
 .uo-n { font-size: 64px; font-weight: 800; color: var(--space); line-height: 1; }
 .uopen.data .uo-n { color: var(--good); }
 .uo-name { font-size: 34px; font-weight: 800; color: var(--title); }
-.uo-q { margin-top: 34px; font-size: 38px; font-weight: 800; line-height: 1.4; color: var(--ink); border-left: 8px solid var(--space); padding: 6px 0 6px 24px; }
+.uo-q { margin-top: 48px; font-size: 38px; font-weight: 800; line-height: 1.4; color: var(--ink); border-left: 8px solid var(--space); padding: 6px 0 6px 24px; }
 .uopen.data .uo-q { border-color: var(--good); }
-.uo-chips { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 12px; margin-top: 34px; }
-.uo-chips span { font-size: 23px; font-weight: 700; color: var(--space); background: var(--space-bg); border: 1.5px solid var(--space); border-radius: 22px; padding: 4px 16px; }
-.uopen.data .uo-chips span { color: var(--good); background: #e5f3ec; border-color: var(--good); }
-.uo-chips span.uo-lb { background: none; border: none; color: var(--sub); padding: 0 4px 0 0; font-size: 22px; }
 .uo-path { margin-top: auto; margin-bottom: 30px; }
 .uo-path div { color: var(--sub); border-color: #a9bdd3; }
 .uo-path div.data { border-color: #9fcdb7; }
@@ -186,3 +182,20 @@ table.cost td.bad { color: var(--bad); font-weight: 700; } table.cost td.good { 
 .uo-path div.cur { border-color: var(--space); color: var(--ink); font-weight: 800; }
 .uo-path div.cur.data { border-color: var(--good); }
 .ask.bridge { font-weight: 600; } .ask.bridge b { font-weight: 800; }
+
+/* 3차 수정: 표지, 근사식 비교, 열벡터, 손실 유도 */
+.cover .who { font-size:26px; color:var(--sub); margin-top:12px; }
+table.neighbors { width:100%; margin:8px 0; font-size:22px; }
+table.neighbors th, table.neighbors td { padding:8px 10px; }
+table.neighbors th.sp-row { border-left:8px solid var(--space); color:var(--space); }
+table.neighbors th.tm-row { border-left:8px solid var(--time); color:var(--time-text); }
+.force-cmp .cmp-c { padding:5px 12px; }
+.force-cmp .cmp-c .katex { font-size:1em; }
+.eq-sag .katex-display { margin:.35em 0; }
+.span-equations .katex { font-size:1.05em; }
+.part.fig .loss-derivation { flex:0 0 350px; box-sizing:border-box; padding:28px 6px 6px; }
+.loss-derivation .katex { font-size:1em; }
+#g02-downhill .part.fig { max-width:760px; margin:0 auto; }
+
+#c02-zoom .part.fig { max-width:760px; margin:0 auto; }
+#f02-slopes .part.fig { max-width:860px; margin:0 auto; }

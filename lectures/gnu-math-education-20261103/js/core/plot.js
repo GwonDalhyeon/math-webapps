@@ -7,6 +7,17 @@
     faint: '#c7d3e0', fill: '#eef3f8', white: '#ffffff', title: '#16325a',
   };
   const FONT = "'Pretendard Variable', Pretendard, 'Malgun Gothic', sans-serif";
+  // ?audit=1에서만 기록한다. 같은 그림·캔버스·호출 순서는 덮어써 재생 중 누적하지 않는다.
+  const audit = typeof window !== 'undefined' && window.location && new URLSearchParams(window.location.search).get('audit') === '1';
+  function log(g, kind, data) {
+    if (!audit) return;
+    const c = g && g.canvas, host = c && c.closest('[data-fig], .string-lab');
+    const id = host ? (host.dataset.fig || host.closest('section').id) : 'unknown';
+    const canvas = host ? [...host.querySelectorAll('canvas')].indexOf(c) : -1;
+    const n = c ? (c._auditN = (c._auditN || 0) + 1) : 0;
+    const rows = window.PLOTLOG = window.PLOTLOG || {};
+    rows[`${id}/${canvas}/${n}/${kind}`] = { id, canvas, n, kind, ...data };
+  }
 
   /* 캔버스 해상도 배수: 보이는 크기 × Reveal 배율 × 기기 화소 비율(최소 2, 최대 4).
      2로 고정하면 전체 화면(배율 1.5)·고배율 화면에서 그림 글자가 번진다(검토 명세 3-5) */
@@ -23,6 +34,8 @@
     const k = density();
     if (c.width !== Math.round(w * k) || c.height !== Math.round(h * k)) { c.width = Math.round(w * k); c.height = Math.round(h * k); }
     const g = c.getContext('2d');
+    c._auditN = 0;
+    c._auditCams = new Set();
     g.setTransform(k, 0, 0, k, 0, 0);
     g.clearRect(0, 0, w, h);
     g.lineJoin = 'round'; g.lineCap = 'round';
@@ -65,6 +78,7 @@
       const nw = s * (xr[1] - xr[0]), nh = s * (yr[1] - yr[0]);
       x += (w - nw) / 2; y += (h - nh) / 2; w = nw; h = nh;
     }
+    log(g, 'Plot', { xr, yr, w, h, equal: !!opt.equal, ratio: (w / (xr[1] - xr[0])) / (h / (yr[1] - yr[0])) });
     const P = {
       g, x, y, w, h, xr, yr,
       X: (v) => x + (v - xr[0]) / (xr[1] - xr[0]) * w,
@@ -160,11 +174,13 @@
     const r = [u[1] * d[2] - u[2] * d[1], u[2] * d[0] - u[0] * d[2], u[0] * d[1] - u[1] * d[0]];
     const P = (x, y, z) => { const q = [x * sx, y * sy, z * sz]; return [ox + s * (q[0] * r[0] + q[1] * r[1] + q[2] * r[2]), oy - s * (q[0] * u[0] + q[1] * u[1] + q[2] * u[2])]; };
     P.depth = (x, y, z) => x * sx * d[0] + y * sy * d[1] + z * sz * d[2];
+    P.axes = { sx, sy, sz };
     return P;
   }
 
   /* 격자 곡면: f(i, j) → [x, y, z], 색 함수 col(zMean). 멀리 있는 면부터 그린다 */
   function surface(g, P, n, m, f, col, stroke = '#6b7a8c', lw = 0.5) {
+    logCam(g, P);
     const quads = [];
     for (let i = 0; i < n; i++) for (let j = 0; j < m; j++) {
       const c = [f(i, j), f(i + 1, j), f(i + 1, j + 1), f(i, j + 1)];
@@ -189,10 +205,15 @@
   }
 
   function polyline3(g, P, pts, col, lw = 3, dash) {
+    logCam(g, P);
     g.save(); g.strokeStyle = col; g.lineWidth = lw; if (dash) g.setLineDash(dash);
     g.beginPath(); pts.forEach((p, k) => { const [X, Y] = P(...p); k ? g.lineTo(X, Y) : g.moveTo(X, Y); }); g.stroke(); g.restore();
   }
 
+  function logCam(g, P) {
+    if (!audit || g.canvas._auditCams.has(P)) return;
+    g.canvas._auditCams.add(P); log(g, 'Cam', P.axes);
+  }
   const api = { COL, FONT, fit, density, sci, text, arrowPx, Plot, Cam, surface, heightColor, polyline3, fmt };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.PLOT = api;

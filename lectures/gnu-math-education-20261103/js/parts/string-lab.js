@@ -36,6 +36,10 @@
     const { g, w, h } = r;
     g.clearRect(0, 0, w, h);
     const pad = 14;
+    if (new URLSearchParams(location.search).get('audit') === '1') {
+      const host = c.closest('.string-lab'), canvas = [...host.querySelectorAll('canvas')].indexOf(c), id = host.closest('section').id;
+      (window.PLOTLOG = window.PLOTLOG || {})[`${id}/${canvas}/string`] = { id, canvas, kind: 'String', ratio: ((w - 2 * pad) / (view.x1 - view.x0)) / ((h - 2 * pad) / (2 * view.y)) };
+    }
     const X = (x) => pad + (x - view.x0) / (view.x1 - view.x0) * (w - 2 * pad);
     const Y = (y) => h / 2 - y / view.y * (h / 2 - pad);
     g.strokeStyle = COL.grid; g.lineWidth = 1.5;
@@ -99,7 +103,7 @@
       }
     } else if (sc === 'bump') {
       const p = document.createElement('div'); p.className = 'sl-panel sl-wide';
-      p.innerHTML = '<div class="sl-title">줄 전체 <span>(상상 실험)</span></div>';
+      p.innerHTML = '<div class="sl-title">줄 전체</div>';
       const c = makeCanvas(p); row.appendChild(p);
       const z = document.createElement('div'); z.className = 'sl-panel';
       z.innerHTML = '<div class="sl-title">왼쪽 끝 확대 <span>(0 ≤ x ≤ 0.4)</span></div>';

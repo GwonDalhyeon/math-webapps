@@ -57,12 +57,13 @@
   /* ---------- C01 기울기가 바뀌는 빠르기 ---------- */
   F['c01-slope'] = {
     canvases: [{ h: 360 }, { h: 360 }],
-    controls: [{ buttons: 'a', label: 'a', items: [['1', 1], ['0', 0], ['−1', -1]], value: 1 }, { range: 'x0', label: '접점 x', min: -1.5, max: 1.5, step: 0.05, value: -0.8, fmt: (v) => v.toFixed(2) }],
-    readout: (s) => `기울기 <b>${(2 * s.v.a * s.v.x0 + 0.5).toFixed(2)}</b> · 기울기가 바뀌는 빠르기 <b>${2 * s.v.a}</b>`,
+    controls: [{ buttons: 'a', label: '이차항의 계수 a', items: [['1', 1], ['0', 0], ['−1', -1]], value: 1 }, { range: 'x0', label: '접점 x', min: -1.5, max: 1.5, step: 0.05, value: -0.8, fmt: (v) => v.toFixed(2) }],
+    readout: (s) => `기울기 <b>${(2 * s.v.a * s.v.x0 + 0.5).toFixed(2)}</b> · 기울기가 바뀌는 빠르기 <b>2a</b> = <b>${2 * s.v.a}</b>`,
     draw(st, [c, d]) {
       const a = st.v.a, x0 = st.v.x0, f = (x) => a * x * x + 0.5 * x + 0.2, m = 2 * a * x0 + 0.5;
-      const P = Plot(c.g, box(c, 50, 36), [-1.7, 1.7], [-2.6, 3.2]);
-      P.frame({ xt: [-1, 0, 1], yt: [-2, 0, 2], title: `y = ${a === 0 ? '' : a === 1 ? 'x² + ' : '−x² + '}0.5x + 0.2` });
+      const P = Plot(c.g, box(c, 50, 36), [-1.7, 1.7], [-2.6, 3.2], { equal: true });
+      text(c.g, c.w / 2, 24, `y = ax² + 0.5x + 0.2 (a = ${a === -1 ? '−1' : a}${a === 0 ? ': 직선' : ''})`, { size: 20, align: 'center', bold: true });
+      P.frame({ xt: [-1, 0, 1], yt: [-2, 0, 2] });
       P.fn(f, COL.space, 4);
       P.fn((x) => f(x0) + m * (x - x0), COL.time, 2.5, x0 - 0.7, x0 + 0.7);
       P.dot(x0, f(x0), 7, COL.time);
@@ -97,7 +98,7 @@
     draw(st, cs) {
       const cases = [['봉우리', (x) => 1 - x * x, '가운데 > 양옆 평균 → 위로 볼록'], ['곧은 곳', (x) => 0.3 * x + 0.5, '가운데 = 양옆 평균 → 휘지 않음'], ['골짜기', (x) => x * x, '가운데 < 양옆 평균 → 아래로 볼록']];
       cases.forEach(([nm, f, msg], i) => {
-        const c = cs[i], P = Plot(c.g, box(c, 24, 36, 24, 50), [-1.3, 1.3], [-0.4, 1.4]);
+        const c = cs[i], P = Plot(c.g, box(c, 24, 36, 24, 50), [-1.3, 1.3], [-0.4, 1.4], { equal: true });
         P.frame({ title: nm, zero: false });
         P.fn(f, COL.space, 4);
         const h = 0.8, avg = (f(-h) + f(h)) / 2;
@@ -241,8 +242,8 @@
     controls: ['play', 'step', 'reset'], speed: 0.12, tmax: 0.5, stepDt: 0.02,
     readout: (s) => `t = <b>${s.t.toFixed(2)}</b>`,
     draw(st, [c]) {
-      const P = Plot(c.g, box(c, 50, 30, 24, 40), [0, 0.8], [-0.15, 1.15]);
-      P.frame({ xt: [0, 0.2, 0.35, 0.5, 0.8], yt: [0, 0.3, 1] });
+      const P = Plot(c.g, box(c, 50, 30, 24, 40), [0, 0.8], [-0.6, 1.2]);
+      P.frame({ xt: [0, 0.2, 0.35, 0.5, 0.8], yt: [-0.5, 0, 0.3, 1], zero: true });
       const f = (x) => W.uBump(x, st.t);
       for (let j = 0; j <= 40; j++) {
         const x = 0.16 + j * 0.0095, a = uxx(f, x);
@@ -262,27 +263,29 @@
     return { n, dt: r * h, prev: u0, cur: u1, k: 1, u0, step() { const { prev, cur } = this; const nx = cur.map((row, i) => row.map((v, j) => (i && j && i < n && j < n ? 2 * v - prev[i][j] + r2 * lap(cur, i, j) : 0))); this.prev = cur; this.cur = nx; this.k++; } };
   }
   F['c07-membrane'] = {
-    canvases: [{ h: 440 }], rotate: true, az: 230, el: 28,
-    controls: [{ buttons: 'm', items: [['사인 모양 면', 'sine'], ['가운데만 볼록', 'ripple']], value: 'sine', act: (st) => { st.t = 0; st.R = ripple(48, 0.5); } }, 'play', 'reset'],
+    canvases: [{ h: 420 }, { h: 420 }], rotate: true, az: 230, el: 28,
+    controls: ['play', 'reset'],
     init(st) { st.R = ripple(48, 0.5); },
-    atEnd: (st) => st.v.m === 'ripple' && st.t >= 0.32,
+    atEnd: (st) => st.t >= 1,
     tick(st, d) {
-      if (st.v.m === 'sine') { st.t += d * 0.35; return; }
-      const target = Math.min(st.t + d * 0.08, 0.32);
+      st.t = Math.min(1, st.t + d / 4);
+      const target = st.t * 0.32;
       while (st.R.k * st.R.dt < target - 1e-9) st.R.step();
-      st.t = target; if (st.t >= 0.32) st.stop = true;
+      if (st.t >= 1) st.stop = true;
     },
-    readout: (s) => (s.v.m === 'ripple' && s.t > 0 ? `t = <b>${s.t.toFixed(2)}</b> · 세로 4배로 그림` : `t = <b>${s.t.toFixed(2)}</b>`),
-    draw(st, [c]) {
-      const P = Cam(c.w / 2, c.h / 2 + 30, Math.min(c.w, c.h) * 0.62, st.az, st.el3);
-      if (st.v.m === 'sine') {
-        const m = 22, z = (i, j) => Math.sin(PI * i / m) * Math.sin(PI * j / m) * Math.cos(Math.SQRT2 * PI * st.t) * 0.45;
-        surface(c.g, P, m, m, (i, j) => [i / m - 0.5, j / m - 0.5, z(i, j)], (cz) => heightColor(cz, 0.45));
-      } else {
-        const U = st.t > 0 ? st.R.cur : st.R.u0, n = st.R.n, s = 2, sc = st.t > 0 ? 1.6 : 0.4;
-        surface(c.g, P, n / s, n / s, (i, j) => [i * s / n - 0.5, j * s / n - 0.5, U[i * s][j * s] * sc], (cz) => heightColor(cz, 0.3));
-      }
-      text(c.g, 16, c.h - 14, '끌어서 돌려 볼 수 있다', { size: 17, col: COL.muted });
+    readout: () => '두 면은 다른 시간 규모 · 끌면 같은 각도로 회전',
+    draw(st, [a, b]) {
+      const ts = st.t * Math.SQRT2, tr = st.t * 0.32;
+      const P = Cam(a.w / 2, a.h / 2 + 30, Math.min(a.w, a.h) * 0.62, st.az, st.el3);
+      const Q = Cam(b.w / 2, b.h / 2 + 30, Math.min(b.w, b.h) * 0.62, st.az, st.el3);
+      const m = 22, z = (i, j) => Math.sin(PI * i / m) * Math.sin(PI * j / m) * Math.cos(Math.SQRT2 * PI * ts) * 0.45;
+      surface(a.g, P, m, m, (i, j) => [i / m - 0.5, j / m - 0.5, z(i, j)], (cz) => heightColor(cz, 0.45));
+      const U = st.t > 0 ? st.R.cur : st.R.u0, n = st.R.n, s = 2, sc = st.t > 0 ? 1.6 : 0.4;
+      surface(b.g, Q, n / s, n / s, (i, j) => [i * s / n - 0.5, j * s / n - 0.5, U[i * s][j * s] * sc], (cz) => heightColor(cz, 0.3));
+      text(a.g, a.w / 2, 28, `사인 모양 면 t = ${ts.toFixed(2)}`, { size: 20, align: 'center', bold: true });
+      text(b.g, b.w / 2, 28, `가운데만 볼록 t = ${tr.toFixed(2)}${st.t > 0 ? ' · 세로 4배' : ''}`, { size: 20, align: 'center', bold: true });
+      text(a.g, 16, a.h - 14, '모양 그대로 출렁임', { size: 18, col: COL.muted });
+      text(b.g, 16, b.h - 14, '퍼져 나가는 물결', { size: 18, col: COL.muted });
     },
   };
 

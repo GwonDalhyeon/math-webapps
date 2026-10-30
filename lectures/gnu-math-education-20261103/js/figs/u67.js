@@ -16,9 +16,10 @@
   /* ---------- P01 만들 수 있는 것들 ---------- */
   F['p01-span'] = {
     canvases: [{ h: 380 }],
-    controls: [{ buttons: 'm', items: [['화살표 하나', 'one'], ['화살표 둘', 'two']], value: 'one' }, { range: 'a', label: '(1, 2)의 배수 a', min: -0.5, max: 2, step: 0.05, value: 0.5, fmt: (v) => v.toFixed(2) }],
-    readout: (s) => (s.v.m === 'one' ? `a(1, 2) = <b>(${fmt(s.v.a, 2)}, ${fmt(2 * s.v.a, 2)})</b> — 목표 (1, 3)에 닿지 않는다` : '1.5 × (1, 2) − 0.5 × (1, 0) = <b>(1, 3)</b>'),
+    controls: [{ buttons: 'm', items: [['화살표 하나', 'one'], ['화살표 둘', 'two']], value: 'one', act: (s, mode) => { if (mode === 'two') { s.v.a = 1.5; s.el.querySelector('[data-r=a]').value = 1.5; } } }, { range: 'a', label: '(1, 2)의 배수 a', min: -0.5, max: 2, step: 0.05, value: 0.5, fmt: (v) => v.toFixed(2) }],
+    readout: (s) => (s.v.m === 'one' ? `점 (a, 2a) = <b>(${fmt(s.v.a, 2)}, ${fmt(2 * s.v.a, 2)})</b> — 목표 (1, 3)에 닿지 않는다` : 'a = 1.5, b = −0.5 → <b>목표 (1, 3)</b>'),
     draw(st, [c]) {
+      st.el.querySelector('[data-r=a]').disabled = st.v.m === 'two';
       const P = Plot(c.g, box(c, 50, 20, 20, 40), [-0.8, 3.4], [-0.6, 4.4], { equal: true });
       P.frame({ xt: [0, 1, 2, 3], yt: [0, 1, 2, 3, 4] });
       P.seg(-0.3, -0.6, 2.2, 4.4, COL.exact, 1.6, [6, 5]);
@@ -30,7 +31,7 @@
 
   /* ---------- P02 가장 가까운 점 = 수선의 발 ---------- */
   F['p02-foot'] = {
-    canvases: [{ h: 400 }],
+    canvases: [{ h: 350 }],
     controls: [{ range: 'a', label: '직선 위의 점 (a, 2a)', min: 0, max: 2.2, step: 0.01, value: 1, fmt: (v) => v.toFixed(2) }, { buttons: 'q', items: [['a = 1', 1], ['a = 2', 2], ['a = 7/5', 1.4]], act: (s, v) => { s.v.a = v; s.el.querySelector('[data-r=a]').value = v; } }],
     readout: (s) => { const d = Math.hypot(s.v.a - 1, 2 * s.v.a - 3); return `거리 <b>${d.toFixed(3)}</b>${Math.abs(s.v.a - 1.4) < 0.006 ? ' · 가장 가깝다: 연결선 기울기 −1/2, 직선 기울기 2 → 곱 −1' : ''}`; },
     draw(st, [c]) {
@@ -50,7 +51,7 @@
     controls: [{ range: 'a', label: '기울기 a', min: 0.5, max: 2.2, step: 0.01, value: 0.8, fmt: (v) => v.toFixed(2) }, { buttons: 'q', items: [['1', 1], ['7/5', 1.4], ['2', 2]], act: (s, v) => { s.v.a = v; s.el.querySelector('[data-r=a]').value = v; } }],
     readout: (s) => { const a = s.v.a, e1 = 1 - a, e2 = 3 - 2 * a; return `세로 오차 ${fmt(e1, 2)}, ${fmt(e2, 2)} · 제곱의 합 <b>${(e1 * e1 + e2 * e2).toFixed(3)}</b> = 오른쪽 거리² <b>${(Math.hypot(a - 1, 2 * a - 3) ** 2).toFixed(3)}</b>`; },
     draw(st, [c, d]) {
-      const a = st.v.a, P = Plot(c.g, box(c, 50, 36, 20, 40), [0, 2.6], [0, 4.4]);
+      const a = st.v.a, P = Plot(c.g, box(c, 50, 36, 20, 40), [0, 2.6], [0, 4.4], { equal: true });
       P.frame({ xt: [0, 1, 2], yt: [0, 1, 2, 3, 4], title: `데이터와 직선 y = ${a.toFixed(2)}x`, xl: 'x' });
       P.fn((x) => a * x, COL.space, 3.5);
       D2.forEach(([x, y]) => { P.seg(x, y, x, a * x, COL.time, 3); P.dot(x, y, 8, COL.ink); P.dot(x, a * x, 5, COL.space); });
@@ -86,11 +87,11 @@
 
   /* ---------- P04 공간 속의 평면 ---------- */
   F['p04-plane'] = {
-    canvases: [{ h: 420, flex: 0.8 }, { h: 420, flex: 1.4 }], rotate: true, az: 335, el: 25,
+    canvases: [{ h: 360, flex: 0.8 }, { h: 360, flex: 1.4 }], rotate: true, az: 335, el: 25,
     controls: [{ range: 'a', label: 'a', min: 0, max: 2, step: 0.01, value: 0.5, fmt: (v) => v.toFixed(2) }, { range: 'b', label: 'b', min: -1, max: 1.5, step: 0.01, value: 1, fmt: (v) => v.toFixed(2) }, { button: 'best', label: '수선의 발로', act: (s) => setAB(s, 1, 1 / 3) }],
     readout: (s) => `오차 길이² = 세로 오차 제곱의 합 <b>${S(s.v.a, s.v.b).toFixed(3)}</b>`,
     draw(st, [c, d]) {
-      const a = st.v.a, b = st.v.b, P = Plot(c.g, box(c, 44, 36, 16, 40), [0, 3.6], [0, 4.4]);
+      const a = st.v.a, b = st.v.b, P = Plot(c.g, box(c, 44, 36, 16, 40), [0, 3.6], [0, 4.4], { equal: true });
       P.frame({ xt: [0, 1, 2, 3], yt: [0, 1, 2, 3, 4], title: `y = ${a.toFixed(2)}x + ${b.toFixed(2)}`, xl: 'x' });
       P.fn((x) => a * x + b, COL.space, 3);
       D3.forEach(([x, y]) => { P.seg(x, y, x, a * x + b, COL.time, 3); P.dot(x, y, 7, COL.ink); });
@@ -113,7 +114,15 @@
     surface(g, P, 8, 40, (i, j) => at(i / 8, 2 * Math.PI * j / 40), (cz) => heightColor(Math.min(1, (cz / scale - smin) / C), 1), '#7b8794', 0.5);
     return smin * scale;
   }
-  const bowlCam = (c, az, el, k = 1) => Cam(c.w / 2, c.h * 0.74, Math.min(c.w, c.h) * 0.34 * k, az, el, 1, 0.5, 0.28);
+  function bowlCam(c, az, el, k = 1) {
+    // a,b는 같은 단위. 회전에 관계없이 평면 범위를 칸 안에 맞추며 손실 높이만 줄인다.
+    const unit = Cam(0, 0, 1, az, el, 1, 1, 0.28), pts = [];
+    for (const a of [-0.25, 2.8]) for (const b of [-2.2, 3.6]) for (const z of [0, 3.2]) pts.push(unit(a, b, z));
+    const xs = pts.map(p => p[0]), ys = pts.map(p => p[1]);
+    const xmin = Math.min(...xs), xmax = Math.max(...xs), ymin = Math.min(...ys), ymax = Math.max(...ys);
+    const scale = Math.min((c.w - 60) / (xmax - xmin), (c.h - 90) / (ymax - ymin));
+    return Cam(c.w / 2 - scale * (xmin + xmax) / 2, (c.h + 30) / 2 - scale * (ymin + ymax) / 2, scale, az, el, 1, 1, 0.28);
+  }
 
   /* ---------- P05 세 화면 동기화 ---------- */
   F['p05-bowl'] = {
@@ -122,7 +131,7 @@
     readout: (s) => `거리² = 그릇의 높이 S <b>${S(s.v.a, s.v.b).toFixed(3)}</b>${Math.abs(s.v.a - 1) < 0.006 && Math.abs(s.v.b - 1 / 3) < 0.006 ? ' (가장 작다 2/3)' : ''}`,
     draw(st, [c, d, e]) {
       const a = st.v.a, b = st.v.b, at = Math.abs(a - 1) < 0.006 && Math.abs(b - 1 / 3) < 0.006;
-      const P = Plot(c.g, box(c, 44, 40, 14, 40), [0, 3.6], [0, 4.4]);
+      const P = Plot(c.g, box(c, 44, 40, 14, 40), [0, 3.6], [0, 4.4], { equal: true });
       P.frame({ xt: [0, 1, 2, 3], yt: [0, 2, 4], title: '① 추세선', xl: 'x' });
       P.fn((x) => a * x + b, COL.space, 3); D3.forEach(([x, y]) => { P.seg(x, y, x, a * x + b, COL.time, 3); P.dot(x, y, 7, COL.ink); });
       planeScene(d.g, Cam(d.w * 0.33, d.h * 0.74, Math.min(d.w, d.h) * 0.14, st.az + 120, st.el3), a, b, { small: true });
@@ -138,7 +147,7 @@
 
   /* ---------- G01 좋은 추세선: 오차의 제곱 = 넓이 ---------- */
   F['g01-good'] = {
-    canvases: [{ h: 400 }, { h: 400 }],
+    canvases: [{ h: 360 }, { h: 360 }], middle: '.loss-derivation',
     controls: [{ range: 'a', label: '기울기 a', min: 0.6, max: 2.2, step: 0.01, value: 1, fmt: (v) => v.toFixed(2) }, { buttons: 'q', items: [['1', 1], ['4/3', 4 / 3], ['7/5', 1.4], ['2', 2]], act: (s, v) => { s.v.a = v; s.el.querySelector('[data-r=a]').value = v; } }],
     readout: (s) => { const a = s.v.a, e1 = 1 - a, e2 = 3 - 2 * a; return `오차의 합 <b>${fmt(e1 + e2, 3)}</b> · 제곱의 합 <b>${(e1 * e1 + e2 * e2).toFixed(3)}</b> · 손실 L(a) <b>${L(a).toFixed(3)}</b>`; },
     draw(st, [c, d]) {
@@ -146,8 +155,8 @@
       P.frame({ xt: [0, 1, 2, 3], yt: [0, 1, 2, 3, 4], xl: 'x' });
       P.fn((x) => a * x, COL.space, 3.5, 0, 2.6);
       D2.forEach(([x, y]) => { const yh = a * x, e = y - yh; P.rect(x, yh, x + Math.abs(e), y, 'rgba(217,130,43,.25)', COL.time, 1.5); P.seg(x, y, x, yh, COL.time, 3); P.dot(x, y, 8, COL.ink); });
-      const Q = Plot(d.g, box(d, 56, 36, 20, 44), [0.6, 2.2], [-0.05, 1.3]);
-      Q.frame({ xt: [1, 1.4, 2], yt: [0, 0.5, 1], xl: '기울기 a', title: '손실함수 L(a) = ½[(a − 1)² + (2a − 3)²]', tfs: 18 });
+      const Q = Plot(d.g, box(d, 56, 36, 20, 44), [0.6, 2.2], [-0.05, 2.2]);
+      Q.frame({ xt: [1, 1.4, 2], yt: [0, 0.5, 1], xl: '기울기 a', title: '손실함수 L(a)', tfs: 18 });
       Q.fn(L, COL.space, 3.5);
       Q.dot(a, L(a), 9, COL.time);
       if (Math.abs(a - 1.4) < 0.006) Q.text(1.4, 0.1, '가장 작다 (0.1)', { size: 18, bold: true, col: COL.good, dy: 30, align: 'center' });
@@ -229,7 +238,7 @@
     init(st) { st.k = 0; fillTable(st); },
     readout: (s) => `고친 횟수 <b>${s.k}</b> · a = <b>${G3[s.k].toFixed(3)}</b> · 손실 <b>${L(G3[s.k]).toFixed(3)}</b>`,
     draw(st, [c, d]) {
-      const P = Plot(c.g, box(c, 44, 36, 20, 40), [0, 2.6], [-0.2, 4.2]);
+      const P = Plot(c.g, box(c, 44, 36, 20, 40), [0, 2.6], [-0.2, 4.2], { equal: true });
       P.frame({ xt: [0, 1, 2], yt: [0, 1, 2, 3, 4], title: '산점도와 추세선', xl: 'x', zero: false });
       P.fn((x) => 1.4 * x, COL.good, 1.6, 0, 2.6, 50, [6, 5]);
       for (let k = 0; k <= st.k; k++) { const t = k === st.k ? 0 : 0.7 - 0.5 * k / Math.max(1, st.k); P.fn((x) => G3[k] * x, k === st.k ? COL.bad : `rgba(176,58,46,${0.25 + 0.4 * (1 - t)})`, k === st.k ? 3.5 : 2, 0, 2.6, 50); }
@@ -262,7 +271,7 @@
       pts.slice(0, 12).forEach(([x, y]) => { c.g.fillStyle = COL.bad; c.g.beginPath(); c.g.arc(x, y, 3.5, 0, 7); c.g.fill(); });
       const [x0, y0] = pts[0]; c.g.fillStyle = COL.ink; c.g.beginPath(); c.g.arc(x0, y0, 7, 0, 7); c.g.fill();
       text(c.g, c.w / 2, 28, '손실 L(a, b)의 그릇 위에서 걸어간 길 (끌어서 돌리기)', { size: 18, bold: true, align: 'center', col: COL.axis });
-      const P = Plot(d.g, box(d, 44, 36, 20, 40), [0, 3.6], [0, 4.4]);
+      const P = Plot(d.g, box(d, 44, 36, 20, 40), [0, 3.6], [0, 4.4], { equal: true });
       P.frame({ xt: [0, 1, 2, 3], yt: [0, 1, 2, 3, 4], title: '추세선 y = ax + b', xl: 'x' });
       [0, 10, 30].filter((k) => k < st.k).forEach((k) => P.fn((x) => G4[k][0] * x + G4[k][1], 'rgba(176,58,46,.3)', 2));
       P.fn((x) => G4[st.k][0] * x + G4[st.k][1], COL.bad, 3.5);

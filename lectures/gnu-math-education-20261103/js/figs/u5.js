@@ -24,6 +24,45 @@
   const lap2 = (m) => (i, j) => { if (i === j) return 4; const [a, b] = [Math.floor(i / m), i % m], [c, d] = [Math.floor(j / m), j % m]; return Math.abs(a - c) + Math.abs(b - d) === 1 ? -1 : 0; };
   const ginv = (n) => (i, j) => (Math.min(i, j) + 1) * (n + 1 - (Math.max(i, j) + 1)) / (n + 1);   // 삼중대각 A(대각 2, 옆 −1)의 역행렬
 
+  /* ---------- L01 휜 정도에서 세 식, 행렬로 ---------- */
+  F['l01-eq'] = {
+    canvases: [{ h: 330 }],
+    draw(st, [c]) {
+      const P = Plot(c.g, box(c, 28, 62, 28, 64), [-0.15, 4.15], [-2.7, 0.8]);
+      P.frame({ zero: false });
+      P.seg(0, 0, 4, 0, COL.exact, 1.5, [5, 5]);
+      P.path([0, 1, 2, 3, 4], [0, -1.5, -2, -1.5, 0], COL.space, 4);
+      const colors = [COL.space, COL.timeText, COL.good];
+      [0, 1, 2, 3, 4].forEach((i) => {
+        const y = [0, -1.5, -2, -1.5, 0][i], col = i && i < 4 && st.frag >= 3 ? colors[i - 1] : COL.axis;
+        P.dot(i, y, i && i < 4 ? 9 : 6, col);
+        P.text(i, y, i === 0 || i === 4 ? '0' : `u${'₁₂₃'[i - 1]}`, { size: 22, col, bold: true, align: 'center', dy: i === 0 || i === 4 ? -14 : 32 });
+      });
+      text(c.g, c.w / 2, 28, '네 칸 · 가운데 세 점', { size: 20, align: 'center', bold: true });
+      text(c.g, c.w / 2, c.h - 24, '깊이는 아래쪽이 + · 세로를 늘려 그림', { size: 18, align: 'center', col: COL.muted });
+    },
+  };
+
+  /* ---------- L05 2차원 격자의 네 이웃과 다섯 띠 ---------- */
+  F['l05-2d'] = {
+    canvases: [{ h: 200 }],
+    draw(st, [c]) {
+      const g = c.g, m = 4, entry = lap2(m), sel = 5;
+      const sp = 40, ox = c.w * 0.28 - 60, oy = 35;
+      for (let k = 0; k < 16; k++) {
+        const x = ox + k % m * sp, y = oy + Math.floor(k / m) * sp;
+        if (k % m < 3) { g.strokeStyle = COL.faint; g.beginPath(); g.moveTo(x, y); g.lineTo(x + sp, y); g.stroke(); }
+        if (k < 12) { g.strokeStyle = COL.faint; g.beginPath(); g.moveTo(x, y); g.lineTo(x, y + sp); g.stroke(); }
+        const col = k === sel ? COL.time : entry(sel, k) ? COL.space : '#c7d3e0';
+        g.fillStyle = col; g.beginPath(); g.arc(x, y, k === sel ? 10 : 7, 0, 7); g.fill();
+      }
+      const cs = 9, x0 = c.w * 0.72 - 72;
+      cells(g, x0, 30, 16, cs, entry);
+      text(g, c.w * 0.28, 192, '한 점과 이웃 넷', { size: 18, align: 'center', col: COL.axis });
+      text(g, c.w * 0.72, 192, '16 × 16: 다섯 띠', { size: 18, align: 'center', col: COL.axis });
+    },
+  };
+
   /* ---------- L01 처진 줄과 행렬 방정식 ---------- */
   F['l01-sag'] = {
     canvases: [{ h: 360, flex: 1.2 }, { h: 360 }],
@@ -35,6 +74,7 @@
       const w = st.v.w, dep = [0, 1.5 * w, 2 * w, 1.5 * w, 0];
       const P = Plot(a.g, box(a, 50, 40, 20, 30), [-0.05, 1.05], [-3.2, 0.5]);
       P.frame({ title: '고르게 무게를 건 줄이 처진 채 멈춘 모양', zero: false });
+      text(a.g, 16, a.h - 12, '세로를 늘려 그림', { size: 18, col: COL.muted });
       P.seg(-0.05, 0, 1.05, 0, COL.grid, 1);
       P.fn((x) => -8 * w * x * (1 - x), COL.exact, 2, 0, 1, 100, [6, 5]);
       for (let i = 0; i < 4; i++) P.seg(i / 4, -dep[i], (i + 1) / 4, -dep[i + 1], COL.space, 4);
@@ -55,7 +95,7 @@
   /* ---------- L02 0이 대부분인 행렬 ---------- */
   F['l02-sparse'] = {
     canvases: [{ h: 420, flex: 1.4 }, { h: 420 }],
-    controls: [{ buttons: 'kind', items: [['줄', 'line'], ['면', 'plane']], value: 'line', act: (s) => { s.sel = null; } },
+    controls: [{ buttons: 'kind', items: [['1차원 줄', 'line'], ['2차원 격자', 'plane']], value: 'line', act: (s) => { s.sel = null; } },
       { range: 'n', label: '점의 개수', min: 3, max: 8, step: 1, value: 4, fmt: (v, st) => (st && st.v.kind === 'plane' ? `${v} × ${v}` : `${6 * v + 1}개`) }],
     init(st) { st.sel = null; },
     onclick(st, ci, x, y) { if (ci !== 0) return; const L = st.lay; if (!L) return; const i = Math.floor((y - L.y0) / L.cs); st.sel = i >= 0 && i < L.N ? i : null; },
@@ -64,7 +104,7 @@
       const line = st.v.kind === 'line', m = st.v.n, N = line ? m * 6 + 1 : m * m, ent = line ? tri : lap2(m);
       const cs = Math.min(18, Math.floor((a.h - 60) / N)), x0 = (a.w - N * cs) / 2, y0 = 40;
       st.lay = { cs, x0, y0, N };
-      text(a.g, a.w / 2, 26, `${line ? '줄' : '면'}: ${N} × ${N} 행렬 (0이 아닌 칸만 칠함)`, { size: 20, bold: true, align: 'center', col: COL.axis });
+      text(a.g, a.w / 2, 26, `${line ? '1차원 줄' : '2차원 격자'}: ${N} × ${N} 행렬 (0이 아닌 칸만 칠함)`, { size: 20, bold: true, align: 'center', col: COL.axis });
       cells(a.g, x0, y0, N, cs, ent, { vals: false, sel: st.sel });
       const g = b.g;
       if (line) {
@@ -74,7 +114,7 @@
         for (let i = 1; i <= N; i++) P.dot(i, 0, st.sel === i - 1 ? 8 : 4, st.sel !== null && Math.abs(st.sel - (i - 1)) <= 1 ? COL.time : COL.space);
       } else {
         const sp = Math.min(46, (b.w - 60) / m), ox = (b.w - sp * (m - 1)) / 2, oy = 80;
-        text(g, b.w / 2, 34, `면: ${m} × ${m} 격자 (점 번호)`, { size: 20, bold: true, align: 'center', col: COL.axis });
+        text(g, b.w / 2, 34, `2차원 격자: ${m} × ${m} 격자 (점 번호)`, { size: 20, bold: true, align: 'center', col: COL.axis });
         for (let k = 0; k < N; k++) {
           const r = Math.floor(k / m), q = k % m, x = ox + q * sp, y = oy + r * sp;
           const on = st.sel !== null && ent(st.sel, k) !== 0;
@@ -85,30 +125,6 @@
       }
       text(g, b.w / 2, b.h - 40, '왼쪽 행렬의 줄을 누르면', { size: 17, align: 'center', col: COL.muted });
       text(g, b.w / 2, b.h - 16, '그 점과 이어진 이웃이 강조된다', { size: 17, align: 'center', col: COL.muted });
-    },
-  };
-
-  /* ---------- L05 한 점을 누르면 줄 전체가 처진다 = A⁻¹의 한 열 ---------- */
-  F['l05-inverse'] = {
-    canvases: [{ h: 330, flex: 1.3 }, { h: 330 }],
-    controls: [{ range: 'n', label: '행렬 크기', min: 3, max: 40, step: 1, value: 7, fmt: (v) => v }],
-    init(st) { st.j = 3; },
-    onclick(st, ci, x) { if (ci !== 0) return; const k = Math.round((x - 40) / (st.cv[0].clientWidth - 60) * 8) - 1; if (k >= 0 && k < 7) st.j = k; },
-    readout: (s) => { const n = s.v.n; return `${n} × ${n}: A의 0 아닌 칸 <b>${3 * n - 2}</b>, A⁻¹의 0 아닌 칸 <b>${n * n}</b>`; },
-    draw(st, [a, b]) {
-      const n = 7, G = ginv(n), col = Array.from({ length: n }, (_, i) => G(i, st.j));
-      const P = Plot(a.g, box(a, 40, 40, 20, 30), [0, 8], [-2.3, 0.9]);
-      P.frame({ title: `${st.j + 1}번 점을 누르면 줄 전체가 처진다 (점을 눌러 바꾸기)`, zero: false });
-      const xs = [0, ...col.map((_, i) => i + 1), 8], ys = [0, ...col.map((v) => -v), 0];
-      P.path(xs, ys, COL.space, 4);
-      xs.forEach((x, i) => P.dot(x, ys[i], i === st.j + 1 ? 10 : 6, i === st.j + 1 ? COL.time : COL.space));
-      arrowPx(a.g, P.X(st.j + 1), P.Y(-col[st.j]) - 52, P.X(st.j + 1), P.Y(-col[st.j]) - 12, COL.time, 3.5);
-      P.text(4, 0.62, '처진 깊이 = A⁻¹의 한 열(0이 하나도 없다)', { size: 19, align: 'center', col: COL.axis });
-      const N = st.v.n, cs = Math.min(9, Math.floor((b.w - 60) / (2 * N))), y0 = 60, gap = 30, x1 = (b.w - (2 * N * cs + gap)) / 2;
-      text(b.g, x1 + N * cs / 2, 40, 'A', { size: 20, bold: true, align: 'center' });
-      text(b.g, x1 + N * cs + gap + N * cs / 2, 40, 'A⁻¹', { size: 20, bold: true, align: 'center' });
-      cells(b.g, x1, y0, N, cs, tri, {});
-      cells(b.g, x1 + N * cs + gap, y0, N, cs, ginv(N), { full: (N + 1) / 4 });
     },
   };
 
