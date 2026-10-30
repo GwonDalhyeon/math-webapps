@@ -265,6 +265,7 @@
     canvases: [{ h: 440 }], rotate: true, az: 230, el: 28,
     controls: [{ buttons: 'm', items: [['사인 모양 면', 'sine'], ['가운데만 볼록', 'ripple']], value: 'sine', act: (st) => { st.t = 0; st.R = ripple(48, 0.5); } }, 'play', 'reset'],
     init(st) { st.R = ripple(48, 0.5); },
+    atEnd: (st) => st.v.m === 'ripple' && st.t >= 0.32,
     tick(st, d) {
       if (st.v.m === 'sine') { st.t += d * 0.35; return; }
       const target = Math.min(st.t + d * 0.08, 0.32);

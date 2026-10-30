@@ -154,12 +154,59 @@
     },
   };
 
+  /* ---------- G02 바닥을 찾는 법: 비탈을 따라 내려간다 (꼭짓점 값은 미리 쓰지 않는다) ---------- */
+  const setA = (s, v) => { s.v.a = v; const r = s.el.querySelector('[data-r=a]'); if (r) r.value = v; };
+  function slope(P, a, col = COL.axis) {
+    const m = dL(a), y0 = L(a);
+    P.clip(() => P.seg(a - 0.5, y0 - 0.5 * m, a + 0.5, y0 + 0.5 * m, col, 2.2, [8, 5]));
+  }
+  F['g02-downhill'] = {
+    canvases: [{ h: 380 }],
+    controls: [{ range: 'a', label: '지금 a', min: 0, max: 2.4, step: 0.05, value: 0.4, fmt: (v) => v.toFixed(2) },
+      { buttons: 'q', items: [['0', 0], ['0.4', 0.4], ['1', 1], ['2', 2]], act: (s, v) => setA(s, v) },
+      { button: 'down', label: '내려가는 쪽으로 조금', go: true, act: (s) => { const d = dL(s.v.a); if (Math.abs(d) > 1e-9) setA(s, Math.round((s.v.a - 0.1 * Math.sign(d)) * 100) / 100); } }],
+    readout: (s) => `L(a) = <b>${fmt(L(s.v.a), 3)}</b> · 기울기 L′(a) = <b>${fmt(dL(s.v.a), 2)}</b>`,
+    draw(st, [c]) {
+      const a = st.v.a, m = dL(a), y0 = L(a);
+      const P = Plot(c.g, box(c, 60, 40, 30, 50), [-0.2, 2.5], [-0.3, 5.6]);
+      P.frame({ xt: [0, 1, 2], yt: [0, 1, 2, 3, 4, 5], xl: '기울기 a', title: '손실함수 L(a) = ½(5a² − 14a + 10) 위의 지금 위치' });
+      P.fn(L, COL.space, 3.5);
+      slope(P, a);
+      if (st.frag >= 1) {
+        if (Math.abs(m) > 1e-9) { const a2 = a - 0.32 * Math.sign(m); P.arrow(a, y0 + 0.35, a2, L(a2) + 0.35, COL.good, 4); P.text(a2, L(a2) + 0.35, '내리막', { size: 19, bold: true, col: COL.good, align: 'center', dy: -14 }); }
+        else P.text(a, y0, '바닥: 기울기 0', { size: 19, bold: true, col: COL.good, align: 'center', dy: 34 });
+      }
+      P.dot(a, y0, 10, COL.bad);
+      P.text(a, y0, `기울기 ${fmt(m, 2)}`, { size: 19, bold: true, align: m < 0 ? 'right' : 'left', dx: m < 0 ? -18 : 18, dy: -16 });
+    },
+  };
+
+  /* ---------- G02 비탈 = 미분: 부호의 반대로 (클릭 단계, st.frag) ---------- */
+  F['g02-sign'] = {
+    canvases: [{ h: 440 }],
+    draw(st, [c]) {
+      const f = st.frag, P = Plot(c.g, box(c, 56, 40, 20, 50), [-0.2, 2.5], [-0.3, 5.6]);
+      P.frame({ xt: [0, 1, 2], yt: [0, 1, 2, 3, 4, 5], xl: '기울기 a', title: '손실함수 L(a)' });
+      P.fn(L, COL.space, 3.5);
+      const pt = (a, lab, dy) => { slope(P, a); P.dot(a, L(a), 9, COL.bad); P.text(a, L(a), lab, { size: 19, bold: true, align: 'center', dy }); };
+      if (f >= 1) {
+        pt(0.4, 'L′(0.4) = −5', -18);
+        if (f < 4) { P.arrow(0.4, 2.95, 0.75, L(0.75) + 0.35, COL.good, 4); P.text(0.75, L(0.75) + 0.35, 'a를 키운다 →', { size: 19, bold: true, col: COL.good, dx: 10, dy: 8 }); }
+      }
+      if (f >= 2) { pt(2, 'L′(2) = 3', 36); P.arrow(2, 1.35, 1.75, L(1.75) + 0.35, COL.good, 4); P.text(1.9, 1.75, '← a를 줄인다', { size: 19, bold: true, col: COL.good, align: 'center', dy: -6 }); }
+      if (f >= 4) {
+        P.arrow(0.4, L(0.4), 0.4 + 0.625, L(0.4), COL.good, 4); P.text(0.71, L(0.4), '0.125 × 5 = 0.625', { size: 19, bold: true, col: COL.good, align: 'center', dy: 30 });
+        pt(1.2, '', 0); P.arrow(1.2, L(1.2) + 0.45, 1.325, L(1.2) + 0.45, COL.good, 4); P.text(1.26, L(1.2) + 0.45, '0.125 × 1 = 0.125', { size: 19, bold: true, col: COL.good, align: 'center', dy: -14 });
+      }
+    },
+  };
+
   /* ---------- G02 학습률 비교 ---------- */
   const RATES = [[0.125, '다가간다', [-0.3, 2.3], 5.4], [0.3, '출렁이며 다가간다', [-0.3, 2.5], 5.4], [0.5, '튀어 나간다', [-2.4, 6.6], 60]];
   F['g02-rate'] = {
     canvases: [{ h: 360 }, { h: 360 }, { h: 360 }],
     controls: ['play', 'step', 'reset'], stepLabel: '한 번 고치기',
-    init(st) { st.k = 0; }, step(st) { st.k = Math.min(st.k + 1, 6); },
+    init(st) { st.k = 0; }, step(st) { st.k = Math.min(st.k + 1, 6); }, atEnd: (st) => st.k >= 6,
     tick(st, d) { st.kf = (st.kf ?? st.k) + d * 1.2; st.k = Math.min(Math.floor(st.kf), 6); if (st.k >= 6) st.stop = true; },
     readout: (s) => `고친 횟수 <b>${s.k}</b> · a = ` + RATES.map(([eta]) => `<b>${fmt(descend(eta, 0, s.k)[s.k], 3)}</b>`).join(', '),
     draw(st, cs) {
@@ -204,7 +251,7 @@
   F['g04-bowl'] = {
     canvases: [{ h: 420, flex: 1.3 }, { h: 420 }], rotate: true, az: 215, el: 30,
     controls: ['play', 'step', 'reset'], stepLabel: '한 번 고치기',
-    init(st) { st.k = 0; }, step(st) { st.k = Math.min(st.k + 1, 120); },
+    init(st) { st.k = 0; }, step(st) { st.k = Math.min(st.k + 1, 120); }, atEnd: (st) => st.k >= 120,
     tick(st, d) { st.kf = (st.kf ?? st.k) + d * (st.k < 12 ? 3 : 25); st.k = Math.min(Math.floor(st.kf), 120); if (st.k >= 120) st.stop = true; },
     readout: (s) => `고친 횟수 <b>${s.k}</b> · (a, b) = <b>(${G4[s.k][0].toFixed(3)}, ${G4[s.k][1].toFixed(3)})</b> · 손실 <b>${M3(...G4[s.k]).toFixed(3)}</b>`,
     draw(st, [c, d]) {
@@ -232,6 +279,8 @@
       near(+S(1, 1 / 3).toFixed(6), 0.666667, 1e-6, 'P05 최솟값 2/3');
       near(14 * 1 + 6 / 3, 16, 1e-12, 'P04 정규방정식 1'); near(+Math.hypot(1.4 - 1, 2.8 - 3).toFixed(3), 0.447, 1e-9, 'P02 거리 0.447');
       near(descend(0.125, 2, 1)[1], 1.625, 1e-12, '확인 질문 7');
+      near(L(0), 5, 1e-12, 'G02 L(0)'); near(+L(0.4).toFixed(6), 2.6, 1e-9, 'G02 L(0.4)'); near(L(2), 1, 1e-12, 'G02 L(2)');
+      near(dL(0), -7, 1e-12, 'G02 L′(0)'); near(dL(0.4), -5, 1e-12, 'G02 L′(0.4)'); near(dL(2), 3, 1e-12, 'G02 L′(2)'); near(+L(7 / 5).toFixed(9), 0.1, 1e-9, 'G02 꼭짓점 L(7/5)');
     },
   };
 })();

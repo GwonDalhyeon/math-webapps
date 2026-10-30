@@ -7,7 +7,7 @@
 .part.fig .bar .seg { display: inline-flex; gap: 0; align-items: center; }
 .part.fig .bar .seg .lb { margin-right: 8px; color: var(--sub); }
 .part.fig .bar .seg button { border-radius: 0; margin-left: -1.5px; }
-.part.fig .bar .seg button:first-of-type { border-radius: 8px 0 0 8px; }
+.part.fig .bar .seg button:first-of-type { border-radius: 8px 0 0 8px; margin-left: 0; }
 .part.fig .bar .seg button:last-of-type { border-radius: 0 8px 8px 0; }
 .part.fig .bar .seg button.on { background: var(--title); color: #fff; }
 .part.fig .bar .ro { font-size: 20px; color: var(--sub); }
@@ -17,4 +17,4 @@
 .tap .a { visibility: hidden; }
 .tap.open .a { visibility: visible; }
 td.tap { min-width: 3em; }
-.part.fig .fg-stack canvas { flex: none; }
+.part.fig .fg-stack canvas { flex: none; box-sizing: border-box; }

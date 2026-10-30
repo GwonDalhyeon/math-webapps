@@ -1,5 +1,6 @@
 /* 공용 그림 부품: <div class="part fig" data-fig="이름"> 하나가 window.FIGS[이름] 정의 하나를 그린다.
-   정의 = { canvases, controls, init, tick, step, draw, readout, rotate, onclick, frag, speed, tmax, pauseAt, stepDt }
+   정의 = { canvases, controls, init, tick, step, draw, readout, rotate, onclick, frag, speed, tmax, pauseAt, stepDt, atEnd }
+   - atEnd(st): tick으로 움직이는 그림의 끝 조건. 끝에서 재생을 누르면 처음부터 끝까지 한 번 더(반복 재생은 하지 않는다)
    - canvases: [{h, flex}] 캔버스들을 가로로 놓는다(stack: true면 세로).
    - controls: 'play' | 'step' | 'reset' | {range} | {check} | {buttons} | {button}
    - 상태 st: { t, playing, played, v(조작 값), az, el, frag(보이는 fragment 수) }
@@ -51,9 +52,9 @@
       bar.addEventListener('click', (e) => {
         const a = e.target.closest('[data-a]'), x = e.target.closest('[data-x]'), b = e.target.closest('[data-bv]');
         if (a && a.dataset.a === 'play') toggle(st);
-        if (a && a.dataset.a === 'step') { pause(st); st.played = true; def.step ? def.step(st) : (st.t = Math.min(st.t + (def.stepDt || 0.05), def.tmax ?? Infinity)); req(st); }
+        if (a && a.dataset.a === 'step') { pause(st); st.played = true; delete st.kf; def.step ? def.step(st) : (st.t = Math.min(st.t + (def.stepDt || 0.05), def.tmax ?? Infinity)); req(st); }
         if (a && a.dataset.a === 'reset') { pause(st); reset(st); }
-        if (x) { const c = ctl.find((q) => q.button === x.dataset.x); if (c && c.act) { c.act(st); req(st); } }
+        if (x) { const c = ctl.find((q) => q.button === x.dataset.x); if (c && c.act) { delete st.kf; c.act(st); req(st); } }
         if (b) { const k = b.closest('[data-b]').dataset.b; const c = ctl.find((q) => q.buttons === k); const val = isNaN(+b.dataset.bv) ? b.dataset.bv : +b.dataset.bv; st.v[k] = val; if (c && c.act) c.act(st, val); req(st); }
       });
       bar.addEventListener('input', (e) => {
@@ -82,7 +83,7 @@
     req(st);
   }
 
-  function reset(st) { st.t = 0; st.played = false; st.az = st.def.az; st.el3 = st.def.el; if (st.def.init) st.def.init(st, true); req(st); }
+  function reset(st) { st.t = 0; st.played = false; delete st.kf; st.stop = false; st.az = st.def.az; st.el3 = st.def.el; if (st.def.init) st.def.init(st, true); req(st); }
 
   function draw(st) {
     st.dirty = false;
@@ -92,7 +93,7 @@
     if (st.bar) {
       st.bar.querySelectorAll('[data-rv]').forEach((s) => {
         const c = st.def.controls.find((q) => q.range === s.dataset.rv);
-        s.textContent = minus(String(c && c.fmt ? c.fmt(st.v[c.range]) : st.v[s.dataset.rv]));
+        s.textContent = minus(String(c && c.fmt ? c.fmt(st.v[c.range], st) : st.v[s.dataset.rv]));
       });
       st.bar.querySelectorAll('[data-b]').forEach((g) => g.querySelectorAll('[data-bv]').forEach((b) => b.classList.toggle('on', String(st.v[g.dataset.b]) === b.dataset.bv)));
       if (st.ro && st.def.readout) st.ro.innerHTML = minus(st.def.readout(st));
@@ -119,7 +120,7 @@
   }
   function play(st) {
     if (st.playing || isSpeaker()) return;
-    if (st.def.tmax !== undefined && st.t >= st.def.tmax) reset(st);
+    if ((st.def.tmax !== undefined && st.t >= st.def.tmax) || (st.def.atEnd && st.def.atEnd(st))) reset(st);
     st.playing = true; st.played = true; st.last = 0;
     if (st.btnPlay) st.btnPlay.textContent = '⏸ 멈춤';
     st.raf = requestAnimationFrame((n) => loop(st, n));
@@ -160,5 +161,5 @@
     for (let i = 0; i < n; i++) st.def.step(st);
     draw(st); return st.t;
   }
-  window.FIGPART = { req, play, pause, set, insts };
+  window.FIGPART = { req, play, pause, set, insts, draw };
 })();

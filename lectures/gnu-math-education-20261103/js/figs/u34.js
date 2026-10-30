@@ -31,7 +31,7 @@
     }
     return hist;
   }
-  window.U34 = { thomas, implicit };
+  window.U34 = { thomas, implicit, xt: () => XH };
 
   /* ---------- F01 점 몇 개로 기억하기 ---------- */
   F['f01-points'] = {
@@ -111,6 +111,7 @@
     canvases: [{ h: 140 }, { h: 270 }], stack: true,
     controls: ['play', { button: 'pt', label: '한 점', act: (s) => { s.k = Math.min(s.k + 1, order.length); } }, { button: 'row', label: '한 줄', act: (s) => { s.k = Math.min((Math.floor(s.k / (XN - 1)) + 1) * (XN - 1), order.length); } }, 'reset'],
     init(st) { st.k = 0; },
+    atEnd: (st) => st.k >= order.length,
     tick(st, d) { st.kf = (st.kf || st.k) + d * 9; st.k = Math.min(Math.floor(st.kf), order.length); if (st.k >= order.length) st.stop = true; },
     readout: (s) => { const rows = 1 + Math.floor(s.k / (XN - 1)); return `계산한 시각 <b>n = ${rows}</b> (t = ${rows}/24)`; },
     draw(st, [a, b]) {
@@ -124,12 +125,69 @@
       xtDraw(st, b.g, b, { done: (n, i) => done.has(n * 100 + i), cur: st.k < order.length ? order[st.k] : null });
     },
   };
-  F['f04-notation'] = {
-    canvases: [{ h: 340 }],
+  /* F04 높이에 번호 두 개: 공간–시간 격자(왼쪽, 위에서 본 것)와 같은 값을 높이로 세운 3차원 그림(오른쪽)
+     사인: 점 13개, r = 0.5, Δt = 1/24 (n = 0~8은 위 십자 도식의 XH와 같은 계산). 가운데만 볼록: 점 49개, r = 0.5 */
+  const XT = { sine8: { N: XN, rows: XROWS, H: XH, T: XROWS / 24, sk: 1 } };
+  function xtData(f, R) {
+    const k = f + R; if (XT[k]) return XT[k];
+    const N = f === 'sine' ? 12 : 48, T = f === 'sine' ? R / 24 : (R === 8 ? 1 / 3 : 1), rows = Math.round(T * 2 * N);
+    const H = W.leapfrog(N, 0.5, rows, f === 'sine' ? sinp : W.bump);
+    return (XT[k] = { N, rows, H, T, sk: N > 12 ? 2 : 1 });
+  }
+  const xtCur = (st, D) => Math.round(st.t * D.rows);
+  const { Cam, surface, heightColor, polyline3 } = window.PLOT;
+  F['f04-xt3d'] = {
+    canvases: [{ h: 410 }], rotate: true, az: 245, el: 24,
+    controls: [
+      { buttons: 'f', label: '처음 모양', items: [['사인', 'sine'], ['가운데만 볼록', 'bump']], value: 'sine', act: (s) => { s.t = 0; } },
+      { buttons: 'R', label: '시간', items: [['n = 0~8', 8], ['n = 0~48', 48]], value: 8, act: (s) => { s.t = 0; } },
+      'play', 'step', 'reset'],
+    stepLabel: '한 칸', tmax: 1, speed: 0.18,
+    step(st) { const D = xtData(st.v.f, st.v.R); st.t = Math.min(1, (xtCur(st, D) + 1) / D.rows); },
+    readout: (s) => { const D = xtData(s.v.f, s.v.R), n = xtCur(s, D), m = D.N / 2; return `시각 <b>n = ${n}</b> (t = ${(n * D.T / D.rows).toFixed(3)}) · 가운데 높이 <b>${D.H[n][m].toFixed(3)}</b>`; },
     draw(st, [c]) {
-      const P = xtDraw(st, c.g, c, { done: () => false });
-      P.ring(5, 3, 12, COL.ink, 3);
-      P.text(5, 3, 'u₅³: 위치 i = 5, 시각 n = 3', { size: 19, bold: true, dx: 18, dy: -10, halo: true });
+      const D = xtData(st.v.f, st.v.R), { N, rows, H } = D, n0 = xtCur(st, D), g = c.g;
+      const ring = st.v.f === 'sine' ? [5, 3] : null;
+      /* 왼쪽: 위에서 본 격자 */
+      const LW = Math.min(440, c.w * 0.38);
+      const P = Plot(g, { x: 64, y: 40, w: LW - 80, h: c.h - 92 }, [-0.5, N + 0.5], [-0.5, rows + 0.5]);
+      text(g, 64 + (LW - 80) / 2, 26, '위에서 본 격자 (점의 색 = 높이)', { size: 18, bold: true, align: 'center', col: COL.axis });
+      text(g, 64 + (LW - 80) / 2, c.h - 16, '위치 (아래첨자 i) →', { size: 18, col: COL.space, align: 'center', bold: true });
+      g.save(); g.translate(24, 40 + (c.h - 92) / 2); g.rotate(-PI / 2); text(g, 0, 0, '시각 (위첨자 n) →', { size: 18, col: COL.timeText, align: 'center', bold: true }); g.restore();
+      const r = Math.max(2.2, Math.min(8, (c.h - 92) / (rows + 1) * 0.36, (LW - 80) / (N + 1) * 0.36));
+      g.save(); g.fillStyle = 'rgba(47,93,138,.10)'; const yA = P.Y(n0 + 0.5), yB = P.Y(n0 - 0.5); g.fillRect(P.X(-0.5), yA, P.X(N + 0.5) - P.X(-0.5), yB - yA); g.restore();
+      for (let n = 0; n <= rows; n++) for (let i = 0; i <= N; i++) {
+        const v = Math.max(-1, Math.min(1, H[n][i]));
+        const fc = v >= 0 ? `rgba(47,93,138,${0.08 + 0.92 * v})` : `rgba(217,130,43,${0.08 + 0.92 * -v})`;
+        if (N > 12 || rows > 16) { g.fillStyle = fc; const x0 = P.X(i - 0.5), y0 = P.Y(n + 0.5); g.fillRect(x0, y0, P.X(i + 0.5) - x0 + 0.5, P.Y(n - 0.5) - y0 + 0.5); }
+        else P.dot(i, n, r, fc, '#fff', 1.2);
+      }
+      if (ring && rows >= 3) P.ring(ring[0], ring[1], r + 5, COL.ink, 3);
+      /* 오른쪽: 높이를 세운 3차원 */
+      const cx = LW + (c.w - LW) / 2, s = Math.min(c.w - LW, c.h * 1.5) * 0.6;
+      const C = Cam(cx, c.h / 2 + 10, s, st.az, st.el3);
+      const X = (i) => i / N - 0.5, Yt = (n) => (n / rows - 0.5) * 1.1, Z = (u) => u * (N > 12 ? 0.4 : 0.32);
+      text(g, cx, 26, '높이를 세워 본 모습 (끌어서 돌리기)', { size: 18, bold: true, align: 'center', col: COL.axis });
+      for (let i = 0; i <= N; i += N / 6) polyline3(g, C, [[X(i), Yt(0), 0], [X(i), Yt(rows), 0]], '#d5dee8', 1);
+      polyline3(g, C, [[X(0), Yt(0), 0], [X(N), Yt(0), 0], [X(N), Yt(rows), 0], [X(0), Yt(rows), 0], [X(0), Yt(0), 0]], '#b9c6d4', 1.5);
+      surface(g, C, N / D.sk, rows / D.sk, (i, n) => [X(i * D.sk), Yt(n * D.sk), Z(H[n * D.sk][i * D.sk])], (cz) => heightColor(cz, 0.32).replace('rgb', 'rgba').replace(')', ',.55)'), N > 12 ? 'rgba(107,122,140,.12)' : 'rgba(107,122,140,.35)', 0.6);
+      const every = Math.max(1, Math.round(rows / (N > 12 ? 12 : 8)));
+      for (let n = 0; n <= rows; n += every) if (n !== n0) polyline3(g, C, H[n].map((u, i) => [X(i), Yt(n), Z(u)]), 'rgba(47,93,138,.45)', 1.6);
+      polyline3(g, C, H[n0].map((u, i) => [X(i), Yt(n0), Z(u)]), COL.space, 4);
+      H[n0].forEach((u, i) => { const [a, b] = C(X(i), Yt(n0), Z(u)); g.fillStyle = COL.space; g.beginPath(); g.arc(a, b, N > 12 ? 3 : 5, 0, 7); g.fill(); });
+      if (ring && rows >= 3) {
+        const [i, n] = ring, u = H[n][i];
+        polyline3(g, C, [[X(i), Yt(n), 0], [X(i), Yt(n), Z(u)]], COL.ink, 2, [5, 4]);
+        const [a, b] = C(X(i), Yt(n), Z(u)), [a0, b0] = C(X(i), Yt(n), 0);
+        g.save(); g.strokeStyle = COL.ink; g.lineWidth = 3; g.beginPath(); g.arc(a, b, 9, 0, 7); g.stroke(); g.fillStyle = COL.ink; g.beginPath(); g.arc(a0, b0, 4, 0, 7); g.fill(); g.restore();
+        text(g, a + 14, b - 12, `u₅³ = ${u.toFixed(3)}`, { size: 19, bold: true });
+      }
+      /* 축 이름: 캔버스 밖으로 잘리지 않게 안쪽으로 붙인다 */
+      const lab = (p, s2, col) => { const [a, b] = C(...p), w = s2.length * 10; text(g, Math.max(LW + w, Math.min(c.w - w - 6, a)), Math.max(48, Math.min(c.h - 8, b)), s2, { size: 18, bold: true, align: 'center', col }); };
+      lab([0, Yt(0) - 0.12, 0], '위치 x →', COL.space);
+      lab([X(N) + 0.13, 0, 0], '시각 t →', COL.timeText);
+      lab([X(0) - 0.06, Yt(0), Z(1.15)], '높이 u', COL.axis);
+      polyline3(g, C, [[X(0), Yt(0), 0], [X(0), Yt(0), Z(1.05)]], COL.axis, 2);
     },
   };
 
@@ -152,6 +210,7 @@
     controls: ['play', 'step', 'reset'], stepLabel: '한 걸음',
     init(st) { st.k = 0; },
     step(st) { st.k = Math.min(st.k + 1, 12); },
+    atEnd: (st) => st.k >= 12,
     tick(st, d) { st.kf = (st.kf ?? st.k) + d * 2.5; st.k = Math.min(Math.floor(st.kf), 12); if (st.k >= 12) st.stop = true; },
     readout: (s) => `걸음 <b>${s.k}</b> (t = ${s.k}/12) · 가운데 점 <b>${F5[s.k][3].toFixed(4).replace('-', '−')}</b> · 정확한 값 ${Math.cos(PI * s.k / 12).toFixed(4).replace('-', '−')}`,
     draw(st, [c]) {
@@ -175,8 +234,10 @@
         const c = cs[j], k = Math.min(N, Math.round(st.t / (0.5 / N))), t = k * 0.5 / N;
         const P = Plot(c.g, box(c, 40, 36, 16, 34), [-0.02, 1.02], [-0.75, 1.1]);
         P.frame({ xt: [0, 0.5, 1], yt: j ? [] : [-0.5, 0, 0.5, 1], title: `점 ${N + 1}개, t = ${t.toFixed(2)}` });
-        P.fn((x) => W.uBump(x, t), COL.exact, 2.6, 0, 1, 400);
+        P.path(H[k].map((_, i) => i / N), H[k], COL.space, 3);
         H[k].forEach((v, i) => P.dot(i / N, v, N > 20 ? 4 : 6, COL.space));
+        P.fn((x) => W.uBump(x, t), COL.exact, 2.4, 0, 1, 400, [7, 6]);
+        if (!j) P.text(-0.0, -0.62, '파란 선·점: 계산 · 회색 점선: 정확한 해', { size: 18, col: COL.muted, dx: 8 });
       });
     },
   };
@@ -202,7 +263,7 @@
   }
   let M1 = null;
   F['m01-neighbors'] = {
-    canvases: [{ h: 320 }, { h: 320 }],
+    canvases: [{ h: 262 }, { h: 262 }],
     controls: ['play', 'reset'], speed: 0.6, tmax: 4,
     init() { if (!M1) M1 = { three: runMode(12, false), five: runMode(12, true) }; },
     readout: (s) => { const k = Math.round(s.t * 100); return `t = <b>${s.t.toFixed(2)}</b> · x = 1/6 높이: 3점 <b>${M1.three[k][2].toFixed(2)}</b>, 5점 <b>${M1.five[k][2].toFixed(3)}</b>, 정확 ${W.uSine(3, 1 / 6, k / 100).toFixed(3)}`; },
@@ -210,15 +271,16 @@
       const k = Math.round(st.t * 100), t = k / 100;
       const P = Plot(a.g, box(a, 40, 36, 16, 34), [-0.02, 1.02], [-1.25, 1.25]);
       P.frame({ xt: [0, 0.5, 1], yt: [-1, 0, 1], title: `시각 ${t.toFixed(2)}의 모양` });
-      P.fn((x) => W.uSine(3, x, t), COL.exact, 2.4);
-      M1.three[k].forEach((v, i) => P.dot(i / 12, v, 6, COL.space));
-      M1.five[k].forEach((v, i) => P.dot(i / 12, v, 5, COL.time));
+      const xs = M1.three[k].map((_, i) => i / 12);
+      P.path(xs, M1.three[k], COL.space, 3); M1.three[k].forEach((v, i) => P.dot(i / 12, v, 6, COL.space));
+      P.path(xs, M1.five[k], COL.time, 3); M1.five[k].forEach((v, i) => P.dot(i / 12, v, 5, COL.time));
+      P.fn((x) => W.uSine(3, x, t), COL.exact, 2.4, undefined, undefined, 300, [7, 6]);
       const Q = Plot(b.g, box(b, 40, 36, 16, 34), [Math.max(0, t - 1), Math.max(1, t)], [-1.25, 1.25]);
       Q.frame({ yt: [-1, 0, 1], title: 'x = 1/6인 점의 높이 기록 (지난 시간 1만큼)' });
       const ts = [], e = [], th = [], fv = [];
       for (let j = Math.max(0, k - 100); j <= k; j++) { ts.push(j / 100); e.push(W.uSine(3, 1 / 6, j / 100)); th.push(M1.three[j][2]); fv.push(M1.five[j][2]); }
-      Q.path(ts, e, COL.exact, 2.4); Q.path(ts, th, COL.space, 3); Q.path(ts, fv, COL.time, 2.4, [6, 4]);
-      text(b.g, b.w - 20, b.h - 12, '회색: 정확, 파랑: 이웃 3점, 주황: 이웃 5점', { size: 17, align: 'right', col: COL.muted });
+      Q.path(ts, th, COL.space, 3); Q.path(ts, fv, COL.time, 3); Q.path(ts, e, COL.exact, 2.4, [7, 6]);
+      text(b.g, b.w - 20, b.h - 10, '회색 점선: 정확, 파랑: 이웃 3점, 주황: 이웃 5점', { size: 18, align: 'right', col: COL.muted });
     },
   };
 
@@ -231,49 +293,62 @@
     return { eu, lf, lv };
   })();
   F['m02-spring'] = {
-    canvases: [{ h: 340, flex: 1.6 }, { h: 340 }],
+    canvases: [{ h: 252, flex: 1.6 }, { h: 252 }],
     controls: ['play', 'step', 'reset'], stepLabel: '한 걸음 (0.1)',
     init(st) { st.k = 0; },
     step(st) { st.k = Math.min(st.k + 1, NS); },
+    atEnd: (st) => st.k >= NS,   // 63걸음(한 주기) 멈춤은 끝이 아니다: 다시 재생하면 126까지 이어 간다
     tick(st, d) { st.kf = (st.kf ?? st.k) + d * 14; const k0 = st.k; st.k = Math.min(Math.floor(st.kf), NS); if (k0 < 63 && st.k >= 63) { st.k = 63; st.kf = 63; st.stop = true; } if (st.k >= NS) st.stop = true; },
     readout: (s) => `걸음 <b>${s.k}</b> · 지금만 쓰는 방법의 진폭 <b>${Math.hypot(...SP.eu[s.k]).toFixed(2)}배</b>${s.k === 63 ? ' (한 주기)' : s.k === 126 ? ' (두 주기)' : ''}`,
     draw(st, [a, b]) {
       const k = st.k, ts = Array.from({ length: k + 1 }, (_, j) => j * DT);
       const P = Plot(a.g, box(a, 50, 30, 46, 66), [0, NS * DT], [-2.1, 2.1]);
       P.frame({ xt: [0, 2 * PI, 4 * PI], xtl: ['0', '한 주기', '두 주기'], yt: [-2, -1, 0, 1, 2], title: '위치' });
-      P.fn(Math.cos, COL.exact, 2.4, 0, Math.max(k * DT, 1e-6));
       P.path(ts, SP.eu.slice(0, k + 1).map((p) => p[0]), COL.bad, 3);
-      P.path(ts, SP.lf.slice(0, k + 1), COL.space, 3, [7, 5]);
+      P.path(ts, SP.lf.slice(0, k + 1), COL.space, 3.5);
+      P.fn(Math.cos, COL.exact, 2, 0, Math.max(k * DT, 1e-6), 300, [7, 6]);
       const Q = Plot(b.g, box(b, 50, 30, 20, 44), [-2.1, 2.1], [-2.1, 2.1], { equal: true });
       Q.frame({ xt: [-1, 0, 1], yt: [-1, 0, 1], title: '위치–속도 평면', xl: '위치', yl: '속도', ylo: 36 });
-      Q.fn((x) => Math.sqrt(Math.max(0, 1 - x * x)), COL.exact, 2, -1, 1); Q.fn((x) => -Math.sqrt(Math.max(0, 1 - x * x)), COL.exact, 2, -1, 1);
       Q.path(SP.eu.slice(0, k + 1).map((p) => p[0]), SP.eu.slice(0, k + 1).map((p) => p[1]), COL.bad, 2.6);
-      Q.path(SP.lf.slice(0, k + 1), SP.lv.slice(0, k + 1), COL.space, 2.6, [6, 4]);
-      text(a.g, a.w - 20, a.h - 8, '회색: 정확, 빨강: 지금의 정보만, 파랑 점선: ③의 방법', { size: 18, align: 'right', col: COL.muted });
+      Q.path(SP.lf.slice(0, k + 1), SP.lv.slice(0, k + 1), COL.space, 3);
+      Q.fn((x) => Math.sqrt(Math.max(0, 1 - x * x)), COL.exact, 2, -1, 1, 300, [6, 5]); Q.fn((x) => -Math.sqrt(Math.max(0, 1 - x * x)), COL.exact, 2, -1, 1, 300, [6, 5]);
+      text(a.g, a.w - 20, a.h - 8, '회색 점선: 정확, 빨강: 지금의 정보만, 파랑: ③의 방법', { size: 18, align: 'right', col: COL.muted });
     },
   };
 
-  /* ---------- M03 하나씩 vs 한꺼번에 ---------- */
+  /* ---------- M03 하나씩 vs 한꺼번에 (재생 대신 클릭 단계, st.frag) ----------
+     0: 아는 값(칠한 점)과 구할 값(빈 점) · 1: 왼쪽 화살표 4개, 하나씩 바로 계산 · 2: 오른쪽 이웃의 모르는 값 화살표 2개, 사슬 · 3: 식 상자 */
+  function arrowAt(P, x1, y1, x2, y2, col, w, cut = 13) {
+    const X1 = P.X(x1), Y1 = P.Y(y1), X2 = P.X(x2), Y2 = P.Y(y2), d = Math.hypot(X2 - X1, Y2 - Y1);
+    const ux = (X2 - X1) / d, uy = (Y2 - Y1) / d;
+    arrowPx(P.g, X1 + ux * cut, Y1 + uy * cut, X2 - ux * cut, Y2 - uy * cut, col, w);
+  }
   F['m03-system'] = {
-    canvases: [{ h: 300 }, { h: 300 }],
-    controls: ['play', 'reset'],
-    init(st) { st.k = 0; },
-    tick(st, d) { st.kf = (st.kf ?? st.k) + d * 3; st.k = Math.min(st.kf, 7); if (st.k >= 7) st.stop = true; },
+    canvases: [{ h: 262 }, { h: 262 }],
     draw(st, [a, b]) {
-      const N = 6;
-      [['③의 방법: 하나씩 바로 계산', a, false], ['한꺼번에 푸는 방법: 다음 값끼리 엮임', b, true]].forEach(([title, c, imp]) => {
-        const P = Plot(c.g, { x: 90, y: 50, w: c.w - 120, h: c.h - 80 }, [-0.5, N + 0.5], [-0.5, 2.5]);
-        text(c.g, c.w / 2, 30, title, { size: 20, bold: true, align: 'center', col: imp ? COL.timeText : COL.space });
-        ['조금 전', '지금', '다음'].forEach((s, n) => text(c.g, 80, P.Y(n) + 6, s, { size: 18, align: 'right', col: COL.axis, bold: true }));
-        for (let n = 0; n < 3; n++) for (let i = 0; i <= N; i++) P.dot(i, n, n < 2 ? 7 : 5, n < 2 ? COL.space : '#cfd8e3', null);
-        if (!imp) {
-          const lit = Math.min(Math.floor(st.k), 5);
-          for (let i = 1; i <= lit; i++) P.dot(i, 2, 9, COL.time);
-          if (lit < 5 && st.k > 0) { const i = lit + 1; P.seg(i - 1, 1, i, 2, COL.space, 2); P.seg(i + 1, 1, i, 2, COL.space, 2); P.seg(i, 0, i, 2, COL.muted, 2, [4, 4]); }
-        } else if (st.k >= 1) {
-          P.seg(1, 2, 5, 2, COL.time, 5);
-          for (let i = 1; i <= 5; i++) { if (st.k >= 2) P.dot(i, 2, 9, COL.time); else P.ring(i, 2, 9, COL.time); }
-          if (st.k < 2) P.text(3, 2, '연립방정식', { size: 19, bold: true, align: 'center', dy: -18, col: COL.timeText });
+      const N = 6, T = 3, f = st.frag;
+      [['③의 방법: 하나씩', a, false], ['한꺼번에 푸는 방법', b, true]].forEach(([title, c, imp]) => {
+        const g = c.g, P = Plot(g, { x: 104, y: 46, w: c.w - 134, h: c.h - 118 }, [-0.5, N + 0.5], [-0.25, 2.25]);
+        text(g, c.w / 2, 30, title, { size: 20, bold: true, align: 'center', col: imp ? COL.timeText : COL.space });
+        ['조금 전', '지금', '다음'].forEach((s, n) => text(g, 92, P.Y(n) + 6, s, { size: 18, align: 'right', col: COL.axis, bold: true }));
+        P.seg(-0.4, 2, N + 0.4, 2, COL.grid, 1);
+        const solved = !imp && f >= 1 ? T - 1 : 0;
+        if (imp && f >= 2) P.seg(1, 2, N - 1, 2, COL.time, 4);   // 모르는 값끼리 엮인 사슬
+        for (let n = 0; n < 3; n++) for (let i = 0; i <= N; i++) {
+          if (n < 2 || i === 0 || i === N) P.dot(i, n, 8, n < 2 ? COL.space : COL.axis);   // 아는 값(다음 줄 양 끝 = 묶인 끝)
+          else if (i <= solved) P.dot(i, n, 9, COL.time);                                   // 이미 구한 값
+          else P.ring(i, n, 8, i === T && f >= (imp ? 2 : 1) ? COL.time : '#7b8a9c', i === T && f >= (imp ? 2 : 1) ? 3.5 : 2.2);
+        }
+        if (!imp && f >= 1) {
+          [[T - 1, 1], [T, 1], [T + 1, 1], [T, 0]].forEach(([i, n]) => arrowAt(P, i, n, T, 2, COL.space, 2.6));
+          text(g, c.w / 2, c.h - 40, '식 하나에 모르는 값 하나', { size: 19, bold: true, align: 'center', col: COL.space });
+          text(g, c.w / 2, c.h - 14, '→ 바로 계산 (왼쪽부터 차례로)', { size: 19, bold: true, align: 'center', col: COL.space });
+        }
+        if (imp && f >= 2) {
+          [[T - 1, 1], [T, 1], [T + 1, 1], [T - 1, 0], [T, 0], [T + 1, 0]].forEach(([i, n]) => arrowAt(P, i, n, T, 2, COL.space, 1.8));
+          [T - 1, T + 1].forEach((i) => arrowAt(P, i, 2, T, 2, COL.time, 3.4, 12));
+          text(g, c.w / 2, c.h - 40, '다음 순간의 휜 정도 → 이웃의 모르는 값이 섞인다', { size: 19, bold: true, align: 'center', col: COL.timeText });
+          text(g, c.w / 2, c.h - 14, '→ 모르는 값끼리 사슬로 엮임 = 연립방정식', { size: 19, bold: true, align: 'center', col: COL.timeText });
         }
       });
     },
@@ -289,10 +364,10 @@
     return (big[r] = { ex, im, dt: r / N });
   }
   F['m04-cfl'] = {
-    canvases: [{ h: 330 }, { h: 330 }],
+    canvases: [{ h: 306 }, { h: 306 }],
     controls: [{ buttons: 'r', label: 'r = cΔt/h', items: [['0.5', 0.5], ['0.9', 0.9], ['1.1', 1.1], ['1.5', 1.5]], value: 0.5, act: (s) => { s.t = 0; } }, 'play', 'reset'],
     speed: 0.1, tmax: 0.5,
-    readout: (s) => { const B = blow(s.v.r), k = Math.min(B.ex.length - 1, Math.floor(s.t / B.dt)); return `가장 높은 점: ③의 방법 <b>${B.ex[k] > 1e4 ? window.PLOT.sci(B.ex[k], 1) : B.ex[k].toFixed(2)}</b> · 한꺼번에 <b>${B.im[k].toFixed(2)}</b>`; },
+    readout: (s) => { const B = blow(s.v.r), k = Math.min(B.ex.length - 1, Math.floor(s.t / B.dt)); return `가장 높은 점 (③의 방법) <b>${B.ex[k] > 1e4 ? window.PLOT.sci(B.ex[k], 1) : B.ex[k].toFixed(2)}</b>`; },
     draw(st, [a, b]) {
       const r = st.v.r, g = a.g, dx = 44, cx = a.w / 2, top = 70, bot = 220;
       text(g, cx, 32, `한 걸음에 파동이 가는 칸 수 r = ${r}`, { size: 20, bold: true, align: 'center', col: r > 1 ? COL.bad : COL.good });
@@ -309,8 +384,31 @@
       P.frame({ xt: [0, 0.25, 0.5], yt: [0, 3, 6, 9], ytl: ['1', '1000', '100만', '10억'], title: '줄에서 가장 높은 점의 높이 (로그 눈금)', xl: '시간' });
       const ts = B.ex.slice(0, k + 1).map((_, j) => j * B.dt);
       P.path(ts, B.ex.slice(0, k + 1).map((v) => Math.log10(Math.max(v, 1e-3))), COL.bad, 3);
-      P.path(ts, B.im.slice(0, k + 1).map((v) => Math.log10(Math.max(v, 1e-3))), COL.space, 3, [7, 5]);
-      text(b.g, P.x + 12, P.y + 24, '빨강: ③의 방법', { size: 18, col: COL.bad }); text(b.g, P.x + 12, P.y + 48, '파랑 점선: 한꺼번에 푸는 방법', { size: 18, col: COL.space });
+      text(b.g, P.x + 12, P.y + 24, '빨강: ③의 방법 (하나씩 바로 계산)', { size: 18, col: COL.bad });
+    },
+  };
+
+  /* ---------- M05 한꺼번에 풀면 버틴다. 그러나… (r = 1.5, 원고 그림 m03-big-step과 같은 계산) ---------- */
+  let M5 = null;
+  F['m05-tradeoff'] = {
+    canvases: [{ h: 360 }, { h: 360 }],
+    draw(st, [a, b]) {
+      const B = blow(1.5), N = 48;
+      if (!M5) M5 = implicit(N, 1.5, B.ex.length - 1, W.bump)[B.ex.length - 1];
+      const P = Plot(a.g, box(a, 70, 36, 30, 50), [0, 0.5], [-0.5, 9.5]);
+      P.frame({ xt: [0, 0.25, 0.5], yt: [0, 3, 6, 9], ytl: ['1', '1000', '100만', '10억'], title: 'r = 1.5: 가장 높은 점의 높이 (로그 눈금)', xl: '시간' });
+      const ts = B.ex.map((_, j) => j * B.dt), lg = (v) => Math.log10(Math.max(v, 1e-3));
+      P.path(ts, B.ex.map(lg), COL.bad, 3); P.path(ts, B.im.map(lg), COL.space, 3.5);
+      text(a.g, P.x + 12, P.y + 24, '빨강: ③의 방법 → 터진다', { size: 18, col: COL.bad, bold: true });
+      text(a.g, P.x + 12, P.y + 48, '파랑: 한꺼번에 푸는 방법 → 버틴다', { size: 18, col: COL.space, bold: true });
+      const Q = Plot(b.g, box(b, 50, 36, 16, 40), [-0.02, 1.02], [-0.75, 1.1]);
+      Q.frame({ xt: [0, 0.5, 1], yt: [-0.5, 0, 0.5, 1], title: 't = 1/2: 한꺼번에(큰 걸음)와 정확한 해' });
+      const xs = M5.map((_, i) => i / N);
+      Q.path(xs, M5, COL.space, 3); M5.forEach((v, i) => Q.dot(i / N, v, 4, COL.space));
+      Q.fn((x) => W.uBump(x, 0.5), COL.exact, 2.4, 0, 1, 400, [7, 6]);
+      let e = 0; M5.forEach((v, i) => { e = Math.max(e, Math.abs(v - W.uBump(i / N, 0.5))); });
+      text(b.g, b.w - 26, 66, `가장 큰 어긋남 ${e.toFixed(3)}`, { size: 19, align: 'right', bold: true, col: COL.bad });
+      Q.text(0, -0.62, '파란 선·점: 계산 · 회색 점선: 정확한 해', { size: 18, col: COL.muted, dx: 8 });
     },
   };
 })();

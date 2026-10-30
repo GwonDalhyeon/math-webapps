@@ -143,3 +143,46 @@ table.ft th { background: #eef3f8; color: var(--title); }
 .cv-axis .cv-track { height: 30px; background: none; border-top: 2px solid var(--sub); }
 .cv-axis .cv-track span { position: absolute; top: 4px; transform: translateX(-50%); font-size: 18px; font-weight: 600; color: var(--sub); }
 .cv-axis .cv-track b { position: absolute; bottom: 30px; height: 420px; border-left: 2px dashed var(--time); }
+/* ⑤ 가우스–조던 단계(2 × 2 칸)와 계산량 표 (2026-10-30, 시안 draft-l05-cost.html에서 옮김) */
+.gj { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 22px; margin-top: 6px; }
+.gj-st { background: #fff; border: 1.5px solid var(--line); border-radius: 12px; padding: 4px 14px 6px; font-size: 27px; }
+.gj-st > b { color: var(--title); font-size: 22px; } .gj-st > i { display: block; font-style: normal; color: var(--sub); font-size: 22px; }
+.gj-st > div { margin: -10px 0 -10px; } .gj-st > span { display: block; color: var(--sub); font-size: 22px; text-align: right; }
+.gj-st .katex-display { margin: 0.35em 0; }
+table.cost { width: 100%; font-size: 22px; } table.cost td, table.cost th { padding: 6px 12px; text-align: left; }
+table.cost tr.grp td { background: var(--panel); color: var(--sub); font-weight: 700; font-size: 22px; padding: 3px 12px; }
+table.cost td.bad { color: var(--bad); font-weight: 700; } table.cost td.good { color: var(--good); font-weight: 700; }
+/* 두 방법 비교 띠(M01, M02)와 단계 식 줄(M03) (2026-10-30) */
+.cmp { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 6px 0 8px; }
+.cmp-c { background: #fff; border: 2px solid var(--line); border-left-width: 9px; border-radius: 10px; padding: 3px 14px 4px; font-size: 22px; line-height: 1.38; color: var(--ink); }
+.cmp-c.sp-c { border-color: var(--space); } .cmp-c.tm-c { border-color: var(--time); } .cmp-c.bad-c { border-color: var(--bad); }
+.cmp-h { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.cmp-h > b { font-size: 23px; } .cmp-c.sp-c .cmp-h > b { color: var(--space); } .cmp-c.tm-c .cmp-h > b { color: var(--time-text); } .cmp-c.bad-c .cmp-h > b { color: var(--bad); }
+.cmp-c b { font-weight: 800; }
+.cmp .tl { display: inline-flex; align-items: center; gap: 4px; margin: 0 4px; vertical-align: middle; }
+.cmp .tl i { width: 14px; height: 14px; border-radius: 50%; background: var(--space); }
+.cmp .tl i.u { background: #fff; border: 2.5px solid var(--time); box-sizing: border-box; }
+.cmp .tl em { font-style: normal; color: var(--sub); font-size: 22px; }
+.eqline { font-size: 22px; margin: 2px 0; } .eqline > .sp, .eqline > .tm { display: inline-block; min-width: 92px; }
+.eqline .note { font-size: 22px; color: var(--sub); }
+.kdot, .udot { display: inline-block; width: 14px; height: 14px; border-radius: 50%; vertical-align: middle; }
+.kdot { background: var(--space); } .udot { border: 2.5px solid #7b8a9c; box-sizing: border-box; }
+/* 단원 제목 화면(w00-open 등)과 정리 화면의 연결 문장 (2026-10-30) */
+.uopen { display: flex; flex-direction: column; height: calc(100% - 44px); padding-top: 44px; box-sizing: border-box; }
+.uo-head { display: flex; align-items: baseline; gap: 18px; }
+.uo-n { font-size: 64px; font-weight: 800; color: var(--space); line-height: 1; }
+.uopen.data .uo-n { color: var(--good); }
+.uo-name { font-size: 34px; font-weight: 800; color: var(--title); }
+.uo-q { margin-top: 34px; font-size: 38px; font-weight: 800; line-height: 1.4; color: var(--ink); border-left: 8px solid var(--space); padding: 6px 0 6px 24px; }
+.uopen.data .uo-q { border-color: var(--good); }
+.uo-chips { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 12px; margin-top: 34px; }
+.uo-chips span { font-size: 23px; font-weight: 700; color: var(--space); background: var(--space-bg); border: 1.5px solid var(--space); border-radius: 22px; padding: 4px 16px; }
+.uopen.data .uo-chips span { color: var(--good); background: #e5f3ec; border-color: var(--good); }
+.uo-chips span.uo-lb { background: none; border: none; color: var(--sub); padding: 0 4px 0 0; font-size: 22px; }
+.uo-path { margin-top: auto; margin-bottom: 30px; }
+.uo-path div { color: var(--sub); border-color: #a9bdd3; }
+.uo-path div.data { border-color: #9fcdb7; }
+.uo-path div.past { opacity: .45; }
+.uo-path div.cur { border-color: var(--space); color: var(--ink); font-weight: 800; }
+.uo-path div.cur.data { border-color: var(--good); }
+.ask.bridge { font-weight: 600; } .ask.bridge b { font-weight: 800; }

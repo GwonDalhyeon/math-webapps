@@ -56,7 +56,7 @@
   F['l02-sparse'] = {
     canvases: [{ h: 420, flex: 1.4 }, { h: 420 }],
     controls: [{ buttons: 'kind', items: [['줄', 'line'], ['면', 'plane']], value: 'line', act: (s) => { s.sel = null; } },
-      { range: 'n', label: '크기', min: 3, max: 8, step: 1, value: 4, fmt: (v) => v }],
+      { range: 'n', label: '점의 개수', min: 3, max: 8, step: 1, value: 4, fmt: (v, st) => (st && st.v.kind === 'plane' ? `${v} × ${v}` : `${6 * v + 1}개`) }],
     init(st) { st.sel = null; },
     onclick(st, ci, x, y) { if (ci !== 0) return; const L = st.lay; if (!L) return; const i = Math.floor((y - L.y0) / L.cs); st.sel = i >= 0 && i < L.N ? i : null; },
     readout: (s) => { const N = s.v.kind === 'line' ? s.v.n * 6 + 1 : s.v.n ** 2, nz = s.v.kind === 'line' ? 3 * N - 2 : N + 4 * s.v.n * (s.v.n - 1); return `${N} × ${N}: 0이 아닌 칸 <b>${nz}</b> / ${N * N} (<b>${(100 * nz / N / N).toFixed(1)}%</b>)`; },

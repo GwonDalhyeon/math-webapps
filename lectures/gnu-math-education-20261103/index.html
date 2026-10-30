@@ -12,9 +12,9 @@
 <link rel="stylesheet" href="lib/reveal/reveal.css">
 <link rel="stylesheet" href="lib/katex/katex.min.css">
 <link rel="stylesheet" href="lib/pretendard/pretendardvariable-dynamic-subset.css">
-<link rel="stylesheet" href="css/deck.css?v=20261030b">
-<link rel="stylesheet" href="css/parts/string-lab.css?v=20261030b">
-<link rel="stylesheet" href="css/parts/fig.css?v=20261030b">
+<link rel="stylesheet" href="css/deck.css?v=20261031f">
+<link rel="stylesheet" href="css/parts/string-lab.css?v=20261031f">
+<link rel="stylesheet" href="css/parts/fig.css?v=20261031f">
 </head>
 <body>
 <div class="reveal"><div class="slides">
@@ -62,13 +62,13 @@
   <div class="crumb">들어가며 · D01</div>
   <h2 class="t">오늘 따라갈 길</h2>
   <div class="map">
-    <a class="calc" href="#/w01-predict"><div class="n">①</div><div class="h">출렁이는 줄과 예측</div><div class="q">다음 모습을 추측 대신 무엇으로 알까?</div></a>
-    <a class="calc" href="#/c01-slope"><div class="n">②</div><div class="h">미분이 담고 있는 물리</div><div class="q">두 번 미분 = 휜 정도 = 가속도</div></a>
-    <a class="calc" href="#/f01-points"><div class="n">③</div><div class="h">컴퓨터로 계산하기</div><div class="q">점 몇 개와 되풀이로 같은 법칙을</div></a>
-    <a class="calc" href="#/m00-knobs"><div class="n">④</div><div class="h">같은 줄, 다른 계산법</div><div class="q">무엇이 좋아지고 무엇을 치르나</div></a>
-    <a class="calc" href="#/l01-assume"><div class="n">⑤</div><div class="h">연결된 점들이 행렬로</div><div class="q">역행렬 대신 분해</div></a>
-    <a class="data" href="#/p01-span"><div class="n">⑥</div><div class="h">가장 가까운 것</div><div class="q">수선의 발과 그릇의 바닥</div></a>
-    <a class="data" href="#/g01-good"><div class="n">⑦</div><div class="h">미분과 반복으로 찾기</div><div class="q">조금씩 고치는 것이 학습</div></a>
+    <a class="calc" href="#/w00-open"><div class="n">①</div><div class="h">출렁이는 줄과 예측</div><div class="q">다음 모습을 추측 대신 무엇으로 알까?</div></a>
+    <a class="calc" href="#/c00-open"><div class="n">②</div><div class="h">미분이 담고 있는 물리</div><div class="q">두 번 미분 = 휜 정도 = 가속도</div></a>
+    <a class="calc" href="#/f00-open"><div class="n">③</div><div class="h">컴퓨터로 계산하기</div><div class="q">점 몇 개와 되풀이로 같은 법칙을</div></a>
+    <a class="calc" href="#/m00-open"><div class="n">④</div><div class="h">같은 줄, 다른 계산법</div><div class="q">무엇이 좋아지고 무엇을 치르나</div></a>
+    <a class="calc" href="#/l00-open"><div class="n">⑤</div><div class="h">연결된 점들이 행렬로</div><div class="q">역행렬 대신 분해</div></a>
+    <a class="data" href="#/p00-open"><div class="n">⑥</div><div class="h">가장 가까운 것</div><div class="q">수선의 발과 그릇의 바닥</div></a>
+    <a class="data" href="#/g00-open"><div class="n">⑦</div><div class="h">미분과 반복으로 찾기</div><div class="q">조금씩 고치는 것이 학습</div></a>
     <div class="legend"><div><span class="sp">■</span> 법칙으로 계산 ①~⑤</div><div><span class="good">■</span> 데이터로 계수 정하기 ⑥~⑦</div></div>
   </div>
   <div class="msg fragment">물리 현상을 수학으로 적는 과정을 따라가면, 미분이 <b class="k">속도·가속도·휜 정도</b> 같은 물리적 뜻을 담고 있음을 보게 됩니다.</div>
@@ -76,6 +76,15 @@
 
 <!-- ======================= ① 출렁이는 줄과 예측 ======================= -->
 
+  <section id="w00-open">
+    <div class="crumb">① 출렁이는 줄과 예측 · W00</div>
+    <div class="uopen">
+      <div class="uo-head"><span class="uo-n">①</span><span class="uo-name">출렁이는 줄과 예측</span></div>
+      <div class="uo-q">줄을 튕기면 어떻게 움직일까?<br>예측을 법칙으로 바꿀 수 있을까?</div>
+      <div class="uo-chips"><span class="uo-lb">이 단원의 수학</span><span>관찰과 예측</span><span>주기</span><span>미분방정식</span></div>
+      <div class="path uo-path"><div class="cur">① 출렁이는 줄</div><div class="">② 미분의 물리</div><div class="">③ 컴퓨터 계산</div><div class="">④ 계산법</div><div class="">⑤ 행렬</div><div class=" data">⑥ 정사영</div><div class=" data">⑦ 학습</div></div>
+    </div>
+  </section>
   <section id="w01-predict">
     <div class="crumb">① 출렁이는 줄과 예측 · W01</div>
     <h2 class="t">놓으면 어떻게 움직일까?</h2>
@@ -158,11 +167,20 @@
     <div class="crumb">① 출렁이는 줄과 예측</div>
     <h2 class="t">이 단원에서 한 일</h2>
     <div class="recap">사인 모양의 줄은 제자리에서 출렁이고, 일부만 볼록한 줄은 나뉘어 이동한다.<br>추측 대신 <b class="k">가속도 $= c^2 \times$ 휜 정도</b>라는 법칙으로 모든 움직임을 정한다.</div>
-    <div class="ask" style="margin-top:22px">다음 질문: 위치로 두 번 미분한 것은 왜 "휜 정도"이고, 시간으로 두 번 미분한 것은 왜 "가속도"일까?</div>
+    <div class="ask bridge" style="margin-top:22px"><b>그런데</b> 법칙에 나온 '두 번 미분'은 줄에서 무엇을 뜻할까? 왜 그것이 줄을 움직이게 할까?</div>
   </section>
 
 <!-- ======================= ② 미분이 담고 있는 물리 ======================= -->
 
+  <section id="c00-open">
+    <div class="crumb">② 미분이 담고 있는 물리 · C00</div>
+    <div class="uopen">
+      <div class="uo-head"><span class="uo-n">②</span><span class="uo-name">미분이 담고 있는 물리</span></div>
+      <div class="uo-q">두 번 미분은 줄에서 무엇을 뜻할까?</div>
+      <div class="uo-chips"><span class="uo-lb">이 단원의 수학</span><span>이계도함수</span><span>휜 정도(곡률)</span><span>가속도</span></div>
+      <div class="path uo-path"><div class="past">① 출렁이는 줄</div><div class="cur">② 미분의 물리</div><div class="">③ 컴퓨터 계산</div><div class="">④ 계산법</div><div class="">⑤ 행렬</div><div class=" data">⑥ 정사영</div><div class=" data">⑦ 학습</div></div>
+    </div>
+  </section>
   <section id="c01-slope">
     <div class="crumb">② 미분이 담고 있는 물리 · C01</div>
     <h2 class="t">두 번 미분은 휜 정도</h2>
@@ -239,11 +257,20 @@
     <div class="crumb">② 미분이 담고 있는 물리</div>
     <h2 class="t">이 단원에서 한 일</h2>
     <div class="recap">두 번 미분은 <span class="sp">휜 정도(공간)</span>이자 <span class="tm">가속도(시간)</span>다. 사인 모양은 휜 정도가 높이에 비례해 제자리에서 출렁이고, 일반적으로는 <b class="k">모양이 가속도를 정한다</b>.</div>
-    <div class="ask" style="margin-top:22px">다음 질문: 컴퓨터가 아는 것은 점 몇 개의 높이뿐이다. 이 법칙을 어떻게 계산할까?</div>
+    <div class="ask bridge" style="margin-top:22px"><b>그런데</b> 이 법칙을 손으로 풀 수 있는 모양은 사인처럼 특별한 것뿐이다. 컴퓨터가 아는 것은 점 몇 개의 높이뿐인데, 어떻게 계산할까?</div>
   </section>
 
 <!-- ======================= ③ 컴퓨터로 계산하기 ======================= -->
 
+  <section id="f00-open">
+    <div class="crumb">③ 컴퓨터로 출렁임을 계산하기 · F00</div>
+    <div class="uopen">
+      <div class="uo-head"><span class="uo-n">③</span><span class="uo-name">컴퓨터로 출렁임을 계산하기</span></div>
+      <div class="uo-q">손으로 풀리지 않는 모양은 어떻게 계산할까?</div>
+      <div class="uo-chips"><span class="uo-lb">이 단원의 수학</span><span>점으로 기억하기</span><span>양옆 평균과 비교</span><span>Taylor 전개</span><span>반복</span></div>
+      <div class="path uo-path"><div class="past">① 출렁이는 줄</div><div class="past">② 미분의 물리</div><div class="cur">③ 컴퓨터 계산</div><div class="">④ 계산법</div><div class="">⑤ 행렬</div><div class=" data">⑥ 정사영</div><div class=" data">⑦ 학습</div></div>
+    </div>
+  </section>
   <section id="f01-points">
     <div class="crumb">③ 컴퓨터로 출렁임을 계산하기 · F01</div>
     <h2 class="t">점 몇 개로 기억하기</h2>
@@ -280,18 +307,8 @@
   <section id="f04-notation">
     <div class="crumb">③ 컴퓨터로 출렁임을 계산하기 · F04</div>
     <h2 class="t">높이에 번호 두 개</h2>
-    <div class="cols" style="grid-template-columns: 1fr 380px">
-      <div class="part fig" data-fig="f04-notation"></div>
-      <div>
-        <div class="box" style="font-size:26px">$u_i^n$ = 위치 $x_i=ih$, 시각 $t_n=n\Delta t$의 높이</div>
-        <ul class="pts" style="margin-top:14px">
-          <li><span class="sp">아래첨자 $i$</span> = 공간(위치)</li>
-          <li><span class="tm">위첨자 $n$</span> = 시간(시각)</li>
-          <li>위첨자는 거듭제곱이 아니다</li>
-          <li>$n+1,\ n,\ n-1$ = 다음, 지금, 조금 전</li>
-        </ul>
-      </div>
-    </div>
+    <div class="box" style="font-size:23px;padding:8px 16px">$u_i^n$ = 위치 $x_i=ih$, 시각 $t_n=n\Delta t$의 높이 &nbsp;·&nbsp; <span class="sp">아래첨자 $i$</span> = 공간 &nbsp;·&nbsp; <span class="tm">위첨자 $n$</span> = 시간(거듭제곱이 아니다)</div>
+    <div class="part fig" data-fig="f04-xt3d" style="margin-top:8px"><img class="fallback" src="fig/f04-stencil.svg" alt="공간–시간 격자"></div>
   </section>
   <section id="f04-stencil">
     <div class="crumb">③ 컴퓨터로 출렁임을 계산하기 · F04</div>
@@ -306,13 +323,13 @@
     <table class="ft" style="margin-top:10px">
       <tr><th>위치</th><th>0</th><th>1/6</th><th>2/6</th><th>3/6</th><th>4/6</th><th>5/6</th><th>1</th></tr>
       <tr><th>처음</th><td>0</td><td>0.5</td><td>0.866</td><td>1</td><td>0.866</td><td>0.5</td><td>0</td></tr>
-      <tr><th>한 걸음 뒤</th><td>0</td><td class="tap"><span class="a">0.4833</span></td><td class="tap"><span class="a">0.8370</span></td><td class="tap"><span class="a">0.9665</span></td><td class="tap"><span class="a">0.8370</span></td><td class="tap"><span class="a">0.4833</span></td><td>0</td></tr>
-      <tr><th>비율</th><td></td><td class="tap"><span class="a">0.9665</span></td><td class="tap"><span class="a">0.9665</span></td><td class="tap"><span class="a">0.9665</span></td><td class="tap"><span class="a">0.9665</span></td><td class="tap"><span class="a">0.9665</span></td><td></td></tr>
+      <tr class="fragment" data-fragment-index="1"><th>한 걸음 뒤</th><td>0</td><td>0.4833</td><td>0.8370</td><td>0.9665</td><td>0.8370</td><td>0.4833</td><td>0</td></tr>
+      <tr class="fragment" data-fragment-index="2"><th>한 걸음 뒤 ÷ 처음</th><td></td><td>0.9665</td><td>0.9665</td><td>0.9665</td><td>0.9665</td><td>0.9665</td><td></td></tr>
     </table>
     <div class="cols" style="grid-template-columns: 1fr 380px; margin-top:10px">
       <div class="part fig" data-fig="f05-hand"></div>
-      <div><div class="fragment box" style="font-size:24px"><b class="k">모든 점이 0.9665배</b><br>정확한 값 cos(π/12) ≈ 0.9659</div>
-      <div class="small" style="margin-top:10px">확인 질문 3: 높이 0.5인 점은? → 표의 칸을 눌러 확인</div></div>
+      <div><div class="small">확인 질문 3: 높이 0.5인 점은 한 걸음 뒤 얼마일까? (예측한 뒤 다음 단계에서 확인)</div>
+      <div class="fragment box" data-fragment-index="2" style="font-size:24px;margin-top:10px"><b class="k">모든 점이 0.9665배</b><br>정확한 값 cos(π/12) ≈ 0.9659</div></div>
     </div>
   </section>
   <section id="f05-steps">
@@ -324,17 +341,26 @@
     <div class="crumb">③ 컴퓨터로 출렁임을 계산하기 · F06</div>
     <h2 class="t">식을 모르는 모양도 계산한다</h2>
     <div class="part fig" data-fig="f06-compare"><img class="fallback" src="fig/f06-compare.svg" alt="점 13개와 49개"></div>
-    <div class="small fragment">회색 선: 정확한 해, 점: 계산. <b class="k">점을 촘촘히 하면 정확한 답에 가까워진다.</b> 정확한 답을 아는 문제로 먼저 확인하는 것이 계산을 믿는 첫걸음.</div>
+    <div class="small fragment">파란 선·점: 계산, 회색 점선: 정확한 해. <b class="k">점을 촘촘히 하면 정확한 답에 가까워진다.</b> 정확한 답을 아는 문제로 먼저 확인하는 것이 계산을 믿는 첫걸음.</div>
   </section>
   <section id="u3-recap">
     <div class="crumb">③ 컴퓨터로 출렁임을 계산하기</div>
     <h2 class="t">이 단원에서 한 일</h2>
     <div class="recap">줄을 점 몇 개로 기억하고, 휜 정도를 <span class="sp">공간</span>과 <span class="tm">시간</span>에 똑같이 써서<br>"다음 = 지금 + (지금 − 조금 전) + 휜 정도 보정"을 되풀이했다.</div>
-    <div class="ask" style="margin-top:22px">다음 질문: 계산법을 바꾸면 무엇이 달라질까? 사슬처럼 연결된 수많은 점은 어떻게 다룰까?</div>
+    <div class="ask bridge" style="margin-top:22px"><b>그런데</b> 이 계산법이 유일할까? 더 정확하게, 더 적은 계산으로 할 수는 없을까?</div>
   </section>
 
 <!-- ======================= ④ 같은 줄, 다른 계산법 ======================= -->
 
+  <section id="m00-open">
+    <div class="crumb">④ 같은 줄, 다른 계산법 · M00</div>
+    <div class="uopen">
+      <div class="uo-head"><span class="uo-n">④</span><span class="uo-name">같은 줄, 다른 계산법</span></div>
+      <div class="uo-q">계산법을 바꾸면 무엇이 좋아지고<br>무엇을 치를까?</div>
+      <div class="uo-chips"><span class="uo-lb">이 단원의 수학</span><span>정확도</span><span>버티는 힘(안정성)</span><span>계산 비용</span></div>
+      <div class="path uo-path"><div class="past">① 출렁이는 줄</div><div class="past">② 미분의 물리</div><div class="past">③ 컴퓨터 계산</div><div class="cur">④ 계산법</div><div class="">⑤ 행렬</div><div class=" data">⑥ 정사영</div><div class=" data">⑦ 학습</div></div>
+    </div>
+  </section>
   <section id="m00-knobs">
     <div class="crumb">④ 같은 줄, 다른 계산법 · M00</div>
     <h2 class="t">바꿀 수 있는 두 개의 손잡이</h2>
@@ -352,37 +378,68 @@
   <section id="m01-neighbors">
     <div class="crumb">④ 같은 줄, 다른 계산법 · M01 (더 알아보기)<span class="ext">확장</span></div>
     <h2 class="t">이웃을 더 많이 쓰면</h2>
-    <div style="font-size:22px;margin-top:-4px">$$\text{휜 정도}\approx\frac{-u_{i+2}+16u_{i+1}-30u_i+16u_{i-1}-u_{i-2}}{12h^2}$$</div>
+    <div class="small" style="margin-top:-6px">그대로 둔 것: 점 13개 · 아주 작은 시간 걸음 · 처음 모양 sin 3πx &nbsp;|&nbsp; 바꾼 것: <b>휜 정도를 재는 이웃의 수</b></div>
+    <div class="cmp">
+      <div class="cmp-c sp-c"><div class="cmp-h"><b>이웃 3점 (③의 방법)</b><span>시각 4, $x=\frac16$ 높이 <b>0.57</b></span></div><div>쓰는 점 $u_{i-1},\,u_i,\,u_{i+1}$ &nbsp;(1 : −2 : 1)</div><div>대가: —</div></div>
+      <div class="cmp-c tm-c"><div class="cmp-h"><b>이웃 5점</b><span>정확한 값 1 → <b>0.997</b></span></div><div>쓰는 점 $u_{i-2}$ ~ $u_{i+2}$ &nbsp;(−1 : 16 : −30 : 16 : −1, ÷12)</div><div>대가: 끝 근처에서 줄 밖의 점을 정해야 함</div></div>
+    </div>
     <div class="part fig" data-fig="m01-neighbors"><img class="fallback" src="fig/m01-neighbors.svg" alt="이웃 3점과 5점"></div>
   </section>
   <section id="m02-spring">
     <div class="crumb">④ 같은 줄, 다른 계산법 · M02</div>
     <h2 class="t">시간을 나아가는 방법: 용수철 추</h2>
-    <div class="small" style="margin-top:-4px">$x''=-x$, 위치 1에서 놓음, 한 걸음 0.1 · <span class="bad">지금의 정보만</span>: 지금 속도로 위치, 지금 가속도로 속도 · <span class="sp">③의 방법</span>: 조금 전·지금·다음</div>
+    <div class="small" style="margin-top:-6px">$x''=-x$, 위치 1에서 놓음, 한 걸음 0.1 (한 주기 = 63걸음)</div>
+    <div class="cmp">
+      <div class="cmp-c bad-c"><div class="cmp-h"><b>지금의 정보만 쓰는 방법 (오일러 방법)</b></div><div>쓰는 시각 <span class="tl"><i></i><em>→</em><i class="u"></i></span> 지금 → 다음 (지금 속도로 위치, 지금 가속도로 속도)</div><div>한 주기 뒤 진폭 <b>1.37배</b> · 바깥으로 도는 나선</div></div>
+      <div class="cmp-c sp-c"><div class="cmp-h"><b>③의 방법</b></div><div>쓰는 시각 <span class="tl"><i></i><i></i><em>→</em><i class="u"></i></span> 조금 전 · 지금 → 다음</div><div>한 주기 뒤 진폭 <b>1.00배</b> · 원 위 (계산값 0.99999)</div></div>
+    </div>
     <div class="part fig" data-fig="m02-spring"><img class="fallback" src="fig/m02-spring.svg" alt="두 방법"></div>
     <div class="ask fragment" style="margin-top:6px;font-size:22px">확인 질문 4. 한 걸음을 0.05로 줄이면 한 주기 뒤 진폭은? <span class="tap"><span class="a">약 1.17배. 대신 걸음 수가 63 → 126으로 두 배.</span></span></div>
-  </section>
-  <section id="m03-system">
-    <div class="crumb">④ 같은 줄, 다른 계산법 · M03</div>
-    <h2 class="t">하나씩 풀까, 한꺼번에 풀까</h2>
-    <div class="part fig" data-fig="m03-system"><img class="fallback" src="fig/m03-explicit-implicit.svg" alt="명시적과 암시적"></div>
-    <div class="fragment" style="font-size:21px;margin-top:6px">$$\begin{aligned}2.125\,u_1^{n+1}-0.5625\,u_2^{n+1}\phantom{{}-0.5625\,u_3^{n+1}}&=(\text{아는 값})\\-0.5625\,u_1^{n+1}+2.125\,u_2^{n+1}-0.5625\,u_3^{n+1}&=(\text{아는 값})\\-0.5625\,u_2^{n+1}+2.125\,u_3^{n+1}&=(\text{아는 값})\end{aligned}$$</div>
   </section>
   <section id="m04-cfl">
     <div class="crumb">④ 같은 줄, 다른 계산법 · M04</div>
     <h2 class="t">걸음을 너무 크게 잡으면</h2>
     <div class="part fig" data-fig="m04-cfl"><img class="fallback" src="fig/m04-cfl.svg" alt="정보가 오는 범위"></div>
-    <div class="small fragment">r ≤ 1이면 버티고 r &gt; 1이면 터진다 → <b class="k">Δt ≤ h/c</b>. 파동이 빠를수록, 점이 촘촘할수록 걸음을 짧게. 한꺼번에 푸는 방법은 버티지만 <b>버티는 것과 정확한 것은 다르다</b>(최대 0.2 어긋남).</div>
+    <div class="small fragment" style="margin-top:4px">r ≤ 1이면 버티고 r &gt; 1이면 터진다 → <b class="k">Δt ≤ h/c</b>. 점을 두 배 촘촘히 하면 걸음도 두 배로 늘어 일이 네 배(면에서는 더).</div>
+    <div class="ask fragment" style="margin-top:8px;font-size:24px">큰 걸음에서도 버티는 방법은 없을까?</div>
+  </section>
+  <section id="m03-system">
+    <div class="crumb">④ 같은 줄, 다른 계산법 · M03</div>
+    <h2 class="t">하나씩 풀까, 한꺼번에 풀까</h2>
+    <div class="small" style="margin-top:-6px"><span class="kdot"></span> 칠한 점 = 아는 값 · <span class="udot"></span> 빈 점 = 구할 값 · 휜 정도 = $u_{i+1}-2u_i+u_{i-1}$ (③과 같음) · $r=1.5$</div>
+    <div class="eqline fragment" data-fragment-index="1"><span class="sp">하나씩</span> $u_i^{n+1}=2u_i^n-u_i^{n-1}+r^2\,(\text{지금의 휜 정도})$ <span class="note">— 오른쪽이 모두 아는 값</span></div>
+    <div class="eqline fragment" data-fragment-index="2"><span class="tm">한꺼번에</span> $u_i^{n+1}-q\,(\text{다음의 휜 정도})=2u_i^n-u_i^{n-1}+q\,(2\times\text{지금의 휜 정도}+\text{조금 전의 휜 정도})$, $q=\frac{r^2}{4}$</div>
+    <div class="part fig" data-fig="m03-system"><img class="fallback" src="fig/m03-explicit-implicit.svg" alt="명시적과 암시적"></div>
+    <div class="cols fragment" data-fragment-index="3" style="grid-template-columns: 1fr 360px; gap:18px; align-items:center; margin-top:4px">
+      <div style="font-size:20px">$$\begin{aligned}2.125\,u_1^{n+1}-0.5625\,u_2^{n+1}\phantom{{}-0.5625\,u_3^{n+1}}&=(\text{아는 값})\\-0.5625\,u_1^{n+1}+2.125\,u_2^{n+1}-0.5625\,u_3^{n+1}&=(\text{아는 값})\\-0.5625\,u_2^{n+1}+2.125\,u_3^{n+1}&=(\text{아는 값})\end{aligned}$$</div>
+      <div class="small">(아는 값) = 지금·조금 전의 높이와 그 두 시각의 휜 정도<br>$q=0.5625$ → $1+2q=2.125$</div>
+    </div>
+  </section>
+  <section id="m05-tradeoff">
+    <div class="crumb">④ 같은 줄, 다른 계산법 · M05</div>
+    <h2 class="t">한꺼번에 풀면 버틴다. 그러나…</h2>
+    <div class="part fig" data-fig="m05-tradeoff"><img class="fallback" src="fig/m03-big-step.svg" alt="큰 걸음: 터짐과 버팀, 정확한 해와 비교"></div>
+    <div class="small fragment" style="margin-top:6px"><b>버티는 것과 정확한 것은 다르다</b>: 한꺼번에(큰 걸음) 최대 <b>0.215</b> 어긋남, ③의 방법(작은 걸음) <b>0.043</b>. 게다가 걸음마다 연립방정식을 푼다.</div>
+    <div class="recap fragment" style="margin-top:10px;font-size:24px">계산법 고르기 = <b class="k">정확도 · 버티는 힘 · 한 걸음의 비용</b> 사이의 균형</div>
   </section>
   <section id="u4-recap">
     <div class="crumb">④ 같은 줄, 다른 계산법</div>
     <h2 class="t">이 단원에서 한 일</h2>
-    <div class="recap">공간 손잡이(이웃의 수)와 시간 손잡이(어느 시각의 값)를 돌리면 정확도·버티는 힘·비용이 함께 바뀐다. 한꺼번에 푸는 방법은 <b class="k">걸음마다 연립방정식</b>을 풀어야 한다.</div>
-    <div class="ask" style="margin-top:22px">다음 질문: 수많은 미지수가 얽힌 연립방정식은 어떻게 풀까?</div>
+    <div class="recap">공간 손잡이(이웃의 수)와 시간 손잡이(어느 시각의 값)를 돌리면 정확도·버티는 힘·비용이 함께 바뀐다. 작은 걸음은 <b>하나씩</b> 바로 계산하고, 큰 걸음을 버티려면 <b class="k">한꺼번에(연립방정식)</b> 풀어야 한다.</div>
+    <div class="ask bridge" style="margin-top:22px"><b>그런데</b> 큰 걸음을 버티는 방법은 걸음마다 연립방정식을 풀어야 했다. 점이 백만 개면 미지수도 백만 개다.</div>
   </section>
 
 <!-- ======================= ⑤ 연결된 점들이 행렬이 된다 ======================= -->
 
+  <section id="l00-open">
+    <div class="crumb">⑤ 연결된 점들이 행렬이 된다 · L00</div>
+    <div class="uopen">
+      <div class="uo-head"><span class="uo-n">⑤</span><span class="uo-name">연결된 점들이 행렬이 된다</span></div>
+      <div class="uo-q">백만 개의 미지수가 얽힌 연립방정식은<br>어떻게 풀까?</div>
+      <div class="uo-chips"><span class="uo-lb">이 단원의 수학</span><span>연립방정식과 행렬</span><span>띠 행렬</span><span>역행렬과 분해</span><span>계산량</span></div>
+      <div class="path uo-path"><div class="past">① 출렁이는 줄</div><div class="past">② 미분의 물리</div><div class="past">③ 컴퓨터 계산</div><div class="past">④ 계산법</div><div class="cur">⑤ 행렬</div><div class=" data">⑥ 정사영</div><div class=" data">⑦ 학습</div></div>
+    </div>
+  </section>
   <section id="l01-assume">
     <div class="crumb">⑤ 연결된 점들이 행렬이 된다 · L01</div>
     <h2 class="t">처진 줄: 무엇을 가정하나</h2>
@@ -399,6 +456,7 @@
       <div>
         <div class="box fragment" style="font-size:24px"><b class="k">포물선을 가정하지 않는다.</b> 가정은 힘에 대한 조건이고, 모양은 계산해서 얻는다.</div>
         <div class="box fragment" style="font-size:22px;margin-top:14px">어디서나 같은 정도로 휜다 → "각 점의 깊이가 양옆 평균보다 일정한 만큼 더 깊다"<br><span class="small">일정한 양 = (무게 × 간격²) ÷ (2 × 장력)</span></div>
+        <div class="box fragment" style="font-size:22px;margin-top:14px">멈춘 모양에는 '조금 전'이 없다 → 한 점씩 차례로 구할 출발점이 없다 → 모든 점이 이웃에 기대므로 <b class="k">처음부터 연립방정식</b></div>
       </div>
     </div>
   </section>
@@ -414,6 +472,18 @@
     <div class="part fig" data-fig="l02-sparse"><img class="fallback" src="fig/l02-sparse.svg" alt="0이 대부분인 행렬"></div>
     <div class="ask fragment" style="font-size:22px;margin-top:6px">확인 질문 5. 999 × 999 행렬에서 0이 아닌 칸은? <span class="tap"><span class="a">999 + 2 × 998 = 2995개, 약 0.3%</span></span></div>
   </section>
+  <section id="l05-gj">
+    <div class="crumb">⑤ 연결된 점들이 행렬이 된다 · L05</div>
+    <h2 class="t">역행렬은 어떻게 구하나: 가우스–조던 소거</h2>
+    <div class="small" style="margin-top:-6px">$[\,A\mid I\,]$에 소거를 해서 왼쪽을 $I$로 만들면 오른쪽이 $A^{-1}$이 된다 · <span class="tm">주황</span> = 오른쪽에서 0이 아닌 칸</div>
+    <div class="gj">
+      <div class="gj-st"><b>처음 $[\,A\mid I\,]$</b><div>$$\left[\begin{array}{ccc|ccc}2 & -1 & \textcolor{#5f6b78}{0} & \textcolor{#a85a0c}{1} & \textcolor{#5f6b78}{0} & \textcolor{#5f6b78}{0}\\-1 & 2 & -1 & \textcolor{#5f6b78}{0} & \textcolor{#a85a0c}{1} & \textcolor{#5f6b78}{0}\\\textcolor{#5f6b78}{0} & -1 & 2 & \textcolor{#5f6b78}{0} & \textcolor{#5f6b78}{0} & \textcolor{#a85a0c}{1}\end{array}\right]$$</div><span>오른쪽 0이 아닌 칸 3</span></div>
+      <div class="gj-st fragment"><b>① 아래로 소거</b> <i>둘째 줄 + ½ × 첫째 줄, 셋째 줄 + ⅔ × 둘째 줄</i><div>$$\left[\begin{array}{ccc|ccc}2 & -1 & \textcolor{#5f6b78}{0} & \textcolor{#a85a0c}{1} & \textcolor{#5f6b78}{0} & \textcolor{#5f6b78}{0}\\\textcolor{#5f6b78}{0} & \frac32 & -1 & \textcolor{#a85a0c}{\frac12} & \textcolor{#a85a0c}{1} & \textcolor{#5f6b78}{0}\\\textcolor{#5f6b78}{0} & \textcolor{#5f6b78}{0} & \frac43 & \textcolor{#a85a0c}{\frac13} & \textcolor{#a85a0c}{\frac23} & \textcolor{#a85a0c}{1}\end{array}\right]$$</div><span>왼쪽 = LU의 $U$ · 오른쪽 6칸</span></div>
+      <div class="gj-st fragment"><b>② 위로 소거</b> <i>둘째 줄 + ¾ × 셋째 줄, 첫째 줄 + ⅔ × 둘째 줄</i><div>$$\left[\begin{array}{ccc|ccc}2 & \textcolor{#5f6b78}{0} & \textcolor{#5f6b78}{0} & \textcolor{#a85a0c}{\frac32} & \textcolor{#a85a0c}{1} & \textcolor{#a85a0c}{\frac12}\\\textcolor{#5f6b78}{0} & \frac32 & \textcolor{#5f6b78}{0} & \textcolor{#a85a0c}{\frac34} & \textcolor{#a85a0c}{\frac32} & \textcolor{#a85a0c}{\frac34}\\\textcolor{#5f6b78}{0} & \textcolor{#5f6b78}{0} & \frac43 & \textcolor{#a85a0c}{\frac13} & \textcolor{#a85a0c}{\frac23} & \textcolor{#a85a0c}{1}\end{array}\right]$$</div><span>오른쪽 9칸: 0이 모두 사라짐</span></div>
+      <div class="gj-st fragment"><b>③ 대각선을 1로</b> <i>각 줄을 대각선 수로 나누기</i><div>$$\left[\begin{array}{ccc|ccc}1 & \textcolor{#5f6b78}{0} & \textcolor{#5f6b78}{0} & \textcolor{#a85a0c}{\frac34} & \textcolor{#a85a0c}{\frac12} & \textcolor{#a85a0c}{\frac14}\\\textcolor{#5f6b78}{0} & 1 & \textcolor{#5f6b78}{0} & \textcolor{#a85a0c}{\frac12} & \textcolor{#a85a0c}{1} & \textcolor{#a85a0c}{\frac12}\\\textcolor{#5f6b78}{0} & \textcolor{#5f6b78}{0} & 1 & \textcolor{#a85a0c}{\frac14} & \textcolor{#a85a0c}{\frac12} & \textcolor{#a85a0c}{\frac34}\end{array}\right]$$</div><span>오른쪽 $=A^{-1}$</span></div>
+    </div>
+    <div class="box fragment" style="font-size:22px;margin-top:8px;padding:8px 16px"><b class="k">$n\times n$이면 약 $2n^3$번 계산.</b> 오른쪽 세 열 = 연립방정식 세 개 $A\mathbf x=\mathbf e_1,\mathbf e_2,\mathbf e_3$를 한꺼번에 푼 것 → 답 하나를 얻는 데 필요한 것보다 $n$배 더 푸는 셈</div>
+  </section>
   <section id="l05-inverse">
     <div class="crumb">⑤ 연결된 점들이 행렬이 된다 · L05</div>
     <h2 class="t">줄의 역행렬에는 0이 없다</h2>
@@ -428,49 +498,56 @@
       <div class="box fragment" style="font-size:22px">$L\mathbf y=\mathbf b$ 위에서부터: $\mathbf y=(1,\ 1.5,\ 2)$<br>$U\mathbf u=\mathbf y$ 아래에서부터: $u_3=1.5,\ u_2=2,\ u_1=1.5$<br><span class="small">= 앞에서 한 소거를 순서 있게 적은 것</span></div>
       <div>
         <ul class="pts">
-          <li class="fragment"><b class="k">띠 모양이 그대로 남는다</b> → 계산량이 미지수 개수에 비례 (줄, 백만 개: 수십 년 → 1초 안)</li>
+          <li class="fragment"><b class="k">띠 모양이 그대로 남는다</b> → 계산량이 미지수 개수에 비례 (다음 화면에서 비교)</li>
           <li class="fragment"><b class="k">한 번 쪼개면 다시 쓴다</b> → ④의 한꺼번에 푸는 방법은 걸음마다 대입만</li>
         </ul>
       </div>
     </div>
+  </section>
+  <section id="l05-cost">
+    <div class="crumb">⑤ 연결된 점들이 행렬이 된다 · L05</div>
+    <h2 class="t">계산량 비교: 역행렬로 풀까, 쪼개서 풀까</h2>
+    <table class="ft cost" style="margin-top:6px">
+      <tr><th>하는 일</th><th>계산 횟수</th><th>미지수 1000개</th><th>미지수 100만 개</th></tr>
+      <tr class="grp"><td colspan="4">준비: 한 번만</td></tr>
+      <tr class="fragment" data-fragment-index="1"><td class="bad">역행렬 만들기 (가우스–조던)</td><td>약 $2n^3$</td><td>2초</td><td class="bad"><b>약 63년</b></td></tr>
+      <tr class="fragment" data-fragment-index="1"><td>LU 분해 (구조를 모를 때)</td><td>약 $\frac23n^3$</td><td>0.7초</td><td>약 21년</td></tr>
+      <tr class="fragment" data-fragment-index="2"><td class="good">LU 분해 (띠 모양 그대로, 줄)</td><td>약 $8n$</td><td>0.00001초</td><td class="good"><b>0.008초</b></td></tr>
+      <tr class="grp fragment" data-fragment-index="3"><td colspan="4">오른쪽 $\mathbf b$가 바뀔 때마다 (④의 걸음마다)</td></tr>
+      <tr class="fragment" data-fragment-index="3"><td class="bad">$A^{-1}\mathbf b$ 곱하기</td><td>약 $2n^2$</td><td>0.002초</td><td class="bad">약 33분 + 저장할 수 $10^{12}$개</td></tr>
+      <tr class="fragment" data-fragment-index="3"><td class="good">쪼갠 $L, U$로 대입 (띠)</td><td>약 $5n$</td><td>0.000005초</td><td class="good"><b>0.005초</b> + 저장할 수 약 $3n$개</td></tr>
+    </table>
+    <div class="small" style="margin-top:8px">초당 10억 번 계산하는 컴퓨터 기준 · 덧셈·뺄셈·곱셈·나눗셈을 한 번씩 셈 · $n$ = 미지수 개수</div>
+    <div class="recap fragment" data-fragment-index="4" style="margin-top:12px;font-size:24px">같은 답을 얻는데 <b class="k">63년 대 0.008초</b>. 차이를 만든 것은 컴퓨터가 아니라 <b class="k">구조를 지키는 계산 순서</b>다.</div>
   </section>
   <section id="l05-other">
     <div class="crumb">⑤ 연결된 점들이 행렬이 된다 · L05</div>
     <h2 class="t">다른 쪼개기, 그리고 면</h2>
     <ul class="pts" style="font-size:26px">
       <li><b>촐레스키 분해</b> $A=LL^{\mathsf T}$: 대칭이고 "에너지가 양수"인 행렬, 일이 절반</li>
-      <li class="fragment"><b>고유분해</b>: 사인 모양들로 좌표를 바꾸면 행렬이 대각선만 남는다(읽을거리)</li>
-      <li class="fragment"><b>면</b>은 띠가 여러 줄 → 분해할 때 띠 사이가 채워진다 → 번호 순서 바꾸기, <b>반복법</b>(읽을거리)</li>
+      <li class="fragment"><b>고유분해</b>: 사인 모양들로 좌표를 바꾸면 행렬이 대각선만 남는다(원고 더 알아보기)</li>
+      <li class="fragment"><b>면</b>은 띠가 여러 줄 → 분해할 때 띠 사이가 채워진다 → 번호 순서 바꾸기, <b>반복법</b>(원고 더 알아보기)</li>
     </ul>
     <div class="recap fragment" style="margin-top:20px"><b class="k">구조를 아는 것이 계산을 바꾼다.</b></div>
-  </section>
-  <section id="l03-jacobi">
-    <div class="crumb">⑤ 읽을거리 · L03<span class="ext">확장</span></div>
-    <h2 class="t">추측하고 고치기: 반복법</h2>
-    <div class="small" style="margin-top:-4px">$2u_1-u_2=1$ → $u_1=\tfrac{0+u_2}{2}+0.5$ = "양옆 평균 + 0.5". 처음엔 모두 0으로 추측하고 되풀이한다.</div>
-    <div class="part fig" data-fig="l03-jacobi" style="margin-top:6px"><img class="fallback" src="fig/l03-jacobi.svg" alt="반복법"></div>
-  </section>
-  <section id="l04-eigen">
-    <div class="crumb">⑤ 읽을거리 · L04<span class="ext">확장</span></div>
-    <h2 class="t">사인 모양은 행렬의 특별한 방향</h2>
-    <div class="part fig" data-fig="l04-eigen"><img class="fallback" src="fig/l04-eigen.svg" alt="고유벡터"></div>
-    <div class="small fragment">③의 첫 걸음 "지금 − 0.125 × (A × 지금)" → (1 − 0.125 × 0.268) = <b class="k">0.9665배</b>. 이런 벡터가 <b>고유벡터</b>, 배수가 <b>고윳값</b>.</div>
-  </section>
-  <section id="l04-condition">
-    <div class="crumb">⑤ 읽을거리 · L04<span class="ext">확장</span></div>
-    <h2 class="t">답이 예민한 문제</h2>
-    <div class="part fig" data-fig="l04-condition"><img class="fallback" src="fig/l04-condition.svg" alt="거의 평행한 두 직선"></div>
-    <div class="small fragment">오른쪽 수를 0.1 바꾸면 교점이 (1, 1)에서 (0, 2)로. 예민한 정도를 재는 수가 <b>조건수</b>.</div>
   </section>
   <section id="u5-recap">
     <div class="crumb">⑤ 연결된 점들이 행렬이 된다</div>
     <h2 class="t">이 단원에서 한 일</h2>
     <div class="recap">이웃 관계를 모으면 행렬이 되고 대부분이 0이다. 역행렬은 그 구조를 망가뜨리므로, <b class="k">띠 모양을 지키는 분해</b>로 풀고 한 번 쪼개면 다시 쓴다.</div>
-    <div class="ask" style="margin-top:22px">다음 질문: 식이 미지수보다 많아서 모두를 만족하는 답이 없다면?</div>
+    <div class="ask bridge" style="margin-top:22px"><b>그런데</b> 데이터에 선을 맞추면 식이 미지수보다 많아져서, 모두를 만족하는 답이 없다.</div>
   </section>
 
 <!-- ======================= ⑥ 딱 맞출 수 없을 때 가장 가까운 것 ======================= -->
 
+  <section id="p00-open">
+    <div class="crumb">⑥ 딱 맞출 수 없을 때 가장 가까운 것 · P00</div>
+    <div class="uopen data">
+      <div class="uo-head"><span class="uo-n">⑥</span><span class="uo-name">딱 맞출 수 없을 때 가장 가까운 것</span></div>
+      <div class="uo-q">모두를 만족하는 답이 없으면<br>무엇을 답으로 삼을까?</div>
+      <div class="uo-chips"><span class="uo-lb">이 단원의 수학</span><span>벡터</span><span>수선의 발(정사영)</span><span>최소제곱</span></div>
+      <div class="path uo-path"><div class="past">① 출렁이는 줄</div><div class="past">② 미분의 물리</div><div class="past">③ 컴퓨터 계산</div><div class="past">④ 계산법</div><div class="past">⑤ 행렬</div><div class="cur data">⑥ 정사영</div><div class=" data">⑦ 학습</div></div>
+    </div>
+  </section>
   <section id="p01-span">
     <div class="crumb">⑥ 딱 맞출 수 없을 때 가장 가까운 것 · P01</div>
     <h2 class="t">만들 수 있는 것들</h2>
@@ -514,37 +591,52 @@
     <div class="crumb">⑥ 딱 맞출 수 없을 때 가장 가까운 것</div>
     <h2 class="t">이 단원에서 한 일</h2>
     <div class="recap">정확히 만들 수 없으면 가장 가까운 것을 찾는다: <b class="k">수선의 발</b>. 데이터 맞추기는 직선·평면에 수선의 발을 내리는 일이고, 그것은 <b class="k">오차 곡면의 바닥</b>이다.</div>
-    <div class="ask" style="margin-top:22px">다음 질문: 그림을 그릴 수도, 식을 풀 수도 없을 때 이 그릇의 바닥을 미분으로 찾아 내려갈 수 있을까?</div>
+    <div class="ask bridge" style="margin-top:22px"><b>그런데</b> 손실이 예쁜 그릇 모양이 아니거나 계수가 너무 많으면, 바닥을 식으로 구할 수 없다.</div>
   </section>
 
 <!-- ======================= ⑦ 미분과 반복으로 찾기 ======================= -->
 
+  <section id="g00-open">
+    <div class="crumb">⑦ 미분과 반복으로 찾기 · G00</div>
+    <div class="uopen data">
+      <div class="uo-head"><span class="uo-n">⑦</span><span class="uo-name">미분과 반복으로 찾기</span></div>
+      <div class="uo-q">식으로 바닥을 구할 수 없을 때,<br>미분으로 내려갈 수 있을까?</div>
+      <div class="uo-chips"><span class="uo-lb">이 단원의 수학</span><span>손실함수</span><span>미분의 부호</span><span>경사하강법</span><span>학습률</span></div>
+      <div class="path uo-path"><div class="past">① 출렁이는 줄</div><div class="past">② 미분의 물리</div><div class="past">③ 컴퓨터 계산</div><div class="past">④ 계산법</div><div class="past">⑤ 행렬</div><div class="past data">⑥ 정사영</div><div class="cur data">⑦ 학습</div></div>
+    </div>
+  </section>
   <section id="g01-good">
     <div class="crumb">⑦ 미분과 반복으로 찾기 · G01</div>
     <h2 class="t">좋은 추세선이란: 손실함수</h2>
     <div class="part fig" data-fig="g01-good"><img class="fallback" src="fig/g01-loss.svg" alt="손실함수"></div>
-    <div class="small fragment">오차를 그냥 더하면 지워진다(a = 4/3: 합 0). 그래서 <b>제곱해서</b> 더한다 = 넓이의 합. 이것을 a의 함수로 본 <b class="k">손실함수</b>가 가장 작은 곳이 가장 좋은 추세선.</div>
+    <div class="small fragment">오차를 그냥 더하면 지워진다(a = 4/3: 합 0). 그래서 <b>제곱해서</b> 더한다 = 넓이의 합. 이것을 a의 함수로 본 것이 <b>손실함수</b>. <b class="k">손실함수 값을 가장 작게 만드는 추세선이 가장 좋은 추세선</b>.</div>
   </section>
-  <section id="g02-why">
+  <section id="g02-downhill">
     <div class="crumb">⑦ 미분과 반복으로 찾기 · G02</div>
-    <h2 class="t">꼭짓점 공식 대신, 비탈을 따라 조금씩</h2>
-    <ul class="pts" style="font-size:26px">
-      <li>$y=ax$, $y=ax+b$의 제곱오차 손실은 언제나 이차함수</li>
-      <li class="fragment">인공지능의 모델은 계수가 겹겹이 곱해지고 휘어진다 → 손실이 <b>예쁜 그릇이 아니다</b></li>
-      <li class="fragment">이차함수여도 계수가 수백만 개면 연립방정식이 너무 크다(⑤의 미지수³)</li>
-    </ul>
-    <div class="box fragment" style="font-size:30px;text-align:center;margin-top:22px">새 $a$ $=$ 지금 $a$ $-$ (학습률) $\times L'(a)$</div>
-    <div class="small fragment" style="text-align:center;margin-top:8px">$L'(a)$ = 비탈이 어느 쪽으로, 얼마나 기울었는가(②의 "한 번 미분 = 기울기")</div>
+    <h2 class="t">바닥을 찾는 법: 비탈을 따라 내려간다</h2>
+    <div class="part fig" data-fig="g02-downhill"><img class="fallback" src="fig/g01-loss.svg" alt="손실함수 위의 공과 접선"></div>
+    <div class="small fragment" style="margin-top:6px">식을 몰라도 <b>지금 서 있는 곳의 기울기</b>는 알 수 있다 → <b class="k">내려가는 쪽으로 조금 움직이기</b>를 되풀이하면 바닥(최솟값)에 닿는다.</div>
   </section>
-  <section id="g02-rate">
+  <section id="g02-sign">
     <div class="crumb">⑦ 미분과 반복으로 찾기 · G02</div>
-    <h2 class="t">같은 규칙, 학습률만 다르게</h2>
-    <div class="part fig" data-fig="g02-rate"><img class="fallback" src="fig/g02-descent.svg" alt="학습률 비교"></div>
-    <div class="small fragment">너무 작으면 오래 걸리고, 너무 크면 답에서 멀어진다. ④에서 걸음을 너무 크게 잡은 것과 닮았다.</div>
+    <h2 class="t">비탈 = 미분: 부호의 반대로</h2>
+    <div class="cols" style="grid-template-columns: 1fr 520px; gap:22px">
+      <div class="part fig" data-fig="g02-sign"><img class="fallback" src="fig/g02-descent.svg" alt="미분의 부호와 내려가는 방향"></div>
+      <div>
+        <div class="small">$L'(a)$ = 지금 선 곳의 기울기 (②의 "한 번 미분 = 기울기")</div>
+        <ul class="pts" style="font-size:24px;margin-top:8px">
+          <li class="fragment" data-fragment-index="1">$L'(a)<0$ → 오른쪽이 내리막 → <b>$a$를 키운다</b><br><span class="small">예: $a=0.4$, $L'=-5$</span></li>
+          <li class="fragment" data-fragment-index="2">$L'(a)>0$ → 왼쪽이 내리막 → <b>$a$를 줄인다</b><br><span class="small">예: $a=2$, $L'=3$</span></li>
+        </ul>
+        <div class="box fragment" data-fragment-index="3" style="font-size:26px;text-align:center;margin-top:10px">새 $a$ $=$ 지금 $a$ $-$ (작은 수) $\times L'(a)$<div class="small" style="margin-top:4px">작은 수는 여기서 0.125</div></div>
+        <div class="small fragment" data-fragment-index="4" style="margin-top:10px">기울기가 크면 <b>많이</b>, 바닥 근처에서는 <b>조금</b> 움직인다 → <b class="k">걸음이 저절로 작아진다</b></div>
+      </div>
+    </div>
   </section>
   <section id="g03-learn">
     <div class="crumb">⑦ 미분과 반복으로 찾기 · G03</div>
     <h2 class="t">추세선이 점점 맞춰진다: 이것이 학습이다</h2>
+    <div class="small" style="margin-top:-6px">새 $a$ = 지금 $a$ − 0.125 × $L'(a)$를 되풀이 · <b class="k">한 번 고칠 때마다 손실이 줄어든다 = 더 좋은 추정값</b></div>
     <div class="part fig" data-fig="g03-learn"><img class="fallback" src="fig/g03-trend.svg" alt="추세선의 변화"></div>
     <table class="ft gtab" style="margin-top:8px">
       <tr><th>고친 횟수</th><th>0</th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th></tr>
@@ -556,8 +648,25 @@
     <div class="crumb">⑦ 미분과 반복으로 찾기 · G03</div>
     <h2 class="t">인공지능이 "데이터에서 배운다"는 것</h2>
     <div class="recap" style="font-size:30px">데이터로 손실을 재고, 미분으로 방향을 정해,<br>계수를 조금씩 고치기를 되풀이한다.<br><b class="k">이 점진적인 과정이 인공지능의 학습 과정이다.</b></div>
-    <div class="ask fragment" style="font-size:22px;margin-top:20px">확인 질문 7. 학습률 0.125로 a = 2에서 시작하면 한 번 고친 뒤 a는? <span class="tap"><span class="a">L′(2) = 3 → 2 − 0.125 × 3 = 1.625, 꼭짓점 쪽으로</span></span></div>
+    <div class="ask fragment" style="font-size:22px;margin-top:20px">확인 질문 7. 작은 수 0.125로 a = 2에서 시작하면 한 번 고친 뒤 a는? <span class="tap"><span class="a">L′(2) = 3 → 2 − 0.125 × 3 = 1.625, 꼭짓점 쪽으로</span></span></div>
     <div class="small" style="margin-top:14px">직접 해 보기: <a href="https://gwondalhyeon.github.io/math-webapps/artificial-intelligence-math/" target="_blank" rel="noopener">math-webapps → 인공지능수학 → 경사하강법 시각화: y = ax</a></div>
+  </section>
+  <section id="g02-rate">
+    <div class="crumb">⑦ 미분과 반복으로 찾기 · G02</div>
+    <h2 class="t">학습률: 한 번에 얼마나 움직일까</h2>
+    <div class="small" style="margin-top:-6px">앞에서 쓴 '작은 수'(0.125)의 이름이 <b class="k">학습률</b>. 같은 규칙 새 $a$ = 지금 $a$ − (학습률) × $L'(a)$에서 학습률만 0.125 / 0.3 / 0.5로 바꾼다.</div>
+    <div class="part fig" data-fig="g02-rate"><img class="fallback" src="fig/g02-descent.svg" alt="학습률 비교"></div>
+    <div class="small fragment">너무 작으면 오래 걸리고, 너무 크면 답에서 멀어진다. ④에서 걸음을 너무 크게 잡은 것과 닮았다.</div>
+  </section>
+  <section id="g02-why">
+    <div class="crumb">⑦ 미분과 반복으로 찾기 · G02</div>
+    <h2 class="t">꼭짓점 공식이 있는데 왜 조금씩?</h2>
+    <ul class="pts" style="font-size:26px">
+      <li>$y=ax$, $y=ax+b$의 제곱오차 손실은 언제나 이차함수 → 꼭짓점(정규방정식)으로 바로 풀린다</li>
+      <li class="fragment">인공지능의 모델은 계수가 겹겹이 곱해지고 휘어진다 → 손실이 <b>예쁜 그릇이 아니다</b></li>
+      <li class="fragment">이차함수여도 계수가 수백만 개면 연립방정식이 너무 크다 (⑤의 계산량 표: 구조를 모르면 $n^3$, 백만 개면 수십 년)</li>
+    </ul>
+    <div class="recap fragment" style="margin-top:24px;font-size:26px">그래서 <b class="k">비탈을 따라 조금씩</b> 내려간다. 계수가 둘만 되어도 그릇을 내려가는 모습이 보인다.</div>
   </section>
   <section id="g04-bowl">
     <div class="crumb">⑦ 미분과 반복으로 찾기 · G04</div>
@@ -586,7 +695,7 @@
       <li>$u_1$로 미분하면 $2u_1-u_2-1$ → 0이 되는 곳이 ⑤의 첫째 식 $2u_1-u_2=1$</li>
       <li>세 방향 모두에서 바닥인 점 = 연립방정식의 답 $(1.5,\ 2,\ 1.5)$</li>
       <li>단위를 알맞게 잡으면 $E$는 줄의 에너지: 줄은 에너지가 가장 작은 모양으로 멈춘다</li>
-      <li>⑤의 "추측하고 고치기"와 ⑦의 "비탈을 따라 내려가기"가 만나는 곳 (모든 연립방정식이 이렇지는 않다)</li>
+      <li>줄이 멈춘 모양(⑤의 연립방정식)과 그릇의 바닥(⑦)이 같은 점 (모든 연립방정식이 이렇지는 않다)</li>
     </ul>
   </section>
 
@@ -603,14 +712,14 @@
 <script src="lib/reveal/reveal.js"></script>
 <script src="lib/katex/katex.min.js"></script>
 <script src="lib/katex/auto-render.min.js"></script>
-<script src="js/core/wave1d.js?v=20261030b"></script>
-<script src="js/core/plot.js?v=20261030b"></script>
-<script src="js/parts/string-lab.js?v=20261030b"></script>
-<script src="js/figs/u12.js?v=20261030b"></script>
-<script src="js/figs/u34.js?v=20261030b"></script>
-<script src="js/figs/u5.js?v=20261030b"></script>
-<script src="js/figs/u67.js?v=20261030b"></script>
-<script src="js/parts/fig.js?v=20261030b"></script>
-<script src="js/deck.js?v=20261030b"></script>
+<script src="js/core/wave1d.js?v=20261031f"></script>
+<script src="js/core/plot.js?v=20261031f"></script>
+<script src="js/parts/string-lab.js?v=20261031f"></script>
+<script src="js/figs/u12.js?v=20261031f"></script>
+<script src="js/figs/u34.js?v=20261031f"></script>
+<script src="js/figs/u5.js?v=20261031f"></script>
+<script src="js/figs/u67.js?v=20261031f"></script>
+<script src="js/parts/fig.js?v=20261031f"></script>
+<script src="js/deck.js?v=20261031f"></script>
 </body>
 </html>
