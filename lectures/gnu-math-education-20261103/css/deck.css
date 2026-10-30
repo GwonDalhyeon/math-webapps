@@ -127,7 +127,7 @@ table.ft th { background: #eef3f8; color: var(--title); }
 .cv-row { min-height: 82px; }
 .cv-d { font-size: 24px; font-weight: 800; color: var(--time-text); white-space: nowrap; }
 .cv-t { font-size: 27px; font-weight: 700; color: var(--ink); }
-.cv-t span { display: block; font-size: 22px; font-weight: 500; color: var(--sub); margin-top: 2px; }
+.cv-t span { display: block; font-size: 20px; font-weight: 500; color: var(--sub); margin-top: 2px; }
 .cv-row.sub .cv-d { padding-left: 22px; font-size: 22px; }
 .cv-row.sub .cv-t { padding-left: 22px; }
 .cv-group { margin-top: 10px; font-size: 22px; font-weight: 800; color: var(--title); border-left: 5px solid var(--time); padding-left: 12px; }
@@ -197,5 +197,7 @@ table.neighbors th.tm-row { border-left:8px solid var(--time); color:var(--time-
 .loss-derivation .katex { font-size:1em; }
 #g02-downhill .part.fig { max-width:760px; margin:0 auto; }
 
-#c02-zoom .part.fig { max-width:760px; margin:0 auto; }
-#f02-slopes .part.fig { max-width:860px; margin:0 auto; }
+
+/* 파일 로딩이 두 번 모두 실패했을 때만 보이는 재시도 안내 */
+.load-error { position:fixed; top:16px; left:16px; right:16px; z-index:100; padding:16px; background:#fff3df; border:2px solid var(--time); color:var(--ink); font:24px var(--font); }
+.load-error button { font:inherit; padding:8px 14px; cursor:pointer; }

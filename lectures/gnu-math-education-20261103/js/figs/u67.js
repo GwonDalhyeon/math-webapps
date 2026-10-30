@@ -31,7 +31,7 @@
 
   /* ---------- P02 가장 가까운 점 = 수선의 발 ---------- */
   F['p02-foot'] = {
-    canvases: [{ h: 350 }],
+    canvases: [{ h: 400 }],
     controls: [{ range: 'a', label: '직선 위의 점 (a, 2a)', min: 0, max: 2.2, step: 0.01, value: 1, fmt: (v) => v.toFixed(2) }, { buttons: 'q', items: [['a = 1', 1], ['a = 2', 2], ['a = 7/5', 1.4]], act: (s, v) => { s.v.a = v; s.el.querySelector('[data-r=a]').value = v; } }],
     readout: (s) => { const d = Math.hypot(s.v.a - 1, 2 * s.v.a - 3); return `거리 <b>${d.toFixed(3)}</b>${Math.abs(s.v.a - 1.4) < 0.006 ? ' · 가장 가깝다: 연결선 기울기 −1/2, 직선 기울기 2 → 곱 −1' : ''}`; },
     draw(st, [c]) {
@@ -87,7 +87,7 @@
 
   /* ---------- P04 공간 속의 평면 ---------- */
   F['p04-plane'] = {
-    canvases: [{ h: 360, flex: 0.8 }, { h: 360, flex: 1.4 }], rotate: true, az: 335, el: 25,
+    canvases: [{ h: 420, flex: 0.8 }, { h: 420, flex: 1.4 }], rotate: true, az: 335, el: 25,
     controls: [{ range: 'a', label: 'a', min: 0, max: 2, step: 0.01, value: 0.5, fmt: (v) => v.toFixed(2) }, { range: 'b', label: 'b', min: -1, max: 1.5, step: 0.01, value: 1, fmt: (v) => v.toFixed(2) }, { button: 'best', label: '수선의 발로', act: (s) => setAB(s, 1, 1 / 3) }],
     readout: (s) => `오차 길이² = 세로 오차 제곱의 합 <b>${S(s.v.a, s.v.b).toFixed(3)}</b>`,
     draw(st, [c, d]) {
@@ -147,7 +147,7 @@
 
   /* ---------- G01 좋은 추세선: 오차의 제곱 = 넓이 ---------- */
   F['g01-good'] = {
-    canvases: [{ h: 360 }, { h: 360 }], middle: '.loss-derivation',
+    canvases: [{ h: 400 }, { h: 400 }], middle: '.loss-derivation',
     controls: [{ range: 'a', label: '기울기 a', min: 0.6, max: 2.2, step: 0.01, value: 1, fmt: (v) => v.toFixed(2) }, { buttons: 'q', items: [['1', 1], ['4/3', 4 / 3], ['7/5', 1.4], ['2', 2]], act: (s, v) => { s.v.a = v; s.el.querySelector('[data-r=a]').value = v; } }],
     readout: (s) => { const a = s.v.a, e1 = 1 - a, e2 = 3 - 2 * a; return `오차의 합 <b>${fmt(e1 + e2, 3)}</b> · 제곱의 합 <b>${(e1 * e1 + e2 * e2).toFixed(3)}</b> · 손실 L(a) <b>${L(a).toFixed(3)}</b>`; },
     draw(st, [c, d]) {
