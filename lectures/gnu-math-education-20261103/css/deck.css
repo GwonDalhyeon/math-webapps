@@ -201,3 +201,12 @@ table.neighbors th.tm-row { border-left:8px solid var(--time); color:var(--time-
 /* 파일 로딩이 두 번 모두 실패했을 때만 보이는 재시도 안내 */
 .load-error { position:fixed; top:16px; left:16px; right:16px; z-index:100; padding:16px; background:#fff3df; border:2px solid var(--time); color:var(--ink); font:24px var(--font); }
 .load-error button { font:inherit; padding:8px 14px; cursor:pointer; }
+
+/* 확정 표지: 중앙 정렬 2안 (2026-11-01). 제목 화면에만 적용한다. */
+#title .cover-centered { position:relative; height:100%; display:block; text-align:center; background:#fff; }
+#title .cover-centered .event { position:absolute; left:0; top:91px; width:100%; color:var(--sub); font-size:22px; font-weight:600; line-height:1.5; letter-spacing:-.02em; }
+#title .cover-centered .cover-rule { position:absolute; left:610px; top:184px; width:60px; height:3px; background:var(--time); }
+#title .cover-centered h1 { position:absolute; left:50px; top:225px; width:1180px; margin:0; color:var(--title); font-size:58px; font-weight:770; line-height:1.32; letter-spacing:-.045em; }
+#title .cover-centered .sub { position:absolute; left:0; top:417px; width:100%; margin:0; color:#3a526d; font-size:28px; font-weight:500; line-height:1.5; letter-spacing:-.025em; }
+#title .cover-centered .who { position:absolute; left:0; top:591px; width:100%; margin:0; color:#455970; font-size:22px; font-weight:400; line-height:1.5; letter-spacing:-.02em; }
+#title .cover-centered .cover-date { margin-left:22px; }
