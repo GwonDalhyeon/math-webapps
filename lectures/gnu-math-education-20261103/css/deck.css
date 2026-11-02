@@ -143,6 +143,9 @@ table.ft th { background: #eef3f8; color: var(--title); }
 .cv-axis .cv-track { height: 30px; background: none; border-top: 2px solid var(--sub); }
 .cv-axis .cv-track span { position: absolute; top: 4px; transform: translateX(-50%); font-size: 18px; font-weight: 600; color: var(--sub); }
 .cv-axis .cv-track b { position: absolute; bottom: 30px; height: 420px; border-left: 2px dashed var(--time); }
+.cv-axis .cv-track b.off { border-left-color: #9aa5b1; }
+.cv-axis .cv-track b em { position: absolute; top: -30px; left: 0; transform: translateX(-50%); white-space: nowrap; font-style: normal; font-size: 19px; font-weight: 800; color: var(--time-text); background: #fff; padding: 0 6px; }
+.cv-axis .cv-track b.off em { color: #6b7785; }
 /* ⑤ 가우스–조던 단계(2 × 2 칸)와 계산량 표 (2026-10-30, 시안 draft-l05-cost.html에서 옮김) */
 .gj { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 22px; margin-top: 6px; }
 .gj-st { background: #fff; border: 1.5px solid var(--line); border-radius: 12px; padding: 4px 14px 6px; font-size: 27px; }

@@ -245,8 +245,8 @@
       const P = Plot(c.g, box(c, 50, 30, 24, 40), [0, 0.8], [-0.6, 1.2]);
       P.frame({ xt: [0, 0.2, 0.35, 0.5, 0.8], yt: [-0.5, 0, 0.3, 1], zero: true });
       const f = (x) => W.uBump(x, st.t);
-      for (let j = 0; j <= 40; j++) {
-        const x = 0.16 + j * 0.0095, a = uxx(f, x);
+      for (let j = 1; j <= 84; j++) {
+        const x = j * 0.0095, a = uxx(f, x);
         if (Math.abs(a) > 3) P.arrowPx(x, f(x), 0, Math.max(-70, Math.min(70, a * 0.16)), COL.time, 2.6);
       }
       P.fn(f, COL.space, 4, 0, 0.8);
