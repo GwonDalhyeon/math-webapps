@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 215" width="760" height="215" font-family="'Malgun Gothic', 'Noto Sans KR', sans-serif">
+<rect x="0" y="0" width="760" height="215" fill="#fff"/>
+<circle cx="60.0" cy="60.0" r="24" fill="#fff" stroke="#000" stroke-width="2"/>
+<text x="60.0" y="61.0" font-size="22" text-anchor="middle" dominant-baseline="middle" font-weight="normal" font-style="italic" fill="#000">A</text>
+<circle cx="60.0" cy="150.0" r="24" fill="#fff" stroke="#000" stroke-width="2"/>
+<text x="60.0" y="151.0" font-size="22" text-anchor="middle" dominant-baseline="middle" font-weight="normal" font-style="italic" fill="#000">B</text>
+<text x="60.0" y="196.0" font-size="18" text-anchor="middle" dominant-baseline="middle" font-weight="normal" fill="#000">입력</text>
+<circle cx="220.0" cy="105.0" r="34" fill="#fff" stroke="#000" stroke-width="2.2"/>
+<text x="220.0" y="106.0" font-size="20" text-anchor="middle" dominant-baseline="middle" fill="#000"><tspan font-style="italic">A</tspan><tspan>+</tspan><tspan font-style="italic">B</tspan></text>
+<text x="220.0" y="196.0" font-size="18" text-anchor="middle" dominant-baseline="middle" font-weight="normal" fill="#000">더하기</text>
+<polyline points="84.0,66.0 175.4,92.0" fill="none" stroke="#000" stroke-width="2.0" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="186.0,95.0 174.1,96.8 176.8,87.2" fill="#000"/>
+<polyline points="84.0,144.0 175.4,118.0" fill="none" stroke="#000" stroke-width="2.0" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="186.0,115.0 176.8,122.8 174.1,113.2" fill="#000"/>
+<rect x="320.0" y="70.0" width="230" height="70" rx="8" ry="8" fill="#fff" stroke="#000" stroke-width="2.2"/>
+<text x="435.0" y="106.0" font-size="20" text-anchor="middle" dominant-baseline="middle" fill="#000"><tspan>기준 </tspan><tspan font-style="italic">c</tspan><tspan>보다 큰가?</tspan></text>
+<text x="435.0" y="196.0" font-size="18" text-anchor="middle" dominant-baseline="middle" font-weight="normal" fill="#000">기준과 비교</text>
+<polyline points="254.0,105.0 309.0,105.0" fill="none" stroke="#000" stroke-width="2.0" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="320.0,105.0 309.0,110.0 309.0,100.0" fill="#000"/>
+<circle cx="700.0" cy="55.0" r="22" fill="#fff" stroke="#000" stroke-width="2"/>
+<text x="700.0" y="56.0" font-size="22" text-anchor="middle" dominant-baseline="middle" font-weight="bold" fill="#000">1</text>
+<circle cx="700.0" cy="155.0" r="22" fill="#fff" stroke="#000" stroke-width="2"/>
+<text x="700.0" y="156.0" font-size="22" text-anchor="middle" dominant-baseline="middle" font-weight="bold" fill="#000">0</text>
+<polyline points="550.0,88.0 665.4,57.8" fill="none" stroke="#000" stroke-width="2.0" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="676.0,55.0 666.6,62.6 664.1,53.0" fill="#000"/>
+<polyline points="550.0,122.0 665.4,152.2" fill="none" stroke="#000" stroke-width="2.0" stroke-linejoin="round" stroke-linecap="round"/>
+<polygon points="676.0,155.0 664.1,157.0 666.6,147.4" fill="#000"/>
+<text x="622.0" y="50.0" font-size="18" text-anchor="middle" dominant-baseline="middle" font-weight="normal" fill="#000">예</text>
+<text x="622.0" y="162.0" font-size="18" text-anchor="middle" dominant-baseline="middle" font-weight="normal" fill="#000">아니오</text>
+<text x="700.0" y="196.0" font-size="18" text-anchor="middle" dominant-baseline="middle" font-weight="normal" fill="#000">출력</text>
+</svg>
