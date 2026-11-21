@@ -597,13 +597,50 @@
   // =========================================================================
   //  시작 위치
   // =========================================================================
+  // (x, y)에서 1칸 보폭 자동 실행과 똑같이 내려갈 때의 이동 횟수와 도착 칸
+  // (가장 낮은 이웃, 동점이면 직전 방향 → 위·아래·왼쪽·오른쪽 순서: autoStep·tieBreak와 같은 규칙)
+  function descendFrom(x, y) {
+    const N = state.N, H = state.H;
+    let n = 0, last = null;
+    for (;;) {
+      let best = null;
+      for (const d of Object.values(DIRS)) {
+        const nx = x + d.dx, ny = y + d.dy;
+        if (nx < 0 || ny < 0 || nx >= N || ny >= N || H[ny][nx] >= H[y][x]) continue;
+        const v = H[ny][nx];
+        const sameDir = last && d.dx === last.dx && d.dy === last.dy;
+        if (!best || v < best.v || (v === best.v && sameDir)) best = { x: nx, y: ny, v, d };
+      }
+      if (!best) return { n, x, y };
+      x = best.x; y = best.y; last = best.d; n++;
+    }
+  }
+
+  // 시작 위치 규칙 (보폭과 상관없이 1칸 보폭 기준으로 고른다)
+  //  1) 여러 골짜기·울퉁불퉁: '전역 최솟값으로 가는 칸'과 '함정으로 가는 칸'을 50:50으로 먼저 고른다.
+  //  2) 그 안에서 내려가는 이동 횟수가 가장 긴 경로의 60% 이상(최소 5번)인 칸 중 무작위로 고른다.
+  //  3) 직전 시작 칸은 빼고, 후보가 3칸보다 적으면 기준을 45%(최소 4번)로 낮춘다.
   function pickStart() {
-    const N = state.N;
-    let x, y, guard = 0;
-    do {
-      x = rint(0, N - 1); y = rint(0, N - 1); guard++;
-    } while (guard < 200 && state.labels.some(m => m.x === x && m.y === y)); // 최솟값 위에서 시작 안 함
-    setStart(x, y);
+    const N = state.N, prev = state.start;
+    const g = state.labels.find(m => m.global);
+    const cells = [];
+    for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
+      if (x === prev.x && y === prev.y) continue;
+      const d = descendFrom(x, y);
+      if (d.n === 0) continue;                       // 최솟값 위에서는 시작하지 않음
+      cells.push({ x, y, n: d.n, trap: !(d.x === g.x && d.y === g.y) });
+    }
+    let pool = cells;
+    if (state.terrain !== 'single') {
+      const wantTrap = Math.random() < 0.5;
+      const sub = cells.filter(c => c.trap === wantTrap);
+      if (sub.length) pool = sub;
+    }
+    const longest = Math.max(...pool.map(c => c.n));
+    let cand = pool.filter(c => c.n >= Math.max(Math.min(5, longest), Math.ceil(0.6 * longest)));
+    if (cand.length < 3) cand = pool.filter(c => c.n >= Math.max(Math.min(4, longest), Math.ceil(0.45 * longest)));
+    const c = cand[rint(0, cand.length - 1)];
+    setStart(c.x, c.y);
   }
   function setStart(x, y) {
     state.start = { x, y };
