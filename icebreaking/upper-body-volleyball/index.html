@@ -11,200 +11,285 @@
   <link rel="stylesheet" href="../../assets/common.css" />
   <style>
     :root {
-      --ink: #eaf5ff;
-      --muted: #9db4c8;
-      --line: #36556f;
-      --panel: #0e1c2e;
-      --deep: #07111f;
+      --ink: #173b54;
+      --ink-soft: #466175;
+      --paper: #fffdf5;
+      --line: #25495a;
+      --line-soft: #b8ced4;
       --blue: #38bdf8;
+      --blue-ink: #075476;
+      --blue-bg: #e9f8ff;
       --orange: #fb923c;
-      --green: #4ade80;
-      --danger: #fca5a5;
+      --orange-ink: #874014;
+      --orange-bg: #fff1db;
+      --yellow: #ffce45;
+      --yellow-soft: #fde68a;
+      --page: #e7f5f5;
     }
 
     html, body { height: 100%; }
-    body { margin: 0; background: var(--deep); color: var(--ink); overflow: hidden; }
+    body { margin: 0; background: var(--page); color: var(--ink); overflow: hidden; }
     button, input { font: inherit; }
     button {
-      min-height: 44px; padding: 9px 16px; border: 1px solid #2563eb;
-      border-radius: 10px; background: #2563eb; color: #fff; font-weight: 800;
-      cursor: pointer;
+      min-height: 48px; padding: 9px 18px; border: 2px solid var(--line); border-radius: 14px;
+      background: var(--paper); color: var(--ink); font-weight: 900; cursor: pointer;
+      box-shadow: 0 3px 0 var(--line); touch-action: manipulation;
     }
-    button.ghost { border-color: var(--line); background: #0a1626; color: var(--ink); }
-    button.choice { flex: 1 1 150px; }
-    button.choice.active { border-color: var(--green); box-shadow: 0 0 0 2px rgba(74,222,128,.25); }
+    button:active:not(:disabled) { transform: translateY(2px); box-shadow: 0 1px 0 var(--line); }
+    button:focus-visible, input:focus-visible, a:focus-visible { outline: 3px solid #f59e0b; outline-offset: 3px; }
+    button.primary { background: var(--yellow); }
     button:disabled { opacity: .45; cursor: not-allowed; }
+    .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
     .app { height: 100dvh; display: flex; flex-direction: column; }
-    .bar {
-      flex: none; min-height: 52px; padding: 7px 12px; display: flex; align-items: center;
-      gap: 10px; background: var(--panel); border-bottom: 1px solid #20374d;
+    .topbar {
+      flex: none; min-height: 62px; padding: 6px 18px; display: flex; align-items: center; gap: 18px;
+      background: var(--paper); border-bottom: 2px solid var(--ink);
     }
-    .bar.bottom { min-height: 48px; border: 0; border-top: 1px solid #20374d; }
-    .bar h1 { margin: 0; font-size: clamp(17px, 2.2vw, 23px); }
-    .home { color: #93c5fd; text-decoration: none; font-weight: 800; white-space: nowrap; }
-    .spacer { flex: 1; }
-    .mini { min-height: 36px; padding: 6px 11px; font-size: 14px; }
-    .mode-label { color: var(--green); font-weight: 800; white-space: nowrap; }
-    .header-difficulty {
-      display: flex; align-items: center; gap: 7px; padding: 3px 8px; border: 1px solid #29445e;
-      border-radius: 10px; background: #0a1626; white-space: nowrap;
-    }
-    .header-difficulty input { width: clamp(100px, 13vw, 160px); height: 28px; accent-color: var(--orange); }
-    .header-difficulty .difficulty-value { min-width: 54px; color: #fdba74; font-size: 13px; font-weight: 900; text-align: center; }
+    .topbar h1 { margin: 0; font-size: clamp(18px, 2.2vw, 23px); font-weight: 950; letter-spacing: -.5px; white-space: nowrap; }
+    .home { color: var(--ink-soft); text-decoration: none; font-weight: 800; white-space: nowrap; min-height: 44px; display: flex; align-items: center; }
+    .top-actions { margin-left: auto; display: flex; gap: 10px; }
+    .top-actions button { min-height: 44px; padding: 6px 14px; font-size: 16px; }
 
-    .stage { position: relative; flex: 1; min-height: 0; overflow: hidden; background: #10283d; }
-    #video, #gameCanvas { position: absolute; inset: 0; width: 100%; height: 100%; }
-    #video {
-      object-fit: fill; transform: scaleX(-1) scale(.90); transform-origin: center;
-      visibility: hidden; opacity: 1;
+    .stage {
+      position: relative; flex: 1; min-height: 0; margin: 10px 12px 12px; overflow: hidden;
+      border: 2px solid var(--ink); border-radius: 22px; background: #d9f5f6; isolation: isolate;
     }
-    .stage.ai-camera #video { right: auto; width: 50%; }
-    .stage.video-on #video { visibility: visible; }
-    #gameCanvas { z-index: 1; }
+    .video-box { position: absolute; left: 0; top: 0; height: 100%; overflow: hidden; visibility: hidden; }
+    .stage.video-on .video-box { visibility: visible; }
+    #video { position: absolute; transform: scaleX(-1); transform-origin: center; }
+    #gameCanvas { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 1; touch-action: none; }
 
-    .scoreboard {
-      position: absolute; z-index: 3; left: 50%; top: 10px; transform: translateX(-50%);
-      display: grid; grid-template-columns: minmax(86px, 1fr) auto minmax(86px, 1fr);
-      align-items: center; min-width: min(480px, calc(100% - 20px));
-      padding: 7px 12px; border: 1px solid rgba(148,163,184,.45); border-radius: 14px;
-      background: rgba(7,17,31,.82); backdrop-filter: blur(5px); pointer-events: none;
+    /* 점수판: 양 끝의 큰 점수 카드와 가운데 규칙 탭 */
+    .hud { position: absolute; z-index: 3; left: 16px; right: 16px; top: 0; pointer-events: none; display: flex; justify-content: space-between; align-items: flex-start; }
+    .score-card {
+      margin-top: 14px; width: clamp(150px, 18vw, 210px); display: flex; align-items: center; justify-content: space-between;
+      padding: 6px 16px; border: 3px solid #17475a; border-radius: 18px; box-shadow: 0 5px 0 #17475a;
+      background: rgba(233,248,255,.92); color: var(--blue-ink); font-weight: 900;
     }
-    .score-side { display: flex; align-items: center; gap: 8px; font-weight: 900; }
-    .score-side.right { justify-content: flex-end; }
-    .score-num { font-size: clamp(25px, 4vw, 42px); line-height: 1; }
-    .score-side.left { color: #7dd3fc; }
-    .score-side.right { color: #fdba74; }
-    .score-rule { color: var(--muted); font-size: 14px; text-align: center; }
+    .score-card.right { flex-direction: row-reverse; background: rgba(255,241,219,.92); color: var(--orange-ink); }
+    .score-card span { font-size: 19px; }
+    .score-card b { font-size: clamp(52px, 6.4vw, 72px); line-height: 1; font-variant-numeric: tabular-nums; }
+    .score-rule {
+      padding: 10px 22px 12px; min-width: 150px; text-align: center; border-radius: 0 0 18px 18px;
+      background: #163d50; color: #e5f5fd; font-size: 15px; box-shadow: 0 4px 0 rgba(22,61,80,.15);
+    }
+    .score-rule strong { display: block; font-size: 25px; line-height: 1.15; color: #fff; }
+    .match-meta {
+      position: absolute; z-index: 3; left: 50%; top: 90px; transform: translateX(-50%);
+      display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; pointer-events: none; width: max-content; max-width: calc(100% - 32px);
+    }
+    .badge {
+      padding: 4px 9px; border: 1px solid #2e5d70; border-radius: 8px; background: rgba(244,252,255,.94);
+      color: #23475a; font-size: 13px; font-weight: 800; white-space: nowrap;
+    }
+
+    /* 경기 중 안내 카드: 프로젝터에서 읽히는 크기 */
+    .notice {
+      position: absolute; z-index: 4; left: 50%; top: 128px; transform: translateX(-50%); display: none;
+      max-width: calc(100% - 40px); padding: 12px 22px; border: 2px solid #264d5f; border-left: 6px solid #f59e0b;
+      border-radius: 14px; background: var(--paper); color: var(--ink); box-shadow: 0 5px 0 #264d5f;
+      font-size: clamp(22px, 2.6vw, 27px); font-weight: 900; line-height: 1.35; text-align: center; pointer-events: none;
+    }
+    .notice.show { display: block; }
+    .notice small { display: block; margin-top: 3px; font-size: 16px; font-weight: 600; color: var(--ink-soft); }
 
     .message {
-      position: absolute; z-index: 4; left: 50%; top: 22%; transform: translateX(-50%);
-      display: none; padding: 10px 20px; border-radius: 999px;
-      background: rgba(7,17,31,.88); font-size: clamp(22px, 4.6vw, 48px);
-      font-weight: 900; text-align: center; pointer-events: none; white-space: nowrap;
+      position: absolute; z-index: 4; left: 50%; top: 31%; transform: translateX(-50%); display: none;
+      padding: 10px 26px; border: 3px solid var(--ink); border-radius: 999px; background: var(--yellow-soft);
+      box-shadow: 0 5px 0 var(--ink); font-size: clamp(26px, 4.4vw, 46px); font-weight: 950; white-space: nowrap; pointer-events: none;
     }
     .message.show { display: block; }
+    .message.p1 { background: var(--blue-bg); color: var(--blue-ink); }
     .countdown {
-      position: absolute; z-index: 4; inset: 0; display: none; place-items: center;
-      background: rgba(2,6,23,.36); font-size: clamp(90px, 18vw, 190px); font-weight: 900;
-      text-shadow: 0 8px 24px rgba(0,0,0,.6); pointer-events: none;
+      position: absolute; z-index: 4; inset: 0; display: none; place-items: center; pointer-events: none;
+      background: rgba(255,253,245,.18); color: #fff; font-size: clamp(100px, 18vw, 200px); font-weight: 950;
+      -webkit-text-stroke: 6px var(--ink); paint-order: stroke fill; text-shadow: 0 10px 0 rgba(23,59,84,.35);
     }
     .countdown.show { display: grid; }
 
+    /* 공통 패널 */
     .panel {
-      position: absolute; z-index: 5; inset: 0; display: none; align-items: center;
-      justify-content: center; padding: 14px; background: rgba(2,6,23,.88); overflow: auto;
+      position: absolute; z-index: 5; inset: 0; display: none; align-items: center; justify-content: center;
+      padding: 16px; background: rgba(232,247,243,.42); backdrop-filter: blur(3px); overflow: auto;
     }
     .panel.show { display: flex; }
     .sheet {
-      width: min(620px, 100%); padding: 22px 24px; border: 1px solid var(--line);
-      border-radius: 18px; background: var(--panel); box-shadow: 0 20px 50px rgba(0,0,0,.35);
+      width: min(640px, 100%); margin: auto; padding: 24px 28px; border: 3px solid #204b5d; border-radius: 26px;
+      background: var(--paper); box-shadow: 0 8px 0 #204b5d;
     }
-    .sheet h2 { margin: 0 0 10px; font-size: 27px; }
-    .sheet p, .sheet li { color: #cbd9e6; font-size: 16px; line-height: 1.55; }
-    .sheet p { margin: 8px 0 14px; }
-    .sheet ol { margin: 8px 0 14px; padding-left: 22px; }
-    .small { color: var(--muted) !important; font-size: 14px !important; }
-    .choices, .actions { display: flex; gap: 9px; flex-wrap: wrap; margin: 12px 0; }
-    .actions button { flex: 1 1 150px; }
-    .setting-row {
-      display: flex; align-items: center; justify-content: space-between; gap: 12px;
-      margin: 10px 0; padding: 9px 12px; background: #0a1626; border-radius: 10px;
-    }
-    .setting-row input { width: 20px; height: 20px; }
-    .load-track { height: 10px; border-radius: 999px; overflow: hidden; background: #1e3347; }
+    .sheet h2 { margin: 0 0 10px; font-size: 28px; font-weight: 950; letter-spacing: -.5px; }
+    .sheet p { margin: 8px 0 14px; color: var(--ink-soft); font-size: 16px; line-height: 1.55; }
+    .eyebrow { margin: 0 0 6px !important; font-size: 13px !important; font-weight: 900; letter-spacing: .13em; color: #21596f !important; }
+    .actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 14px; }
+    .actions button { flex: 1 1 160px; min-height: 52px; font-size: 18px; }
+    .load-track { height: 12px; border: 2px solid var(--line); border-radius: 999px; overflow: hidden; background: #edf6f8; }
     .load-track i { display: block; width: 0; height: 100%; background: var(--blue); transition: width .25s; }
-    .ready-count { margin: 8px 0; font-size: 42px; font-weight: 900; color: var(--green); }
-    .winner { margin: 8px 0; font-size: clamp(38px, 8vw, 72px); font-weight: 900; color: var(--green); }
 
-    .status { font-size: 14px; color: var(--muted); }
-    .status.good { color: #86efac; }
-    .status.warn { color: var(--danger); }
-    .fps { font-size: 14px; color: #fde68a; white-space: nowrap; }
-    .fps.good { color: #86efac; }
-    .fps.slow { color: #fca5a5; }
-    .privacy { font-size: 13px; color: #8199ad; text-align: right; }
+    /* 시작 화면 */
+    .setup {
+      width: min(1050px, 100%); margin: auto; display: grid; grid-template-columns: .82fr 1.18fr; gap: 24px; padding: 22px;
+      border: 3px solid #204b5d; border-radius: 26px; background: var(--paper); box-shadow: 0 8px 0 #204b5d;
+    }
+    .title-hero {
+      display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center;
+      padding: 18px 14px; border-radius: 18px; background: linear-gradient(155deg, #c3f0f8, #edfaf6 60%, #ffe7b3 60%);
+    }
+    .title-hero h2 { margin: 0; font-size: clamp(32px, 3.8vw, 44px); line-height: 1.12; letter-spacing: -2px; font-weight: 950; }
+    .title-hero img { width: min(240px, 60%); height: auto; aspect-ratio: 1; object-fit: contain; margin-top: 10px; }
+    .hero-rule { margin-top: 12px; padding: 9px 16px; border-radius: 30px; background: #153b52; color: #fff4ca; font-weight: 900; font-size: 16px; }
+    .setup-main h2 { margin: 0 0 12px; font-size: 25px; font-weight: 950; }
+    .field-title { margin: 0 0 7px; font-size: 15px; font-weight: 900; }
+    .choices { display: flex; gap: 8px; }
+    .choices button { flex: 1; min-height: 46px; font-size: 16px; padding: 8px; }
+    .choices button.active { background: #d9f4ff; border-color: #087298; color: var(--blue-ink); box-shadow: 0 3px 0 #087298; }
+    .difficulty { margin-top: 14px; }
+    .difficulty input { display: block; width: 76%; margin: 0 12%; height: 40px; accent-color: #137795; cursor: pointer; }
+    .level-labels { display: grid; grid-template-columns: repeat(4, 1fr); text-align: center; font-size: 14px; line-height: 24px; color: var(--ink-soft); }
+    .level-labels span.active { color: #23475a; background: #ffdf73; border-radius: 6px; font-weight: 900; }
+    .standing { margin: 14px 0 0; padding: 0; list-style: none; counter-reset: step; display: grid; gap: 6px; font-size: 15px; color: #274b5e; }
+    .standing li { counter-increment: step; display: flex; gap: 9px; align-items: center; }
+    .standing li::before {
+      content: counter(step); width: 24px; height: 24px; flex: none; display: grid; place-items: center;
+      border: 1px solid #a4bec8; border-radius: 50%; background: #ecf7fa; color: #23566b; font-size: 12px; font-weight: 800;
+    }
+    .toggle-row {
+      display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 10px; padding: 8px 0;
+      min-height: 46px; border-top: 1px solid var(--line-soft); font-size: 15px; cursor: pointer;
+    }
+    .toggle-row input { appearance: none; width: 50px; height: 28px; margin: 0; flex: none; border-radius: 30px; background: #718499; position: relative; cursor: pointer; }
+    .toggle-row input::before { content: ""; position: absolute; left: 4px; top: 4px; width: 20px; height: 20px; border-radius: 50%; background: #fff; transition: left .15s; }
+    .toggle-row input:checked { background: #117794; }
+    .toggle-row input:checked::before { left: 26px; }
+    .control-help { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-top: 6px; padding: 9px 11px; border-radius: 12px; background: #edf6f8; font-size: 13px; }
+    .key-row { display: flex; align-items: center; gap: 4px; white-space: nowrap; }
+    .key-row b { margin-right: 2px; color: #086382; }
+    .key-row.p2 b { color: #9b4d19; }
+    kbd {
+      min-width: 24px; height: 26px; padding: 0 5px; display: inline-grid; place-items: center; border: 1px solid #96abb7;
+      border-bottom-width: 3px; border-radius: 5px; background: #fff; color: var(--ink); font: 800 13px system-ui, sans-serif;
+    }
+    .privacy-note { margin: 10px 0 0 !important; font-size: 12px !important; line-height: 1.45 !important; }
+    .setup .actions button { min-height: 52px; font-size: 17px; }
 
-    .setup-panel { align-items: flex-end; background: rgba(2,6,23,.16); pointer-events: none; }
-    .setup-panel .sheet {
-      width: min(760px, 100%); padding: 13px 17px; background: rgba(14,28,46,.9);
-      backdrop-filter: blur(7px); pointer-events: auto;
-    }
-    .setup-panel .sheet h2 { font-size: 21px; }
-    .setup-panel .sheet p { margin: 5px 0 8px; }
-    .setup-panel .ready-count { margin: 2px 0; font-size: 28px; }
+    /* 준비 화면: 영상이 보이도록 아래쪽에 얇게 */
+    .ready-panel { align-items: flex-end; background: transparent; backdrop-filter: none; pointer-events: none; }
+    .ready-panel .sheet { width: min(760px, 100%); margin: 0 auto; padding: 14px 20px; pointer-events: auto; }
+    .ready-panel .sheet h2 { font-size: 21px; margin-bottom: 4px; }
+    .ready-panel .sheet p { margin: 4px 0; }
+    .ready-line { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 16px; }
+    .ready-count { font-size: 30px; font-weight: 950; color: #0f766e; }
+    .fps { font-size: 14px; font-weight: 800; color: #92400e; }
+    .fps.good { color: #047857; }
+    .fps.slow { color: #b91c1c; }
+    .ready-panel .actions { margin-top: 8px; }
+    .ready-panel .actions button { min-height: 46px; font-size: 16px; }
 
-    @media (max-width: 700px) {
-      .bar { padding: 5px 8px; gap: 7px; }
-      .bar h1 { display: none; }
-      .mode-label { display: none; }
-      .scoreboard { top: 7px; min-width: calc(100% - 14px); }
-      .score-rule { font-size: 12px; }
-      .sheet { padding: 17px; }
-      .privacy { display: none; }
-    }
-    @media (max-width: 900px) { .difficulty-title { display: none; } }
-    @media (max-width: 540px) {
-      .home { font-size: 13px; }
-      .header-difficulty { gap: 4px; padding-inline: 5px; }
-      .header-difficulty input { width: 72px; }
-      .header-difficulty .difficulty-value { min-width: 42px; font-size: 12px; }
-      #soundBtn { padding-inline: 7px; }
-    }
+    /* 결과 화면 */
+    .result-sheet { width: min(790px, 100%); text-align: center; }
+    .result-heading { display: flex; justify-content: center; align-items: center; gap: 14px; }
+    .winner-portrait { width: 104px; height: 104px; object-fit: contain; }
+    .result-sheet h2 { margin: 0; font-size: clamp(34px, 4.4vw, 46px); color: #a74d18; }
+    .result-sheet h2.p1 { color: var(--blue-ink); }
+    .result-sub { margin: 4px 0 8px !important; }
+    .final-score { display: grid; grid-template-columns: 1fr 44px 1fr; align-items: center; margin: 12px 0 18px; }
+    .team { padding: 10px; border: 2px solid #8fb6cb; border-radius: 16px; background: #e6f6ff; }
+    .team span { display: block; font-size: 19px; font-weight: 900; color: #076387; }
+    .team b { display: block; font-size: clamp(80px, 10vw, 112px); line-height: 1.05; font-weight: 950; color: var(--ink); font-variant-numeric: tabular-nums; }
+    .team.winning { border: 3px solid #ad5f16; background: #ffe3a0; box-shadow: 0 5px 0 #ad5f16; transform: rotate(-2deg); }
+    .team.winning span { color: #854514; }
+    .win-label { display: none; font-size: 12px; font-weight: 900; letter-spacing: .1em; color: #75400b; }
+    .team.winning .win-label { display: block; }
+    .colon { font-size: 46px; color: #6c8794; font-weight: 900; }
+    .records { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .record { padding-top: 12px; border-top: 1px solid #bad1d8; color: #436274; font-size: 16px; }
+    .record strong { display: block; margin-top: 2px; font-size: 28px; color: #153f54; }
+    .record strong small { font-size: 17px; font-weight: 700; }
+
     @media (orientation: portrait) {
-      .message { top: 18%; }
-      .bar.bottom { min-height: 54px; }
+      .setup { grid-template-columns: 1fr; gap: 14px; }
+      .title-hero { flex-direction: row; gap: 14px; padding: 12px 18px; text-align: left; }
+      .title-hero img { width: 120px; margin: 0; order: -1; }
+      .title-hero .eyebrow, .hero-rule { display: none; }
+      .match-meta { top: 92px; }
+      .notice { top: 132px; }
+    }
+    @media (max-width: 700px) {
+      .topbar { gap: 10px; padding: 6px 10px; }
+      .topbar h1 { display: none; }
+      .score-card { padding: 4px 10px; }
+      .score-card span { font-size: 15px; }
+      .score-rule { min-width: 100px; padding: 8px 10px; }
+      .score-rule strong { font-size: 19px; }
     }
   </style>
 </head>
 <body>
   <div class="app">
-    <header class="bar">
+    <header class="topbar">
       <a class="home" href="../">← 아이스브레이킹</a>
       <h1>머리콩! 카피바라 배구</h1>
-      <span class="spacer"></span>
-      <span class="mode-label" id="modeLabel">1대 카피바라</span>
-      <label class="header-difficulty" id="capybaraDifficultyRow" for="capybaraDifficulty">
-        <span class="difficulty-title">카피바라 능력</span>
-        <input id="capybaraDifficulty" type="range" min="1" max="4" step="1" value="2" />
-        <output class="difficulty-value" id="capybaraDifficultyValue" for="capybaraDifficulty">보통</output>
-      </label>
-      <button class="mini ghost" id="soundBtn" type="button">소리 끄기</button>
+      <div class="top-actions">
+        <button id="soundBtn" type="button">소리 끄기</button>
+        <button id="pauseBtn" type="button" hidden>Ⅱ 일시정지</button>
+      </div>
     </header>
 
     <main class="stage" id="stage">
-      <video id="video" playsinline muted></video>
-      <canvas id="gameCanvas" aria-label="카메라 영상 위에서 머리로 공을 받아 넘기는 헤딩 배구 경기 화면"></canvas>
+      <div class="video-box" id="videoBox"><video id="video" playsinline muted></video></div>
+      <canvas id="gameCanvas" aria-label="해변 코트에서 머리로 공을 받아 넘기는 헤딩 배구 경기 화면"></canvas>
 
-      <div class="scoreboard" aria-live="polite">
-        <div class="score-side left"><span>P1</span><span class="score-num" id="score1">0</span></div>
-        <div class="score-rule">5점 먼저</div>
-        <div class="score-side right"><span class="score-num" id="score2">0</span><span id="opponentLabel">카피바라</span></div>
+      <div class="hud" aria-live="polite">
+        <div class="score-card left"><span>P1</span><b id="score1">0</b></div>
+        <div class="score-rule"><strong>5점 먼저</strong><span id="modeText">1대 카피바라</span></div>
+        <div class="score-card right"><span id="opponentLabel">카피바라</span><b id="score2">0</b></div>
       </div>
+      <div class="match-meta">
+        <span class="badge" id="inputBadge">카메라 모드</span>
+        <span class="badge" id="difficultyBadge">난이도 보통</span>
+        <span class="badge" id="privacyBadge">영상 저장·전송 없음</span>
+      </div>
+      <div class="notice" id="notice" role="status"></div>
       <div class="message" id="message"></div>
       <div class="countdown" id="countdown"></div>
 
-      <section class="panel show" id="startPanel">
-        <div class="sheet">
-          <h2>머리콩! 카피바라 배구</h2>
-          <p>카메라에서 조금 떨어져 서서 몸을 좌우로 움직이고 머리로 공을 넘기세요. 먼저 5점을 얻으면 이깁니다.</p>
-          <div class="choices" aria-label="경기 모드">
-            <button class="choice active" id="aiModeBtn" type="button">1대 카피바라</button>
-            <button class="choice ghost" id="humanModeBtn" type="button">1대1 사람</button>
+      <section class="panel show" id="startPanel" aria-label="시작 화면">
+        <div class="setup">
+          <div class="title-hero">
+            <p class="eyebrow">CAPYBARA VOLLEY CLUB</p>
+            <h2>머리콩!<br />카피바라 배구</h2>
+            <img src="./assets/capybara-ai-cute-sample.png" alt="게임을 함께할 카피바라" />
+            <span class="hero-rule">머리로 톡! 먼저 5점!</span>
           </div>
-          <ol id="modeGuide">
-            <li>한 사람이 카메라 정면 중앙에 섭니다. 화면에서는 왼쪽 코트에 표시됩니다.</li>
-            <li>카메라에서 약 1.5~2m 떨어져 머리와 어깨가 보이게 서세요.</li>
-            <li>카피바라가 득점하면 신나게 세리머니를 합니다.</li>
-          </ol>
-          <label class="setting-row" for="showVideoCheck">
-            <span>경기 중 카메라 영상 보기</span>
-            <input id="showVideoCheck" type="checkbox" checked />
-          </label>
-          <p class="small">영상과 상반신 좌표는 이 기기 안에서만 처리되며 저장되거나 전송되지 않습니다. 헤딩 판정 위치는 영상 위의 머리 원으로 바로 확인할 수 있습니다.</p>
-          <div class="actions">
-            <button id="cameraStartBtn" type="button">상반신 인식·FPS 확인</button>
-            <button class="ghost" id="keyboardStartBtn" type="button">키보드로 시작</button>
+          <div class="setup-main">
+            <h2>머리로 톡! 준비됐나요?</h2>
+            <h3 class="field-title">함께할 상대</h3>
+            <div class="choices" role="group" aria-label="경기 모드">
+              <button class="active" id="aiModeBtn" type="button" aria-pressed="true">✓ 1대 카피바라</button>
+              <button id="humanModeBtn" type="button" aria-pressed="false">1대1 사람</button>
+            </div>
+            <div class="difficulty" id="difficultyBlock">
+              <h3 class="field-title"><label for="capybaraDifficulty">카피바라 난이도</label></h3>
+              <input id="capybaraDifficulty" type="range" min="1" max="4" step="1" value="2" />
+              <div class="level-labels" id="levelLabels" aria-hidden="true">
+                <span>쉬움</span><span class="active">보통</span><span>어려움</span><span>매우 어려움</span>
+              </div>
+            </div>
+            <ol class="standing" id="modeGuide"></ol>
+            <label class="toggle-row" for="showVideoCheck">
+              <span>경기 중 카메라 영상 보기</span>
+              <input id="showVideoCheck" type="checkbox" checked />
+            </label>
+            <div class="control-help" aria-label="키보드와 터치 조작">
+              <span class="key-row"><b>P1</b><kbd>A</kbd><kbd>D</kbd> 이동 <kbd>W</kbd> 헤딩</span>
+              <span class="key-row p2"><b>P2</b><kbd>←</kbd><kbd>→</kbd> 이동 <kbd>↑</kbd> 헤딩</span>
+              <span class="key-row"><b>터치</b>끌어서 이동 · 톡 누르면 헤딩</span>
+            </div>
+            <p class="privacy-note">영상과 상반신 좌표는 이 기기 안에서만 처리되며 저장되거나 전송되지 않습니다.</p>
+            <div class="actions">
+              <button class="primary" id="cameraStartBtn" type="button">카메라로 시작 →</button>
+              <button id="keyboardStartBtn" type="button">키보드·터치로 시작</button>
+            </div>
           </div>
         </div>
       </section>
@@ -214,20 +299,23 @@
           <h2>카메라와 상반신 인식 준비 중</h2>
           <p id="loadingText">카메라 권한을 요청합니다.</p>
           <div class="load-track"><i id="loadingBar"></i></div>
-          <p class="small">처음 실행할 때 자세 인식 모델과 WASM 파일을 받습니다.</p>
+          <p>처음 실행할 때 자세 인식 모델과 WASM 파일을 받습니다. 몇 초 정도 걸릴 수 있습니다.</p>
         </div>
       </section>
 
-      <section class="panel setup-panel" id="readyPanel">
+      <section class="panel ready-panel" id="readyPanel">
         <div class="sheet">
-          <h2>머리 인식과 FPS 확인</h2>
-          <p id="readyGuide">P1은 화면 왼쪽에서 머리와 어깨를 보여 주세요.</p>
-          <div class="ready-count"><span id="peopleNow">0</span>/<span id="peopleNeed">1</span>명 인식</div>
+          <h2>머리 인식 확인</h2>
+          <p id="readyGuide">카메라 정면 중앙에 서서 머리와 어깨를 보여 주세요.</p>
+          <div class="ready-line">
+            <span class="ready-count"><span id="peopleNow">0</span>/<span id="peopleNeed">1</span>명 인식</span>
+            <span class="fps" id="fpsText">인식 FPS --</span>
+          </div>
           <p id="readyStatus">상반신과 머리를 찾는 중입니다.</p>
           <div class="actions">
-            <button id="startAnywayBtn" type="button">바로 시작</button>
-            <button class="ghost" id="videoToggleBtn" type="button">영상 보기</button>
-            <button class="ghost" id="readyBackBtn" type="button">돌아가기</button>
+            <button class="primary" id="startAnywayBtn" type="button">바로 시작</button>
+            <button id="videoToggleBtn" type="button">영상 숨기기</button>
+            <button id="readyBackBtn" type="button">돌아가기</button>
           </div>
         </div>
       </section>
@@ -237,20 +325,36 @@
           <h2>잠시 멈춤</h2>
           <p id="pauseText">경기를 다시 시작할 준비가 되면 계속하기를 누르세요.</p>
           <div class="actions">
-            <button id="resumeBtn" type="button">계속하기</button>
-            <button class="ghost" id="pauseQuitBtn" type="button">모드 선택으로</button>
+            <button class="primary" id="resumeBtn" type="button">계속하기</button>
+            <button id="pauseKeyboardBtn" type="button" hidden>키보드·터치로 바꾸기</button>
+            <button id="pauseQuitBtn" type="button">모드 선택으로</button>
           </div>
         </div>
       </section>
 
       <section class="panel" id="resultPanel">
-        <div class="sheet">
-          <h2>경기 끝!</h2>
-          <div class="winner" id="winnerText">P1 승리!</div>
-          <p id="resultScore">5 : 3</p>
+        <div class="sheet result-sheet">
+          <div class="result-heading">
+            <img class="winner-portrait" id="winnerPortrait" src="./assets/capybara-score-tongue.png" alt="" />
+            <div>
+              <p class="eyebrow">MATCH COMPLETE</p>
+              <h2 id="winnerText">카피바라 승리!</h2>
+            </div>
+          </div>
+          <p class="result-sub" id="resultSub">잘했어요! 다음엔 더 길게 랠리를 이어 볼까요?</p>
+          <span class="badge" id="resultBadge">1대 카피바라 · 난이도 보통 · 5점 먼저</span>
+          <div class="final-score" id="finalScore">
+            <div class="team" id="teamLeft"><small class="win-label">WINNER</small><span>P1</span><b id="finalScore1">0</b></div>
+            <span class="colon">:</span>
+            <div class="team" id="teamRight"><small class="win-label">WINNER</small><span id="finalOpponent">카피바라</span><b id="finalScore2">0</b></div>
+          </div>
+          <div class="records">
+            <div class="record">최장 랠리<strong><span id="maxRallyText">0</span> <small>회</small></strong></div>
+            <div class="record">P1 헤딩<strong><span id="p1HitsText">0</span> <small>회</small></strong></div>
+          </div>
           <div class="actions">
-            <button id="againBtn" type="button">다시 하기</button>
-            <button class="ghost" id="resultBackBtn" type="button">모드 선택으로</button>
+            <button class="primary" id="againBtn" type="button">다시 하기</button>
+            <button id="resultBackBtn" type="button">모드 선택으로</button>
           </div>
         </div>
       </section>
@@ -260,21 +364,13 @@
           <h2 id="errorTitle">시작할 수 없습니다</h2>
           <p id="errorText"></p>
           <div class="actions">
-            <button id="errorKeyboardBtn" type="button">키보드로 계속</button>
-            <button class="ghost" id="errorBackBtn" type="button">돌아가기</button>
+            <button class="primary" id="errorKeyboardBtn" type="button">키보드·터치로 계속</button>
+            <button id="errorBackBtn" type="button">돌아가기</button>
           </div>
         </div>
       </section>
+      <p class="sr-only" id="statusText" aria-live="polite">모드를 고르고 시작하세요.</p>
     </main>
-
-    <footer class="bar bottom">
-      <button class="mini ghost" id="pauseBtn" type="button" disabled>일시정지</button>
-      <span class="spacer"></span>
-      <span class="status" id="statusText">모드를 고르고 시작하세요.</span>
-      <span class="spacer"></span>
-      <span class="fps" id="fpsText">인식 FPS --</span>
-      <span class="privacy">영상 저장·전송 없음</span>
-    </footer>
   </div>
 
   <script type="module">
@@ -283,15 +379,16 @@
       PoseLandmarker,
     } from "../../assets/vendor/mediapipe/tasks-vision/vision_bundle.mjs";
 
-    // 교실에서 조정할 수 있도록 판정·물리 상수를 한곳에 둔다.
+    // 교실에서 조정할 수 있도록 판정·물리·연출 상수를 한곳에 둔다.
     const CAMERA_W = 640;
     const CAMERA_H = 480;
-    const CAMERA_VIEW_SCALE = 0.90;
+    const VIDEO_MIN_VISIBLE = 0.55;     // 영상을 화면에 채울 때 카메라 가로·세로의 최소 55%는 보이게 한다(세로 화면에서 너무 확대되지 않게).
     const DETECT_CONFIDENCE = 0.32;
     const LANDMARK_VISIBILITY = 0.28;
     const POSE_READY_MS = 500;
     const TRACK_HOLD_MS = 900;
     const READY_RECENT_MS = 1000;
+    const POSE_LOST_PAUSE_MS = 1500;    // 경기 중 머리가 이 시간보다 오래 안 보이면 자동 일시정지
     const HEAD_RADIUS = 0.064;
     const HIT_COOLDOWN_MS = 115;
     const BALL_RADIUS = 0.027;
@@ -303,11 +400,20 @@
     const AIR_DRAG = 0.997;
     const MAX_BALL_SPEED = 1.9;
     const WIN_SCORE = 5;
-    const POINT_PAUSE_MS = 1200;
+    const POINT_PAUSE_MS = 1200;        // 득점 뒤 쉬는 시간 = 카피바라 반응 시간
+    const SERVE_HOLD_MS = 600;          // 서브 전에 공을 띄워 두는 시간
+    const TAP_MS = 260;                 // 이보다 짧게 누르면 터치 헤딩
+    const TAP_MOVE_PX = 14;             // 이만큼 넘게 끌면 이동으로 본다
     const CAPYBARA_HEAD_X_OFFSET = 0.065;
     const CAPYBARA_HEAD_Y = 0.67;
     const CAPYBARA_JUMP_HEIGHT = 0.085;
     const CAPYBARA_JUMP_MS = 520;
+    const CAPYBARA_DRAW_H = 0.36;       // 카피바라 그림 높이: min(화면 높이×0.36, 화면 너비×0.30)
+    const CAPYBARA_DRAW_W_LIMIT = 0.30;
+    // 반응 말풍선 문구. 비워 두면({}) 말풍선을 그리지 않는다.
+    const CAPYBARA_LINES = { tongue: "메롱~", smug: "흠, 당연하지", dopey: "…야호?", wiggle: "씰룩씰룩", shrug: "쉽네", lose: "…" };
+    const MUSIC_VOLUME = 0.045;
+    const SFX_VOLUME = 0.16;
     const WASM_DIR = "../../assets/vendor/mediapipe/tasks-vision/wasm";
     const MODEL_PATH = "../../assets/vendor/mediapipe/models/pose_landmarker_lite.task";
     const POSE_POINTS = { nose: 0, leftEar: 7, rightEar: 8, leftShoulder: 11, rightShoulder: 12 };
@@ -322,12 +428,17 @@
     const $ = (id) => document.getElementById(id);
     const stage = $("stage");
     const video = $("video");
+    const videoBox = $("videoBox");
     const canvas = $("gameCanvas");
     const ctx = canvas.getContext("2d");
+    const REDUCED_MOTION = matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const MOTION_AMP = REDUCED_MOTION ? 0.35 : 1;
 
     let mode = "ai";             // ai | human
     let inputMode = "camera";    // camera | keyboard
     let phase = "intro";         // intro | loading | ready | countdown | playing | point | paused | result | error
+    let pausedFrom = "";
+    let pausedAt = 0;
     let stream = null;
     let poseLandmarker = null;
     let landmarkerPoses = 0;
@@ -340,13 +451,13 @@
     let readySince = 0;
     let poseLostSince = 0;
     let countdownEndsAt = 0;
+    let lastCountShown = "";
     let pointResumeAt = 0;
     let pointWinner = 0;
-    let soundOn = true;
-    let audioCtx = null;
+    let serveUntil = 0;
+    let noticeHideAt = 0;
     let tracks = [];
     let lastSeenByOwner = [0, 0, 0];
-    let visiblePeople = 0;
     let inferenceSamples = [];
     let inferenceTimestamps = [];
     let inferenceFps = 0;
@@ -354,12 +465,11 @@
     let lastHitAt = new Map();
     let scores = [0, 0];
     let particles = [];
-    let celebrateUntil = 0;
-    let imageReady = false;
-
-    const capybaraImage = new Image();
-    capybaraImage.src = "./assets/capybara-ai-cute-sample.png";
-    capybaraImage.addEventListener("load", () => { imageReady = true; });
+    let rallyHits = 0;
+    let maxRally = 0;
+    let p1Hits = 0;
+    let videoMap = { boxW: 1, ox: 0, oy: 0, dw: 1, dh: 1 };
+    let capyMaxX = 0.9;
 
     const ball = { x: 0.31, y: 0.25, vx: 0.58, vy: -0.25, prevX: 0.31, prevY: 0.25, lastHitOwner: 1 };
     const ai = {
@@ -368,10 +478,56 @@
       jumpedThisIncoming: false, jumpStartedAt: -1000, facing: -1,
     };
     const keyboard = {
-      p1x: 0.24, p2x: 0.76, p1HitUntil: 0, p2HitUntil: 0,
+      p1x: 0.24, p2x: 0.76, p1HitUntil: 0, p2HitUntil: 0, p1Target: null, p2Target: null,
       down: new Set(), prevP1: { x: .24, y: .63 }, prevP2: { x: .76, y: .63 },
     };
+    const touches = new Map();
 
+    // ---------- 카피바라 반응 ----------
+    const ease = (t) => 1 - Math.pow(1 - t, 3);
+    const bump = (t, center, width) => Math.max(0, 1 - Math.abs(t - center) / width);
+    const pop = (t) => (t < 0.1 ? 1 + 0.08 * Math.sin((t / 0.1) * Math.PI) : 1);
+    /** 각 반응: 그림과, 진행도 t(0~1) → 발밑 기준 변형값. 높이·거리는 화면 높이에 대한 비율. */
+    const REACTIONS = {
+      idle: { src: "./assets/capybara-ai-cute-sample.png",
+        motion: (t, now) => ({ dy: Math.sin(now / 420) * 0.004, sy: 1 + Math.sin(now / 700) * 0.008 }) },
+      tongue: { src: "./assets/capybara-score-tongue.png",
+        motion: (t) => ({ rot: Math.sin(t * Math.PI * 4) * 0.09 * (1 - t * 0.5), s: pop(t) }) },
+      smug: { src: "./assets/capybara-score-smug.png",
+        motion: (t) => { const e = ease(Math.min(1, t * 2.5));
+          return { s: pop(t) * (1 + 0.06 * e), rot: 0.05 * e, dy: -Math.abs(Math.sin(t * Math.PI * 3)) * 0.006 }; } },
+      dopey: { src: "./assets/capybara-score-dopey.png",
+        motion: (t) => { const k = Math.max(0, (t - 0.2) / 0.8); const hop = Math.abs(Math.sin(k * Math.PI * 2)); const on = k > 0 ? 1 : 0;
+          return { dy: -hop * 0.035, sy: 1 - (1 - hop) * 0.04 * on, sx: 1 + (1 - hop) * 0.03 * on }; } },
+      wiggle: { src: "./assets/capybara-score-wiggle.png",
+        motion: (t) => ({ skew: Math.sin(t * Math.PI * 10) * 0.10 * (1 - t * 0.4), s: pop(t) }) },
+      shrug: { src: "./assets/capybara-score-shrug.png",
+        motion: (t) => { const u = bump(t, 0.22, 0.14) + bump(t, 0.55, 0.14);
+          return { sy: 1 + u * 0.06, sx: 1 - u * 0.02, dy: -u * 0.008, s: pop(t) }; } },
+      lose: { src: "./assets/capybara-lose.png",
+        motion: (t) => { const shake = t < 0.25 ? Math.sin(t * 90) * (1 - t / 0.25) * 0.006 : 0;
+          return { dx: shake, sy: 1 - 0.05 * ease(t), sx: 1 + 0.025 * ease(t), rot: Math.sin(t * Math.PI * 2) * 0.02 }; } },
+    };
+    const SCORE_REACTIONS = ["tongue", "smug", "dopey", "wiggle", "shrug"];
+    const reactionImages = {};
+    for (const [id, reaction] of Object.entries(REACTIONS)) {
+      const image = new Image();
+      image.src = reaction.src;
+      reactionImages[id] = image;
+    }
+    let reaction = null;          // { id, startedAt } 또는 null(대기)
+    let lastScoreReaction = "";
+
+    /** 직전에 나온 득점 반응은 빼고 무작위로 고른다. */
+    function pickScoreReaction() {
+      const pool = SCORE_REACTIONS.filter((id) => id !== lastScoreReaction);
+      lastScoreReaction = pool[Math.floor(Math.random() * pool.length)];
+      return lastScoreReaction;
+    }
+
+    function startReaction(id, now) { reaction = { id, startedAt: now }; }
+
+    // ---------- 화면 상태 ----------
     function setPanel(id = "") {
       for (const name of ["startPanel", "loadingPanel", "readyPanel", "pausePanel", "resultPanel", "errorPanel"]) {
         $(name).classList.toggle("show", name === id);
@@ -383,78 +539,110 @@
       $("loadingBar").style.width = `${percent}%`;
     }
 
-    function setStatus(text, kind = "") {
-      $("statusText").textContent = text;
-      $("statusText").className = `status ${kind}`.trim();
+    function setStatus(text) { $("statusText").textContent = text; }
+
+    function setMessage(text = "", kind = "") {
+      $("message").textContent = text;
+      $("message").className = `message${text ? " show" : ""}${kind ? ` ${kind}` : ""}`;
     }
 
-    function setMessage(text = "") {
-      $("message").textContent = text;
-      $("message").classList.toggle("show", Boolean(text));
+    /** 경기 화면 가운데 위 안내 카드. hideAfter(ms)가 있으면 그 뒤 자동으로 숨긴다. */
+    function showNotice(title = "", detail = "", hideAfter = 0) {
+      const notice = $("notice");
+      if (!title) { notice.classList.remove("show"); noticeHideAt = 0; return; }
+      notice.innerHTML = "";
+      notice.append(title);
+      if (detail) { const small = document.createElement("small"); small.textContent = detail; notice.append(small); }
+      notice.classList.add("show");
+      noticeHideAt = hideAfter ? performance.now() + hideAfter : 0;
     }
 
     function expectedPeople() { return mode === "human" ? 2 : 1; }
     function opponentName() { return mode === "human" ? "P2" : "카피바라"; }
     function capybaraAbility() { return CAPYBARA_ABILITIES[capybaraDifficulty]; }
+    function inGame() { return ["countdown", "playing", "point"].includes(phase); }
 
     function setCapybaraDifficulty(value) {
       capybaraDifficulty = clamp(Math.round(Number(value) || 1), 1, 4);
       const ability = capybaraAbility();
       $("capybaraDifficulty").value = String(capybaraDifficulty);
       $("capybaraDifficulty").setAttribute("aria-valuetext", ability.label);
-      $("capybaraDifficultyValue").textContent = ability.label;
+      [...$("levelLabels").children].forEach((label, index) => label.classList.toggle("active", index + 1 === capybaraDifficulty));
+      updateMeta();
+    }
+
+    function updateMeta() {
+      $("modeText").textContent = mode === "ai" ? "1대 카피바라" : "1대1 사람";
+      $("opponentLabel").textContent = opponentName();
+      $("inputBadge").textContent = inputMode === "camera" ? "카메라 모드" : "키보드·터치 모드";
+      $("difficultyBadge").hidden = mode !== "ai";
+      $("difficultyBadge").textContent = `난이도 ${capybaraAbility().label}`;
+      $("privacyBadge").hidden = inputMode !== "camera";
     }
 
     function selectMode(nextMode) {
       mode = nextMode;
       $("aiModeBtn").classList.toggle("active", mode === "ai");
-      $("aiModeBtn").classList.toggle("ghost", mode !== "ai");
+      $("aiModeBtn").setAttribute("aria-pressed", String(mode === "ai"));
+      $("aiModeBtn").textContent = `${mode === "ai" ? "✓ " : ""}1대 카피바라`;
       $("humanModeBtn").classList.toggle("active", mode === "human");
-      $("humanModeBtn").classList.toggle("ghost", mode !== "human");
-      $("modeLabel").textContent = mode === "ai" ? "1대 카피바라" : "1대1 사람";
-      $("opponentLabel").textContent = opponentName();
-      $("capybaraDifficultyRow").hidden = mode !== "ai";
-      stage.classList.toggle("ai-camera", mode === "ai");
+      $("humanModeBtn").setAttribute("aria-pressed", String(mode === "human"));
+      $("humanModeBtn").textContent = `${mode === "human" ? "✓ " : ""}1대1 사람`;
+      $("difficultyBlock").hidden = mode !== "ai";
       $("modeGuide").innerHTML = mode === "ai"
-        ? `<li>카메라 정면 중앙에 섭니다. 화면에서는 왼쪽 코트에 표시됩니다.</li><li>카메라에서 약 1.5~2m 떨어져 머리와 어깨가 보이게 서세요.</li><li>몸을 좌우로 움직여 머리의 판정 원으로 공을 받으세요.</li>`
-        : `<li>두 사람이 화면 좌우에 한 명씩 섭니다.</li><li>카메라에서 약 2~3m 떨어져 두 사람의 머리와 어깨가 보이게 서세요.</li><li>P1은 왼쪽, P2는 오른쪽 영역에 고정됩니다.</li>`;
-    }
-
-    function resizeCanvas() {
-      const dpr = Math.min(2, window.devicePixelRatio || 1);
-      const w = Math.max(1, Math.round(stage.clientWidth * dpr));
-      const h = Math.max(1, Math.round(stage.clientHeight * dpr));
-      if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h; }
+        ? `<li>카메라에서 1.5~2m 떨어져 정면 중앙에 서요.</li><li>머리와 양쪽 어깨가 모두 보이게 해요.</li><li>화면에서 P1은 왼쪽 코트에 나타나요.</li>`
+        : `<li>두 사람이 카메라에서 2~3m 떨어져 좌우에 한 명씩 서요.</li><li>두 사람의 머리와 어깨가 모두 보이게 해요.</li><li>P1은 왼쪽, P2는 오른쪽 코트를 맡아요.</li>`;
+      updateMeta();
+      updateVideoMap();
     }
 
     function clamp(value, min, max) { return Math.max(min, Math.min(max, value)); }
 
+    // ---------- 카메라 영상 배치와 좌표 변환 ----------
+    /** 영상을 비율 그대로 코트에 채우고(가로·세로 최소 60%는 보이게), 판정 좌표 변환값을 함께 계산한다. */
+    function updateVideoMap() {
+      const sw = Math.max(1, stage.clientWidth), sh = Math.max(1, stage.clientHeight);
+      const boxW = mode === "ai" ? sw / 2 : sw, boxH = sh;
+      const vw = video.videoWidth || CAMERA_W, vh = video.videoHeight || CAMERA_H;
+      const coverScale = Math.max(boxW / vw, boxH / vh);
+      const limitScale = Math.min(boxW / (vw * VIDEO_MIN_VISIBLE), boxH / (vh * VIDEO_MIN_VISIBLE));
+      const scale = Math.min(coverScale, limitScale);
+      const dw = vw * scale, dh = vh * scale, ox = (boxW - dw) / 2, oy = (boxH - dh) / 2;
+      videoBox.style.width = `${boxW}px`;
+      Object.assign(video.style, { left: `${ox}px`, top: `${oy}px`, width: `${dw}px`, height: `${dh}px` });
+      videoMap = { boxW: boxW / sw, ox: ox / sw, oy: oy / sh, dw: dw / sw, dh: dh / sh };
+    }
+
+    /** 영상 위에 보이는 위치와 같도록 랜드마크(0~1)를 코트 좌표(0~1)로 바꾼다. 좌우 반전 포함. */
     function posePoint(point) {
-      // 1대 카피바라에서는 카메라 중앙을 왼쪽 코트 중앙으로 옮겨 영상과 판정 좌표를 겹친다.
-      const horizontalCenter = mode === "ai" ? .25 : .5;
-      const horizontalScale = CAMERA_VIEW_SCALE * (mode === "ai" ? .5 : 1);
       return {
-        x: horizontalCenter + ((1 - point.x) - .5) * horizontalScale,
-        y: .5 + (point.y - .5) * CAMERA_VIEW_SCALE,
+        x: videoMap.ox + (1 - point.x) * videoMap.dw,
+        y: videoMap.oy + point.y * videoMap.dh,
         visibility: point.visibility ?? 1,
       };
     }
 
+    function videoVisible() { return inputMode === "camera" && stage.classList.contains("video-on") && Boolean(stream); }
+
     function pointVisible(point) { return point && point.visibility >= LANDMARK_VISIBILITY; }
 
     function recentPeopleCount(now = performance.now()) {
-      const needed = expectedPeople();
       let count = 0;
-      for (let owner = 1; owner <= needed; owner += 1) {
+      for (let owner = 1; owner <= expectedPeople(); owner += 1) {
         if (lastSeenByOwner[owner] > 0 && now - lastSeenByOwner[owner] <= READY_RECENT_MS) count += 1;
       }
-      visiblePeople = count;
       return count;
     }
 
-    function recentPeopleStatus(now) {
+    function missingOwners(now) {
       const owners = mode === "human" ? [1, 2] : [1];
-      return owners.map((owner) => lastSeenByOwner[owner] > 0 && now - lastSeenByOwner[owner] <= READY_RECENT_MS ? `P${owner} 인식` : `P${owner} 찾는 중`).join(" · ");
+      return owners.filter((owner) => !(lastSeenByOwner[owner] > 0 && now - lastSeenByOwner[owner] <= READY_RECENT_MS));
+    }
+
+    function recentPeopleStatus(now) {
+      const missing = missingOwners(now);
+      const owners = mode === "human" ? [1, 2] : [1];
+      return owners.map((owner) => (missing.includes(owner) ? `P${owner} 찾는 중` : `P${owner} 인식`)).join(" · ");
     }
 
     /** 머리와 한쪽 이상의 어깨를 사람별로 묶고, 화면 좌우에 P1/P2를 고정한다. */
@@ -521,7 +709,6 @@
         if (now - track.lastSeen <= TRACK_HOLD_MS) nextTracks.push(track);
       }
       tracks = nextTracks;
-      recentPeopleCount(now);
     }
 
     function recordInference(ms, now) {
@@ -531,24 +718,38 @@
       inferenceTimestamps = inferenceTimestamps.filter((time) => now - time <= 1000);
       inferenceFps = inferenceTimestamps.length;
       inferenceMeanMs = inferenceSamples.reduce((sum, value) => sum + value, 0) / Math.max(1, inferenceSamples.length);
+      if (phase !== "ready") return;   // FPS는 준비 화면에서만 보여 준다.
       const grade = inferenceSamples.length < 5 ? "측정 중" : (inferenceFps >= 20 ? "원활" : (inferenceFps >= 12 ? "보통" : "느림"));
       $("fpsText").className = `fps ${grade === "원활" ? "good" : (grade === "느림" ? "slow" : "")}`;
       $("fpsText").textContent = `인식 ${inferenceFps} FPS · ${inferenceMeanMs.toFixed(0)}ms · ${grade}`;
+    }
+
+    function resetInferenceStats() {
+      inferenceSamples = []; inferenceTimestamps = []; inferenceFps = 0; inferenceMeanMs = 0;
+      $("fpsText").className = "fps";
+      $("fpsText").textContent = "인식 FPS --";
     }
 
     function visibleTracks(now = performance.now()) {
       return tracks.filter((track) => now - track.lastSeen <= TRACK_HOLD_MS);
     }
 
+    // ---------- 경기 진행 ----------
+    function renderScores() {
+      $("score1").textContent = String(scores[0]);
+      $("score2").textContent = String(scores[1]);
+    }
+
     function resetMatch() {
       scores = [0, 0];
-      $("score1").textContent = "0";
-      $("score2").textContent = "0";
+      renderScores();
       particles = [];
-      celebrateUntil = 0;
+      reaction = null;
+      rallyHits = 0; maxRally = 0; p1Hits = 0;
       if (inputMode !== "camera") tracks = [];
       lastHitAt.clear();
-      keyboard.p1x = .24; keyboard.p2x = .76;
+      keyboard.p1x = .24; keyboard.p2x = .76; keyboard.p1Target = null; keyboard.p2Target = null;
+      ai.x = .77; ai.facing = -1;
       resetBall(Math.random() < .5 ? 1 : 2);
     }
 
@@ -560,6 +761,7 @@
       ball.vy = -.31;
       ball.prevX = ball.x; ball.prevY = ball.y;
       ball.lastHitOwner = server;
+      rallyHits = 0;
       ai.error = (Math.random() - .5) * ability.errorRange;
       ai.willReturn = true;
       ai.wasIncoming = false;
@@ -574,21 +776,36 @@
       lastHitAt.clear();
     }
 
-    function startCountdown() {
-      setPanel();
-      stage.classList.toggle("video-on", inputMode === "camera" && $("showVideoCheck").checked);
-      phase = "countdown";
-      countdownEndsAt = performance.now() + 3000;
-      $("countdown").classList.add("show");
-      $("pauseBtn").disabled = false;
-      setStatus("경기 시작 준비", "good");
+    /** 서브 전 공을 잠깐 띄워 두고 서브하는 쪽을 보여 준다. */
+    function beginServe(server, now) {
+      resetBall(server);
+      serveUntil = now + SERVE_HOLD_MS;
     }
 
-    function startPlaying() {
+    function startCountdown() {
+      setPanel();
+      setMessage();
+      showNotice();
+      resetMatch();   // 카운트다운 동안 이전 경기 점수가 보이지 않게 먼저 초기화한다.
+      stage.classList.toggle("video-on", inputMode === "camera" && $("showVideoCheck").checked);
+      updateVideoMap();
+      updateMeta();
+      phase = "countdown";
+      countdownEndsAt = performance.now() + 3000;
+      lastCountShown = "";
+      $("countdown").classList.add("show");
+      $("pauseBtn").hidden = false;
+      // 서브 표시를 가리지 않도록 조작 안내는 카운트다운 동안만 보여 준다.
+      if (inputMode === "keyboard") showNotice("끌어서 이동 · 톡 누르면 헤딩", "키보드: P1 A·D·W / P2 ←·→·↑", 2900);
+      setStatus("경기 시작 준비");
+      startMusic();
+    }
+
+    function startPlaying(now) {
       phase = "playing";
       $("countdown").classList.remove("show");
-      resetMatch();
-      setStatus(inputMode === "camera" ? "인식된 머리 원으로 공을 헤딩하세요." : "P1 A·D·W / P2 방향키", "good");
+      beginServe(ball.lastHitOwner, now);
+      setStatus(inputMode === "camera" ? "머리 원으로 공을 헤딩하세요." : "끌어서 이동하고 톡 눌러 헤딩하세요.");
     }
 
     function scorePoint(winner, now) {
@@ -596,29 +813,52 @@
       phase = "point";
       pointWinner = winner;
       scores[winner - 1] += 1;
-      $(winner === 1 ? "score1" : "score2").textContent = scores[winner - 1];
+      renderScores();
+      maxRally = Math.max(maxRally, rallyHits);
       pointResumeAt = now + POINT_PAUSE_MS;
+      if (mode === "ai") {
+        startReaction(winner === 2 ? pickScoreReaction() : "lose", now);
+        ai.facing = -1;
+      }
       if (mode === "ai" && winner === 2) {
-        celebrateUntil = pointResumeAt;
         setMessage("카피바라 득점!");
         spawnCelebration(.76, .62);
-        playTone(520, 700);
+        sfx.capybaraScore();
       } else {
-        setMessage(`${winner === 1 ? "P1" : "P2"} 득점!`);
+        setMessage(`${winner === 1 ? "P1" : "P2"} 득점!`, winner === 1 ? "p1" : "");
         spawnCelebration(winner === 1 ? .25 : .75, .62);
-        playTone(660, 820);
+        sfx.playerScore();
       }
+      setStatus(`${winner === 1 ? "P1" : opponentName()} 득점. ${scores[0]} 대 ${scores[1]}`);
     }
 
     function finishMatch() {
       phase = "result";
       setMessage();
-      $("pauseBtn").disabled = true;
+      showNotice();
+      stopMusic();
+      sfx.fanfare();
+      $("pauseBtn").hidden = true;
       const winner = scores[0] > scores[1] ? 1 : 2;
+      const aiWon = mode === "ai" && winner === 2;
       $("winnerText").textContent = winner === 1 ? "P1 승리!" : `${opponentName()} 승리!`;
-      $("resultScore").textContent = `${scores[0]} : ${scores[1]}`;
+      $("winnerText").classList.toggle("p1", winner === 1);
+      $("resultSub").textContent = aiWon ? "아깝다! 다음엔 더 길게 랠리를 이어 볼까요?" : "잘했어요! 머리로 톡, 멋진 경기였어요.";
+      $("winnerPortrait").hidden = mode !== "ai";
+      $("winnerPortrait").src = REACTIONS[aiWon ? (lastScoreReaction || "tongue") : "lose"].src;
+      $("winnerPortrait").alt = aiWon ? "승리해서 놀리는 카피바라" : "져서 시무룩한 카피바라";
+      $("resultBadge").textContent = mode === "ai"
+        ? `1대 카피바라 · 난이도 ${capybaraAbility().label} · ${WIN_SCORE}점 먼저`
+        : `1대1 사람 · ${WIN_SCORE}점 먼저`;
+      $("finalScore1").textContent = String(scores[0]);
+      $("finalScore2").textContent = String(scores[1]);
+      $("finalOpponent").textContent = opponentName();
+      $("teamLeft").classList.toggle("winning", winner === 1);
+      $("teamRight").classList.toggle("winning", winner === 2);
+      $("maxRallyText").textContent = String(maxRally);
+      $("p1HitsText").textContent = String(p1Hits);
       setPanel("resultPanel");
-      setStatus("경기가 끝났습니다.");
+      setStatus(`경기가 끝났습니다. ${scores[0]} 대 ${scores[1]}`);
     }
 
     function pointSegmentDistance(px, py, ax, ay, bx, by) {
@@ -646,11 +886,14 @@
     }
 
     function keyboardPaddles(now, dt) {
-      const speed = .48;
+      const speed = .48, touchSpeed = 1.3;
+      const moveToward = (x, target) => x + clamp(target - x, -touchSpeed * dt, touchSpeed * dt);
       if (keyboard.down.has("KeyA")) keyboard.p1x -= speed * dt;
       if (keyboard.down.has("KeyD")) keyboard.p1x += speed * dt;
       if (keyboard.down.has("ArrowLeft")) keyboard.p2x -= speed * dt;
       if (keyboard.down.has("ArrowRight")) keyboard.p2x += speed * dt;
+      if (keyboard.p1Target !== null) keyboard.p1x = moveToward(keyboard.p1x, keyboard.p1Target);
+      if (keyboard.p2Target !== null) keyboard.p2x = moveToward(keyboard.p2x, keyboard.p2Target);
       keyboard.p1x = clamp(keyboard.p1x, .07, .45);
       keyboard.p2x = clamp(keyboard.p2x, .55, .93);
       const p1 = { id: "key-p1", owner: 1, head: true, radius: HEAD_RADIUS, x: keyboard.p1x, y: now < keyboard.p1HitUntil ? .49 : .63, prevX: keyboard.prevP1.x, prevY: keyboard.prevP1.y };
@@ -661,12 +904,13 @@
       return mode === "human" ? [p1, p2] : [p1];
     }
 
+    /** 카피바라 이동·점프. 경기 중(playing)에만 호출한다. */
     function updateAI(dt, now) {
       if (mode !== "ai") return null;
       const ability = capybaraAbility();
       const ballOnAiSide = ball.x > .49;
       // P1이 마지막으로 친 공은 벽에 반사되어 방향이 바뀌어도 카피바라가 끝까지 추적한다.
-      const incoming = ballOnAiSide && ball.lastHitOwner === 1;
+      const incoming = now >= serveUntil && ballOnAiSide && ball.lastHitOwner === 1;
       if (incoming && !ai.wasIncoming) {
         // 매 포인트의 첫 공에는 반드시 반응하고, 이어지는 랠리에서만 가끔 실수한다.
         ai.willReturn = !ai.hasReceivedInRally || Math.random() < ability.returnChance;
@@ -683,9 +927,10 @@
         ai.facing = -1;
       }
       const target = incoming && ai.willReturn
-        ? clamp(ball.x - ai.facing * CAPYBARA_HEAD_X_OFFSET + ai.error, .60, .93)
-        : .77;
+        ? clamp(ball.x - ai.facing * CAPYBARA_HEAD_X_OFFSET + ai.error, .60, capyMaxX)
+        : Math.min(.77, capyMaxX);
       ai.x += clamp(target - ai.x, -ability.moveSpeed * dt, ability.moveSpeed * dt);
+      ai.x = Math.min(ai.x, capyMaxX);
       const shouldSwing = incoming && ai.willReturn && ball.y > .40 && ball.y < .72;
       const previousJumpAge = (now - ai.jumpStartedAt) / CAPYBARA_JUMP_MS;
       const canRecoverBehind = ai.facing === 1 && ball.vx < 0 && ball.vy > 0 && previousJumpAge > 1;
@@ -736,8 +981,11 @@
         ball.y = collisionPoint.y + ny * (BALL_RADIUS + collisionRadius + .004);
         ball.lastHitOwner = paddle.owner;
         lastHitAt.set(paddle.id, now);
+        rallyHits += 1;
+        maxRally = Math.max(maxRally, rallyHits);
+        if (paddle.owner === 1 && !paddle.ai) p1Hits += 1;
         spawnHit(ball.x, ball.y, paddle.owner);
-        playTone(paddle.owner === 1 ? 480 : 400, 560);
+        sfx.hit(paddle.owner);
       }
     }
 
@@ -773,7 +1021,7 @@
     }
 
     function spawnCelebration(x, y) {
-      for (let i = 0; i < 22; i++) particles.push({ x, y, vx: (Math.random() - .5) * .7, vy: -.25 - Math.random() * .55, born: performance.now(), life: 900, owner: 2, star: true });
+      for (let i = 0; i < 22; i++) particles.push({ x, y, vx: (Math.random() - .5) * .7, vy: -.25 - Math.random() * .55, born: performance.now(), life: 900, owner: x < .5 ? 1 : 2, star: true });
     }
 
     function updateParticles(now, dt) {
@@ -781,46 +1029,109 @@
       particles = particles.filter((p) => now - p.born < p.life);
     }
 
-    function drawCourt(w, h) {
-      if (inputMode === "camera" && stage.classList.contains("video-on")) {
-        ctx.fillStyle = "rgba(4,18,30,.16)"; ctx.fillRect(0, 0, w, h);
-        ctx.fillStyle = "rgba(15,78,49,.25)"; ctx.fillRect(0, GROUND_Y * h, w, h * (1 - GROUND_Y));
-      } else {
-        const sky = ctx.createLinearGradient(0, 0, 0, h);
-        sky.addColorStop(0, "#0f3854"); sky.addColorStop(.7, "#16506b"); sky.addColorStop(.701, "#17553b"); sky.addColorStop(1, "#0f3427");
-        ctx.fillStyle = sky; ctx.fillRect(0, 0, w, h);
-      }
-      ctx.strokeStyle = "rgba(255,255,255,.16)"; ctx.lineWidth = 2;
-      ctx.beginPath(); ctx.moveTo(0, GROUND_Y * h); ctx.lineTo(w, GROUND_Y * h); ctx.stroke();
+    // ---------- 그리기 ----------
+    function roundRectPath(x, y, w, h, r) { ctx.beginPath(); ctx.roundRect(x, y, w, h, r); }
 
-      const netTop = NET_TOP * h;
-      const netWidth = Math.max(42, w * .055);
-      ctx.strokeStyle = "#bed0dd"; ctx.lineWidth = Math.max(3, w * .004);
-      ctx.beginPath(); ctx.moveTo(w * .5, netTop); ctx.lineTo(w * .5, GROUND_Y * h); ctx.stroke();
-      ctx.strokeStyle = "rgba(190,208,221,.62)"; ctx.lineWidth = 1;
-      const left = w * .5 - netWidth / 2, right = w * .5 + netWidth / 2;
-      for (let y = netTop + 15; y < Math.min(GROUND_Y * h, netTop + h * .34); y += 15) {
-        ctx.beginPath(); ctx.moveTo(left, y); ctx.lineTo(right, y); ctx.stroke();
+    /** 해변 배경. 카메라 영상이 보이는 영역은 비워 둔다. */
+    function drawCourt(w, h) {
+      const sky = ctx.createLinearGradient(0, 0, 0, h);
+      sky.addColorStop(0, "#9ee6f5"); sky.addColorStop(.57, "#d9f5f6");
+      sky.addColorStop(.57, "#68cbd4"); sky.addColorStop(.63, "#9cdce0");
+      sky.addColorStop(.63, "#ffe3a6"); sky.addColorStop(1, "#f6c97d");
+      ctx.fillStyle = sky; ctx.fillRect(0, 0, w, h);
+      ctx.fillStyle = "#fffdeb";
+      ctx.beginPath(); ctx.arc(w * .86, h * .17, h * .055, 0, Math.PI * 2); ctx.fill();
+
+      if (videoVisible()) {
+        const x0 = Math.max(0, videoMap.ox) * w, x1 = Math.min(videoMap.boxW, videoMap.ox + videoMap.dw) * w;
+        const y0 = Math.max(0, videoMap.oy) * h, y1 = Math.min(1, videoMap.oy + videoMap.dh) * h;
+        ctx.clearRect(x0, y0, x1 - x0, y1 - y0);
+        ctx.fillStyle = "rgba(255,253,245,.08)"; ctx.fillRect(x0, y0, x1 - x0, y1 - y0);
+        ctx.fillStyle = "rgba(246,201,125,.55)"; ctx.fillRect(x0, GROUND_Y * h, x1 - x0, h - GROUND_Y * h);
       }
-      for (let x = left; x <= right; x += 15) {
-        ctx.beginPath(); ctx.moveTo(x, netTop + 15); ctx.lineTo(x, Math.min(GROUND_Y * h, netTop + h * .34)); ctx.stroke();
-      }
-      ctx.strokeRect(left, netTop + 15, netWidth, Math.min(GROUND_Y * h, netTop + h * .34) - netTop - 15);
+
+      ctx.strokeStyle = "rgba(255,253,242,.95)"; ctx.lineWidth = Math.max(3, h * .005);
+      ctx.beginPath(); ctx.moveTo(w * .02, GROUND_Y * h); ctx.lineTo(w * .98, GROUND_Y * h); ctx.stroke();
+
+      // 네트: 기둥 + 그물
+      const netTop = NET_TOP * h, groundY = GROUND_Y * h;
+      const netWidth = Math.max(30, w * .03);
+      const left = w * .5 - netWidth / 2;
+      const meshBottom = Math.min(groundY, netTop + h * .34);
+      ctx.fillStyle = "rgba(22,77,98,.28)"; ctx.fillRect(left, netTop, netWidth, meshBottom - netTop);
+      ctx.strokeStyle = "rgba(255,255,255,.75)"; ctx.lineWidth = 1.5;
+      for (let y = netTop + 14; y < meshBottom; y += 14) { ctx.beginPath(); ctx.moveTo(left, y); ctx.lineTo(left + netWidth, y); ctx.stroke(); }
+      for (let x = left + 10; x < left + netWidth; x += 10) { ctx.beginPath(); ctx.moveTo(x, netTop); ctx.lineTo(x, meshBottom); ctx.stroke(); }
+      ctx.fillStyle = "#ffffff"; ctx.fillRect(left - 2, netTop - 4, netWidth + 4, 7);
+      ctx.fillStyle = "#e3eff9"; ctx.strokeStyle = "#25495a"; ctx.lineWidth = 2;
+      for (const px of [left - 6, left + netWidth + 1]) { roundRectPath(px, netTop - 10, 5, groundY - netTop + 10, 3); ctx.fill(); ctx.stroke(); }
     }
 
-    function drawHuman(owner, paddles, w, h) {
-      const baseX = (inputMode === "keyboard" ? (owner === 1 ? keyboard.p1x : keyboard.p2x) : (owner === 1 ? .24 : .76)) * w;
-      const baseY = GROUND_Y * h;
-      const color = owner === 1 ? "#38bdf8" : "#fb923c";
-      const head = paddles.find((paddle) => paddle.owner === owner && !paddle.ai);
-      const headX = head ? head.x * w : baseX;
-      const headY = head ? head.y * h : baseY - h * .27;
-      ctx.strokeStyle = color; ctx.fillStyle = "rgba(7,17,31,.52)"; ctx.lineWidth = Math.max(4, w * .006);
-      ctx.beginPath(); ctx.arc(headX, headY, h * .045, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
-      ctx.beginPath(); ctx.roundRect(baseX - h * .055, baseY - h * .19, h * .11, h * .19, h * .035); ctx.fill(); ctx.stroke();
-      if (head) drawHeadMarker(head, w, h, color);
-      ctx.fillStyle = color; ctx.font = `800 ${Math.max(14, h * .032)}px system-ui`; ctx.textAlign = "center";
-      ctx.fillText(`P${owner}`, baseX, baseY - 8);
+    function drawTag(text, x, y, h, kind) {
+      const size = Math.max(14, h * .028);
+      ctx.font = `900 ${size}px system-ui, sans-serif`;
+      const tw = ctx.measureText(text).width, bw = tw + size * 1.4, bh = size * 1.75;
+      const colors = kind === 1 ? ["#e2f6ff", "#14769a", "#065176"] : ["#fff2dd", "#a94e19", "#80401a"];
+      ctx.fillStyle = colors[1]; roundRectPath(x - bw / 2, y + 3, bw, bh, 9); ctx.fill();
+      ctx.fillStyle = colors[0]; ctx.strokeStyle = colors[1]; ctx.lineWidth = 2;
+      roundRectPath(x - bw / 2, y, bw, bh, 9); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = colors[2]; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(text, x, y + bh / 2);
+      ctx.textBaseline = "alphabetic";
+    }
+
+    function drawTags(w, h) {
+      const y = GROUND_Y * h + h * .018;
+      drawTag("P1", w * .24, y, h, 1);
+      drawTag(opponentName(), w * .76, y, h, 2);
+    }
+
+    /** 키보드·터치 모드 캐릭터: 둥근 몸에 점눈. 머리 부분이 헤딩 판정 원이다. */
+    function drawBuddy(owner, paddles, w, h) {
+      const paddle = paddles.find((item) => item.owner === owner && !item.ai);
+      if (!paddle) return;
+      const color = owner === 1 ? ["#63cbf5", "#176182", "#c3efff"] : ["#fdba74", "#9a4a14", "#ffe7c7"];
+      const x = paddle.x * w, headY = paddle.y * h, r = (paddle.radius || HEAD_RADIUS) * h;
+      const lift = (.63 - paddle.y) * h;            // 헤딩할 때 몸 전체가 뛰어오른다
+      const bottom = GROUND_Y * h - lift;
+      const top = headY - r;
+      const bodyW = Math.min(r * 4, w * .22);   // 세로 화면에서 코트를 가리지 않게 폭을 제한한다(판정 원 크기는 그대로)
+      const domeR = bodyW * .42, domeY = top + domeR;
+      const footY = bottom - r * .12;
+      ctx.lineWidth = Math.max(3, h * .005);
+      // 그림자
+      ctx.fillStyle = "rgba(23,59,84,.18)";
+      ctx.beginPath(); ctx.ellipse(x, GROUND_Y * h + 3, bodyW * .5 * (lift > 1 ? .7 : 1), h * .014, 0, 0, Math.PI * 2); ctx.fill();
+      // 발과 팔
+      ctx.fillStyle = color[1];
+      for (const side of [-1, 1]) {
+        ctx.beginPath(); ctx.ellipse(x + side * bodyW * .22, footY, bodyW * .17, r * .3, 0, 0, Math.PI * 2); ctx.fill();
+      }
+      ctx.fillStyle = color[0]; ctx.strokeStyle = color[1];
+      for (const side of [-1, 1]) {
+        ctx.beginPath(); ctx.ellipse(x + side * bodyW * .5, domeY + (bottom - domeY) * .35, r * .32, r * .55, side * .5, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      }
+      // 몸: 위는 좁고 아래는 넓은 달걀 모양
+      ctx.beginPath();
+      ctx.moveTo(x - domeR, domeY);
+      ctx.arc(x, domeY, domeR, Math.PI, 0);
+      ctx.bezierCurveTo(x + domeR + bodyW * .12, domeY + (footY - domeY) * .45, x + bodyW * .52, footY - r * .2, x + bodyW * .3, footY);
+      ctx.lineTo(x - bodyW * .3, footY);
+      ctx.bezierCurveTo(x - bodyW * .52, footY - r * .2, x - domeR - bodyW * .12, domeY + (footY - domeY) * .45, x - domeR, domeY);
+      ctx.closePath();
+      ctx.fill(); ctx.stroke();
+      ctx.fillStyle = color[2];
+      ctx.beginPath(); ctx.ellipse(x, footY - (footY - domeY) * .38, bodyW * .27, (footY - domeY) * .3, 0, 0, Math.PI * 2); ctx.fill();
+      // 볼터치
+      ctx.fillStyle = "rgba(251,113,133,.45)";
+      for (const side of [-1, 1]) { ctx.beginPath(); ctx.ellipse(x + side * r * .62, headY + r * .3, r * .2, r * .12, 0, 0, Math.PI * 2); ctx.fill(); }
+      // 눈과 입
+      ctx.fillStyle = "#16364a";
+      for (const dx of [-.3, .3]) { ctx.beginPath(); ctx.arc(x + dx * r, headY, Math.max(2.5, r * .1), 0, Math.PI * 2); ctx.fill(); }
+      ctx.strokeStyle = "#16364a"; ctx.lineWidth = Math.max(2, r * .07);
+      ctx.beginPath(); ctx.arc(x, headY + r * .22, r * .16, .2 * Math.PI, .8 * Math.PI); ctx.stroke();
+      // 판정 원(점선)
+      ctx.setLineDash([8, 6]); ctx.strokeStyle = owner === 1 ? "rgba(7,84,118,.7)" : "rgba(135,64,20,.7)"; ctx.lineWidth = 2.5;
+      ctx.beginPath(); ctx.arc(x, headY, r, 0, Math.PI * 2); ctx.stroke(); ctx.setLineDash([]);
     }
 
     function drawPosePlayer(owner, paddles, w, h) {
@@ -830,65 +1141,114 @@
       const lx = head.leftShoulderX * w, ly = head.leftShoulderY * h;
       const rx = head.rightShoulderX * w, ry = head.rightShoulderY * h;
       const hx = head.x * w, hy = head.y * h;
+      const radius = (head.radius || HEAD_RADIUS) * h;
       ctx.lineCap = "round"; ctx.lineJoin = "round";
-      ctx.strokeStyle = "rgba(7,17,31,.72)"; ctx.lineWidth = Math.max(12, h * .022);
+      ctx.strokeStyle = "rgba(23,59,84,.75)"; ctx.lineWidth = Math.max(11, h * .02);
       ctx.beginPath(); ctx.moveTo(lx, ly); ctx.lineTo(rx, ry); ctx.stroke();
       ctx.strokeStyle = color; ctx.lineWidth = Math.max(6, h * .009);
-      ctx.beginPath(); ctx.moveTo(lx, ly); ctx.lineTo(rx, ry); ctx.moveTo((lx + rx) / 2, (ly + ry) / 2); ctx.lineTo(hx, hy); ctx.stroke();
-      ctx.fillStyle = color;
+      ctx.beginPath(); ctx.moveTo(lx, ly); ctx.lineTo(rx, ry); ctx.moveTo((lx + rx) / 2, (ly + ry) / 2); ctx.lineTo(hx, hy + radius); ctx.stroke();
+      ctx.fillStyle = "#ffffff";
       for (const [x, y] of [[lx, ly], [rx, ry]]) { ctx.beginPath(); ctx.arc(x, y, Math.max(5, h * .01), 0, Math.PI * 2); ctx.fill(); }
-      drawHeadMarker(head, w, h, color);
-      ctx.fillStyle = color; ctx.font = `800 ${Math.max(16, h * .03)}px system-ui`; ctx.textAlign = "center";
-      ctx.fillText(`P${owner} 헤딩`, hx, hy - (head.radius || HEAD_RADIUS) * h - 12);
+      ctx.fillStyle = "rgba(255,253,245,.22)"; ctx.strokeStyle = color; ctx.lineWidth = Math.max(4, h * .006);
+      ctx.setLineDash([12, 8]);
+      ctx.beginPath(); ctx.arc(hx, hy, radius, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      ctx.setLineDash([]);
+      drawTag(`P${owner} 헤딩`, hx, hy - radius - h * .06, h, owner);
     }
 
-    function drawHeadMarker(paddle, w, h, color) {
-      const x = paddle.x * w, y = paddle.y * h;
-      const radius = (paddle.radius || HEAD_RADIUS) * h;
-      ctx.fillStyle = "rgba(7,17,31,.72)"; ctx.strokeStyle = color; ctx.lineWidth = Math.max(3, w * .004);
-      ctx.beginPath(); ctx.arc(x, y, radius, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
-      ctx.fillStyle = color; ctx.font = `800 ${Math.max(12, h * .025)}px system-ui`; ctx.textAlign = "center";
-      ctx.fillText(`P${paddle.owner}`, x, y + 4);
-    }
-
-    function drawCapybara(now, w, h) {
-      const baseX = ai.x * w, baseY = GROUND_Y * h;
-      const celebrating = now < celebrateUntil;
-      const age = celebrating ? (POINT_PAUSE_MS - (celebrateUntil - now)) / 1000 : 0;
-      const jumpAge = (now - ai.jumpStartedAt) / CAPYBARA_JUMP_MS;
-      const jumping = jumpAge >= 0 && jumpAge <= 1;
-      const jumpHop = jumping ? Math.sin(jumpAge * Math.PI) * h * CAPYBARA_JUMP_HEIGHT : 0;
-      const hop = celebrating
-        ? Math.abs(Math.sin(age * Math.PI * 4)) * h * .055
-        : jumpHop + Math.sin(now / 420) * h * .003;
-      const angle = celebrating
-        ? Math.sin(age * Math.PI * 6) * .13
-        : (jumping ? -Math.sin(jumpAge * Math.PI) * .055 : 0);
-      const scale = celebrating ? 1 + .06 * Math.sin(age * Math.PI * 4) : 1;
-      ctx.save(); ctx.translate(baseX, baseY - hop); ctx.rotate(angle); ctx.scale(scale * (ai.facing === 1 ? -1 : 1), scale);
-      if (imageReady) {
-        const drawH = h * .36, drawW = drawH * (capybaraImage.width / capybaraImage.height);
-        ctx.drawImage(capybaraImage, -drawW / 2, -drawH, drawW, drawH);
-      } else {
-        ctx.fillStyle = "#d79a54"; ctx.beginPath(); ctx.ellipse(0, -h * .15, h * .085, h * .15, 0, 0, Math.PI * 2); ctx.fill();
-      }
+    function drawBubble(text, x, y, h, alpha) {
+      if (!text || alpha <= 0) return;
+      ctx.save(); ctx.globalAlpha = alpha;
+      const size = Math.max(17, h * .036);
+      ctx.font = `900 ${size}px system-ui, sans-serif`;
+      const tw = ctx.measureText(text).width, padX = size * .7, bh = size * 1.75;
+      const bw = tw + padX * 2;
+      const bx = clamp(x - bw / 2, 8, canvas.width - bw - 8), by = y - bh;
+      ctx.fillStyle = "#173b54"; roundRectPath(bx, by + 4, bw, bh, bh / 2); ctx.fill();
+      ctx.fillStyle = "#fde68a"; ctx.strokeStyle = "#173b54"; ctx.lineWidth = 3;
+      roundRectPath(bx, by, bw, bh, bh / 2); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = "#173b54"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(text, bx + bw / 2, by + bh / 2);
+      ctx.textBaseline = "alphabetic";
       ctx.restore();
     }
 
-    function drawBall(w, h) {
+    function drawCapybara(now, w, h) {
+      const id = reaction ? reaction.id : "idle";
+      let image = reactionImages[id];
+      if (!image.complete || !image.naturalWidth) image = reactionImages.idle;
+      const drawH = Math.min(h * CAPYBARA_DRAW_H, w * CAPYBARA_DRAW_W_LIMIT);
+      const ratio = image.naturalWidth && image.naturalHeight ? image.naturalWidth / image.naturalHeight : 1;
+      const drawW = drawH * ratio;
+      // 그림이 오른쪽 벽 밖으로 잘리지 않게 카피바라 위치의 최댓값을 정한다.
+      capyMaxX = clamp(1 - (drawH * 0.55) / w - .01, .62, .93);
+      const progress = reaction ? clamp((now - reaction.startedAt) / POINT_PAUSE_MS, 0, 1) : 0;
+      const motion = Object.assign({ dx: 0, dy: 0, rot: 0, s: 1, sx: 1, sy: 1, skew: 0 }, REACTIONS[id].motion(progress, now));
+      const jumpAge = (now - ai.jumpStartedAt) / CAPYBARA_JUMP_MS;
+      const jumpLift = !reaction && jumpAge >= 0 && jumpAge <= 1 ? Math.sin(jumpAge * Math.PI) * h * CAPYBARA_JUMP_HEIGHT : 0;
+      const jumpTilt = !reaction && jumpAge >= 0 && jumpAge <= 1 ? -Math.sin(jumpAge * Math.PI) * .055 : 0;
+      const baseX = ai.x * w, baseY = GROUND_Y * h;
+      const lift = Math.max(0, -motion.dy * MOTION_AMP * h) + jumpLift;
+
+      ctx.fillStyle = "rgba(23,59,84,.18)";
+      ctx.beginPath(); ctx.ellipse(baseX, baseY + 3, drawW * .36 * clamp(1 - lift / (h * .2), .5, 1), h * .016, 0, 0, Math.PI * 2); ctx.fill();
+
+      // 발밑 가운데를 기준점으로 변형해 발이 땅에서 미끄러지지 않게 한다.
+      ctx.save();
+      ctx.translate(baseX + motion.dx * MOTION_AMP * h, baseY + motion.dy * MOTION_AMP * h - jumpLift);
+      ctx.rotate(motion.rot * MOTION_AMP + jumpTilt);
+      ctx.transform(1, 0, -motion.skew * MOTION_AMP, 1, 0, 0);
+      const sx = 1 + (motion.s * motion.sx - 1) * MOTION_AMP;
+      const sy = 1 + (motion.s * motion.sy - 1) * MOTION_AMP;
+      ctx.scale(sx * (!reaction && ai.facing === 1 ? -1 : 1), sy);
+      ctx.drawImage(image, -drawW / 2, -drawH, drawW, drawH);
+      ctx.restore();
+
+      if (reaction) {
+        const fade = progress < .85 ? Math.min(1, progress * 8) : (1 - progress) / .15;
+        drawBubble(CAPYBARA_LINES[reaction.id] || "", baseX - drawW * .12, baseY - drawH - h * .03, h, fade);
+      }
+    }
+
+    function drawBall(now, w, h) {
       const x = ball.x * w, y = ball.y * h, r = BALL_RADIUS * h;
-      const gradient = ctx.createRadialGradient(x - r * .35, y - r * .4, r * .1, x, y, r);
-      gradient.addColorStop(0, "#fff7ed"); gradient.addColorStop(.45, "#fb7185"); gradient.addColorStop(1, "#be123c");
-      ctx.fillStyle = gradient; ctx.strokeStyle = "#fff"; ctx.lineWidth = Math.max(2, r * .1);
-      ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
-      ctx.strokeStyle = "rgba(255,255,255,.65)"; ctx.beginPath(); ctx.arc(x, y, r * .7, -.8, 1.7); ctx.stroke();
+      // 바닥 그림자: 공이 높을수록 작고 옅다.
+      const height = clamp((GROUND_Y - ball.y) / GROUND_Y, 0, 1);
+      ctx.fillStyle = `rgba(123,84,39,${.42 - height * .28})`;
+      ctx.beginPath(); ctx.ellipse(x, GROUND_Y * h + 2, r * (1.5 - height * .8), r * (.42 - height * .2), 0, 0, Math.PI * 2); ctx.fill();
+
+      const bob = phase === "playing" && now < serveUntil ? Math.sin(now / 90) * r * .18 : 0;
+      const gradient = ctx.createRadialGradient(x - r * .35, y - r * .4 + bob, r * .1, x, y + bob, r);
+      gradient.addColorStop(0, "#ffc5de"); gradient.addColorStop(.75, "#f43f8c"); gradient.addColorStop(1, "#be185d");
+      ctx.fillStyle = gradient; ctx.strokeStyle = "#ffffff"; ctx.lineWidth = Math.max(4, r * .24);
+      ctx.beginPath(); ctx.arc(x, y + bob, r, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      ctx.strokeStyle = "#ad245c"; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(x, y + bob, r + ctx.lineWidth + Math.max(2, r * .12), 0, Math.PI * 2); ctx.stroke();
+      ctx.strokeStyle = "rgba(255,255,255,.7)"; ctx.lineWidth = Math.max(2, r * .1);
+      ctx.beginPath(); ctx.arc(x, y + bob, r * .65, -.8, 1.7); ctx.stroke();
+
+      if (phase === "playing" && now < serveUntil) drawServeHint(x, y, r, h);
+    }
+
+    /** 서브 대기 중: 공 위에 서브하는 쪽과 방향 화살표 */
+    function drawServeHint(x, y, r, h) {
+      const server = ball.lastHitOwner;
+      const dir = server === 1 ? 1 : -1;
+      const label = server === 1 ? "P1 서브" : `${opponentName()} 서브`;
+      drawTag(label, x, y - r * 3.6, h, server);
+      ctx.fillStyle = server === 1 ? "#075476" : "#874014";
+      for (let i = 0; i < 3; i++) {
+        const ax = x + dir * (r * 1.8 + i * r * .9), ay = y;
+        ctx.globalAlpha = 1 - i * .25;
+        ctx.beginPath(); ctx.moveTo(ax, ay - r * .45); ctx.lineTo(ax + dir * r * .55, ay); ctx.lineTo(ax, ay + r * .45); ctx.closePath(); ctx.fill();
+      }
+      ctx.globalAlpha = 1;
     }
 
     function drawParticles(now, w, h) {
       for (const p of particles) {
         const alpha = 1 - (now - p.born) / p.life;
         ctx.save(); ctx.globalAlpha = Math.max(0, alpha); ctx.translate(p.x * w, p.y * h);
-        ctx.fillStyle = p.owner === 1 ? "#7dd3fc" : "#fdba74";
+        ctx.fillStyle = p.owner === 1 ? "#0ea5e9" : "#f97316";
         if (p.star) {
           ctx.rotate((now - p.born) / 100); ctx.beginPath();
           for (let i = 0; i < 10; i++) { const r = i % 2 ? 3 : 8; const a = i * Math.PI / 5; ctx.lineTo(Math.cos(a) * r, Math.sin(a) * r); }
@@ -898,52 +1258,69 @@
       }
     }
 
-    function draw(now, paddles, aiPaddle) {
+    function draw(now, paddles) {
       const w = canvas.width, h = canvas.height;
       ctx.clearRect(0, 0, w, h);
       drawCourt(w, h);
+      drawTags(w, h);
       if (inputMode === "camera") {
         drawPosePlayer(1, paddles, w, h);
         if (mode === "human") drawPosePlayer(2, paddles, w, h);
       } else {
-        drawHuman(1, paddles, w, h);
-        if (mode === "human") drawHuman(2, paddles, w, h);
+        drawBuddy(1, paddles, w, h);
+        if (mode === "human") drawBuddy(2, paddles, w, h);
       }
       if (mode !== "human") drawCapybara(now, w, h);
-      drawBall(w, h);
+      drawBall(now, w, h);
       drawParticles(now, w, h);
     }
 
+    function resizeCanvas() {
+      const dpr = Math.min(2, window.devicePixelRatio || 1);
+      const w = Math.max(1, Math.round(stage.clientWidth * dpr));
+      const h = Math.max(1, Math.round(stage.clientHeight * dpr));
+      if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h; updateVideoMap(); }
+    }
+
+    // ---------- 단계 진행 ----------
     function updatePhase(now) {
+      if (noticeHideAt && now >= noticeHideAt) showNotice();
       if (phase === "ready" && inputMode === "camera") {
         const count = recentPeopleCount(now);
         $("peopleNow").textContent = count;
         if (count >= expectedPeople()) {
           if (!readySince) readySince = now;
-          $("readyStatus").textContent = `준비 완료 · ${recentPeopleStatus(now)} · ${inferenceFps} FPS`;
+          $("readyStatus").textContent = `준비 완료 · ${recentPeopleStatus(now)}`;
           if (now - readySince >= POSE_READY_MS) startCountdown();
         } else {
           readySince = 0;
           $("readyStatus").textContent = `${recentPeopleStatus(now)} · 머리와 한쪽 이상의 어깨를 보여 주세요.`;
         }
       } else if (phase === "countdown") {
-        const left = Math.ceil((countdownEndsAt - now) / 1000);
-        $("countdown").textContent = left > 0 ? String(left) : "시작!";
-        if (now >= countdownEndsAt) startPlaying();
+        // rAF 시각이 버튼을 누른 시각보다 조금 이를 수 있어 첫 프레임에 4가 보이지 않게 3으로 제한한다.
+        const left = Math.min(3, Math.ceil((countdownEndsAt - now) / 1000));
+        const shown = left > 0 ? String(left) : "시작!";
+        if (shown !== lastCountShown) { lastCountShown = shown; $("countdown").textContent = shown; sfx.count(left <= 0); }
+        if (now >= countdownEndsAt) startPlaying(now);
       } else if (phase === "point" && now >= pointResumeAt) {
         setMessage();
+        reaction = null;
         if (Math.max(...scores) >= WIN_SCORE) finishMatch();
-        else { resetBall(pointWinner); phase = "playing"; }
+        else { phase = "playing"; beginServe(pointWinner, now); }
       }
 
       if (phase === "playing" && inputMode === "camera") {
-        const count = recentPeopleCount(now);
-        if (count < expectedPeople() && !poseLostSince) {
-          poseLostSince = now;
-          setStatus(`${recentPeopleStatus(now)} · 경기는 계속됩니다.`, "warn");
-        } else if (count >= expectedPeople() && poseLostSince) {
+        const missing = missingOwners(now);
+        if (missing.length) {
+          if (!poseLostSince) poseLostSince = now;
+          const names = missing.map((owner) => `P${owner}`).join("·");
+          showNotice(`${names} 머리가 안 보여요 · 한 걸음 뒤로`, "머리와 양쪽 어깨가 화면 안에 들어오게 서 주세요.");
+          if (now - poseLostSince >= POSE_LOST_PAUSE_MS) {
+            pauseGame(`${names} 머리가 보이지 않아 경기를 멈췄습니다. 카메라에 다시 보이면 계속하기를 누르세요. 계속 인식되지 않으면 점수를 그대로 두고 키보드·터치로 바꿀 수 있습니다.`, true);
+          }
+        } else if (poseLostSince) {
           poseLostSince = 0;
-          setStatus(`${recentPeopleStatus(now)} · 헤딩을 계속하세요.`, "good");
+          showNotice();
         }
       }
     }
@@ -954,7 +1331,7 @@
       const dt = lastFrameAt ? Math.min(.05, (now - lastFrameAt) / 1000) : 0;
       lastFrameAt = now;
 
-      if (inputMode === "camera" && poseLandmarker && video.readyState >= 2 && video.currentTime !== lastVideoTime) {
+      if (inputMode === "camera" && poseLandmarker && !document.hidden && video.readyState >= 2 && video.currentTime !== lastVideoTime) {
         lastVideoTime = video.currentTime;
         try {
           const inferenceStartedAt = performance.now();
@@ -964,23 +1341,40 @@
         } catch (error) { console.warn("상반신 인식 프레임을 건너뜁니다.", error); }
       }
 
-      let paddles = inputMode === "camera" ? cameraPaddles(now) : keyboardPaddles(now, dt);
-      const aiPaddle = updateAI(dt, now);
-      if (aiPaddle) paddles = [...paddles, aiPaddle];
+      let paddles = inputMode === "camera" ? cameraPaddles(now) : keyboardPaddles(now, phase === "paused" ? 0 : dt);
+      // 카피바라는 경기 중에만 움직인다(카운트다운·일시정지·득점 대기 중에는 멈춤).
+      if (phase === "playing") {
+        const aiPaddle = updateAI(dt, now);
+        if (aiPaddle) paddles = [...paddles, aiPaddle];
+      }
 
       updatePhase(now);
-      if (phase === "playing") {
+      if (phase === "playing" && now >= serveUntil) {
         applyPaddleHits(paddles, now);
         accumulator = Math.min(.05, accumulator + dt);
         while (accumulator >= 1 / 120 && phase === "playing") { physicsStep(1 / 120, now); accumulator -= 1 / 120; }
+      } else {
+        accumulator = 0;
       }
-      updateParticles(now, dt);
-      draw(now, paddles, aiPaddle);
+      if (phase !== "paused") updateParticles(now, dt);
+      draw(now, paddles);
     }
+
+    // ---------- 카메라 ----------
+    const CAMERA_ERRORS = {
+      NotAllowedError: ["카메라 권한이 필요합니다", "주소창의 카메라 설정을 허용으로 바꾸고 다시 시도하거나, 키보드·터치로 진행하세요."],
+      SecurityError: ["카메라 권한이 필요합니다", "이 브라우저 설정에서는 카메라를 쓸 수 없습니다. 키보드·터치로 진행하세요."],
+      NotFoundError: ["카메라를 찾지 못했습니다", "이 기기에 연결된 카메라가 없습니다. 카메라를 연결하거나 키보드·터치로 진행하세요."],
+      OverconstrainedError: ["카메라 설정을 맞추지 못했습니다", "이 카메라가 요청한 화면 크기를 지원하지 않습니다. 다른 카메라를 연결하거나 키보드·터치로 진행하세요."],
+      NotReadableError: ["카메라를 쓸 수 없습니다", "다른 앱이나 탭이 카메라를 쓰고 있습니다. 그 앱을 닫고 다시 시도하거나 키보드·터치로 진행하세요."],
+      AbortError: ["카메라를 쓸 수 없습니다", "카메라를 켜는 중에 문제가 생겼습니다. 다시 시도하거나 키보드·터치로 진행하세요."],
+    };
+    const MODEL_ERROR = ["인식 파일을 불러오지 못했습니다", "인터넷 연결이나 파일 경로를 확인한 뒤 다시 시도하세요. 키보드·터치로는 바로 할 수 있습니다."];
 
     async function prepareCamera() {
       if (starting) return;
       starting = true; inputMode = "camera"; phase = "loading"; setPanel("loadingPanel");
+      let step = "camera";
       try {
         setLoad("카메라 권한을 요청합니다.", 8);
         stream = await navigator.mediaDevices.getUserMedia({
@@ -988,6 +1382,8 @@
           audio: false,
         });
         video.srcObject = stream; await video.play();
+        updateVideoMap();
+        step = "model";
         const needed = expectedPeople();
         if (!poseLandmarker || landmarkerPoses !== needed) {
           if (poseLandmarker?.close) poseLandmarker.close();
@@ -1007,53 +1403,75 @@
           landmarkerPoses = needed;
         }
         setLoad("준비 완료", 100);
-        tracks = []; lastSeenByOwner = [0, 0, 0]; visiblePeople = 0; readySince = 0; phase = "ready";
-        inferenceSamples = []; inferenceTimestamps = []; inferenceFps = 0; inferenceMeanMs = 0;
-        $("fpsText").className = "fps";
-        $("fpsText").textContent = "인식 FPS --";
+        tracks = []; lastSeenByOwner = [0, 0, 0]; readySince = 0; phase = "ready";
+        resetInferenceStats();
         $("peopleNow").textContent = "0";
         $("peopleNeed").textContent = expectedPeople();
         $("readyGuide").textContent = mode === "human"
           ? "P1은 왼쪽, P2는 오른쪽에 서서 머리와 어깨를 보여 주세요."
-          : "카메라 정면 중앙에 서서 머리와 어깨를 보여 주세요. 화면에서는 왼쪽 코트에 표시됩니다.";
+          : "카메라 정면 중앙에 서서 머리와 어깨를 보여 주세요. 화면에서는 왼쪽 코트에 나타납니다.";
         stage.classList.toggle("video-on", $("showVideoCheck").checked);
         $("videoToggleBtn").textContent = stage.classList.contains("video-on") ? "영상 숨기기" : "영상 보기";
-        setPanel("readyPanel"); setStatus("카메라·상반신 인식 준비 완료", "good");
+        updateMeta();
+        setPanel("readyPanel"); setStatus("카메라·상반신 인식 준비 완료");
         ensureLoop();
       } catch (error) {
         console.error(error); phase = "error";
-        if (error?.name === "NotAllowedError") {
-          $("errorTitle").textContent = "카메라 권한이 필요합니다";
-          $("errorText").textContent = "주소창의 카메라 설정을 허용으로 바꾸거나 키보드 모드로 진행하세요.";
-        } else {
-          $("errorTitle").textContent = "카메라를 준비하지 못했습니다";
-          $("errorText").textContent = error?.message || String(error);
-        }
+        const [title, text] = step === "model" ? MODEL_ERROR : (CAMERA_ERRORS[error?.name] || ["카메라를 준비하지 못했습니다", "카메라를 켜지 못했습니다. 다시 시도하거나 키보드·터치로 진행하세요."]);
+        $("errorTitle").textContent = title;
+        $("errorText").textContent = text;
         setPanel("errorPanel"); stopCamera(); ensureLoop();
       } finally { starting = false; }
     }
 
     function startKeyboard() {
-      stopCamera(); inputMode = "keyboard"; phase = "countdown"; ensureLoop(); startCountdown();
+      stopCamera(); inputMode = "keyboard"; ensureLoop(); startCountdown();
     }
 
-    function pauseGame(text = "경기를 잠시 멈췄습니다.") {
-      if (!["playing", "point"].includes(phase)) return;
-      phase = "paused"; $("pauseText").textContent = text; setPanel("pausePanel"); setStatus("일시정지", "warn");
+    function pauseGame(text = "경기를 잠시 멈췄습니다.", offerKeyboard = false) {
+      if (!inGame()) return;
+      pausedFrom = phase; pausedAt = performance.now();
+      phase = "paused";
+      $("countdown").classList.remove("show");
+      $("pauseText").textContent = text;
+      $("pauseKeyboardBtn").hidden = !(offerKeyboard && inputMode === "camera");
+      setPanel("pausePanel");
+      showNotice();
+      stopMusic();
+      setStatus("일시정지");
     }
 
+    /** 멈춘 시간만큼 모든 예약 시각을 뒤로 미뤄, 반응·서브·카운트다운이 이어서 진행되게 한다. */
     function resumeGame() {
       if (phase !== "paused") return;
-      setPanel(); phase = "playing"; poseLostSince = 0; lastFrameAt = performance.now();
-      setStatus("경기를 계속합니다.", "good");
+      const now = performance.now();
+      const delay = now - pausedAt;
+      countdownEndsAt += delay; pointResumeAt += delay; serveUntil += delay; ai.jumpStartedAt += delay;
+      if (reaction) reaction.startedAt += delay;
+      for (const p of particles) p.born += delay;
+      setPanel();
+      phase = pausedFrom || "playing";
+      if (phase === "countdown") $("countdown").classList.add("show");
+      poseLostSince = 0; lastFrameAt = now;
+      if (inputMode === "camera") lastSeenByOwner = lastSeenByOwner.map((time) => (time ? time + delay : 0));
+      startMusic();
+      setStatus("경기를 계속합니다.");
+    }
+
+    /** 인식이 계속 안 될 때 빠져나갈 길: 점수는 그대로 두고 키보드·터치 조작으로 바꿔 이어 간다. */
+    function switchToKeyboard() {
+      if (phase !== "paused") return;
+      stopCamera();
+      inputMode = "keyboard";
+      updateMeta();
+      resumeGame();
+      showNotice("끌어서 이동 · 톡 누르면 헤딩", "키보드: P1 A·D·W / P2 ←·→·↑", 2900);
     }
 
     function stopCamera() {
       if (stream) { stream.getTracks().forEach((track) => track.stop()); stream = null; }
-      video.srcObject = null; stage.classList.remove("video-on"); tracks = []; lastSeenByOwner = [0, 0, 0]; visiblePeople = 0; lastVideoTime = -1;
-      inferenceSamples = []; inferenceTimestamps = []; inferenceFps = 0; inferenceMeanMs = 0;
-      $("fpsText").className = "fps";
-      $("fpsText").textContent = "인식 FPS --";
+      video.srcObject = null; stage.classList.remove("video-on"); tracks = []; lastSeenByOwner = [0, 0, 0]; lastVideoTime = -1;
+      resetInferenceStats();
     }
 
     function ensureLoop() {
@@ -1061,64 +1479,203 @@
     }
 
     function backToStart() {
-      phase = "intro"; stopCamera(); setPanel("startPanel"); setMessage(); $("countdown").classList.remove("show");
-      $("pauseBtn").disabled = true; setStatus("모드를 고르고 시작하세요.");
+      phase = "intro"; stopCamera(); stopMusic(); setPanel("startPanel"); setMessage(); showNotice();
+      $("countdown").classList.remove("show");
+      $("pauseBtn").hidden = true; reaction = null; setStatus("모드를 고르고 시작하세요.");
     }
 
-    function unlockAudio() {
-      if (!soundOn) return;
+    // ---------- 소리: 효과음 5종 + 해변풍 배경음악 (Web Audio로 직접 만든다) ----------
+    const sound = { on: true, ctx: null, sfxBus: null, musicBus: null, timer: 0, nextTime: 0, step: 0, noise: null };
+
+    function ensureAudio() {
+      if (!sound.on) return null;
       try {
-        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        if (audioCtx.state === "suspended") audioCtx.resume();
-      } catch { /* 소리는 없어도 경기할 수 있다. */ }
+        if (!sound.ctx) {
+          sound.ctx = new (window.AudioContext || window.webkitAudioContext)();
+          sound.sfxBus = sound.ctx.createGain(); sound.sfxBus.gain.value = SFX_VOLUME; sound.sfxBus.connect(sound.ctx.destination);
+          const length = Math.floor(sound.ctx.sampleRate * .05);
+          sound.noise = sound.ctx.createBuffer(1, length, sound.ctx.sampleRate);
+          const data = sound.noise.getChannelData(0);
+          for (let i = 0; i < length; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / length);
+        }
+        if (sound.ctx.state === "suspended") sound.ctx.resume();
+        return sound.ctx;
+      } catch { return null; /* 소리는 없어도 경기할 수 있다. */ }
     }
 
-    function playTone(from, to) {
-      if (!soundOn) return;
-      try {
-        unlockAudio();
-        if (!audioCtx) return;
-        const osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
-        osc.type = "triangle"; osc.frequency.setValueAtTime(from, audioCtx.currentTime); osc.frequency.exponentialRampToValueAtTime(to, audioCtx.currentTime + .14);
-        gain.gain.setValueAtTime(.16, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(.001, audioCtx.currentTime + .18);
-        osc.connect(gain).connect(audioCtx.destination); osc.start(); osc.stop(audioCtx.currentTime + .19);
-      } catch { /* 소리는 없어도 경기할 수 있다. */ }
+    function tone({ freq, to = freq, type = "triangle", dur = .15, gain = 1, at = 0, bus = null }) {
+      const audio = ensureAudio();
+      if (!audio) return;
+      const start = (at || audio.currentTime) + .001;
+      const osc = audio.createOscillator(), amp = audio.createGain();
+      osc.type = type;
+      osc.frequency.setValueAtTime(freq, start);
+      if (to !== freq) osc.frequency.exponentialRampToValueAtTime(to, start + dur * .9);
+      amp.gain.setValueAtTime(.0001, start);
+      amp.gain.exponentialRampToValueAtTime(gain, start + .01);
+      amp.gain.exponentialRampToValueAtTime(.0001, start + dur);
+      osc.connect(amp).connect(bus || sound.sfxBus);
+      osc.start(start); osc.stop(start + dur + .02);
     }
 
+    const sfx = {
+      hit: (owner) => { tone({ freq: owner === 1 ? 320 : 280, to: 170, type: "sine", dur: .12, gain: 1 }); },
+      playerScore: () => { const a = ensureAudio(); if (!a) return; const t = a.currentTime; tone({ freq: 660, dur: .14, at: t }); tone({ freq: 990, dur: .22, at: t + .12 }); },
+      capybaraScore: () => {
+        const a = ensureAudio(); if (!a) return; const t = a.currentTime;
+        tone({ freq: 720, to: 240, type: "sine", dur: .34, gain: .9, at: t });
+        tone({ freq: 300, to: 420, type: "triangle", dur: .12, gain: .6, at: t + .32 });
+      },
+      count: (go) => { tone({ freq: go ? 1320 : 880, type: "square", dur: go ? .22 : .09, gain: .35 }); },
+      fanfare: () => {
+        const a = ensureAudio(); if (!a) return; const t = a.currentTime;
+        [523, 659, 784, 1047].forEach((freq, i) => tone({ freq, dur: i === 3 ? .45 : .15, gain: .8, at: t + i * .13 }));
+      },
+    };
+
+    // 4마디 반복: C - Am - F - G, 8분음표 8칸씩
+    const NOTE = {
+      G2: 98, A2: 110, C3: 130.8, F3: 174.6, C4: 261.6, D4: 293.7, E4: 329.6, F4: 349.2, G4: 392,
+      A4: 440, B4: 493.9, C5: 523.3, D5: 587.3, E5: 659.3, F5: 698.5, G5: 784, A5: 880,
+    };
+    const MUSIC_BARS = [
+      { bass: NOTE.C3, chord: [NOTE.C4, NOTE.E4], melody: ["E5", 0, "G5", 0, "A5", "G5", "E5", 0] },
+      { bass: NOTE.A2, chord: [NOTE.C4, NOTE.E4], melody: ["C5", 0, "E5", 0, "D5", "C5", "A4", 0] },
+      { bass: NOTE.F3, chord: [NOTE.C4, NOTE.F4], melody: ["A4", 0, "C5", 0, "D5", "C5", "A4", 0] },
+      { bass: NOTE.G2, chord: [NOTE.D4, NOTE.G4], melody: ["B4", 0, "D5", 0, "G5", "F5", "D5", 0] },
+    ];
+    const MUSIC_STEP = 60 / 116 / 2;
+
+    function scheduleMusic() {
+      const audio = sound.ctx;
+      if (!audio || !sound.musicBus) return;
+      while (sound.nextTime < audio.currentTime + .3) {
+        const bar = MUSIC_BARS[Math.floor(sound.step / 8) % MUSIC_BARS.length];
+        const beat = sound.step % 8;
+        const at = sound.nextTime;
+        if (beat === 0 || beat === 4) tone({ freq: bar.bass, type: "sine", dur: .32, gain: .9, at, bus: sound.musicBus });
+        if (beat === 2 || beat === 6) for (const freq of bar.chord) tone({ freq, type: "triangle", dur: .14, gain: .35, at, bus: sound.musicBus });
+        const note = bar.melody[beat];
+        if (note) tone({ freq: NOTE[note], type: "triangle", dur: .2, gain: .55, at, bus: sound.musicBus });
+        if (sound.noise) {
+          const src = audio.createBufferSource(), amp = audio.createGain();
+          src.buffer = sound.noise; amp.gain.value = beat % 2 ? .08 : .14;
+          src.connect(amp).connect(sound.musicBus); src.start(at);
+        }
+        sound.nextTime += MUSIC_STEP;
+        sound.step += 1;
+      }
+    }
+
+    /** 배경음악은 하나만 돌게 한다. 이미 돌고 있으면 아무것도 하지 않는다. */
+    function startMusic() {
+      if (!sound.on || sound.timer) return;
+      const audio = ensureAudio();
+      if (!audio) return;
+      sound.musicBus = audio.createGain();
+      sound.musicBus.gain.setValueAtTime(.0001, audio.currentTime);
+      sound.musicBus.gain.exponentialRampToValueAtTime(MUSIC_VOLUME, audio.currentTime + .4);
+      sound.musicBus.connect(audio.destination);
+      sound.nextTime = audio.currentTime + .05; sound.step = 0;
+      scheduleMusic();
+      sound.timer = setInterval(scheduleMusic, 90);
+    }
+
+    /** 예약해 둔 음표까지 함께 끊기도록 음악 출력 자체를 줄이고 분리한다. */
+    function stopMusic() {
+      if (sound.timer) { clearInterval(sound.timer); sound.timer = 0; }
+      const bus = sound.musicBus;
+      sound.musicBus = null;
+      if (bus && sound.ctx) {
+        const t = sound.ctx.currentTime;
+        bus.gain.cancelScheduledValues(t);
+        bus.gain.setValueAtTime(Math.max(.0001, bus.gain.value), t);
+        bus.gain.exponentialRampToValueAtTime(.0001, t + .08);
+        setTimeout(() => bus.disconnect(), 200);
+      }
+    }
+
+    // ---------- 터치·마우스 (키보드·터치 모드) ----------
+    function touchOwner(nx) { return mode === "human" && nx >= .5 ? 2 : 1; }
+    function canTouchControl() { return inputMode === "keyboard" && inGame(); }
+    function heading(owner) {
+      const until = performance.now() + 230;
+      if (owner === 1) keyboard.p1HitUntil = until; else keyboard.p2HitUntil = until;
+    }
+
+    canvas.addEventListener("pointerdown", (event) => {
+      if (!canTouchControl()) return;
+      const rect = canvas.getBoundingClientRect();
+      const nx = (event.clientX - rect.left) / rect.width;
+      try { canvas.setPointerCapture(event.pointerId); } catch { /* 캡처가 안 돼도 조작은 계속된다. */ }
+      touches.set(event.pointerId, { owner: touchOwner(nx), x: event.clientX, y: event.clientY, t: performance.now(), moved: false });
+    });
+    canvas.addEventListener("pointermove", (event) => {
+      const touch = touches.get(event.pointerId);
+      if (!touch || !canTouchControl()) return;
+      if (!touch.moved && Math.hypot(event.clientX - touch.x, event.clientY - touch.y) > TAP_MOVE_PX) touch.moved = true;
+      if (!touch.moved) return;
+      const rect = canvas.getBoundingClientRect();
+      const nx = (event.clientX - rect.left) / rect.width;
+      if (touch.owner === 1) keyboard.p1Target = clamp(nx, .07, .45); else keyboard.p2Target = clamp(nx, .55, .93);
+    });
+    const endTouch = (event) => {
+      const touch = touches.get(event.pointerId);
+      if (!touch) return;
+      touches.delete(event.pointerId);
+      if (!touch.moved && performance.now() - touch.t <= TAP_MS && canTouchControl()) heading(touch.owner);
+      if (touch.owner === 1) keyboard.p1Target = null; else keyboard.p2Target = null;
+    };
+    canvas.addEventListener("pointerup", endTouch);
+    canvas.addEventListener("pointercancel", endTouch);
+
+    // ---------- 이벤트 ----------
     $("aiModeBtn").addEventListener("click", () => selectMode("ai"));
     $("humanModeBtn").addEventListener("click", () => selectMode("human"));
     $("capybaraDifficulty").addEventListener("input", (event) => setCapybaraDifficulty(event.target.value));
-    $("cameraStartBtn").addEventListener("click", () => { unlockAudio(); prepareCamera(); });
-    $("keyboardStartBtn").addEventListener("click", () => { unlockAudio(); startKeyboard(); });
-    $("errorKeyboardBtn").addEventListener("click", () => { unlockAudio(); startKeyboard(); });
-    $("startAnywayBtn").addEventListener("click", () => { unlockAudio(); startCountdown(); });
+    $("cameraStartBtn").addEventListener("click", () => { ensureAudio(); prepareCamera(); });
+    $("keyboardStartBtn").addEventListener("click", () => { ensureAudio(); startKeyboard(); });
+    $("errorKeyboardBtn").addEventListener("click", () => { ensureAudio(); startKeyboard(); });
+    $("startAnywayBtn").addEventListener("click", () => { ensureAudio(); startCountdown(); });
     $("videoToggleBtn").addEventListener("click", () => {
       stage.classList.toggle("video-on");
+      $("showVideoCheck").checked = stage.classList.contains("video-on");
       $("videoToggleBtn").textContent = stage.classList.contains("video-on") ? "영상 숨기기" : "영상 보기";
     });
     $("readyBackBtn").addEventListener("click", backToStart);
     $("errorBackBtn").addEventListener("click", backToStart);
     $("pauseBtn").addEventListener("click", () => pauseGame());
     $("resumeBtn").addEventListener("click", resumeGame);
+    $("pauseKeyboardBtn").addEventListener("click", switchToKeyboard);
     $("pauseQuitBtn").addEventListener("click", backToStart);
     $("resultBackBtn").addEventListener("click", backToStart);
-    $("againBtn").addEventListener("click", () => { setPanel(); startCountdown(); });
+    $("againBtn").addEventListener("click", () => { ensureAudio(); startCountdown(); });
     $("soundBtn").addEventListener("click", () => {
-      soundOn = !soundOn; $("soundBtn").textContent = soundOn ? "소리 끄기" : "소리 켜기";
-      if (soundOn) playTone(420, 520);
+      sound.on = !sound.on;
+      $("soundBtn").textContent = sound.on ? "소리 끄기" : "소리 켜기";
+      if (!sound.on) { stopMusic(); return; }
+      ensureAudio();
+      tone({ freq: 420, to: 520, dur: .15 });
+      if (inGame()) startMusic();
     });
 
     window.addEventListener("keydown", (event) => {
-      if (["KeyA", "KeyD", "KeyW", "ArrowLeft", "ArrowRight", "ArrowUp"].includes(event.code)) event.preventDefault();
+      if (["KeyA", "KeyD", "KeyW", "ArrowLeft", "ArrowRight", "ArrowUp"].includes(event.code) && inGame()) event.preventDefault();
       keyboard.down.add(event.code);
       const now = performance.now();
       if (event.code === "KeyW") keyboard.p1HitUntil = now + 230;
       if (event.code === "ArrowUp") keyboard.p2HitUntil = now + 230;
     });
     window.addEventListener("keyup", (event) => keyboard.down.delete(event.code));
-    window.addEventListener("resize", resizeCanvas);
-    document.addEventListener("visibilitychange", () => { if (document.hidden && phase !== "intro") backToStart(); });
-    window.addEventListener("pagehide", stopCamera);
+    window.addEventListener("resize", () => { resizeCanvas(); updateVideoMap(); });
+    video.addEventListener("loadedmetadata", updateVideoMap);
+    // 다른 탭·앱으로 가면 점수를 지키도록 초기화 대신 일시정지한다. 카메라는 교사가 '모드 선택으로'를 눌러 끈다.
+    document.addEventListener("visibilitychange", () => {
+      if (!document.hidden) return;
+      if (inGame()) pauseGame("다른 화면으로 이동해 경기를 멈췄습니다. 준비되면 계속하기를 누르세요.");
+      stopMusic();
+    });
+    window.addEventListener("pagehide", () => { stopCamera(); stopMusic(); });
 
     setCapybaraDifficulty(2);
     selectMode("ai");
