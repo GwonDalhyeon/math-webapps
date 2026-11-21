@@ -380,12 +380,14 @@ function adjustLine(cfg, kind, dir) {
   clearTimeout(adjustTimer);
   adjustTimer = setTimeout(() => cfg.commit('button'), 600);
 }
-function planeControlsHtml(id) {
-  return `<div class="plane-controls" data-controls="${id}">
-    <button type="button" class="tool-button" data-adjust="rot" data-dir="1" aria-label="직선을 시계 반대 방향으로 돌리기">↺ 돌리기</button>
-    <button type="button" class="tool-button" data-adjust="rot" data-dir="-1" aria-label="직선을 시계 방향으로 돌리기">↻ 돌리기</button>
-    <button type="button" class="tool-button" data-adjust="shift" data-dir="1" aria-label="직선을 한쪽으로 옮기기">⇡ 옮기기</button>
-    <button type="button" class="tool-button" data-adjust="shift" data-dir="-1" aria-label="직선을 반대쪽으로 옮기기">⇣ 옮기기</button>
+/* compact: 좁은 옆 칸용(기호만, 뜻은 title·aria-label로) */
+function planeControlsHtml(id, compact = false) {
+  const b = (attrs, label, sym, word) => `<button type="button" class="tool-button" ${attrs} aria-label="${label}" title="${label}">${compact ? sym : `${sym} ${word}`}</button>`;
+  return `<div class="plane-controls${compact ? ' vertical' : ''}" data-controls="${id}">
+    ${b('data-adjust="rot" data-dir="1"', '직선을 시계 반대 방향으로 돌리기', '↺', '돌리기')}
+    ${b('data-adjust="rot" data-dir="-1"', '직선을 시계 방향으로 돌리기', '↻', '돌리기')}
+    ${b('data-adjust="shift" data-dir="1"', '직선을 한쪽으로 옮기기', '⇡', '옮기기')}
+    ${b('data-adjust="shift" data-dir="-1"', '직선을 반대쪽으로 옮기기', '⇣', '옮기기')}
     <button type="button" class="tool-button" data-clear-line aria-label="직선 지우기">지우기</button>
   </div>`;
 }

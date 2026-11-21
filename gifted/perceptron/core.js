@@ -22,8 +22,9 @@ const SECTIONS = {
 const SCREENS = [
   { id: 'P0', s: 0, label: '시작', mode: 'solo' },
   { id: 'P1', s: 1, label: '네 가지 판단', mode: 'solo' },
-  { id: 'P2a', s: 1, label: '내 장치 설계 ① 문장과 식', mode: 'solo' },
-  { id: 'P2b', s: 1, label: '내 장치 설계 ② 회로로 만들기', mode: 'solo' },
+  { id: 'P2a', s: 1, label: '내 장치 설계 ① 장치와 문장', mode: 'solo' },
+  { id: 'P2e', s: 1, label: '내 장치 설계 ② 식으로 나타내기', mode: 'solo' },
+  { id: 'P2b', s: 1, label: '내 장치 설계 ③ 회로로 만들기', mode: 'solo' },
   { id: 'P3', s: 1, label: 'XOR을 만든 회로', mode: 'both' },
   { id: 'P4', s: 2, label: '합격선', mode: 'demo' },
   { id: 'P5', s: 2, label: '진리표가 점이 된다', mode: 'both' },
@@ -37,14 +38,18 @@ const SCREENS = [
   { id: 'P13', s: 5, label: '쉬는 시간 전에 쓴 답', mode: 'demo' },
   { id: 'P14', s: 5, label: '더해서 기준과 비교', mode: 'demo' },
   { id: 'P15', s: 5, label: 'AND', mode: 'solo' },
-  { id: 'P16', s: 5, label: '기준을 바꾸면 — OR', mode: 'solo' },
+  { id: 'P16', s: 5, label: 'OR이 되는 기준 c 찾기', mode: 'solo' },
+  { id: 'P16w', s: 5, label: '기준선은 어떻게 달라지나', mode: 'solo' },
   { id: 'P17', s: 5, label: 'XOR도 될까', mode: 'solo' },
-  { id: 'P18', s: 5, label: '직선 두 개로 XOR', mode: 'both' },
+  { id: 'P18', s: 5, label: '두 직선 사이의 점', mode: 'both' },
+  { id: 'P18c', s: 5, label: '두 판단을 이어 판단하기', mode: 'both' },
   { id: 'P19', s: 5, label: '층을 쌓는다', mode: 'both' },
   { id: 'P20', s: 6, label: '처음 예상과 비교', mode: 'solo' },
   { id: 'P21', s: 6, label: '처음부터 다시 보기', mode: 'both' },
+  { id: 'P21s', s: 6, label: '마지막 한 문장', mode: 'solo' },
   { id: 'P22', s: 6, label: '제출', mode: 'solo' },
   { id: 'P23', s: 7, label: '입력마다 다른 수를 곱하면?', mode: 'solo', optional: true },
+  { id: 'P23w', s: 7, label: '왜 안 되는지 부등식으로', mode: 'solo', optional: true },
   { id: 'P24', s: 7, label: '직선 하나로 만들 수 있는 나누기', mode: 'solo', optional: true },
   { id: 'P25', s: 7, label: '기계가 직선을 찾는다', mode: 'solo', optional: true }
 ];
@@ -91,7 +96,7 @@ function initialScreens() {
   const blank4 = () => [null, null, null, null];
   return {
     P1: { tables: { AND: blank4(), OR: blank4(), NOT: [null, null], XOR: blank4() } },
-    P2: { inputs: 2, tokens: [], exprOk: false, exprError: '', exprTokens: [], match: '', gates: [], output: '', sw: { A: 0, B: 0, C: 0 }, circuitOk: false, diffRows: [] },
+    P2: { view: 'circuit', inputs: 2, tokens: [], exprOk: false, exprError: '', exprTokens: [], match: '', gates: [], output: '', sw: { A: 0, B: 0, C: 0 }, circuitOk: false, diffRows: [] },
     P3: { sw: { A: 0, B: 0 }, table: blank4() },
     P4: { sel: null },
     P5: { step: 0 },
@@ -251,6 +256,7 @@ function render() {
   const root = $('#screen-root');
   const same = root.dataset.screenId === info.id;
   const y = window.scrollY;
+  const shownBefore = same ? new Set($$('[data-reveal]', root).map((el) => el.dataset.reveal)) : null;
   root.innerHTML = `<section class="screen${same ? ' screen-update' : ''}">${(RENDER[info.id] || (() => ''))()}</section>`;
   root.dataset.screenId = info.id;
   (BIND[info.id] || (() => {}))();
@@ -261,6 +267,18 @@ function render() {
   renderMascot();
   if (same) window.scrollTo(0, y);
   if (focusSel) { const el = $(focusSel); if (el) el.focus({ preventScroll: true }); }
+  /* 조작 뒤 새로 펼쳐진 부분이 화면 밖에 생겼으면 그쪽으로 부드럽게 내려 준다 */
+  if (shownBefore) {
+    const fresh = $$('[data-reveal]', root).find((el) => !shownBefore.has(el.dataset.reveal));
+    if (fresh) {
+      const r = fresh.getBoundingClientRect(), bar = $('.bottom-bar').getBoundingClientRect().height;
+      if (r.bottom > window.innerHeight - bar - 8) {
+        const top = $('.topbar').getBoundingClientRect().height + 10;
+        window.scrollBy({ top: Math.min(r.top - top, r.bottom - (window.innerHeight - bar - 16)), behavior: 'smooth' });
+      }
+    }
+  }
+  updateScrollCue();
 }
 
 function updateNavigation() {
@@ -286,9 +304,9 @@ function renderMenu() {
 }
 
 /* 보기 머리: 제목, 안내, 형태 칩 */
-function head(title, text = '', extra = '') {
+function head(title, text = '', extra = '', tools = '') {
   const info = screenInfo();
-  return `<div class="screen-heading"><span class="mode-chip mode-${info.mode}">${MODE_TEXT[info.mode]}</span>${extra ? `<span class="eyebrow">${esc(extra)}</span>` : ''}<h2>${title}</h2>${text ? `<p>${text}</p>` : ''}</div>`;
+  return `<div class="screen-heading"><div class="heading-line"><h2>${title}</h2><span class="mode-chip mode-${info.mode}">${MODE_TEXT[info.mode]}</span>${extra ? `<span class="eyebrow">${esc(extra)}</span>` : ''}${tools}</div>${text ? `<p>${text}</p>` : ''}</div>`;
 }
 
 /* ------------------------------------------------------------ 서술 칸·예측 잠금 */
@@ -387,5 +405,21 @@ document.addEventListener('DOMContentLoaded', () => {
   });
   window.addEventListener('pagehide', () => persist(true));
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') persist(true); });
+  window.addEventListener('scroll', updateScrollCue, { passive: true });
+  window.addEventListener('resize', updateScrollCue);
+  if (window.ResizeObserver) new ResizeObserver(updateScrollCue).observe($('#screen-root'));
+  $('#scroll-cue').addEventListener('click', () => window.scrollBy({ top: Math.round(window.innerHeight * 0.6), behavior: 'smooth' }));
   render();
 });
+
+/* 화면 아래에 내용이 더 있으면 하단 바 위에 「아래에 더 있어요 ↓」와 흐림 띠를 보인다(끝까지 내리면 사라짐) */
+function updateScrollCue() {
+  const cue = $('#scroll-cue');
+  if (!cue) return;
+  const bar = $('.bottom-bar');
+  const barH = bar ? bar.getBoundingClientRect().height : 0;
+  const rootBottom = $('#screen-root').getBoundingClientRect().bottom;
+  const more = rootBottom - (window.innerHeight - barH) > 24;
+  cue.hidden = !more;
+  document.body.classList.toggle('has-more', more);
+}

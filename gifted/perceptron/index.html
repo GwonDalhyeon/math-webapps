@@ -6,19 +6,19 @@
   <meta name="description" content="퍼셉트론, 직선으로 판단하다 — 좌표평면에서 직선 하나로 판단을 가르고, XOR에서 막힌 뒤 층을 쌓아 푸는 수학 탐구 웹앱">
   <title>퍼셉트론, 직선으로 판단하다</title>
   <link rel="icon" href="../../assets/favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="styles.css">
-  <link rel="stylesheet" href="perceptron.css">
+  <link rel="stylesheet" href="styles.css?v=20261122i">
+  <link rel="stylesheet" href="perceptron.css?v=20261122i">
 </head>
 <body>
   <div class="app-shell">
-    <header class="topbar">
-      <div class="brand-block">
-        <span class="eyebrow">온라인 수학 탐구</span>
-        <h1>퍼셉트론, 직선으로 판단하다</h1>
-      </div>
-      <div class="topbar-actions">
-        <span id="save-state" class="save-state" role="status" aria-live="polite">저장 준비 중</span>
-        <button id="menu-button" class="icon-button" type="button" aria-expanded="false" aria-controls="activity-menu">활동 목록</button>
+    <header class="topbar compact">
+      <div class="topbar-row">
+        <h1 class="app-title">퍼셉트론, 직선으로 판단하다</h1>
+        <span id="section-label" class="topbar-section"></span>
+        <div class="topbar-actions">
+          <span id="save-state" class="save-state" role="status" aria-live="polite">저장 준비 중</span>
+          <button id="menu-button" class="icon-button" type="button" aria-expanded="false" aria-controls="activity-menu">활동 목록</button>
+        </div>
       </div>
       <div id="progress-track" class="progress-track" aria-label="진행률"><span id="progress-bar"></span></div>
     </header>
@@ -44,9 +44,10 @@
     </aside>
 
     <main id="main-content" class="main-content" tabindex="-1">
-      <div id="section-label" class="section-label"></div>
       <div id="screen-root"></div>
     </main>
+
+    <button id="scroll-cue" class="scroll-cue" type="button" hidden aria-label="아래 내용으로 내려가기">아래에 더 있어요 <span aria-hidden="true">↓</span></button>
 
     <footer class="bottom-bar">
       <button id="prev-button" class="secondary-button" type="button">이전</button>
@@ -58,11 +59,11 @@
     </footer>
   </div>
 
-  <script src="geom.js"></script>
-  <script src="parts.js"></script>
-  <script src="core.js"></script>
-  <script src="screens.js"></script>
-  <script src="screens2.js"></script>
-  <script src="submit.js"></script>
+  <script src="geom.js?v=20261122i"></script>
+  <script src="parts.js?v=20261122i"></script>
+  <script src="core.js?v=20261122i"></script>
+  <script src="screens.js?v=20261122i"></script>
+  <script src="screens2.js?v=20261122i"></script>
+  <script src="submit.js?v=20261122i"></script>
 </body>
 </html>

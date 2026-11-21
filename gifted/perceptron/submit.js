@@ -23,7 +23,8 @@ function activityStatus() {
     ['P11', '접은 채로 직선 하나', P.P11.ok && P.P11.countOk === true],
     ['P15', 'AND 판단 장치', Object.keys(P.P15.rows).length === 4],
     ['P16', 'OR이 되는 c 찾기', P.P16.found.length >= 2],
-    ['P18', '직선 두 개로 XOR', P.P18.tableOk === true],
+    ['P18', '두 직선 사이의 점', P.P18.pickOk === true && P.P18.blank1 === 'OR' && P.P18.blank2 === 'AND'],
+    ['P18c', '두 판단을 이어 판단하기', P.P18.tableOk === true],
     ['P21', '처음부터 다시 보기', CARDS.every((c, i) => P.P21.links[i] === c.ws)]
   ].map(([id, label, ok]) => ({ id, label, ok, visited: Boolean(state.views[id]?.visited) }));
 }
@@ -73,7 +74,8 @@ function recordSections(forStudent) {
   sec('P15', '5-1 AND', `<p>${PG.POINTS.map((pt, i) => (P.P15.rows[i] ? `${COORD[i]} 예측 ${P.P15.rows[i].guess}/출력 ${PG.thresholdOut(15, pt)}` : `${COORD[i]} 안 함`)).join(' · ')}</p><p>오른쪽 위 점: ${P.P15.right.map((i) => COORD[i]).join(', ') || '미응답'} · AND와 ${P.P15.same === 'same' ? '같다' : P.P15.same === 'diff' ? '다르다' : '미응답'}</p>`);
   sec('P16', '5-2 OR', `<p>예측한 c: ${esc(predictValue('P16') || '없음')} · OR이 되는 c로 기록: ${P.P16.found.map((x) => fmtK(x / 10)).join(', ') || '없음'} · 범위 고르기: ${(RANGE_OPTS.find(([v]) => v === P.P16.rangeChoice) || [, '미응답'])[1]}</p>${W('P16_range')}${W('P16_sentence')}`);
   sec('P17', '5-3 XOR은 왜 안 되나', W('P17_reason'));
-  sec('P18', '5-4 직선 두 개로 XOR', `<p>사이의 점: ${P.P18.picked.map((i) => COORD[i]).join(', ') || '미응답'} ${P.P18.pickOk ? '✓' : ''} · XOR과 ${P.P18.same === 'same' ? '같다' : P.P18.same === 'diff' ? '다르다' : '미응답'} · A+B&gt;0.5는 ${esc(P.P18.blank1 || '?')}, A+B&gt;1.5는 ${esc(P.P18.blank2 || '?')} · 확인표 ${P.P18.tableOk ? '✓' : '미완료'}</p>`);
+  sec('P18', '5-4 두 직선 사이의 점', `<p>사이의 점: ${P.P18.picked.map((i) => COORD[i]).join(', ') || '미응답'} ${P.P18.pickOk ? '✓' : ''} · XOR과 ${P.P18.same === 'same' ? '같다' : P.P18.same === 'diff' ? '다르다' : '미응답'} · A+B&gt;0.5는 ${esc(P.P18.blank1 || '?')}, A+B&gt;1.5는 ${esc(P.P18.blank2 || '?')}</p>`);
+  sec('P18c', '5-4 두 판단을 이어 판단하기', `<p>확인표 판단 장치 회로 ${P.P18.band.map((v) => (v === null ? '?' : v)).join(' ')} · XOR 회로 ${P.P18.xor.map((v) => (v === null ? '?' : v)).join(' ')} ${P.P18.tableOk ? '✓' : '미완료'}</p>`);
   sec('P19', '5 층을 쌓는다', W('P19_line'));
   sec('P20', '6 처음 생각과 달라진 점', W('P20_reflect'));
   sec('P21', '6 처음부터 다시 보기', `<p>카드 잇기 ${CARDS.filter((c, i) => P.P21.links[i] === c.ws).length}/5</p>${W('P21_sentence')}`);
