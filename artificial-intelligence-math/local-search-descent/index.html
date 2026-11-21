@@ -82,6 +82,7 @@
     .action.primary { background: #10b981; border-color: #10b981; color: #fff; }
     .action.warn { background: #f59e0b; border-color: #f59e0b; color: #fff; }
     .action:disabled { opacity: 0.45; cursor: default; }
+    .action.picking { background: #4f46e5; border-color: #4f46e5; color: #fff; }
 
     /* 실험실 본체: 지도 + 조작패널 */
     .lab {
@@ -97,6 +98,7 @@
       box-shadow: 0 8px 22px rgba(15, 23, 42, 0.07);
     }
     #map { display: block; width: 470px; max-width: 100%; height: auto; touch-action: none; background: #f1f5f9; border-radius: 10px; }
+    #map.picking { cursor: crosshair; outline: 4px dashed #4f46e5; outline-offset: 3px; }
     .legend {
       display: flex;
       align-items: center;
@@ -109,8 +111,11 @@
       flex: 1;
       height: 12px;
       border-radius: 6px;
-      background: linear-gradient(90deg, #0e6245, #f2c14e, #b23a2e);
+      background: linear-gradient(90deg, #440154, #3b528b, #21918c, #5ec962, #fde725);
     }
+    .legend label { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; font-weight: 700; color: #334155; cursor: pointer; }
+    .legend input { width: 18px; height: 18px; margin: 0; accent-color: #4f46e5; }
+    .legend input:disabled + span { color: #94a3b8; }
 
     .panel { flex: 1; min-width: 300px; }
     .panel-top { display: flex; gap: 14px; align-items: flex-start; }
@@ -120,7 +125,7 @@
     .pad {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
-      grid-template-rows: repeat(3, 1fr);
+      grid-template-rows: repeat(3, 78px);
       gap: 8px;
       width: 270px;
       max-width: 100%;
@@ -131,7 +136,8 @@
       box-shadow: 0 8px 22px rgba(15, 23, 42, 0.07);
     }
     .pad .cell {
-      aspect-ratio: 1 / 1;
+      min-width: 0;
+      padding: 0;
       border-radius: 12px;
       display: flex;
       flex-direction: column;
@@ -142,6 +148,7 @@
     }
     .pad .cell .arrow { font-size: 15px; font-weight: 700; opacity: 0.8; }
     .pad .cell .val { font-size: 26px; line-height: 1.1; }
+    .pad .cell .hint { font-size: 11px; font-weight: 800; min-height: 13px; }
     .pad .empty { background: transparent; }
     .pad button.dir {
       cursor: pointer;
@@ -207,6 +214,8 @@
     }
     .verdict.local { background: #fef9c3; color: #854d0e; }
     .verdict.global { background: #dcfce7; color: #14532d; }
+    .verdict.skip { background: #ffedd5; color: #9a3412; }
+    .verdict.pick { background: #e0e7ff; color: #3730a3; }
 
     /* 자동 실행 버튼줄 */
     .auto-row { width: 270px; max-width: 100%; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
@@ -274,6 +283,7 @@
         <div class="seg" id="segTerrain">
           <button data-v="single" class="on">단일 골짜기</button>
           <button data-v="multi">여러 골짜기</button>
+          <button data-v="bumpy">울퉁불퉁</button>
         </div>
       </div>
       <div class="ctrl">
@@ -293,10 +303,11 @@
         </div>
       </div>
       <div class="ctrl">
-        <span class="label">지형 만들기</span>
+        <span class="label">지형 · 시작 위치</span>
         <div class="seg">
           <button class="action" id="btnNewTerrain">새 지형</button>
           <button class="action" id="btnNewStart">시작 위치 변경</button>
+          <button class="action" id="btnPickStart" aria-pressed="false">지도에서 고르기</button>
         </div>
       </div>
     </div>
@@ -306,9 +317,11 @@
       <div class="map-wrap">
         <canvas id="map" width="540" height="540"></canvas>
         <div class="legend">
-          <span>낮음(목표)</span>
+          <span>낮음</span>
           <span class="bar"></span>
           <span>높음</span>
+          <label title="전체 지형 공개 후 사용"><input type="checkbox" id="chkContour" checked disabled /><span>등고선</span></label>
+          <label title="전체 지형 공개 후 사용"><input type="checkbox" id="chkNumbers" disabled /><span>숫자</span></label>
         </div>
       </div>
 
@@ -318,13 +331,13 @@
             <!-- 십자 조작 패드 -->
             <div class="pad" id="pad" aria-label="상하좌우 이동 조작">
               <div class="cell empty"></div>
-              <button class="cell dir" data-dir="up"><span class="arrow">▲ 위</span><span class="val">–</span></button>
+              <button class="cell dir" data-dir="up"><span class="arrow">▲ 위</span><span class="val">–</span><span class="hint"></span></button>
               <div class="cell empty"></div>
-              <button class="cell dir" data-dir="left"><span class="arrow">◀ 왼쪽</span><span class="val">–</span></button>
+              <button class="cell dir" data-dir="left"><span class="arrow">◀ 왼쪽</span><span class="val">–</span><span class="hint"></span></button>
               <div class="cell cur"><span class="tag">현재 위치</span><span class="val">–</span></div>
-              <button class="cell dir" data-dir="right"><span class="arrow">오른쪽 ▶</span><span class="val">–</span></button>
+              <button class="cell dir" data-dir="right"><span class="arrow">오른쪽 ▶</span><span class="val">–</span><span class="hint"></span></button>
               <div class="cell empty"></div>
-              <button class="cell dir" data-dir="down"><span class="arrow">▼ 아래</span><span class="val">–</span></button>
+              <button class="cell dir" data-dir="down"><span class="arrow">▼ 아래</span><span class="val">–</span><span class="hint"></span></button>
               <div class="cell empty"></div>
             </div>
 
@@ -382,10 +395,9 @@
   // ---- 상태 ----
   const state = {
     N: 15,
-    terrain: 'single',      // 'single' | 'multi'
+    terrain: 'single',      // 'single' | 'multi' | 'bumpy'
     step: 1,                // 보폭 1..3
     H: [],                  // 높이 배열 H[y][x]
-    bowls: [],              // 생성에 쓰인 분지 정보(참고용)
     pos: { x: 0, y: 0 },
     start: { x: 0, y: 0 },
     lastDir: null,          // {dx,dy}
@@ -398,143 +410,189 @@
     minVal: 0,
     maxVal: 1,
     labels: [],             // 공개 시 표시할 최솟값들 [{x,y,val,global}]
+    pickMode: false,        // 지도에서 시작점 고르기 모드
+    showContour: true,      // 공개 지도: 등고선
+    showNumbers: false,     // 공개 지도: 모든 칸의 높이 숫자
   };
 
+  // =========================================================================
+  //  지형 생성 : 기울어진 타원·휘어진 계곡 우물 + 언덕 + 물결을 더한 뒤, 검증을 통과할 때까지 재생성
+  //  - 최저값 칸은 정확히 하나, 이웃끼리 같은 높이(평지)와 반올림 가짜 최솟값이 없다.
+  // =========================================================================
   const DIRS = {
     up:    { dx: 0, dy: -1 },
     down:  { dx: 0, dy: 1 },
     left:  { dx: -1, dy: 0 },
     right: { dx: 1, dy: 0 },
   };
-
-  // ---- 유틸 ----
   const rnd = (a, b) => a + Math.random() * (b - a);
   const rint = (a, b) => Math.floor(rnd(a, b + 1));
+
+  // 지형 재료: 기울어진 타원형 우물(휘어짐 가능) + 언덕 + 약한 그릇형 바닥 + 기울기 + 물결
+  function makeFeatures(N, terrain) {
+    const c = (N - 1) / 2;
+    const F = { c, bowl: 0.6, tx: rnd(-0.25, 0.25), ty: rnd(-0.25, 0.25), wells: [], hills: [], ripple: null };
+    const well = (cx, cy, depth, sx, aspect, bend) =>
+      ({ cx, cy, depth, sx, sy: sx * aspect, rot: rnd(0, Math.PI), bend });
+    if (terrain === 'single') {
+      F.bowl = rnd(0.5, 0.9);
+      F.wells.push(well(c + rnd(-0.15, 0.15) * N, c + rnd(-0.15, 0.15) * N,
+        1, rnd(0.3, 0.42) * N, rnd(0.3, 0.55), rnd(-0.9, 0.9)));
+    } else if (terrain === 'multi') {
+      F.bowl = rnd(0.4, 0.6);
+      const k = Math.random() < 0.5 ? 2 : 3;
+      const R = N * (k === 2 ? 0.3 : 0.32), rot = rnd(0, Math.PI * 2);
+      const depths = [1, rnd(0.6, 0.78), rnd(0.6, 0.78)].slice(0, k);
+      for (let i = depths.length - 1; i > 0; i--) { const j = rint(0, i); [depths[i], depths[j]] = [depths[j], depths[i]]; }
+      for (let i = 0; i < k; i++) {
+        const a = rot + i * 2 * Math.PI / k + rnd(-0.25, 0.25);
+        F.wells.push(well(c + R * Math.cos(a), c + R * Math.sin(a),
+          depths[i], rnd(0.13, 0.19) * N, rnd(0.45, 1), rnd(-0.6, 0.6)));
+      }
+      F.hills.push({ cx: c + rnd(-0.08, 0.08) * N, cy: c + rnd(-0.08, 0.08) * N, h: rnd(0.15, 0.35), s: 0.12 * N });
+    } else { // bumpy
+      F.bowl = rnd(0.35, 0.5);
+      F.wells.push(well(c + rnd(-0.28, 0.28) * N, c + rnd(-0.28, 0.28) * N, 1, rnd(0.14, 0.2) * N, rnd(0.5, 1), rnd(-0.5, 0.5)));
+      const m = rint(3, 5);
+      for (let i = 0; i < m; i++) {
+        F.wells.push(well(rnd(0.12, 0.88) * (N - 1), rnd(0.12, 0.88) * (N - 1),
+          rnd(0.3, 0.5), rnd(0.08, 0.12) * N, rnd(0.6, 1), 0));
+      }
+      const w = 2 * Math.PI / (N * rnd(0.35, 0.5));
+      F.ripple = { a: rnd(0.07, 0.1), w, p: rnd(0, 6.3), q: rnd(0, 6.3) };
+    }
+    return F;
+  }
+
+  function fieldAt(x, y, F, N) {
+    const dxc = (x - F.c) / N, dyc = (y - F.c) / N;
+    let f = F.bowl * (dxc * dxc + dyc * dyc) + F.tx * dxc * 0.3 + F.ty * dyc * 0.3;
+    for (const w of F.wells) {
+      const dx = x - w.cx, dy = y - w.cy;
+      const cs = Math.cos(w.rot), sn = Math.sin(w.rot);
+      const u = dx * cs + dy * sn;
+      let v = -dx * sn + dy * cs;
+      v -= w.bend * u * u / w.sx;                 // 휘어진 계곡
+      f -= w.depth * Math.exp(-(u * u) / (2 * w.sx * w.sx) - (v * v) / (2 * w.sy * w.sy));
+    }
+    for (const h of F.hills) f += h.h * Math.exp(-((x - h.cx) ** 2 + (y - h.cy) ** 2) / (2 * h.s * h.s));
+    if (F.ripple) f += F.ripple.a * Math.sin(F.ripple.w * x + F.ripple.p) * Math.cos(F.ripple.w * y + F.ripple.q);
+    return f;
+  }
+
+  // 정수 높이 격자 H를 검사: 모든 칸은 '엄격한 지역 최솟값'이거나 '엄격히 낮은 이웃'을 가져야 한다.
+  // (평지·동점 함정 금지) 통과하면 최솟값 목록, 실패하면 null.
+  function strictMinima(H, N) {
+    const mins = [];
+    for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
+      const h = H[y][x];
+      let lower = false, equal = false;
+      for (const d of Object.values(DIRS)) {
+        const nx = x + d.dx, ny = y + d.dy;
+        if (nx < 0 || ny < 0 || nx >= N || ny >= N) continue;
+        if (H[ny][nx] < h) lower = true; else if (H[ny][nx] === h) equal = true;
+      }
+      if (lower) continue;
+      if (equal) return null;                    // 같은 높이 이웃뿐인 평지 → 불합격
+      mins.push({ x, y, val: h });
+    }
+    return mins;
+  }
+
+  // 각 칸에서 상하좌우 탐욕 하강을 하면 도착하는 최솟값 번호(유역). 유역이 너무 작은 함정을 거른다.
+  function basinSizes(H, N, mins) {
+    const id = new Map(mins.map((m, i) => [m.x + ',' + m.y, i]));
+    const size = new Array(mins.length).fill(0);
+    for (let sy = 0; sy < N; sy++) for (let sx = 0; sx < N; sx++) {
+      let x = sx, y = sy;
+      for (;;) {
+        let bx = -1, by = -1, bv = H[y][x];
+        for (const d of Object.values(DIRS)) {
+          const nx = x + d.dx, ny = y + d.dy;
+          if (nx < 0 || ny < 0 || nx >= N || ny >= N) continue;
+          if (H[ny][nx] < bv) { bv = H[ny][nx]; bx = nx; by = ny; }
+        }
+        if (bx < 0) break;
+        x = bx; y = by;
+      }
+      size[id.get(x + ',' + y)]++;
+    }
+    return size;
+  }
+
+  function validTerrain(mins, terrain, k, H, N) {
+    if (!mins || mins.length === 0) return false;
+    if (mins.some(m => m.x === 0 || m.y === 0 || m.x === N - 1 || m.y === N - 1)) return false; // 가장자리 최솟값 금지
+    if (basinSizes(H, N, mins).some(s => s < Math.max(4, N * N * 0.03))) return false;          // 너무 작은 함정 금지
+    const sorted = [...mins].sort((a, b) => a.val - b.val);
+    if (sorted.length > 1 && sorted[1].val - sorted[0].val < (terrain === 'multi' ? 6 : 3)) return false; // 전역 최솟값은 확실히 하나
+    for (let i = 0; i < mins.length; i++) for (let j = i + 1; j < mins.length; j++) {
+      if (Math.max(Math.abs(mins[i].x - mins[j].x), Math.abs(mins[i].y - mins[j].y)) < 3) return false; // 붙어 있는 가짜 최솟값 금지
+    }
+    if (terrain === 'single') return mins.length === 1;
+    if (terrain === 'multi') return mins.length === k;
+    return mins.length >= 3 && mins.length <= 6;
+  }
+
+  // 연속 높이 → 정수 높이. 낮은 칸부터 차례로 정하면서, 이웃끼리는 연속값의 대소가
+  // 정수에서도 그대로(엄격하게) 유지되도록 필요한 만큼 1씩 올린다.
+  // → 반올림 때문에 생기는 평지·동점·가짜 최솟값이 원천적으로 없다.
+  function quantize(raw, N, fmin, fmax, lo, hi) {
+    const order = [];
+    for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) order.push([x, y]);
+    order.sort((a, b) => raw[a[1]][a[0]] - raw[b[1]][b[0]]);
+    const H = Array.from({ length: N }, () => new Array(N).fill(0));
+    for (const [x, y] of order) {
+      const f = raw[y][x];
+      let v = Math.round(lo + (hi - lo) * Math.pow((f - fmin) / (fmax - fmin), 1.15));
+      for (const d of Object.values(DIRS)) {
+        const nx = x + d.dx, ny = y + d.dy;
+        if (nx < 0 || ny < 0 || nx >= N || ny >= N) continue;
+        if (raw[ny][nx] < f) v = Math.max(v, H[ny][nx] + 1);
+      }
+      H[y][x] = v;
+    }
+    return H;
+  }
+
+  // 지형 하나를 만든다(검증 통과할 때까지 재생성). 높이는 최저 3~12, 최고 약 90~99의 정수.
+  function buildTerrain(N, terrain) {
+    let last = null;
+    for (let attempt = 0; attempt < 400; attempt++) {
+      const F = makeFeatures(N, terrain);
+      const raw = [];
+      let fmin = Infinity, fmax = -Infinity;
+      for (let y = 0; y < N; y++) {
+        const row = [];
+        for (let x = 0; x < N; x++) {
+          const f = fieldAt(x, y, F, N);
+          row.push(f); if (f < fmin) fmin = f; if (f > fmax) fmax = f;
+        }
+        raw.push(row);
+      }
+      const lo = rint(3, 12), hi = rint(86, 94);
+      const H = quantize(raw, N, fmin, fmax, lo, hi);
+      const mins = strictMinima(H, N);
+      if (last && H.flat().some(v => v > 99)) continue;   // 두 자리 수 유지
+      last = { H, mins: mins || [], attempt, ok: false };
+      if (validTerrain(mins, terrain, F.wells.length, H, N)) { last.ok = true; return last; }
+    }
+    return last;
+  }
+
   const key = (x, y) => x + "," + y;
   const inBounds = (x, y) => x >= 0 && y >= 0 && x < state.N && y < state.N;
 
-  // =========================================================================
-  //  지형 생성 : 가벼운 그릇형 바닥 + 가우시안 분지 여러 개 (매번 랜덤 지터)
-  // =========================================================================
-  function makeBowls(N, terrain) {
-    const c = (N - 1) / 2;
-    const bowls = [];
-    // 각 골짜기는 포물면 { 바닥 높이 floor, 곡률 K, 중심 (cx,cy) }로 나타낸다.
-    // 지형 높이는 여러 포물면의 '가장 낮은 값'(하부포락)을 취한다. 이렇게 하면
-    //  - 모든 칸이 자기 골짜기 중심 쪽으로 확실히 내리막(평지 정체 없음),
-    //  - 골짜기 경계는 능선이 되어 유역이 Voronoi처럼 크고 뚜렷하게 갈린다.
-    if (terrain === 'single') {
-      bowls.push({ cx: c + rnd(-1.2, 1.2), cy: c + rnd(-1.2, 1.2), floor: rnd(2, 5), K: 1.2 });
-    } else {
-      const k = Math.random() < 0.5 ? 2 : 3;
-      const lo = N * 0.18, hi = (N - 1) - N * 0.18;
-      const mid = () => rnd(lo, hi);
-      const jit = () => rnd(-N * 0.05, N * 0.05);
-      let centers;
-      if (k === 2) {
-        if (Math.random() < 0.5) {                 // 좌 / 우 분할
-          centers = [{ cx: rnd(lo, N * 0.28), cy: mid() },
-                     { cx: rnd(N * 0.72, hi), cy: mid() }];
-        } else {                                    // 상 / 하 분할
-          centers = [{ cx: mid(), cy: rnd(lo, N * 0.28) },
-                     { cx: mid(), cy: rnd(N * 0.72, hi) }];
-        }
-      } else {                                      // 삼각 배치(회전 랜덤)
-        const rot = rnd(0, Math.PI * 2), R = N * 0.34;
-        centers = [0, 1, 2].map(i => {
-          const a = rot + i * 2 * Math.PI / 3;
-          return { cx: c + R * Math.cos(a) + jit(), cy: c + R * Math.sin(a) + jit() };
-        });
-      }
-      // 바닥 높이: 하나는 낮게(전역), 나머지는 높게(함정). 전역 위치는 매번 달라진다.
-      const floors = [rnd(3, 6)];
-      for (let i = 1; i < centers.length; i++) floors.push(rnd(12, 18));
-      for (let i = floors.length - 1; i > 0; i--) {
-        const j = rint(0, i);[floors[i], floors[j]] = [floors[j], floors[i]];
-      }
-      centers.forEach((p, i) => bowls.push({ cx: p.cx, cy: p.cy, floor: floors[i], K: 1.4 }));
-    }
-    return bowls;
-  }
-
   function generateTerrain() {
-    const N = state.N;
-    const bowls = makeBowls(N, state.terrain);
-    const H = [];
-    for (let y = 0; y < N; y++) {
-      const row = [];
-      for (let x = 0; x < N; x++) {
-        let h = Infinity;
-        for (const b of bowls) {                    // 포물면 하부포락: 가장 낮은 골짜기 값
-          const dd = (x - b.cx) ** 2 + (y - b.cy) ** 2;
-          h = Math.min(h, b.floor + b.K * dd);
-        }
-        row.push(Math.max(1, Math.round(h)));
-      }
-      H.push(row);
-    }
-    state.H = H;
-    state.bowls = bowls;
-    let mn = Infinity, mx = -Infinity;
-    for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
-      const v = H[y][x]; if (v < mn) mn = v; if (v > mx) mx = v;
-    }
-    state.minVal = mn; state.maxVal = mx;
-    state.labels = findLabeledMinima();
+    const r = buildTerrain(state.N, state.terrain);
+    state.H = r.H;
+    const all = r.H.flat();
+    state.minVal = Math.min(...all);
+    state.maxVal = Math.max(...all);
+    // 공개 시 표시할 최솟값(상하좌우가 모두 더 높은 칸)
+    state.labels = r.mins.map(m => ({ ...m, global: m.val === state.minVal }));
   }
 
-  // 공개 시 표시할 대표 최솟값들.
-  // 바닥 평지(정수 반올림으로 값이 같은 영역)의 모든 칸이 후보가 되므로,
-  // 서로 붙어 있는 후보 칸을 하나의 분지로 묶어 대표점 1개만 남긴다.
-  function findLabeledMinima() {
-    const N = state.N, H = state.H;
-    // 1) 후보: 상하좌우에 자기보다 '엄격히 낮은' 이웃이 없는 칸(평지 포함)
-    const isCand = Array.from({ length: N }, () => new Array(N).fill(false));
-    for (let y = 0; y < N; y++) {
-      for (let x = 0; x < N; x++) {
-        let ok = true;
-        for (const d of Object.values(DIRS)) {
-          const nx = x + d.dx, ny = y + d.dy;
-          if (inBounds(nx, ny) && H[ny][nx] < H[y][x]) { ok = false; break; }
-        }
-        isCand[y][x] = ok;
-      }
-    }
-    // 2) 인접한 후보 칸끼리 연결요소(분지)로 묶고, 각 분지의 대표점(최저·중심 근처) 추출
-    const seen = Array.from({ length: N }, () => new Array(N).fill(false));
-    const reps = [];
-    for (let y = 0; y < N; y++) {
-      for (let x = 0; x < N; x++) {
-        if (!isCand[y][x] || seen[y][x]) continue;
-        const comp = [];
-        const stack = [[x, y]];
-        seen[y][x] = true;
-        while (stack.length) {
-          const [cx, cy] = stack.pop();
-          comp.push([cx, cy]);
-          for (const d of Object.values(DIRS)) {
-            const nx = cx + d.dx, ny = cy + d.dy;
-            if (inBounds(nx, ny) && isCand[ny][nx] && !seen[ny][nx]) {
-              seen[ny][nx] = true; stack.push([nx, ny]);
-            }
-          }
-        }
-        // 분지 대표: 값이 최저인 칸들 중 무게중심에 가장 가까운 칸
-        const val = Math.min(...comp.map(([px, py]) => H[py][px]));
-        const lows = comp.filter(([px, py]) => H[py][px] === val);
-        const gx = lows.reduce((s, p) => s + p[0], 0) / lows.length;
-        const gy = lows.reduce((s, p) => s + p[1], 0) / lows.length;
-        let rep = lows[0], bd = Infinity;
-        for (const [px, py] of lows) {
-          const d = Math.hypot(px - gx, py - gy);
-          if (d < bd) { bd = d; rep = [px, py]; }
-        }
-        reps.push({ x: rep[0], y: rep[1], val });
-      }
-    }
-    const gmin = reps.length ? Math.min(...reps.map(r => r.val)) : 0;
-    return reps.map(r => ({ ...r, global: r.val === gmin }));
-  }
 
   // =========================================================================
   //  시작 위치
@@ -600,7 +658,7 @@
   }
 
   // 자동(탐욕적) 한 걸음: 현재보다 '엄격히 낮은' 이웃 중 최저로 이동.
-  // 동점이면: 최근 이동방향 우선 → 불가하면 중앙에 더 가까워지는 방향.
+  // 동점이면: 최근 이동방향 우선 → 불가하면 위·아래·왼쪽·오른쪽 순서(안개 밖 정보는 쓰지 않는다).
   function autoStep() {
     if (state.revealed) return false;
     const here = state.H[state.pos.y][state.pos.x];
@@ -619,14 +677,8 @@
       const same = tied.find(t => t.d.dx === state.lastDir.dx && t.d.dy === state.lastDir.dy);
       if (same) return same;
     }
-    // 2) 중앙에 더 가까워지는 방향
-    const c = (state.N - 1) / 2;
-    let best = tied[0], bestDist = Infinity;
-    for (const t of tied) {
-      const dist = Math.hypot(t.x - c, t.y - c);
-      if (dist < bestDist) { bestDist = dist; best = t; }
-    }
-    return best;
+    // 2) 고정 순서(위·아래·왼쪽·오른쪽): neighbors()가 이 순서로 돌려준다
+    return tied[0];
   }
 
   function startAuto() {
@@ -645,10 +697,14 @@
     if (p) p.disabled = true;
   }
 
-  // 현재 보폭 기준 지역 최솟값인가?
-  function isLocalMin() {
+  // 현재 보폭으로 볼 수 있는 칸 중 더 낮은 곳이 없어 멈춘 상태인가?
+  function isStuck() {
     const here = state.H[state.pos.y][state.pos.x];
     return neighbors().every(t => t.val >= here);
+  }
+  // 실제 지역 최솟값인가? (바로 옆 상하좌우 1칸이 모두 더 높은 칸)
+  function isTrueMin() {
+    return state.labels.some(m => m.x === state.pos.x && m.y === state.pos.y);
   }
 
   // =========================================================================
@@ -656,24 +712,19 @@
   // =========================================================================
   const canvas = document.getElementById('map');
   const ctx = canvas.getContext('2d');
+  const chkContour = document.getElementById('chkContour'), chkNumbers = document.getElementById('chkNumbers');
 
+  // 색각이상에도 구분되는 viridis 계열: 낮음(진한 보라) → 청록 → 높음(노랑). 밝기가 높이 순서대로 커진다.
+  const VIRIDIS = [[68, 1, 84], [59, 82, 139], [33, 145, 140], [94, 201, 98], [253, 231, 37]];
+  const level = v => (state.maxVal === state.minVal) ? 0 : (v - state.minVal) / (state.maxVal - state.minVal);
   function heatColor(v) {
-    // 0(낮음)→녹색, 0.5→노랑, 1(높음)→적갈색
-    const t = (state.maxVal === state.minVal) ? 0 : (v - state.minVal) / (state.maxVal - state.minVal);
-    const stops = [
-      [14, 98, 69],   // #0e6245
-      [242, 193, 78], // #f2c14e
-      [178, 58, 46],  // #b23a2e
-    ];
-    let a, b, f;
-    if (t < 0.5) { a = stops[0]; b = stops[1]; f = t / 0.5; }
-    else { a = stops[1]; b = stops[2]; f = (t - 0.5) / 0.5; }
-    const c = a.map((v0, i) => Math.round(v0 + (b[i] - v0) * f));
+    const t = Math.min(1, Math.max(0, level(v))) * (VIRIDIS.length - 1);
+    const i = Math.min(VIRIDIS.length - 2, Math.floor(t)), f = t - i;
+    const c = VIRIDIS[i].map((v0, j) => Math.round(v0 + (VIRIDIS[i + 1][j] - v0) * f));
     return `rgb(${c[0]},${c[1]},${c[2]})`;
   }
   function textOn(v) {
-    const t = (state.maxVal === state.minVal) ? 0 : (v - state.minVal) / (state.maxVal - state.minVal);
-    return t > 0.55 ? '#fff' : (t < 0.2 ? '#eafff5' : '#1f2937');
+    return level(v) < 0.55 ? '#fff' : '#111827';
   }
 
   function render() {
@@ -707,8 +758,8 @@
         ctx.lineWidth = 1;
         ctx.strokeRect(px + 0.5, py + 0.5, cs - 1, cs - 1);
 
-        // 감지되는 칸(현재+상하좌우)에는 숫자 표기
-        if (!state.revealed && senseKeys.has(k)) {
+        // 감지되는 칸(현재+상하좌우)에는 숫자 표기. 공개 후에는 '숫자' 선택 시 모든 칸.
+        if ((!state.revealed && senseKeys.has(k)) || (state.revealed && state.showNumbers)) {
           ctx.fillStyle = textOn(state.H[y][x]);
           ctx.font = `700 ${Math.max(11, cs * 0.34)}px system-ui`;
           ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
@@ -717,28 +768,32 @@
       }
     }
 
-    // 현재보다 낮은 이웃 강조(초록 테두리)
+    // 공개 후 등고선: 높이 10 간격 띠가 바뀌는 칸 경계에 선을 긋는다
+    if (state.revealed && state.showContour) drawContours(cs);
+
+    // 현재보다 낮은 이웃 강조(흰 점선 테두리)
     if (!state.revealed) {
-      neighbors().forEach(t => {
-        if (t.val < here) {
-          ctx.strokeStyle = '#16a34a';
-          ctx.lineWidth = Math.max(2, cs * 0.09);
-          ctx.strokeRect(t.x * cs + 2, t.y * cs + 2, cs - 4, cs - 4);
-        }
+      neighbors().forEach(t => { if (t.val < here) dashedBox(t.x, t.y, cs); });
+    }
+    // 공개 후, 큰 보폭 때문에 멈춘 곳이라면 바로 옆의 더 낮은 칸을 보여 준다
+    if (state.revealed && isStuck() && !isTrueMin()) {
+      Object.values(DIRS).forEach(d => {
+        const nx = state.pos.x + d.dx, ny = state.pos.y + d.dy;
+        if (inBounds(nx, ny) && state.H[ny][nx] < here) dashedBox(nx, ny, cs);
       });
     }
 
-    // 이동 경로 선
+    // 이동 경로 선 (어두운 테두리 + 흰 선: 어떤 색 위에서도 보이게)
     if (state.path.length > 1) {
-      ctx.strokeStyle = state.revealed ? 'rgba(30,41,59,0.85)' : 'rgba(79,70,229,0.9)';
-      ctx.lineWidth = Math.max(2.5, cs * 0.10);
+      const w = Math.max(2.5, cs * 0.10);
       ctx.lineJoin = 'round'; ctx.lineCap = 'round';
       ctx.beginPath();
       state.path.forEach((p, i) => {
         const cx = p.x * cs + cs / 2, cy = p.y * cs + cs / 2;
         i === 0 ? ctx.moveTo(cx, cy) : ctx.lineTo(cx, cy);
       });
-      ctx.stroke();
+      ctx.strokeStyle = 'rgba(15,23,42,0.85)'; ctx.lineWidth = w + 3; ctx.stroke();
+      ctx.strokeStyle = '#ffffff'; ctx.lineWidth = w; ctx.stroke();
     }
 
     // 시작점 표시
@@ -749,8 +804,8 @@
       state.labels.forEach(m => drawMarker(m.x, m.y, cs, m.global ? 'global' : 'local'));
     }
 
-    // 현재 위치 강조 (지역 최솟값에 도착하면 지도에서 바로 드러나게 표시)
-    const atMin = !state.revealed && isLocalMin();
+    // 현재 위치 강조 (더 낮은 곳이 없어 멈추면 지도에서 바로 드러나게 표시)
+    const atMin = !state.revealed && isStuck();
     const pcx = state.pos.x * cs + cs / 2, pcy = state.pos.y * cs + cs / 2;
     if (atMin) {
       ctx.save();
@@ -761,20 +816,54 @@
       ctx.strokeStyle = '#f59e0b';
       ctx.lineWidth = Math.max(3.5, cs * 0.17);
       ctx.strokeRect(state.pos.x * cs + 2, state.pos.y * cs + 2, cs - 4, cs - 4);
-      drawArrivalFlag(pcx, state.pos.y * cs, cs);   // 깃발 + '도착' 배지
+      drawArrivalFlag(pcx, state.pos.y * cs, cs, state.step === 1 ? '도착' : '멈춤');   // 깃발 + 배지
       ctx.restore();
     } else {
-      ctx.strokeStyle = '#4f46e5';
-      ctx.lineWidth = Math.max(3, cs * 0.14);
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = Math.max(5, cs * 0.2);
+      ctx.strokeRect(state.pos.x * cs + 2, state.pos.y * cs + 2, cs - 4, cs - 4);
+      ctx.strokeStyle = '#4338ca';
+      ctx.lineWidth = Math.max(2.5, cs * 0.1);
       ctx.strokeRect(state.pos.x * cs + 2, state.pos.y * cs + 2, cs - 4, cs - 4);
     }
 
     renderPad(atMin);
     renderStatus();
+    chkContour.disabled = chkNumbers.disabled = !state.revealed;
   }
 
-  // 지역 최솟값 도착 깃발 + 배지 (화면 위/아래 여백에 맞춰 방향 결정)
-  function drawArrivalFlag(cx, cellTop, cs) {
+  function dashedBox(x, y, cs) {
+    ctx.save();
+    ctx.setLineDash([Math.max(4, cs * 0.18), Math.max(3, cs * 0.1)]);
+    ctx.strokeStyle = 'rgba(15,23,42,0.9)'; ctx.lineWidth = Math.max(4, cs * 0.14);
+    ctx.strokeRect(x * cs + 3, y * cs + 3, cs - 6, cs - 6);
+    ctx.strokeStyle = '#ffffff'; ctx.lineWidth = Math.max(2, cs * 0.07);
+    ctx.strokeRect(x * cs + 3, y * cs + 3, cs - 6, cs - 6);
+    ctx.restore();
+  }
+
+  // 등고선(10 간격): 이웃한 두 칸의 높이가 서로 다른 10 단위 띠에 있으면 그 경계에 선을 긋는다
+  function drawContours(cs) {
+    const N = state.N, H = state.H, band = v => Math.floor(v / 10);
+    ctx.save();
+    ctx.strokeStyle = 'rgba(15,23,42,0.7)';
+    ctx.lineWidth = Math.max(1.5, cs * 0.07);
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
+      if (x + 1 < N && band(H[y][x]) !== band(H[y][x + 1])) {
+        ctx.moveTo((x + 1) * cs, y * cs); ctx.lineTo((x + 1) * cs, (y + 1) * cs);
+      }
+      if (y + 1 < N && band(H[y][x]) !== band(H[y + 1][x])) {
+        ctx.moveTo(x * cs, (y + 1) * cs); ctx.lineTo((x + 1) * cs, (y + 1) * cs);
+      }
+    }
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  // 멈춤/도착 깃발 + 배지 (화면 위/아래 여백에 맞춰 방향 결정)
+  function drawArrivalFlag(cx, cellTop, cs, label) {
     const up = cellTop - cs * 0.9 > 0;              // 위쪽에 공간이 있으면 위로 세운다
     const baseY = up ? cellTop + 2 : cellTop + cs - 2;
     const tipY = up ? baseY - cs * 0.85 : baseY + cs * 0.85;
@@ -791,8 +880,7 @@
     ctx.lineTo(cx + flagW, fy + flagH / 2);
     ctx.lineTo(cx, fy + flagH);
     ctx.closePath(); ctx.fill();
-    // '도착' 배지
-    const label = '도착';
+    // '도착'·'멈춤' 배지
     ctx.font = `800 ${Math.max(10, cs * 0.3)}px system-ui`;
     const padX = cs * 0.16, tw = ctx.measureText(label).width;
     const bw = tw + padX * 2, bh = Math.max(16, cs * 0.42);
@@ -840,20 +928,23 @@
     const curCell = document.querySelector('.pad .cur');
     curCell.querySelector('.val').textContent = here;
     curCell.classList.toggle('arrived', !!atMin);
-    curCell.querySelector('.tag').textContent = atMin ? '🚩 도착 · 지역 최솟값' : '현재 위치';
+    curCell.querySelector('.tag').textContent = !atMin ? '현재 위치'
+      : (state.step === 1 ? '🚩 지역 최솟값' : `멈춤 (보폭 ${state.step})`);
     // 방향 버튼
     document.querySelectorAll('.pad button.dir').forEach(btn => {
       const dir = btn.dataset.dir;
-      const valEl = btn.querySelector('.val');
+      const valEl = btn.querySelector('.val'), hintEl = btn.querySelector('.hint');
       btn.classList.remove('lower', 'higher', 'equal', 'wall');
+      hintEl.textContent = '';
       if (state.revealed) { btn.disabled = true; valEl.textContent = '–'; return; }
       const t = targetOf(dir);
       if (!t) { btn.classList.add('wall'); valEl.textContent = '벽'; btn.disabled = true; return; }
       btn.disabled = false;
       valEl.textContent = t.val;
-      if (t.val < here) btn.classList.add('lower');
-      else if (t.val > here) btn.classList.add('higher');
-      else btn.classList.add('equal');
+      // 색만으로 구분하지 않도록 글자도 함께 표시
+      if (t.val < here) { btn.classList.add('lower'); hintEl.textContent = '▼ 더 낮음'; }
+      else if (t.val > here) { btn.classList.add('higher'); hintEl.textContent = '더 높음'; }
+      else { btn.classList.add('equal'); hintEl.textContent = '같음'; }
     });
   }
 
@@ -864,34 +955,60 @@
     document.getElementById('sBest').textContent = state.bestLow;
 
     const v = document.getElementById('verdict');
+    const here = state.H[state.pos.y][state.pos.x];
+    if (state.pickMode) {
+      v.className = 'verdict pick';
+      v.textContent = '지도에서 출발할 칸을 누르세요. (취소하려면 버튼을 다시 누르기)';
+      return;
+    }
     if (state.revealed) {
-      const here = state.H[state.pos.y][state.pos.x];
       const gmin = state.minVal;
       if (here === gmin) {
         v.className = 'verdict global';
-        v.textContent = '★ 전역 최솟값에 도달했습니다! 로컬 정보만으로 가장 낮은 곳을 찾았어요.';
-      } else if (isLocalMin()) {
+        v.textContent = '★ 전역 최솟값에 도달했습니다! 주변 정보만으로 가장 낮은 곳을 찾았어요.';
+      } else if (isTrueMin()) {
         v.className = 'verdict local';
-        v.textContent = `여기는 지역 최솟값(높이 ${here})입니다. 전역 최솟값(★)은 높이 ${gmin}로 다른 골짜기에 있어요. 시작 위치나 보폭을 바꿔 다시 시도해 보세요.`;
+        v.textContent = `여기는 지역 최솟값(◇, 높이 ${here})입니다. 상하좌우는 모두 더 높지만, 전역 최솟값(★)은 높이 ${gmin}로 다른 골짜기에 있어요. 시작 위치를 바꿔 다시 시도해 보세요.`;
+      } else if (isStuck()) {
+        const adj = Math.min(...Object.values(DIRS)
+          .map(d => [state.pos.x + d.dx, state.pos.y + d.dy])
+          .filter(([x, y]) => inBounds(x, y)).map(([x, y]) => state.H[y][x]));
+        v.className = 'verdict skip';
+        v.textContent = `여기는 최솟값이 아닙니다(높이 ${here}). 보폭 ${state.step}칸 떨어진 칸이 모두 더 높아서 멈췄지만, 바로 옆(점선)에 높이 ${adj}인 더 낮은 칸이 있어요. 보폭이 크면 골짜기 바닥을 건너뛸 수 있습니다.`;
       } else {
         v.className = 'verdict';
         v.textContent = `아직 최솟값에 도착하지 않았습니다(현재 높이 ${here}). 더 낮은 방향이 남아 있어요. 전역 최솟값(★)은 높이 ${gmin}입니다.`;
       }
       return;
     }
-    if (isLocalMin()) {
+    if (isStuck() && state.step === 1) {
       v.className = 'verdict local';
-      v.textContent = '현재 보폭에서는 더 낮은 이웃이 없습니다. 지역 최솟값일 수 있어요. ‘전체 지형 공개’로 확인해 보세요.';
+      v.textContent = '상하좌우가 모두 더 높습니다. 지역 최솟값에 도착했어요. 하지만 여기가 전체에서 가장 낮은 곳인지는 아직 알 수 없어요. ‘전체 지형 공개’로 확인해 보세요.';
+    } else if (isStuck()) {
+      v.className = 'verdict skip';
+      v.textContent = `보폭 ${state.step}칸 떨어진 칸이 모두 더 높아 멈췄습니다. 바로 옆 칸은 확인하지 않았어요. 보폭을 1칸으로 줄여 보거나 ‘전체 지형 공개’로 확인해 보세요.`;
     } else {
       v.className = 'verdict';
-      v.textContent = '초록색으로 표시된, 더 낮은 방향이 있습니다. 어디로 이동할까요?';
+      v.textContent = '‘▼ 더 낮음’으로 표시된 방향이 있습니다. 어디로 이동할까요?';
     }
   }
 
   function reveal() {
     stopAuto();
+    setPickMode(false);
     state.revealed = true;
     render();
+  }
+
+  // 지도에서 시작점 고르기 모드: 켰을 때만 지도 터치로 시작 위치가 바뀐다(실수 터치로 경로가 지워지지 않게)
+  function setPickMode(on) {
+    state.pickMode = on;
+    const b = document.getElementById('btnPickStart');
+    b.classList.toggle('picking', on);
+    b.setAttribute('aria-pressed', String(on));
+    b.textContent = on ? '고르는 중… (취소)' : '지도에서 고르기';
+    canvas.classList.toggle('picking', on);
+    if (on) stopAuto();
   }
 
   // =========================================================================
@@ -913,6 +1030,9 @@
   document.getElementById('btnNewStart').addEventListener('click', () => { pickStart(); });
   document.getElementById('btnReset').addEventListener('click', resetToStart);
   document.getElementById('btnReveal').addEventListener('click', reveal);
+  document.getElementById('btnPickStart').addEventListener('click', () => { setPickMode(!state.pickMode); render(); });
+  chkContour.addEventListener('change', () => { state.showContour = chkContour.checked; render(); });
+  chkNumbers.addEventListener('change', () => { state.showNumbers = chkNumbers.checked; render(); });
   document.getElementById('btnStep').addEventListener('click', () => { stopAuto(); autoStep(); });
   document.getElementById('btnAuto').addEventListener('click', startAuto);
   document.getElementById('btnPause').addEventListener('click', stopAuto);
@@ -922,13 +1042,16 @@
     manualMove(btn.dataset.dir);
   });
 
-  // 캔버스 클릭 → 시작 위치 지정
+  // 캔버스 클릭 → 시작 위치 지정 (고르기 모드에서만)
   canvas.addEventListener('click', e => {
+    if (!state.pickMode) return;
     const rect = canvas.getBoundingClientRect();
     const cs = canvas.width / state.N;
     const x = Math.floor((e.clientX - rect.left) * (canvas.width / rect.width) / cs);
     const y = Math.floor((e.clientY - rect.top) * (canvas.height / rect.height) / cs);
-    if (inBounds(x, y)) setStart(x, y);
+    if (!inBounds(x, y)) return;
+    setPickMode(false);
+    setStart(x, y);
   });
 
   // 키보드 화살표로도 이동
@@ -939,6 +1062,7 @@
 
   function newTerrain() {
     stopAuto();
+    setPickMode(false);
     generateTerrain();
     pickStart();
   }
