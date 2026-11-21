@@ -8,6 +8,8 @@
 - License: Apache-2.0
 - 손 모델 Source: <https://ai.google.dev/edge/mediapipe/solutions/vision/hand_landmarker>
 - 자세 모델 Source: <https://ai.google.dev/edge/mediapipe/solutions/vision/pose_landmarker>
+- 얼굴 검출 모델 Source: <https://ai.google.dev/edge/mediapipe/solutions/vision/face_detector>
+  (`https://storage.googleapis.com/mediapipe-models/face_detector/blaze_face_short_range/float16/1/blaze_face_short_range.tflite`)
 
 ## 파일 목록과 크기
 
@@ -20,6 +22,7 @@
 | `tasks-vision/wasm/vision_wasm_nosimd_internal.wasm` | 10.5 MB | SIMD 미지원 브라우저용 런타임 |
 | `models/hand_landmarker.task` | 7.5 MB | 손 랜드마크 21점 모델 (float16) |
 | `models/pose_landmarker_lite.task` | 5.5 MB | 몸 랜드마크 33점 모델 (float16). 상반신 팔 추적과 자세 판정에 쓴다 |
+| `models/blaze_face_short_range.tflite` | 225 KB | 가까운 거리(약 2m 이내) 얼굴 검출 모델 (float16). 얼굴 상자와 눈·코·입·귀 6점. 노트북 앞에 앉아서 하는 활동에서 얼굴 기준 위치·크기를 잡는 데 쓴다 |
 
 `FilesetResolver.forVisionTasks(path)`가 브라우저의 SIMD 지원 여부를 확인해
 `vision_wasm_internal` 또는 `vision_wasm_nosimd_internal` 중 **하나만** 내려받는다.

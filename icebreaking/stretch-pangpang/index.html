@@ -1,0 +1,1565 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="카메라 앞에서 한 명씩 기지개 포즈 7가지를 따라 하고, 기본·빠르기·행운 점수로 선물 주인공을 정하는 아이스브레이킹 웹앱입니다." />
+  <title>기지개 팡팡! 선물 쟁탈전</title>
+  <link rel="icon" href="../../favicon.ico" sizes="16x16 32x32 48x48" />
+  <link rel="icon" href="../../assets/favicon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="../../assets/apple-touch-icon.png" />
+  <link rel="stylesheet" href="../../assets/common.css" />
+  <style>
+    :root {
+      --ink: #3a2147;
+      --ink-soft: #6b5477;
+      --paper: #fffdf7;
+      --page: #fff3c9;
+      --line: #3a2147;
+      --pink: #e8488f;
+      --pink-ink: #8a1c4f;
+      --pink-bg: #ffe4f0;
+      --yellow: #ffd24a;
+      --purple: #6d3fd6;
+      --green: #14996b;
+      --green-bg: #dcf7ea;
+      --stage-bg: #2a2140;
+    }
+
+    html, body { height: 100%; }
+    body { margin: 0; background: var(--page); color: var(--ink); }
+    button, input, select, textarea { font: inherit; color: inherit; }
+    button {
+      min-height: 48px; padding: 8px 18px; border: 2px solid var(--line); border-radius: 14px;
+      background: var(--paper); color: var(--ink); font-weight: 900; cursor: pointer;
+      box-shadow: 0 3px 0 var(--line); touch-action: manipulation;
+    }
+    button:active:not(:disabled) { transform: translateY(2px); box-shadow: 0 1px 0 var(--line); }
+    button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, a:focus-visible { outline: 3px solid #f59e0b; outline-offset: 3px; }
+    button.primary { background: var(--yellow); }
+    button.pink { background: var(--pink); color: #fff; }
+    button:disabled { opacity: .45; cursor: not-allowed; }
+    kbd { font: inherit; font-size: .78em; padding: 0 6px; border: 1.5px solid currentColor; border-radius: 6px; opacity: .75; }
+    .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+    [hidden] { display: none !important; }
+
+    .app { height: 100dvh; display: flex; flex-direction: column; }
+    .topbar {
+      flex: none; min-height: 60px; padding: 6px 16px; display: flex; align-items: center; gap: 16px;
+      background: var(--paper); border-bottom: 2px solid var(--ink);
+    }
+    .topbar h1 { margin: 0; font-size: clamp(18px, 2.2vw, 24px); font-weight: 950; letter-spacing: -.5px; white-space: nowrap; }
+    .topbar h1 span { color: var(--pink); }
+    .home { color: var(--ink-soft); text-decoration: none; font-weight: 800; white-space: nowrap; min-height: 44px; display: flex; align-items: center; }
+    .top-actions { margin-left: auto; display: flex; gap: 10px; }
+    .top-actions button { min-height: 44px; padding: 6px 14px; font-size: 16px; }
+
+    .main {
+      flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) 372px;
+      gap: 12px; padding: 10px 12px 12px;
+    }
+
+    /* ---------- 카메라 무대 ---------- */
+    .stage {
+      position: relative; min-height: 0; overflow: hidden; isolation: isolate;
+      border: 3px solid var(--ink); border-radius: 22px; background: var(--stage-bg);
+    }
+    .video-box { position: absolute; inset: 0; overflow: hidden; visibility: hidden; }
+    .stage.video-on .video-box { visibility: visible; }
+    #video { position: absolute; transform: scaleX(-1); transform-origin: center; }
+    #overlay { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 1; }
+    .stage-note {
+      position: absolute; left: 12px; bottom: 12px; z-index: 2; margin: 0; padding: 4px 10px;
+      border-radius: 999px; background: rgba(20, 12, 30, .62); color: #fff; font-size: 13px; font-weight: 700;
+    }
+    .stage-hint {
+      position: absolute; left: 50%; top: 14px; transform: translateX(-50%); z-index: 3; max-width: calc(100% - 32px);
+      padding: 8px 18px; border-radius: 999px; background: var(--paper); border: 2px solid var(--ink);
+      font-size: clamp(17px, 2vw, 22px); font-weight: 900; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .stage-hint.good { background: var(--green-bg); color: #0b5a3f; border-color: var(--green); }
+    .stage-gauge {
+      position: absolute; left: 16px; right: 16px; bottom: 44px; z-index: 2; height: 16px; border-radius: 999px;
+      background: rgba(255, 255, 255, .35); border: 2px solid rgba(255, 255, 255, .8); overflow: hidden;
+    }
+    .stage-gauge div { height: 100%; width: 0; background: var(--yellow); }
+    .stage-gauge.full div { background: #4ade80; }
+    .stage-picto {
+      position: absolute; right: 14px; top: 64px; z-index: 2; width: 132px; padding: 6px 6px 4px;
+      background: var(--paper); border: 2px solid var(--ink); border-radius: 16px; text-align: center;
+    }
+    .stage-picto p { margin: 0; font-size: 14px; font-weight: 900; }
+    .stage.manual .stage-picto {
+      right: 50%; top: 50%; transform: translate(50%, -50%); width: min(52%, 340px); padding: 14px 14px 10px;
+    }
+    .stage.manual .stage-picto p { font-size: 24px; }
+
+    .overlay {
+      position: absolute; inset: 0; z-index: 5; display: flex; align-items: center; justify-content: center;
+      padding: 16px; background: rgba(42, 33, 64, .55); overflow: auto;
+    }
+    .overlay .box {
+      width: min(640px, 100%); max-height: 100%; overflow: auto; padding: 22px 26px; background: var(--paper);
+      border: 3px solid var(--ink); border-radius: 22px; box-shadow: 0 6px 0 var(--ink); text-align: center;
+    }
+    .overlay h2 { margin: 0 0 8px; font-size: clamp(26px, 3.2vw, 36px); font-weight: 950; letter-spacing: -1px; }
+    .overlay p { margin: 6px 0; font-size: 18px; line-height: 1.5; }
+    .overlay .small { font-size: 15px; color: var(--ink-soft); }
+    .btn-row { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-top: 14px; }
+    .btn-row button { font-size: 19px; }
+
+    .setup .box { text-align: left; width: min(700px, 100%); }
+    .setup h2 { text-align: center; }
+    .setup .rule { padding: 10px 14px; border-radius: 14px; background: var(--pink-bg); color: var(--pink-ink); font-weight: 700; font-size: 17px; }
+    .setup label { font-weight: 800; font-size: 17px; }
+    .setup textarea {
+      display: block; width: 100%; box-sizing: border-box; margin-top: 4px; padding: 8px 10px; min-height: 84px;
+      border: 2px solid var(--ink); border-radius: 12px; background: #fff; resize: vertical; font-size: 17px;
+    }
+    .field-row { display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: center; margin-top: 10px; }
+    .field-row select { width: auto; }
+    .field-row input[type=number] { width: 84px; box-sizing: border-box; }
+    .field-row input[type=number], .field-row select {
+      min-width: 84px; min-height: 42px; margin-left: 6px; padding: 4px 8px; border: 2px solid var(--ink); border-radius: 10px; background: #fff;
+    }
+    .field-row input[type=checkbox] { width: 22px; height: 22px; vertical-align: -4px; margin-right: 4px; }
+    .setup .btn-row { justify-content: flex-start; }
+    .mode-pick { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 10px 0 12px; border: 0; padding: 0; }
+    .mode-pick legend { font-weight: 800; font-size: 17px; margin-bottom: 4px; }
+    .mode-pick label {
+      display: flex; gap: 10px; align-items: center; padding: 8px 12px; border: 2px solid var(--ink); border-radius: 14px;
+      background: #fff; cursor: pointer; font-size: 16px; font-weight: 700; line-height: 1.3;
+    }
+    .mode-pick label b { display: block; font-size: 18px; font-weight: 950; }
+    .mode-pick label:has(input:checked) { background: var(--yellow); box-shadow: 0 3px 0 var(--ink); }
+    .mode-pick input { width: 22px; height: 22px; flex: none; margin: 0; }
+
+    .load-bar { height: 16px; margin: 12px 0 4px; border: 2px solid var(--ink); border-radius: 999px; overflow: hidden; background: #fff; }
+    .load-bar div { height: 100%; width: 0; background: var(--pink); transition: width .25s; }
+
+    .countdown {
+      position: absolute; inset: 0; z-index: 6; display: flex; align-items: center; justify-content: center;
+      font-size: clamp(110px, 18vw, 200px); font-weight: 950; color: var(--yellow);
+      text-shadow: 0 6px 0 var(--ink), 0 0 2px var(--ink); pointer-events: none;
+    }
+    .score-break { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 12px 0 6px; }
+    .score-break div { padding: 10px 6px; border-radius: 14px; border: 2px solid var(--ink); font-size: 17px; font-weight: 800; }
+    .score-break b { display: block; font-size: 30px; }
+    .score-break .luck { background: var(--pink-bg); color: var(--pink-ink); }
+    .earned { font-size: 44px !important; font-weight: 950; color: var(--purple); margin: 6px 0 0 !important; }
+    .final-list { list-style: none; margin: 12px auto 0; padding: 0; max-width: 460px; text-align: left; }
+    .final-list li { display: flex; gap: 10px; align-items: center; padding: 6px 12px; border-bottom: 1.5px dashed #d6c7dc; font-size: 19px; }
+    .final-list li.top { background: #fff1b8; border-radius: 12px; border-bottom: 0; font-weight: 900; }
+    .final-list .rank { width: 44px; font-weight: 950; }
+    .final-list .name { flex: 1; }
+    .final-list .pts { font-weight: 900; }
+    .winner { font-size: clamp(32px, 4.4vw, 48px) !important; font-weight: 950; color: var(--pink); margin: 4px 0 !important; }
+
+    /* ---------- 오른쪽 진행 패널 ---------- */
+    .side { min-height: 0; display: flex; flex-direction: column; gap: 10px; overflow: auto; }
+    .card { background: var(--paper); border: 2px solid var(--ink); border-radius: 18px; padding: 10px 14px; }
+    .player-card { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 2px 10px; }
+    .player-card .label { grid-column: 1 / -1; font-size: 14px; font-weight: 800; color: var(--ink-soft); }
+    .player-card strong { font-size: 28px; font-weight: 950; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .player-card .meta { text-align: right; font-size: 16px; font-weight: 800; line-height: 1.35; }
+    .player-card .meta b { font-size: 22px; color: var(--purple); }
+    .mission { text-align: center; }
+    .picto { height: 132px; }
+    .picto svg { height: 100%; width: auto; }
+    .mission h2 { margin: 2px 0 0; font-size: 26px; font-weight: 950; letter-spacing: -.5px; }
+    .mission .desc { margin: 2px 0 8px; font-size: 17px; line-height: 1.4; color: var(--ink-soft); font-weight: 700; }
+    .gauge { position: relative; height: 32px; border: 2px solid var(--ink); border-radius: 999px; overflow: hidden; background: #f1e9f4; }
+    .gauge-fill { height: 100%; width: 0; background: var(--pink); }
+    .gauge.full .gauge-fill { background: var(--green); }
+    .gauge span { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 900; }
+    .hint { min-height: 2.6em; margin: 8px 0 0; font-size: 18px; font-weight: 900; color: var(--pink-ink); line-height: 1.3; }
+    .hint.good { color: #0b5a3f; }
+    .timer { font-size: 15px; font-weight: 800; color: var(--ink-soft); }
+    .teacher-row { display: flex; gap: 8px; }
+    .teacher-row button { flex: 1; font-size: 17px; padding: 6px 10px; }
+    .board h3 { margin: 0 0 4px; font-size: 17px; font-weight: 950; }
+    .board ol { list-style: none; margin: 0; padding: 0; }
+    .board li { display: flex; gap: 8px; padding: 3px 4px; font-size: 16px; font-weight: 700; border-radius: 8px; }
+    .board li.now { background: var(--pink-bg); }
+    .board li .rank { width: 34px; font-weight: 950; }
+    .board li .name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .board li .pts { font-weight: 900; }
+    .board .empty { color: var(--ink-soft); font-size: 15px; }
+    .board .next { margin: 6px 0 0; font-size: 15px; color: var(--ink-soft); font-weight: 800; }
+
+    /* 세로 화면(iPad 세로 등): 카메라를 위, 진행 패널을 아래 두 칸으로 */
+    @media (max-aspect-ratio: 1/1) {
+      .main { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) auto; }
+      .side { display: grid; grid-template-columns: 1fr 1fr; grid-template-areas: "player board" "mission board" "mission teacher"; overflow: visible; }
+      .player-card { grid-area: player; }
+      .mission { grid-area: mission; }
+      .board { grid-area: board; }
+      .teacher-row { grid-area: teacher; flex-direction: column; }
+    }
+    /* 작은 휴대폰: 페이지 스크롤 허용 */
+    @media (max-width: 640px) {
+      .app { height: auto; min-height: 100dvh; }
+      .main { grid-template-rows: 62vh auto; }
+      .side { grid-template-columns: 1fr; grid-template-areas: "player" "mission" "teacher" "board"; }
+      .topbar h1 { font-size: 17px; }
+      .home { display: none; }
+    }
+    @media (prefers-reduced-motion: reduce) { .load-bar div { transition: none; } }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <a class="home" href="../">← 아이스브레이킹</a>
+      <h1>기지개 팡팡! <span>선물 쟁탈전</span></h1>
+      <div class="top-actions">
+        <button id="videoBtn" type="button" hidden>영상 숨기기</button>
+        <button id="soundBtn" type="button">소리 끄기</button>
+      </div>
+    </header>
+
+    <main class="main">
+      <section class="stage" id="stage" aria-label="카메라 화면">
+        <div class="video-box" id="videoBox"><video id="video" playsinline muted></video></div>
+        <canvas id="overlay" aria-hidden="true"></canvas>
+        <div class="stage-hint" id="stageHint" hidden></div>
+        <div class="stage-picto" id="stagePicto" hidden><div class="picto-svg" id="stagePictoSvg"></div><p id="stagePictoName"></p></div>
+        <div class="stage-gauge" id="stageGauge" hidden><div id="stageGaugeFill"></div></div>
+        <p class="stage-note" id="stageNote">영상은 이 기기 안에서만 처리하며 저장·전송하지 않습니다</p>
+
+        <!-- 시작 설정 -->
+        <div class="overlay setup" id="setupPanel">
+          <div class="box">
+            <h2>🤸 기지개 팡팡! 선물 쟁탈전</h2>
+            <p class="rule">한 명씩 카메라 앞에서 포즈를 따라 합니다. 포즈마다 <b>기본 100점 + 빠르기 보너스(최대 50) + 행운 보너스(1~50)</b>. 총점 1등이 선물 주인공!</p>
+            <fieldset class="mode-pick">
+              <legend>어디서 하나요?</legend>
+              <label><input type="radio" name="playMode" value="seated" checked /><span><b>🪑 앉아서</b>노트북 앞에서 얼굴·손 포즈</span></label>
+              <label><input type="radio" name="playMode" value="standing" /><span><b>🧍 서서</b>1~2걸음 뒤에서 팔 기지개</span></label>
+            </fieldset>
+            <label for="namesInput">참가자 이름 (한 줄에 한 명)</label>
+            <textarea id="namesInput" rows="3" placeholder="비워 두면 아래 인원 수만큼 1번, 2번 … 으로 정합니다"></textarea>
+            <div class="field-row">
+              <label>인원 <input id="countInput" type="number" min="1" max="40" value="5" inputmode="numeric" /></label>
+              <label>1인당 포즈 <select id="poseCountSelect"><option value="3">3개</option><option value="4">4개</option><option value="5">5개</option><option value="7" selected>7개 (전부)</option></select></label>
+              <label><input id="shuffleCheck" type="checkbox" /> 차례 무작위</label>
+            </div>
+            <div class="btn-row">
+              <button class="primary" id="startCamBtn" type="button">📷 카메라로 시작</button>
+              <button id="startManualBtn" type="button">카메라 없이 (교사 판정)</button>
+            </div>
+            <p class="small" id="modeNote">노트북 앞에 앉아 얼굴과 두 손이 화면에 보이게 하면 됩니다. 처음 한 번 인식 파일(약 19MB)을 받습니다.</p>
+            <p class="small" id="setupError" role="alert"></p>
+            <div class="btn-row" id="resumeBox" hidden>
+              <button id="resumeBtn" type="button">이전 게임 이어하기</button>
+              <button id="clearBtn" type="button">이전 기록 지우기</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="overlay" id="loadingPanel" hidden>
+          <div class="box">
+            <h2>준비 중…</h2>
+            <p id="loadText">카메라 권한을 요청합니다.</p>
+            <div class="load-bar"><div id="loadFill"></div></div>
+            <p class="small">처음 한 번만 인식 파일을 받습니다. 학급 전체가 동시에 열면 조금 더 걸릴 수 있어요.</p>
+          </div>
+        </div>
+
+        <div class="overlay" id="errorPanel" hidden>
+          <div class="box">
+            <h2 id="errorTitle">카메라를 준비하지 못했습니다</h2>
+            <p id="errorText"></p>
+            <div class="btn-row">
+              <button class="primary" id="retryBtn" type="button">다시 시도</button>
+              <button id="errorManualBtn" type="button">카메라 없이 진행</button>
+              <button id="errorSetupBtn" type="button">처음 화면으로</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="overlay" id="turnPanel" hidden>
+          <div class="box">
+            <h2><span id="turnName"></span> 차례!</h2>
+            <p id="turnGuide"></p>
+            <p class="small" id="turnSeen"></p>
+            <div class="btn-row">
+              <button class="primary" id="goBtn" type="button">시작 <kbd>Enter</kbd></button>
+              <button id="skipPlayerBtn" type="button">이 사람은 나중에</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="countdown" id="countdown" hidden></div>
+
+        <div class="overlay" id="successPanel" hidden>
+          <div class="box">
+            <h2 id="successTitle">완벽해요!</h2>
+            <div class="score-break">
+              <div>기본<b id="sBase">100</b></div>
+              <div>빠르기<b id="sSpeed">0</b></div>
+              <div class="luck">행운 🎲<b id="sLuck">0</b></div>
+            </div>
+            <p class="earned">+<span id="sEarned">0</span></p>
+          </div>
+        </div>
+
+        <div class="overlay" id="turnEndPanel" hidden>
+          <div class="box">
+            <h2><span id="endName"></span> 총점 <span id="endTotal"></span>점!</h2>
+            <p id="endRank"></p>
+            <div class="btn-row">
+              <button class="primary" id="nextBtn" type="button">다음 사람 <kbd>Enter</kbd></button>
+              <button id="finishBtn" type="button">여기서 결과 보기</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="overlay" id="finalPanel" hidden>
+          <div class="box">
+            <h2>🎁 선물 주인공은…</h2>
+            <p class="winner" id="winnerText"></p>
+            <p id="winnerSub"></p>
+            <ol class="final-list" id="finalList"></ol>
+            <div class="btn-row">
+              <button class="primary" id="replayBtn" type="button">같은 명단으로 다시</button>
+              <button id="newGameBtn" type="button">새 게임</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="overlay" id="pausePanel" hidden>
+          <div class="box">
+            <h2>잠시 멈춤</h2>
+            <p id="pauseText">게임을 잠시 멈췄습니다.</p>
+            <div class="btn-row">
+              <button class="primary" id="resumeGameBtn" type="button">계속하기</button>
+              <button id="pauseSetupBtn" type="button">처음 화면으로 (기록 유지)</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <aside class="side" aria-label="진행 상황">
+        <div class="card player-card">
+          <span class="label">지금 차례</span>
+          <strong id="playerName">-</strong>
+          <div class="meta">포즈 <b id="poseStep">0</b>/<span id="poseTotal">7</span><br />점수 <b id="playerScore">0</b></div>
+        </div>
+        <div class="card mission">
+          <div class="picto" id="picto"></div>
+          <h2 id="missionTitle">준비 중</h2>
+          <p class="desc" id="missionDesc">참가자를 정하고 시작하세요.</p>
+          <div class="gauge" id="gauge"><div class="gauge-fill" id="gaugeFill"></div><span>자세 유지 게이지</span></div>
+          <p class="hint" id="hintText" aria-live="polite"></p>
+          <div class="timer" id="timerText"></div>
+        </div>
+        <div class="teacher-row">
+          <button id="passBtn" type="button" disabled>통과 인정 <kbd>Space</kbd></button>
+          <button id="pauseBtn" type="button" disabled>일시정지</button>
+        </div>
+        <div class="card board">
+          <h3>🏆 순위</h3>
+          <ol id="boardList"></ol>
+          <p class="next" id="nextText"></p>
+        </div>
+      </aside>
+    </main>
+  </div>
+
+  <script type="module">
+    import { FilesetResolver, PoseLandmarker, FaceDetector, HandLandmarker } from "../../assets/vendor/mediapipe/tasks-vision/vision_bundle.mjs";
+
+    // ---------- 교실에서 조정할 값 ----------
+    const HOLD_MS = 600;               // 자세를 이만큼 유지하면 통과
+    const HOLD_DECAY = 2;              // 자세가 풀리면 게이지가 이 배속으로 줄어든다(흔들림에 바로 0이 되지 않게)
+    const STALE_MS = 400;              // 이보다 오래된 인식 결과는 판정에 쓰지 않는다
+    const AUTO_PASS_MS = 20000;        // 이 시간 안에 못 하면 자동으로 다음 포즈(시간 초과 점수)
+    const SUCCESS_SHOW_MS = 1500;      // 성공 점수 화면 표시 시간
+    const LUCK_ROLL_MS = 600;          // 행운 주사위가 굴러가는 시간
+    const COUNTDOWN_MS = 3000;
+    const BASE_SCORE = 100;
+    const TIMEOUT_BASE = 50;           // 시간 초과일 때 기본 점수
+    const SPEED_MAX = 50;              // 빠르기 보너스 최대
+    const SPEED_DECAY_PER_S = 5;       // 1초 늦을 때마다 깎이는 빠르기 보너스
+    const LUCK_MAX = 50;               // 행운 보너스 1~LUCK_MAX
+
+    // 인식 기준. 길이는 모두 그 사람의 어깨너비(SW)를 1로 본 값이다. v는 아래쪽이 +, u는 그 사람의 왼쪽이 +.
+    const SHOULDER_VIS = 0.5;          // 양 어깨가 이 신뢰도 이상이어야 판정
+    const LANDMARK_VIS = 0.45;         // 팔꿈치·손목이 '보인다'고 볼 신뢰도
+    const MIN_SHOULDER_FRAC = 0.07;    // 어깨너비가 화면 너비의 7%보다 작으면 너무 멀다
+    const EDGE = 0.03;                 // 화면 가장자리 판정 여유(손이 화면 밖으로 나간 경우)
+    const T = {
+      wristAboveHead: -0.95,           // 손목이 머리 위(어깨선보다 0.95SW 위)
+      elbowUp: -0.4,                   // 팔꿈치가 어깨보다 위
+      raiseGapMin: 1.1,                // 만세: 두 손목 가로 간격(곧게 든 만세도 통과)
+      heartHigh: -0.85,
+      heartGapMax: 0.95,               // 하트: 두 손목 사이 거리
+      chestTop: -0.6, chestBottom: 1.6, // 가슴 앞 높이 범위
+      xForearmIn: 0.2,                 // X: 팔뚝이 몸 안쪽을 향하는 정도
+      xCrossTol: 0.05, xGapMin: 0.45,
+      xWristOverElbow: 0.15,
+      tElbowV: 0.5, tElbowU: 0.85, tWristV: 0.6, tWristU: 1.5,
+      discoDown: 0.45,
+      muscleElbowTop: -0.45, muscleElbowBottom: 0.6, muscleElbowU: 0.8,
+      muscleRise: 0.45, muscleWristTop: -1.7, muscleForearmU: 0.75,
+      prayGapMax: 0.45, prayCenterU: 0.55,
+      prayWristOverElbow: 0.2,         // 합장: 손목이 팔꿈치보다 위(책상 위에 깍지 낀 손과 구분)
+    };
+
+    // 앉아서 모드 기준. 길이는 모두 얼굴 상자 너비(F)를 1로 본 값이다. v는 아래쪽이 +.
+    const FACE_HOLD_MS = 2500;         // 손이 얼굴을 가려 얼굴을 놓쳐도 이 시간 동안은 마지막 얼굴 위치를 쓴다
+    const EXT_RATIO = 1.08;            // 손목→손끝이 손목→둘째마디보다 이만큼 길면 편 손가락 ('오른손 펴!' 앱과 같은 값)
+    const THUMB_RATIO = 1.06;          // 엄지가 옆으로 벌어졌는지
+    const ST = {
+      flowerBelow: 0.1, flowerDepth: 1.5, flowerCenterU: 1.0, flowerWristGap: 0.9,
+      scopeRing: 0.75,                 // 엄지 끝–검지 끝 거리 ÷ 손 크기: 이보다 작으면 동그라미
+      scopeEye: 0.32,                  // 동그라미 중심과 눈 사이 거리
+      faceSideTop: -1.6, faceSideBottom: 1.4, // 얼굴 옆 높이 범위
+      thumbRise: 0.45,                 // 엄지 끝이 엄지 밑마디보다 손 크기의 이만큼 위
+      pokeCheek: 0.3,                  // 검지 끝과 볼 사이 거리
+      earPalm: 0.42,                   // 손바닥 가운데와 귀 사이 거리
+      earMinU: 0.33,                   // 손바닥 가운데가 얼굴 가운데에서 이만큼은 바깥(눈을 가린 손과 구분)
+      palmsOutU: 0.8, palmsEarClear: 0.5,
+    };
+
+    const CAMERA_W = 640, CAMERA_H = 480;
+    const NUM_POSES = 2;               // 뒤에 지나가는 사람이 있어도 어깨가 가장 넓은(가장 가까운) 사람을 고른다
+    const DETECT_CONFIDENCE = 0.4;
+    const MUSIC_VOLUME = 0.045;
+    const SFX_VOLUME = 0.16;
+    const WASM_DIR = "../../assets/vendor/mediapipe/tasks-vision/wasm";
+    const MODEL_PATH = "../../assets/vendor/mediapipe/models/pose_landmarker_lite.task";
+    const FACE_MODEL_PATH = "../../assets/vendor/mediapipe/models/blaze_face_short_range.tflite";
+    const HAND_MODEL_PATH = "../../assets/vendor/mediapipe/models/hand_landmarker.task";
+    const MODE_INFO = {
+      seated: { label: "앉아서", download: "약 19MB", note: "노트북 앞에 앉아 얼굴과 두 손이 화면에 보이게 하면 됩니다. 처음 한 번 인식 파일(약 19MB)을 받습니다." },
+      standing: { label: "서서", download: "약 17MB", note: "카메라에서 1~2걸음 떨어져 머리·어깨·두 팔이 화면에 들어오게 서면 가장 잘 인식됩니다. 처음 한 번 인식 파일(약 17MB)을 받습니다." },
+    };
+    const SAVE_KEY = "stretch-pangpang-v1";
+
+    // ---------- 포즈 정의 ----------
+    // 막대 인형: 머리 원, 몸통·팔 경로, 손목 점. 화면은 거울처럼 보이므로 그림도 학생이 보는 방향 그대로다.
+    const FIG = {
+      raise: { head: [60, 28], path: "M60 38V105M42 50H78M42 50L30 30L20 8M78 50L90 30L100 8", wrists: [[20, 8], [100, 8]] },
+      heart: { head: [60, 30], path: "M60 40V105M42 52H78M42 52L28 30L56 10M78 52L92 30L64 10", wrists: [[56, 10], [64, 10]] },
+      cross: { head: [60, 28], path: "M60 38V105M42 50H78M42 50L46 78L74 60M78 50L74 78L46 60", wrists: [[74, 60], [46, 60]] },
+      plane: { head: [60, 28], path: "M60 38V105M42 50H78M42 50H24H6M78 50H96H114", wrists: [[6, 50], [114, 50]] },
+      disco: { head: [60, 28], path: "M60 38V105M42 50H78M42 50L32 30L26 6M78 50L92 70L104 92", wrists: [[26, 6], [104, 92]] },
+      muscle: { head: [60, 28], path: "M60 38V105M42 50H78M42 50H22V26M78 50H98V26", wrists: [[22, 26], [98, 26]] },
+      pray: { head: [60, 28], path: "M60 38V105M42 50H78M42 50L46 80L60 64M78 50L74 80L60 64", wrists: [[60, 64]] },
+    };
+
+    const POSES = [
+      {
+        id: "raise", title: "외계인 납치! V자 만세 🛸", desc: "두 팔을 머리 위로 V자로 쭉! 손이 화면 밖으로 나가도 괜찮아요.",
+        check(b) {
+          const up = (e, w) => (w.seen ? w.v < T.wristAboveHead : (w.outTop || (e.seen && e.v < T.elbowUp)));
+          if (!up(b.lE, b.lW) || !up(b.rE, b.rW)) return { ok: false, hint: "두 팔을 머리 위로 쭉 올려요!" };
+          if (Math.abs(b.lW.u - b.rW.u) < T.raiseGapMin) return { ok: false, hint: "두 손을 더 벌려 V자를 만들어요!" };
+          return { ok: true, hint: "우주선이 당신을 당기고 있어요!" };
+        },
+      },
+      {
+        id: "heart", title: "내 머리에 사과! 하트 🍎", desc: "두 손을 머리 위에서 모아 커다란 하트를 만들어요.",
+        check(b) {
+          const high = (w) => (w.seen && w.v < T.heartHigh) || w.outTop;
+          if (!high(b.lW) || !high(b.rW)) return { ok: false, hint: "두 손을 머리 위로 올려요!" };
+          if (dist(b.lW, b.rW) > T.heartGapMax) return { ok: false, hint: "머리 위에서 두 손을 모아요!" };
+          return { ok: true, hint: "거대한 사과 하트 완성!" };
+        },
+      },
+      {
+        id: "cross", title: "철벽 방어 X맨! 🙅", desc: "가슴 앞에서 두 팔목을 X자로 교차해요.",
+        check(b) {
+          const { lE, rE, lW, rW } = b;
+          if (!lW.seen || !rW.seen) return { ok: false, hint: "두 손이 화면에 보이게 해 주세요!" };
+          const chest = (w) => w.v > T.chestTop && w.v < T.chestBottom;
+          if (!chest(lW) || !chest(rW)) return { ok: false, hint: "두 팔목을 가슴 앞으로!" };
+          // 팔뚝이 몸 안쪽을 향하고 손목이 팔꿈치보다 위 (책상 위에 손을 둔 자세와 구분)
+          const inward = (!lE.seen || lW.u - lE.u < -T.xForearmIn) && (!rE.seen || rW.u - rE.u > T.xForearmIn);
+          const raised = (!lE.seen || lW.v < lE.v - T.xWristOverElbow) && (!rE.seen || rW.v < rE.v - T.xWristOverElbow);
+          // 손목 좌우가 뒤바뀌었는지 확인. 교차하면 인식이 두 손목을 바꿔 붙일 수 있어 간격으로도 인정한다.
+          const crossed = lW.u < rW.u + T.xCrossTol || Math.abs(lW.u - rW.u) >= T.xGapMin;
+          if (!inward || !raised || !crossed) return { ok: false, hint: "팔목을 서로 엇갈려 X를 크게!" };
+          return { ok: true, hint: "완벽한 철벽 방어!" };
+        },
+      },
+      {
+        id: "plane", title: "날아라 T자 비행기 ✈️", desc: "두 팔을 어깨 높이에서 양옆으로 쭉 펴요.",
+        check(b) {
+          const arm = (e, w, side) => {
+            const elbowOk = e.seen && Math.abs(e.v) < T.tElbowV && side * e.u > T.tElbowU;
+            const wristOk = w.seen && Math.abs(w.v) < T.tWristV && side * w.u > T.tWristU;
+            // 손이 화면 옆으로 나가면 팔꿈치로 판정
+            return w.seen ? wristOk && (!e.seen || elbowOk) : elbowOk && w.outSide;
+          };
+          if (!arm(b.lE, b.lW, 1) || !arm(b.rE, b.rW, -1)) return { ok: false, hint: "두 팔을 어깨 높이로 옆으로 쭉!" };
+          return { ok: true, hint: "이륙 준비 완료!" };
+        },
+      },
+      {
+        id: "disco", title: "디스코 타임! 🕺", desc: "한 손은 하늘 높이, 다른 손은 아래로 쭉!",
+        check(b) {
+          const up = (w) => (w.seen && w.v < T.wristAboveHead) || w.outTop;
+          const down = (w) => (w.seen && w.v > T.discoDown) || w.outBottom;
+          if ((up(b.lW) && down(b.rW)) || (up(b.rW) && down(b.lW))) return { ok: true, hint: "리듬에 몸을 맡겼군요!" };
+          if (!up(b.lW) && !up(b.rW)) return { ok: false, hint: "한 손을 하늘 높이 찔러요!" };
+          return { ok: false, hint: "다른 손은 아래로 쭉 내려요!" };
+        },
+      },
+      {
+        id: "muscle", title: "근육맨 등장! 💪", desc: "팔꿈치를 어깨 높이로 들고 주먹을 위로 세워요.",
+        check(b) {
+          const arm = (e, w, side) => e.seen
+            && e.v > T.muscleElbowTop && e.v < T.muscleElbowBottom && side * e.u > T.muscleElbowU
+            && w.v < e.v - T.muscleRise && w.v > T.muscleWristTop && Math.abs(w.u - e.u) < T.muscleForearmU;
+          if (!b.lE.seen || !b.rE.seen) return { ok: false, hint: "두 팔꿈치가 화면에 보이게 해 주세요!" };
+          if (!arm(b.lE, b.lW, 1) || !arm(b.rE, b.rW, -1)) return { ok: false, hint: "팔꿈치는 어깨 높이, 주먹은 위로!" };
+          return { ok: true, hint: "알통이 불끈!" };
+        },
+      },
+      {
+        id: "pray", title: "소원 비는 합장 🙏", desc: "가슴 앞에서 두 손을 딱 모아요.",
+        check(b) {
+          const { lW, rW } = b;
+          if (!lW.seen || !rW.seen) return { ok: false, hint: "두 손이 화면에 보이게 해 주세요!" };
+          const chest = (w) => w.v > T.chestTop && w.v < T.chestBottom;
+          if (!chest(lW) || !chest(rW)) return { ok: false, hint: "두 손을 가슴 앞으로!" };
+          if (dist(lW, rW) > T.prayGapMax || Math.abs((lW.u + rW.u) / 2) > T.prayCenterU) return { ok: false, hint: "몸 가운데에서 두 손을 딱 붙여요!" };
+          const raised = (!b.lE.seen || lW.v < b.lE.v - T.prayWristOverElbow) && (!b.rE.seen || rW.v < b.rE.v - T.prayWristOverElbow);
+          if (!raised) return { ok: false, hint: "모은 손을 가슴 높이로 들어요!" };
+          return { ok: true, hint: "간절한 마음이 전해졌어요!" };
+        },
+      },
+    ];
+
+    function dist(a, b) { return Math.hypot(a.u - b.u, a.v - b.v); }
+
+    /**
+     * 랜드마크(0~1)를 그 사람의 몸 기준 좌표로 바꾼다.
+     * 원점은 두 어깨의 가운데, 길이 1은 어깨너비, u는 그 사람의 왼쪽, v는 아래쪽.
+     * 그래서 카메라와의 거리, 살짝 기울어진 자세와 관계없이 같은 기준으로 판정한다.
+     */
+    function bodyFrame(lm, vw = CAMERA_W, vh = CAMERA_H) {
+      if (!lm || lm.length < 17) return null;
+      const P = (i) => ({ x: lm[i].x * vw, y: lm[i].y * vh, vis: lm[i].visibility ?? 1, rx: lm[i].x, ry: lm[i].y });
+      const ls = P(11), rs = P(12);
+      if (ls.vis < SHOULDER_VIS || rs.vis < SHOULDER_VIS) return null;
+      const dx = ls.x - rs.x, dy = ls.y - rs.y, sw = Math.hypot(dx, dy);
+      if (sw < vw * MIN_SHOULDER_FRAC) return null;
+      const ex = { x: dx / sw, y: dy / sw };
+      let ey = { x: -ex.y, y: ex.x };
+      if (ey.y < 0) ey = { x: -ey.x, y: -ey.y };
+      const cx = (ls.x + rs.x) / 2, cy = (ls.y + rs.y) / 2;
+      const toBody = (p) => ({
+        u: ((p.x - cx) * ex.x + (p.y - cy) * ex.y) / sw,
+        v: ((p.x - cx) * ey.x + (p.y - cy) * ey.y) / sw,
+        seen: p.vis >= LANDMARK_VIS && p.rx >= -0.01 && p.rx <= 1.01 && p.ry >= -0.01 && p.ry <= 1.01,
+        outTop: p.ry < EDGE, outBottom: p.ry > 1 - EDGE, outSide: p.rx < EDGE || p.rx > 1 - EDGE,
+      });
+      return { sw: sw / vw, nose: toBody(P(0)), lE: toBody(P(13)), rE: toBody(P(14)), lW: toBody(P(15)), rW: toBody(P(16)) };
+    }
+
+    // ---------- 앉아서 모드: 얼굴 + 두 손 ----------
+    const FINGER_TIPS = [8, 12, 16, 20], FINGER_PIPS = [6, 10, 14, 18];
+
+    /**
+     * 얼굴 상자(px)와 얼굴 6점·손 21점(0~1)을 얼굴 기준 좌표로 바꾼다.
+     * 원점은 얼굴 상자 가운데, 길이 1은 얼굴 상자 너비. 그래서 노트북과의 거리와 관계없이 같은 기준으로 판정한다.
+     */
+    function seatedFrame(faceBox, faceKps, handsLm, vw = CAMERA_W, vh = CAMERA_H) {
+      if (!faceBox || !faceKps || faceKps.length < 6) return null;
+      const F = faceBox.width;
+      if (!(F > 0)) return null;
+      const cx = faceBox.originX + F / 2, cy = faceBox.originY + faceBox.height / 2;
+      const toFace = (p) => ({ u: (p.x * vw - cx) / F, v: (p.y * vh - cy) / F });
+      const px = (p) => ({ x: p.x * vw, y: p.y * vh });
+      const d = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
+      const eyes = [toFace(faceKps[0]), toFace(faceKps[1])];
+      const ears = [toFace(faceKps[4]), toFace(faceKps[5])];
+      const mouth = toFace(faceKps[3]);
+      const eyeV = (eyes[0].v + eyes[1].v) / 2;
+      const cheeks = eyes.map((e) => ({ u: e.u + Math.sign(e.u || 1) * 0.06, v: (eyeV + mouth.v) / 2 + 0.08 }));
+      const hands = (handsLm || []).filter((lm) => lm && lm.length >= 21).map((lm) => {
+        const P = lm.map(px), wrist = P[0];
+        const ext = FINGER_TIPS.map((tip, i) => d(wrist, P[tip]) > d(wrist, P[FINGER_PIPS[i]]) * EXT_RATIO);
+        const thumbOut = d(P[4], P[17]) > d(P[3], P[17]) * THUMB_RATIO;
+        const sizePx = d(P[0], P[9]);
+        const pts = lm.map(toFace);
+        const palm = [0, 5, 9, 13, 17].reduce((s, i) => ({ u: s.u + pts[i].u / 5, v: s.v + pts[i].v / 5 }), { u: 0, v: 0 });
+        return {
+          pts, ext, thumbOut, palm, size: sizePx / F,
+          extCount: ext.filter(Boolean).length,
+          thumbUpPx: P[2].y - P[4].y,                       // +면 엄지 끝이 엄지 밑마디보다 위
+          thumbHighest: P[4].y < Math.min(P[8].y, P[12].y, P[16].y, P[20].y),
+          ringGap: d(P[4], P[8]) / Math.max(1, sizePx),     // 엄지 끝–검지 끝 거리 ÷ 손 크기
+          sizePx,
+        };
+      }).sort((a, b) => a.palm.u - b.palm.u);
+      return { face: { eyes, ears, mouth, eyeV, cheeks }, hands };
+    }
+
+    const fdist = (a, b) => Math.hypot(a.u - b.u, a.v - b.v);
+    /** 엄지·검지로 만든 동그라미의 가운데: 끝마디만 쓰면 동그라미 가장자리가 되므로 둘째마디까지 평균 낸다. */
+    const ringCenter = (h) => [3, 4, 6, 8].reduce((s, i) => ({ u: s.u + h.pts[i].u / 4, v: s.v + h.pts[i].v / 4 }), { u: 0, v: 0 });
+    /** 두 점이 두 목표점(눈 둘, 귀 둘, 볼 둘)에 하나씩 가까운지 */
+    function onePerTarget(p, q, targets, thr) {
+      const [t0, t1] = targets;
+      return (fdist(p, t0) < thr && fdist(q, t1) < thr) || (fdist(p, t1) < thr && fdist(q, t0) < thr);
+    }
+    const NEED_TWO = (s) => (s.hands.length < 2 ? { ok: false, hint: `두 손이 모두 화면에 보이게! (지금 ${s.hands.length}개)` } : null);
+
+    const SEATED_POSES = [
+      {
+        id: "flower", title: "꽃받침 🌸", desc: "두 손을 활짝 펴서 턱 아래에 꽃처럼 받쳐요.",
+        check(s) {
+          const miss = NEED_TWO(s); if (miss) return miss;
+          const [a, b] = s.hands, m = s.face.mouth;
+          const under = (h) => h.palm.v > m.v + ST.flowerBelow && h.palm.v < m.v + ST.flowerDepth && Math.abs(h.palm.u) < ST.flowerCenterU;
+          if (!under(a) || !under(b)) return { ok: false, hint: "두 손을 턱 아래로!" };
+          if (fdist(a.pts[0], b.pts[0]) > ST.flowerWristGap) return { ok: false, hint: "두 손목을 턱 밑에서 붙여요!" };
+          if (a.extCount < 2 || b.extCount < 2) return { ok: false, hint: "손가락을 꽃잎처럼 펴요!" };
+          return { ok: true, hint: "활짝 핀 꽃이에요!" };
+        },
+      },
+      {
+        id: "scope", title: "슈퍼맨 망원경 🔭", desc: "두 손으로 동그라미를 만들어 두 눈에 대요.",
+        check(s) {
+          const miss = NEED_TWO(s); if (miss) return miss;
+          const [a, b] = s.hands;
+          const ring = (h) => h.ringGap < ST.scopeRing || h.extCount <= 1;
+          if (!ring(a) || !ring(b)) return { ok: false, hint: "엄지와 검지로 동그라미를 만들어요!" };
+          const ca = ringCenter(a), cb = ringCenter(b);
+          if (!onePerTarget(ca, cb, s.face.eyes, ST.scopeEye)) return { ok: false, hint: "동그라미를 두 눈에 하나씩 대요!" };
+          return { ok: true, hint: "멀리 있는 선물이 보이나요?" };
+        },
+      },
+      {
+        id: "vsign", title: "양손 브이 ✌️", desc: "얼굴 양옆에서 두 손 모두 브이!",
+        check(s) {
+          const miss = NEED_TWO(s); if (miss) return miss;
+          const v = (h) => h.ext[0] && h.ext[1] && !h.ext[2] && !h.ext[3];
+          const side = (h) => h.palm.v > ST.faceSideTop && h.palm.v < ST.faceSideBottom;
+          if (!side(s.hands[0]) || !side(s.hands[1])) return { ok: false, hint: "두 손을 얼굴 높이로 올려요!" };
+          if (!v(s.hands[0]) || !v(s.hands[1])) return { ok: false, hint: "검지·중지만 펴서 브이!" };
+          return { ok: true, hint: "찰칵! 인생샷!" };
+        },
+      },
+      {
+        id: "thumbs", title: "쌍엄지척 👍", desc: "두 손 모두 주먹 쥐고 엄지만 척!",
+        check(s) {
+          const miss = NEED_TWO(s); if (miss) return miss;
+          const up = (h) => h.extCount <= 1 && h.thumbHighest && h.thumbUpPx > ST.thumbRise * h.sizePx;
+          if (!up(s.hands[0]) || !up(s.hands[1])) return { ok: false, hint: "주먹 쥐고 엄지만 위로 척!" };
+          return { ok: true, hint: "최고예요!" };
+        },
+      },
+      {
+        id: "poke", title: "볼콕 ☝️", desc: "검지로 양쪽 볼을 콕 찔러요.",
+        check(s) {
+          const miss = NEED_TWO(s); if (miss) return miss;
+          const point = (h) => h.ext[0] && !h.ext[1] && !h.ext[2] && !h.ext[3];
+          if (!point(s.hands[0]) || !point(s.hands[1])) return { ok: false, hint: "두 손 모두 검지만 펴요!" };
+          if (!onePerTarget(s.hands[0].pts[8], s.hands[1].pts[8], s.face.cheeks, ST.pokeCheek)) return { ok: false, hint: "검지 끝을 양 볼에 콕!" };
+          return { ok: true, hint: "볼콕! 귀여움 폭발!" };
+        },
+      },
+      {
+        id: "ears", title: "귀 막기 🙉", desc: "두 손바닥으로 양쪽 귀를 막아요.",
+        check(s) {
+          const miss = NEED_TWO(s); if (miss) return miss;
+          // 손가락을 편 손바닥이어야 한다(망원경처럼 동그라미를 만든 손은 손바닥이 귀 근처에 와도 제외)
+          if (s.hands[0].extCount < 2 || s.hands[1].extCount < 2) return { ok: false, hint: "손바닥을 펴서 귀를 덮어요!" };
+          const outer = (h) => Math.abs(h.palm.u) > ST.earMinU; // 눈을 가린 손과 구분
+          if (!outer(s.hands[0]) || !outer(s.hands[1]) || !onePerTarget(s.hands[0].palm, s.hands[1].palm, s.face.ears, ST.earPalm)) return { ok: false, hint: "손바닥을 양쪽 귀에 딱!" };
+          return { ok: true, hint: "아무것도 안 들려요~" };
+        },
+      },
+      {
+        id: "palms", title: "반짝반짝 손바닥 👐", desc: "얼굴 양옆에서 다섯 손가락을 활짝!",
+        check(s) {
+          const miss = NEED_TWO(s); if (miss) return miss;
+          const [a, b] = s.hands;
+          const open = (h) => h.extCount >= 4 && h.thumbOut;
+          const beside = (h) => Math.abs(h.palm.u) > ST.palmsOutU && h.palm.v > ST.faceSideTop && h.palm.v < ST.faceSideBottom
+            && Math.min(fdist(h.palm, s.face.ears[0]), fdist(h.palm, s.face.ears[1])) > ST.palmsEarClear;
+          if (!(a.palm.u < 0 && b.palm.u > 0) || !beside(a) || !beside(b)) return { ok: false, hint: "두 손을 얼굴 양옆으로 벌려요!" };
+          if (!open(a) || !open(b)) return { ok: false, hint: "다섯 손가락을 활짝 펴요!" };
+          return { ok: true, hint: "반짝반짝 빛나요!" };
+        },
+      },
+    ];
+    const POSE_SETS = { standing: POSES, seated: SEATED_POSES };
+    for (const p of POSES) p.kind = "standing";
+    for (const p of SEATED_POSES) p.kind = "seated";
+
+    // 판정 로직 점검용(브라우저 콘솔에서 가짜 랜드마크로 시험할 때 쓴다)
+    window.stretchPoseCheck = { bodyFrame, POSES, seatedFrame, SEATED_POSES, figureSvg: (id) => figureSvg(id) };
+
+    // ---------- 화면 요소 ----------
+    const $ = (id) => document.getElementById(id);
+    const stage = $("stage"), video = $("video"), canvas = $("overlay"), ctx = canvas.getContext("2d");
+    const PANELS = ["setupPanel", "loadingPanel", "errorPanel", "turnPanel", "successPanel", "turnEndPanel", "finalPanel", "pausePanel"];
+
+    /** 앉아서 모드 그림: 얼굴과 어깨, 손 모양(손바닥 원 + 손가락 선). 각도는 위쪽이 0°, 시계 방향이 +. */
+    const SEATED_HANDS = {
+      flower: [{ at: [44, 86], fingers: [-75, -50, -25, 0], arm: [30, 112] }, { at: [76, 86], fingers: [75, 50, 25, 0], arm: [90, 112] }],
+      scope: [{ at: [51, 47], ring: true, arm: [32, 112] }, { at: [69, 47], ring: true, arm: [88, 112] }],
+      vsign: [{ at: [18, 42], fingers: [-14, 14], arm: [24, 112] }, { at: [102, 42], fingers: [-14, 14], arm: [96, 112] }],
+      thumbs: [{ at: [24, 76], fingers: [0], fist: true, arm: [26, 112] }, { at: [96, 76], fingers: [0], fist: true, arm: [94, 112] }],
+      poke: [{ at: [26, 74], fingers: [55], fist: true, len: 16, arm: [26, 112] }, { at: [94, 74], fingers: [-55], fist: true, len: 16, arm: [94, 112] }],
+      ears: [{ at: [34, 52], fingers: [-25, -8, 8, 25], len: 9, arm: [28, 112] }, { at: [86, 52], fingers: [-25, -8, 8, 25], len: 9, arm: [92, 112] }],
+      palms: [{ at: [14, 36], fingers: [-70, -30, -8, 14, 36], arm: [22, 112] }, { at: [106, 36], fingers: [70, 30, 8, -14, -36], arm: [98, 112] }],
+    };
+
+    function seatedSvg(id, { hand = "#e8488f", stroke = "#3a2147" } = {}) {
+      const parts = [
+        `<path d="M14 114 Q60 86 106 114" fill="none" stroke="${stroke}" stroke-width="3" stroke-linecap="round"/>`,
+        `<circle cx="60" cy="50" r="24" fill="#fffdf7" stroke="${stroke}" stroke-width="3"/>`,
+        `<circle cx="51" cy="47" r="2.6" fill="${stroke}"/><circle cx="69" cy="47" r="2.6" fill="${stroke}"/>`,
+        `<path d="M53 60 Q60 65 67 60" fill="none" stroke="${stroke}" stroke-width="2.5" stroke-linecap="round"/>`,
+      ];
+      for (const h of SEATED_HANDS[id]) {
+        const [x, y] = h.at;
+        parts.push(`<path d="M${h.arm[0]} ${h.arm[1]} L${x} ${y + (h.ring ? 9 : 6)}" stroke="${stroke}" stroke-width="2.5" stroke-linecap="round" opacity=".55"/>`);
+        if (h.ring) { parts.push(`<circle cx="${x}" cy="${y}" r="8.5" fill="none" stroke="${hand}" stroke-width="4"/>`); continue; }
+        const r = h.fist ? 6.5 : 5.5, len = h.len || 11;
+        for (const deg of h.fingers || []) {
+          const a = deg * Math.PI / 180, sx = x + Math.sin(a) * r, sy = y - Math.cos(a) * r;
+          parts.push(`<path d="M${sx.toFixed(1)} ${sy.toFixed(1)} L${(sx + Math.sin(a) * len).toFixed(1)} ${(sy - Math.cos(a) * len).toFixed(1)}" stroke="${hand}" stroke-width="4" stroke-linecap="round"/>`);
+        }
+        parts.push(`<circle cx="${x}" cy="${y}" r="${r}" fill="${hand}"/>`);
+      }
+      return `<svg viewBox="0 0 120 115" role="img" aria-label="목표 포즈 그림">${parts.join("")}</svg>`;
+    }
+
+    function figureSvg(id, opts = {}) {
+      if (SEATED_HANDS[id]) return seatedSvg(id, opts);
+      const { wrist = "#e8488f", stroke = "#3a2147", width = 3 } = opts;
+      const f = FIG[id];
+      const dots = f.wrists.map(([x, y]) => `<circle cx="${x}" cy="${y}" r="5" fill="${wrist}"/>`).join("");
+      return `<svg viewBox="0 0 120 115" role="img" aria-label="목표 포즈 그림"><circle cx="${f.head[0]}" cy="${f.head[1]}" r="10" fill="none" stroke="${stroke}" stroke-width="${width}"/><path d="${f.path}" fill="none" stroke="${stroke}" stroke-width="${width}" stroke-linecap="round" stroke-linejoin="round"/>${dots}</svg>`;
+    }
+
+    // ---------- 상태 ----------
+    let phase = "setup";   // setup | loading | error | turn | countdown | playing | success | turnEnd | final | paused
+    let inputMode = "camera"; // camera | manual
+    let game = null;       // { players:[{name,total,done,results}], poseCount, current }
+    let turn = null;       // { order:[], step, score, poseStartedAt, holdMs, successUntil, rollUntil, earned }
+    let stream = null, starting = false;
+    const models = { pose: null, face: null, hand: null };
+    let rafId = 0, lastFrameAt = 0, lastVideoTime = -1;
+    let body = null, bodyAt = 0, rawLandmarks = null;
+    // 앉아서 모드: 마지막 얼굴과 손 인식 결과
+    let seat = { faceBox: null, faceKps: null, faceAt: 0, hands: [], handsAt: 0, frame: null };
+    let match = { ok: false, hint: "" };
+    let countdownEndsAt = 0, lastCountShown = "";
+    let pausedFrom = "", pausedAt = 0;
+    let videoMap = { ox: 0, oy: 0, dw: 1, dh: 1 };
+    let lastHintText = "";
+    let fpsSamples = [];
+
+    function setPanel(id = "") {
+      for (const p of PANELS) $(p).hidden = p !== id;
+    }
+
+    function inPlay() { return phase === "playing" || phase === "countdown" || phase === "success"; }
+    function playMode() { return game?.mode === "standing" ? "standing" : "seated"; }
+    function activePoses() { return POSE_SETS[playMode()]; }
+    function currentPose() { return turn ? activePoses()[turn.order[turn.step]] : null; }
+
+    // ---------- 참가자와 기록 ----------
+    function readPlayers() {
+      const names = $("namesInput").value.split(/\r?\n/).map((s) => s.trim()).filter(Boolean).slice(0, 60);
+      let list = names;
+      if (!list.length) {
+        const n = Math.max(1, Math.min(40, Math.round(Number($("countInput").value) || 0)));
+        if (!Number($("countInput").value)) return null;
+        list = Array.from({ length: n }, (_, i) => `${i + 1}번`);
+      }
+      if ($("shuffleCheck").checked) list = shuffle([...list]);
+      return list.map((name) => ({ name, total: 0, done: false, results: [] }));
+    }
+
+    function shuffle(arr) {
+      for (let i = arr.length - 1; i > 0; i -= 1) { const j = Math.floor(Math.random() * (i + 1)); [arr[i], arr[j]] = [arr[j], arr[i]]; }
+      return arr;
+    }
+
+    function save() {
+      try { if (game) localStorage.setItem(SAVE_KEY, JSON.stringify(game)); } catch { /* 저장 없이도 진행 */ }
+    }
+    function loadSaved() {
+      try {
+        const g = JSON.parse(localStorage.getItem(SAVE_KEY) || "null");
+        if (g && Array.isArray(g.players) && g.players.length && g.players.some((p) => !p.done)) return g;
+      } catch { /* 무시 */ }
+      return null;
+    }
+    function clearSaved() { try { localStorage.removeItem(SAVE_KEY); } catch { /* 무시 */ } }
+
+    function refreshResumeBox() {
+      const g = loadSaved();
+      $("resumeBox").hidden = !g;
+      if (g) $("resumeBtn").textContent = `이전 게임 이어하기 (${g.players.length}명 중 ${g.players.filter((p) => p.done).length}명 완료)`;
+    }
+
+    /** 점수가 같으면 같은 순위. 아직 안 한 사람은 순위에서 뺀다. */
+    function ranking() {
+      const done = game ? game.players.filter((p) => p.done) : [];
+      const sorted = [...done].sort((a, b) => b.total - a.total);
+      let rank = 0, prev = null;
+      return sorted.map((p, i) => { if (p.total !== prev) { rank = i + 1; prev = p.total; } return { ...p, rank }; });
+    }
+
+    function nextPlayerIndex(from) {
+      if (!game) return -1;
+      const n = game.players.length;
+      for (let k = 1; k <= n; k += 1) {
+        const i = (from + k) % n;
+        if (!game.players[i].done) return i;
+      }
+      return -1;
+    }
+
+    // ---------- 오른쪽 패널 갱신 ----------
+    function renderBoard() {
+      const list = $("boardList");
+      const ranks = ranking();
+      const current = game?.players[game.current];
+      list.innerHTML = "";
+      if (!ranks.length) {
+        list.innerHTML = `<li class="empty">아직 기록이 없어요.</li>`;
+      } else {
+        for (const p of ranks.slice(0, 6)) {
+          const li = document.createElement("li");
+          if (current && p.name === current.name && phase === "turnEnd") li.classList.add("now");
+          li.innerHTML = `<span class="rank">${p.rank}위</span><span class="name"></span><span class="pts">${p.total.toLocaleString()}</span>`;
+          li.querySelector(".name").textContent = p.name;
+          list.appendChild(li);
+        }
+        if (ranks.length > 6) {
+          const li = document.createElement("li"); li.className = "empty"; li.textContent = `외 ${ranks.length - 6}명`; list.appendChild(li);
+        }
+      }
+      const remain = game ? game.players.filter((p) => !p.done).length : 0;
+      $("nextText").textContent = game ? (remain ? `남은 사람 ${remain}명` : "모두 끝났어요!") : "";
+    }
+
+    function renderPlayer() {
+      const p = game?.players[game.current];
+      $("playerName").textContent = p ? p.name : "-";
+      $("poseTotal").textContent = game ? game.poseCount : 7;
+      $("poseStep").textContent = turn ? Math.min(turn.step + 1, turn.order.length) : 0;
+      $("playerScore").textContent = turn ? turn.score.toLocaleString() : 0;
+    }
+
+    function renderMission(pose) {
+      if (!pose) {
+        $("picto").innerHTML = "";
+        $("missionTitle").textContent = "준비 중";
+        $("missionDesc").textContent = "참가자를 정하고 시작하세요.";
+        $("stagePicto").hidden = true;
+        return;
+      }
+      $("picto").innerHTML = figureSvg(pose.id);
+      $("missionTitle").textContent = pose.title;
+      $("missionDesc").textContent = pose.desc;
+      $("stagePictoSvg").innerHTML = figureSvg(pose.id);
+      $("stagePictoName").textContent = pose.title;
+      $("stagePicto").hidden = false;
+    }
+
+    function setHint(text, good = false) {
+      if (text === lastHintText) return;
+      lastHintText = text;
+      $("hintText").textContent = text;
+      $("hintText").classList.toggle("good", good);
+      $("stageHint").textContent = text;
+      $("stageHint").classList.toggle("good", good);
+      $("stageHint").hidden = !text;
+    }
+
+    function setGauge(ratio) {
+      const pct = `${Math.round(Math.min(1, Math.max(0, ratio)) * 100)}%`;
+      $("gaugeFill").style.width = pct;
+      $("stageGaugeFill").style.width = pct;
+      $("gauge").classList.toggle("full", ratio >= 1);
+      $("stageGauge").classList.toggle("full", ratio >= 1);
+    }
+
+    function setTeacherButtons() {
+      $("passBtn").disabled = phase !== "playing";
+      $("pauseBtn").disabled = !inPlay();
+    }
+
+    // ---------- 게임 흐름 ----------
+    function startGame(mode, existing = null) {
+      ensureAudio();
+      $("setupError").textContent = "";
+      if (!existing) {
+        const players = readPlayers();
+        if (!players) { $("setupError").textContent = "인원 수를 1~40 사이로 넣거나 이름을 적어 주세요."; return; }
+        const mode = document.querySelector('input[name="playMode"]:checked')?.value === "standing" ? "standing" : "seated";
+        game = { players, mode, poseCount: Number($("poseCountSelect").value) || 7, current: 0 };
+      } else {
+        game = existing;
+        if (game.mode !== "standing") game.mode = "seated";
+        if (game.players[game.current]?.done) game.current = nextPlayerIndex(game.current);
+      }
+      save();
+      renderBoard();
+      if (mode === "camera") prepareCamera();
+      else startManual();
+    }
+
+    function startManual() {
+      stopCamera();
+      inputMode = "manual";
+      stage.classList.add("manual");
+      $("videoBtn").hidden = true;
+      $("stageNote").hidden = true;
+      showTurn();
+    }
+
+    function showTurn() {
+      stopMusic();
+      turn = null;
+      phase = "turn";
+      const p = game.players[game.current];
+      $("turnName").textContent = p.name;
+      $("turnGuide").textContent = inputMode !== "camera"
+        ? "화면의 그림을 보고 포즈를 따라 하면 선생님이 '통과 인정'을 눌러 줍니다."
+        : (playMode() === "seated"
+          ? "노트북 앞에 앉아 얼굴이 화면 가운데 오게 하고, 두 손을 들어 화면에 보여 주세요."
+          : "카메라에서 1~2걸음 떨어져 머리·어깨·두 팔이 화면에 들어오게 서 주세요.");
+      $("turnSeen").textContent = "";
+      setPanel("turnPanel");
+      renderPlayer(); renderMission(null); setHint(""); setGauge(0);
+      $("stageGauge").hidden = true; $("timerText").textContent = "";
+      setTeacherButtons();
+      $("goBtn").focus({ preventScroll: true });
+    }
+
+    function startCountdown() {
+      if (phase !== "turn") return;
+      const order = shuffle(activePoses().map((_, i) => i)).slice(0, game.poseCount);
+      turn = { order, step: 0, score: 0, poseStartedAt: 0, holdMs: 0, successUntil: 0, rollUntil: 0, earned: null, results: [] };
+      phase = "countdown";
+      countdownEndsAt = performance.now() + COUNTDOWN_MS;
+      lastCountShown = "";
+      setPanel();
+      $("countdown").hidden = false;
+      renderPlayer();
+      renderMission(activePoses()[order[0]]);
+      setHint("준비~");
+      startMusic();
+      setTeacherButtons();
+      ensureLoop();
+    }
+
+    function beginPose(now) {
+      phase = "playing";
+      turn.poseStartedAt = now;
+      turn.holdMs = 0;
+      setPanel();
+      $("countdown").hidden = true;
+      $("stageGauge").hidden = inputMode !== "camera";
+      $("gauge").hidden = inputMode !== "camera";
+      renderPlayer();
+      renderMission(currentPose());
+      setGauge(0);
+      setHint(inputMode === "camera" ? currentPose().desc : "포즈를 따라 하면 선생님이 통과 인정!");
+      setTeacherButtons();
+      sfx.pop();
+    }
+
+    /** kind: pose(인식 성공) | manual(교사 통과 인정) | timeout(시간 초과) */
+    function completePose(kind, now) {
+      if (phase !== "playing") return;
+      const elapsed = now - turn.poseStartedAt;
+      const base = kind === "timeout" ? TIMEOUT_BASE : BASE_SCORE;
+      const speed = kind === "timeout" ? 0 : Math.max(0, Math.round(SPEED_MAX - Math.max(0, elapsed - HOLD_MS) / 1000 * SPEED_DECAY_PER_S));
+      const luck = 1 + Math.floor(Math.random() * LUCK_MAX);
+      const earned = base + speed + luck;
+      turn.score += earned;
+      turn.results.push({ pose: currentPose().id, kind, base, speed, luck });
+      turn.earned = { base, speed, luck, earned };
+      turn.successUntil = now + SUCCESS_SHOW_MS;
+      turn.rollUntil = now + LUCK_ROLL_MS;
+      phase = "success";
+      $("successTitle").textContent = kind === "timeout" ? "시간 초과! 다음 포즈로 ⏰" : (kind === "manual" ? "선생님 인정! 👍" : "완벽해요! 🎉");
+      $("sBase").textContent = base;
+      $("sSpeed").textContent = speed;
+      $("sLuck").textContent = "?";
+      $("sEarned").textContent = "…";
+      setPanel("successPanel");
+      setGauge(kind === "timeout" ? 0 : 1);
+      renderPlayer();
+      setTeacherButtons();
+      if (kind === "timeout") sfx.timeout(); else sfx.success();
+    }
+
+    function afterSuccess(now) {
+      turn.step += 1;
+      if (turn.step >= turn.order.length) { endTurn(); return; }
+      beginPose(now);
+    }
+
+    function endTurn() {
+      const p = game.players[game.current];
+      p.total = turn.score; p.done = true; p.results = turn.results;
+      save();
+      stopMusic();
+      phase = "turnEnd";
+      $("countdown").hidden = true;
+      $("stageGauge").hidden = true;
+      $("stagePicto").hidden = true;
+      setHint("");
+      const ranks = ranking();
+      const me = ranks.find((r) => r.name === p.name && r.total === p.total);
+      $("endName").textContent = p.name;
+      $("endTotal").textContent = p.total.toLocaleString();
+      $("endRank").textContent = `지금까지 ${ranks.length}명 중 ${me ? me.rank : "-"}위`;
+      const next = nextPlayerIndex(game.current);
+      $("nextBtn").innerHTML = next >= 0 ? `다음 사람: <span></span> <kbd>Enter</kbd>` : "최종 결과 보기 <kbd>Enter</kbd>";
+      if (next >= 0) $("nextBtn").querySelector("span").textContent = game.players[next].name;
+      $("finishBtn").hidden = next < 0;
+      setPanel("turnEndPanel");
+      renderBoard(); renderPlayer(); setTeacherButtons();
+      sfx.turnEnd();
+      $("nextBtn").focus({ preventScroll: true });
+    }
+
+    function goNext() {
+      const next = nextPlayerIndex(game.current);
+      if (next < 0) { showFinal(); return; }
+      game.current = next; save();
+      showTurn();
+    }
+
+    function skipPlayer() {
+      const next = nextPlayerIndex(game.current);
+      if (next < 0 || next === game.current) return;
+      game.current = next; save();
+      showTurn();
+    }
+
+    function showFinal() {
+      stopMusic();
+      phase = "final";
+      turn = null;
+      const ranks = ranking();
+      const top = ranks.filter((r) => r.rank === 1);
+      $("winnerText").textContent = top.length ? top.map((r) => r.name).join(", ") : "-";
+      $("winnerSub").textContent = top.length > 1
+        ? `공동 1위 (${top[0].total.toLocaleString()}점)! 가위바위보로 주인공을 정해요.`
+        : (top.length ? `${top[0].total.toLocaleString()}점으로 1위!` : "기록이 없어요.");
+      const list = $("finalList");
+      list.innerHTML = "";
+      for (const r of ranks.slice(0, 8)) {
+        const li = document.createElement("li");
+        if (r.rank === 1) li.className = "top";
+        li.innerHTML = `<span class="rank">${r.rank}위</span><span class="name"></span><span class="pts">${r.total.toLocaleString()}점</span>`;
+        li.querySelector(".name").textContent = r.name;
+        list.appendChild(li);
+      }
+      const notDone = game.players.filter((p) => !p.done).length;
+      if (notDone) {
+        const li = document.createElement("li"); li.innerHTML = `<span class="name">아직 안 한 사람 ${notDone}명</span>`; list.appendChild(li);
+      }
+      setPanel("finalPanel");
+      renderMission(null); setHint(""); setGauge(0);
+      $("stageGauge").hidden = true; $("timerText").textContent = "";
+      renderBoard(); renderPlayer(); setTeacherButtons();
+      stopCamera();
+      clearSaved();
+      sfx.fanfare();
+    }
+
+    function backToSetup() {
+      stopMusic(); stopCamera();
+      phase = "setup"; turn = null;
+      stage.classList.remove("manual");
+      $("countdown").hidden = true; $("stageGauge").hidden = true;
+      renderMission(null); setHint(""); setGauge(0); $("timerText").textContent = "";
+      if (game) save();
+      refreshResumeBox();
+      setPanel("setupPanel");
+      renderPlayer(); renderBoard(); setTeacherButtons();
+    }
+
+    function pauseGame(text = "게임을 잠시 멈췄습니다.") {
+      if (!inPlay()) return;
+      pausedFrom = phase; pausedAt = performance.now();
+      phase = "paused";
+      $("pauseText").textContent = text;
+      $("countdown").hidden = true;
+      setPanel("pausePanel");
+      stopMusic(); setTeacherButtons();
+    }
+
+    /** 멈춘 시간만큼 예약 시각을 뒤로 미뤄 이어서 진행한다(빠르기 보너스가 깎이지 않게). */
+    function resumeGame() {
+      if (phase !== "paused") return;
+      const delay = performance.now() - pausedAt;
+      countdownEndsAt += delay;
+      if (turn) { turn.poseStartedAt += delay; turn.successUntil += delay; turn.rollUntil += delay; }
+      phase = pausedFrom || "playing";
+      setPanel(phase === "success" ? "successPanel" : "");
+      if (phase === "countdown") $("countdown").hidden = false;
+      lastFrameAt = 0;
+      startMusic(); setTeacherButtons();
+    }
+
+    // ---------- 매 프레임 ----------
+    function loop(now = performance.now()) {
+      rafId = requestAnimationFrame(loop);
+      const dt = lastFrameAt ? Math.min(100, now - lastFrameAt) : 0;
+      lastFrameAt = now;
+
+      if (inputMode === "camera" && modelsReady() && !document.hidden && video.readyState >= 2 && video.currentTime !== lastVideoTime) {
+        lastVideoTime = video.currentTime;
+        try {
+          const t0 = performance.now();
+          if (playMode() === "seated") detectSeated(now);
+          else pickPerson(models.pose.detectForVideo(video, now), now);
+          fpsSamples.push(performance.now() - t0); if (fpsSamples.length > 60) fpsSamples.shift();
+        } catch (error) { console.warn("인식 프레임을 건너뜁니다.", error); }
+      }
+
+      if (phase === "countdown") {
+        const left = Math.min(3, Math.ceil((countdownEndsAt - now) / 1000));
+        const shown = left > 0 ? String(left) : "시작!";
+        if (shown !== lastCountShown) { lastCountShown = shown; $("countdown").textContent = shown; sfx.count(left <= 0); }
+        if (now >= countdownEndsAt + 350) beginPose(now);
+      } else if (phase === "playing") {
+        updatePlaying(now, dt);
+      } else if (phase === "success") {
+        if (now < turn.rollUntil) $("sLuck").textContent = 1 + Math.floor(Math.random() * LUCK_MAX);
+        else if ($("sLuck").textContent !== String(turn.earned.luck)) {
+          $("sLuck").textContent = turn.earned.luck;
+          $("sEarned").textContent = turn.earned.earned;
+          sfx.luck();
+        }
+        if (now >= turn.successUntil) afterSuccess(now);
+      } else if (phase === "turn" && inputMode === "camera") {
+        if (playMode() === "seated") {
+          const faceOk = seat.faceBox && now - seat.faceAt < STALE_MS;
+          const handCount = now - seat.handsAt < STALE_MS ? seat.hands.length : 0;
+          $("turnSeen").textContent = faceOk && handCount >= 2 ? "✅ 얼굴과 두 손 인식됨! 준비되면 시작하세요."
+            : (faceOk ? `⏳ 얼굴 인식됨 · 두 손을 들어 보여 주세요 (지금 ${handCount}개)` : "⏳ 얼굴이 화면 가운데 오게 앉아 주세요.");
+        } else {
+          $("turnSeen").textContent = body && now - bodyAt < STALE_MS ? "✅ 인식됨! 준비되면 시작하세요." : "⏳ 어깨가 보이게 서 주세요.";
+        }
+      }
+
+      draw(now);
+    }
+
+    function updatePlaying(now, dt) {
+      const pose = currentPose();
+      const elapsed = now - turn.poseStartedAt;
+      const remainS = Math.max(0, Math.ceil((AUTO_PASS_MS - elapsed) / 1000));
+      const speedNow = Math.max(0, Math.round(SPEED_MAX - Math.max(0, elapsed - HOLD_MS) / 1000 * SPEED_DECAY_PER_S));
+      $("timerText").textContent = `빠르기 보너스 +${speedNow} · 자동 넘김까지 ${remainS}초`;
+
+      if (inputMode === "camera") {
+        if (playMode() === "seated") {
+          const frame = seatedState(now);
+          match = frame ? pose.check(frame) : { ok: false, hint: "얼굴이 화면 가운데 보이게 앉아 주세요!" };
+        } else {
+          const fresh = body && now - bodyAt < STALE_MS;
+          match = fresh ? pose.check(body) : { ok: false, hint: "어깨 두 쪽이 화면에 보이게 서 주세요!" };
+        }
+        if (match.ok) turn.holdMs = Math.min(HOLD_MS, turn.holdMs + dt);
+        else turn.holdMs = Math.max(0, turn.holdMs - dt * HOLD_DECAY);
+        setGauge(turn.holdMs / HOLD_MS);
+        setHint(match.ok ? `${match.hint} 유지!` : match.hint, match.ok);
+        if (turn.holdMs >= HOLD_MS) { completePose("pose", now); return; }
+      }
+      if (elapsed >= AUTO_PASS_MS) completePose("timeout", now);
+    }
+
+    function modelsReady() { return playMode() === "seated" ? Boolean(models.face && models.hand) : Boolean(models.pose); }
+
+    /** 앉아서 모드: 얼굴(가장 큰 것)과 손(최대 2개)을 함께 찾는다. */
+    function detectSeated(now) {
+      const faces = models.face.detectForVideo(video, now)?.detections || [];
+      let best = null;
+      for (const f of faces) if (f.boundingBox && f.keypoints?.length >= 6 && (!best || f.boundingBox.width > best.boundingBox.width)) best = f;
+      if (best) { seat.faceBox = best.boundingBox; seat.faceKps = best.keypoints; seat.faceAt = now; }
+      const hands = models.hand.detectForVideo(video, now)?.landmarks || [];
+      seat.hands = hands; seat.handsAt = now;
+    }
+
+    /** 판정에 쓸 얼굴+손 상태. 손이 얼굴을 가려 얼굴을 잠깐 놓쳐도 마지막 얼굴 위치를 쓴다. */
+    function seatedState(now) {
+      if (!seat.faceBox || now - seat.faceAt > FACE_HOLD_MS) return null;
+      const hands = now - seat.handsAt < STALE_MS ? seat.hands : [];
+      return seatedFrame(seat.faceBox, seat.faceKps, hands, video.videoWidth || CAMERA_W, video.videoHeight || CAMERA_H);
+    }
+
+    /** 여러 명이 잡히면 어깨너비가 가장 큰(카메라에 가장 가까운) 사람을 고른다. */
+    function pickPerson(result, now) {
+      let best = null, bestLm = null;
+      const vw = video.videoWidth || CAMERA_W, vh = video.videoHeight || CAMERA_H;
+      for (const lm of result?.landmarks || []) {
+        const b = bodyFrame(lm, vw, vh);
+        if (b && (!best || b.sw > best.sw)) { best = b; bestLm = lm; }
+      }
+      if (best) { body = best; bodyAt = now; rawLandmarks = bestLm; }
+    }
+
+    // ---------- 그리기 ----------
+    function resizeCanvas() {
+      const dpr = Math.min(2, window.devicePixelRatio || 1);
+      const w = Math.round(stage.clientWidth * dpr), h = Math.round(stage.clientHeight * dpr);
+      if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h; }
+      return dpr;
+    }
+
+    /** 카메라 영상 전체가 보이도록(손이 화면 밖으로 나갔는지 알 수 있게) 비율을 지켜 무대 안에 맞춘다. */
+    function updateVideoMap() {
+      const sw = Math.max(1, stage.clientWidth), sh = Math.max(1, stage.clientHeight);
+      const vw = video.videoWidth || CAMERA_W, vh = video.videoHeight || CAMERA_H;
+      const scale = Math.min(sw / vw, sh / vh);
+      const dw = vw * scale, dh = vh * scale, ox = (sw - dw) / 2, oy = (sh - dh) / 2;
+      Object.assign(video.style, { left: `${ox}px`, top: `${oy}px`, width: `${dw}px`, height: `${dh}px` });
+      videoMap = { ox, oy, dw, dh };
+    }
+
+    const BONES = [[11, 12], [11, 13], [13, 15], [12, 14], [14, 16], [11, 23], [12, 24], [23, 24]];
+
+    function draw(now) {
+      const dpr = resizeCanvas();
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      const W = stage.clientWidth, H = stage.clientHeight;
+      ctx.clearRect(0, 0, W, H);
+      if (inputMode !== "camera" || !stream) return;
+      const videoOn = stage.classList.contains("video-on");
+      if (!videoOn) {
+        ctx.fillStyle = "#3b3058";
+        ctx.fillRect(videoMap.ox, videoMap.oy, videoMap.dw, videoMap.dh);
+        ctx.fillStyle = "rgba(255,255,255,.7)"; ctx.font = "800 18px system-ui, sans-serif"; ctx.textAlign = "center";
+        ctx.fillText("영상 숨김 · 인식은 계속됩니다", W / 2, videoMap.oy + videoMap.dh - 60);
+      }
+      if (playMode() === "seated") { drawSeated(now); return; }
+      if (!rawLandmarks || now - bodyAt > STALE_MS) return;
+      const pt = (i) => ({ x: videoMap.ox + (1 - rawLandmarks[i].x) * videoMap.dw, y: videoMap.oy + rawLandmarks[i].y * videoMap.dh, vis: rawLandmarks[i].visibility ?? 1 });
+      const ok = phase === "playing" && match.ok;
+      ctx.lineCap = "round";
+      ctx.lineWidth = Math.max(5, videoMap.dw * 0.012);
+      ctx.strokeStyle = ok ? "#4ade80" : "rgba(255,255,255,.92)";
+      for (const [a, b] of BONES) {
+        const p = pt(a), q = pt(b);
+        if (p.vis < 0.3 || q.vis < 0.3) continue;
+        ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(q.x, q.y); ctx.stroke();
+      }
+      const r = Math.max(7, videoMap.dw * 0.014);
+      for (const i of [11, 12, 13, 14]) {
+        const p = pt(i); if (p.vis < 0.3) continue;
+        ctx.beginPath(); ctx.arc(p.x, p.y, r * 0.75, 0, Math.PI * 2); ctx.fillStyle = "#ffd24a"; ctx.fill();
+      }
+      for (const i of [15, 16]) {
+        const p = pt(i); if (p.vis < 0.3) continue;
+        ctx.beginPath(); ctx.arc(p.x, p.y, r * 1.25, 0, Math.PI * 2);
+        ctx.fillStyle = ok ? "#4ade80" : "#e8488f"; ctx.fill();
+        ctx.lineWidth = 3; ctx.strokeStyle = "#fff"; ctx.stroke();
+      }
+      const nose = pt(0);
+      if (nose.vis > 0.5) {
+        ctx.beginPath(); ctx.arc(nose.x, nose.y, r * 1.6, 0, Math.PI * 2);
+        ctx.fillStyle = "#ef4444"; ctx.fill(); ctx.lineWidth = 3; ctx.strokeStyle = "#fff"; ctx.stroke();
+      }
+    }
+
+    const HAND_BONES = [[0, 1], [1, 2], [2, 3], [3, 4], [0, 5], [5, 6], [6, 7], [7, 8], [5, 9], [9, 10], [10, 11], [11, 12],
+      [9, 13], [13, 14], [14, 15], [15, 16], [13, 17], [17, 18], [18, 19], [19, 20], [0, 17]];
+
+    /** 앉아서 모드: 얼굴 상자와 눈·귀 점, 손 뼈대를 영상과 같은 거울 좌표로 그린다. */
+    function drawSeated(now) {
+      const vw = video.videoWidth || CAMERA_W, vh = video.videoHeight || CAMERA_H;
+      const map = (x, y) => ({ x: videoMap.ox + (1 - x) * videoMap.dw, y: videoMap.oy + y * videoMap.dh });
+      const ok = phase === "playing" && match.ok;
+      const unit = Math.max(3, videoMap.dw * 0.006);
+      if (seat.faceBox && now - seat.faceAt < FACE_HOLD_MS) {
+        const b = seat.faceBox, fresh = now - seat.faceAt < STALE_MS;
+        const p = map((b.originX + b.width) / vw, b.originY / vh);
+        const w = b.width / vw * videoMap.dw, h = b.height / vh * videoMap.dh;
+        ctx.lineWidth = unit; ctx.setLineDash(fresh ? [] : [10, 8]);
+        ctx.strokeStyle = ok ? "#4ade80" : "rgba(255,210,74,.95)";
+        ctx.beginPath(); ctx.roundRect ? ctx.roundRect(p.x, p.y, w, h, 18) : ctx.rect(p.x, p.y, w, h); ctx.stroke();
+        ctx.setLineDash([]);
+        for (const i of [0, 1, 4, 5]) {
+          const k = seat.faceKps[i]; if (!k) continue;
+          const q = map(k.x, k.y);
+          ctx.beginPath(); ctx.arc(q.x, q.y, unit * 1.6, 0, Math.PI * 2); ctx.fillStyle = i < 2 ? "#ffd24a" : "#a78bfa"; ctx.fill();
+        }
+      }
+      if (now - seat.handsAt > STALE_MS) return;
+      for (const lm of seat.hands) {
+        ctx.lineWidth = unit * 1.2; ctx.lineCap = "round";
+        ctx.strokeStyle = ok ? "#4ade80" : "rgba(255,255,255,.9)";
+        for (const [a, b] of HAND_BONES) {
+          const p = map(lm[a].x, lm[a].y), q = map(lm[b].x, lm[b].y);
+          ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(q.x, q.y); ctx.stroke();
+        }
+        for (const i of [4, 8, 12, 16, 20]) {
+          const p = map(lm[i].x, lm[i].y);
+          ctx.beginPath(); ctx.arc(p.x, p.y, unit * 1.7, 0, Math.PI * 2); ctx.fillStyle = ok ? "#4ade80" : "#e8488f"; ctx.fill();
+        }
+      }
+    }
+
+    function ensureLoop() { if (!rafId) { lastFrameAt = 0; rafId = requestAnimationFrame(loop); } }
+
+    // ---------- 카메라 ----------
+    const CAMERA_ERRORS = {
+      NotAllowedError: ["카메라 권한이 필요합니다", "주소창의 카메라 설정을 '허용'으로 바꾸고 다시 시도하세요. 카메라 없이 선생님 판정으로도 진행할 수 있습니다."],
+      SecurityError: ["카메라를 쓸 수 없습니다", "이 브라우저 설정에서는 카메라를 쓸 수 없습니다. 카메라 없이 선생님 판정으로 진행하세요."],
+      NotFoundError: ["카메라를 찾지 못했습니다", "연결된 카메라가 없습니다. 카메라를 연결하거나 카메라 없이 진행하세요."],
+      NotReadableError: ["카메라를 쓸 수 없습니다", "다른 앱이나 탭이 카메라를 쓰고 있습니다. 그 앱을 닫고 다시 시도하세요."],
+      OverconstrainedError: ["카메라 설정을 맞추지 못했습니다", "다른 카메라를 연결하거나 카메라 없이 진행하세요."],
+    };
+    const MODEL_ERROR = ["인식 파일을 불러오지 못했습니다", "인터넷 연결이나 파일 경로를 확인한 뒤 다시 시도하세요. 카메라 없이 선생님 판정으로는 바로 할 수 있습니다."];
+
+    function setLoad(text, pct) { $("loadText").textContent = text; $("loadFill").style.width = `${pct}%`; }
+
+    async function prepareCamera() {
+      if (starting) return;
+      starting = true; inputMode = "camera"; phase = "loading";
+      stage.classList.remove("manual");
+      setPanel("loadingPanel");
+      let step = "camera";
+      try {
+        if (!stream) {
+          setLoad("카메라 권한을 요청합니다.", 8);
+          stream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: "user", width: { ideal: CAMERA_W }, height: { ideal: CAMERA_H } }, audio: false,
+          });
+          video.srcObject = stream;
+          await video.play();
+        }
+        updateVideoMap();
+        step = "model";
+        // 고른 모드에 필요한 모델만 받는다(앉아서: 얼굴+손, 서서: 몸).
+        if (!modelsReady()) {
+          const info = MODE_INFO[playMode()];
+          setLoad(`인식 파일을 받습니다. (처음 한 번, ${info.download})`, 25);
+          const fileset = await FilesetResolver.forVisionTasks(WASM_DIR);
+          const create = async (Task, options) => {
+            try { return await Task.createFromOptions(fileset, { ...options, baseOptions: { ...options.baseOptions, delegate: "GPU" } }); }
+            catch (gpuError) {
+              console.warn("GPU를 쓸 수 없어 CPU로 바꿉니다.", gpuError);
+              return Task.createFromOptions(fileset, { ...options, baseOptions: { ...options.baseOptions, delegate: "CPU" } });
+            }
+          };
+          if (playMode() === "seated") {
+            if (!models.face) {
+              setLoad("얼굴 인식 모델을 준비합니다.", 45);
+              models.face = await create(FaceDetector, { baseOptions: { modelAssetPath: FACE_MODEL_PATH }, runningMode: "VIDEO", minDetectionConfidence: 0.5 });
+            }
+            if (!models.hand) {
+              setLoad("손 인식 모델을 준비합니다.", 70);
+              models.hand = await create(HandLandmarker, {
+                baseOptions: { modelAssetPath: HAND_MODEL_PATH }, runningMode: "VIDEO", numHands: 2,
+                // 기본값 0.5는 교실 조명에서 손을 자주 놓친다('오른손 펴!' 앱과 같은 값)
+                minHandDetectionConfidence: 0.3, minHandPresenceConfidence: 0.3, minTrackingConfidence: 0.3,
+              });
+            }
+          } else {
+            setLoad("자세 인식 모델을 준비합니다.", 70);
+            models.pose = await create(PoseLandmarker, {
+              baseOptions: { modelAssetPath: MODEL_PATH }, runningMode: "VIDEO", numPoses: NUM_POSES,
+              minPoseDetectionConfidence: DETECT_CONFIDENCE, minPosePresenceConfidence: DETECT_CONFIDENCE, minTrackingConfidence: DETECT_CONFIDENCE,
+              outputSegmentationMasks: false,
+            });
+          }
+        }
+        setLoad("준비 완료!", 100);
+        stage.classList.add("video-on");
+        $("videoBtn").hidden = false; $("videoBtn").textContent = "영상 숨기기";
+        $("stageNote").hidden = false;
+        body = null; rawLandmarks = null; lastVideoTime = -1; fpsSamples = [];
+        seat = { faceBox: null, faceKps: null, faceAt: 0, hands: [], handsAt: 0 };
+        ensureLoop();
+        showTurn();
+      } catch (error) {
+        console.error(error);
+        phase = "error";
+        const [title, text] = step === "model" ? MODEL_ERROR : (CAMERA_ERRORS[error?.name] || ["카메라를 준비하지 못했습니다", "다시 시도하거나 카메라 없이 진행하세요."]);
+        $("errorTitle").textContent = title; $("errorText").textContent = text;
+        setPanel("errorPanel");
+        stopCamera();
+      } finally { starting = false; }
+    }
+
+    function stopCamera() {
+      if (stream) { stream.getTracks().forEach((track) => track.stop()); stream = null; }
+      video.srcObject = null;
+      stage.classList.remove("video-on");
+      body = null; rawLandmarks = null; lastVideoTime = -1;
+      seat = { faceBox: null, faceKps: null, faceAt: 0, hands: [], handsAt: 0 };
+      $("videoBtn").hidden = true;
+    }
+
+    // ---------- 소리: 효과음 + 통통 튀는 배경음악 (Web Audio로 직접 만든다) ----------
+    const sound = { on: true, ctx: null, sfxBus: null, musicBus: null, timer: 0, nextTime: 0, step: 0 };
+
+    function ensureAudio() {
+      if (!sound.on) return null;
+      try {
+        if (!sound.ctx) {
+          sound.ctx = new (window.AudioContext || window.webkitAudioContext)();
+          sound.sfxBus = sound.ctx.createGain(); sound.sfxBus.gain.value = SFX_VOLUME; sound.sfxBus.connect(sound.ctx.destination);
+        }
+        if (sound.ctx.state === "suspended") sound.ctx.resume();
+        return sound.ctx;
+      } catch { return null; /* 소리 없이도 진행할 수 있다 */ }
+    }
+
+    function tone({ freq, to = freq, type = "triangle", dur = .15, gain = 1, at = 0, bus = null }) {
+      const audio = ensureAudio();
+      if (!audio) return;
+      const start = (at || audio.currentTime) + .001;
+      const osc = audio.createOscillator(), amp = audio.createGain();
+      osc.type = type;
+      osc.frequency.setValueAtTime(freq, start);
+      if (to !== freq) osc.frequency.exponentialRampToValueAtTime(to, start + dur * .9);
+      amp.gain.setValueAtTime(.0001, start);
+      amp.gain.exponentialRampToValueAtTime(gain, start + .01);
+      amp.gain.exponentialRampToValueAtTime(.0001, start + dur);
+      osc.connect(amp).connect(bus || sound.sfxBus);
+      osc.start(start); osc.stop(start + dur + .02);
+    }
+
+    const sfx = {
+      pop: () => tone({ freq: 520, to: 780, type: "sine", dur: .12, gain: .7 }),
+      count: (go) => tone({ freq: go ? 1320 : 880, type: "square", dur: go ? .22 : .09, gain: .3 }),
+      success: () => { const a = ensureAudio(); if (!a) return; const t = a.currentTime; [660, 880, 1175].forEach((f, i) => tone({ freq: f, dur: .14, gain: .8, at: t + i * .08 })); },
+      luck: () => tone({ freq: 990, to: 1480, type: "sine", dur: .18, gain: .6 }),
+      timeout: () => { const a = ensureAudio(); if (!a) return; const t = a.currentTime; tone({ freq: 440, to: 300, type: "sine", dur: .3, gain: .7, at: t }); },
+      turnEnd: () => { const a = ensureAudio(); if (!a) return; const t = a.currentTime; [523, 659, 784].forEach((f, i) => tone({ freq: f, dur: .2, gain: .7, at: t + i * .12 })); },
+      fanfare: () => { const a = ensureAudio(); if (!a) return; const t = a.currentTime; [523, 659, 784, 1047, 784, 1047].forEach((f, i) => tone({ freq: f, dur: i >= 4 ? .4 : .15, gain: .8, at: t + i * .14 })); },
+    };
+
+    // 4마디 반복: F - Dm - B♭ - C, 8분음표 8칸, 기지개처럼 위로 쭉 올라가는 선율
+    const N = { D3: 146.8, F3: 174.6, Bb2: 116.5, C3: 130.8, A3: 220, D4: 293.7, F4: 349.2, G4: 392, A4: 440, Bb4: 466.2, C5: 523.3, D5: 587.3, E5: 659.3, F5: 698.5 };
+    const BARS = [
+      { bass: N.F3, chord: [N.A3, N.F4], melody: ["F4", 0, "A4", "C5", "F5", 0, "C5", 0] },
+      { bass: N.D3, chord: [N.A3, N.F4], melody: ["D5", 0, "A4", 0, "F4", "A4", "D5", 0] },
+      { bass: N.Bb2, chord: [N.D4, N.F4], melody: ["Bb4", 0, "D5", 0, "F5", "D5", "Bb4", 0] },
+      { bass: N.C3, chord: [N.G4, N.Bb4], melody: ["C5", "D5", "E5", 0, "G4", 0, "C5", 0] },
+    ];
+    const MUSIC_STEP = 60 / 124 / 2;
+
+    function scheduleMusic() {
+      const audio = sound.ctx;
+      if (!audio || !sound.musicBus) return;
+      while (sound.nextTime < audio.currentTime + .3) {
+        const bar = BARS[Math.floor(sound.step / 8) % BARS.length];
+        const beat = sound.step % 8, at = sound.nextTime;
+        if (beat === 0 || beat === 4) tone({ freq: bar.bass, type: "sine", dur: .3, gain: .9, at, bus: sound.musicBus });
+        if (beat === 2 || beat === 6) for (const f of bar.chord) tone({ freq: f, type: "triangle", dur: .12, gain: .32, at, bus: sound.musicBus });
+        const note = bar.melody[beat];
+        if (note) tone({ freq: N[note], type: "square", dur: .14, gain: .22, at, bus: sound.musicBus });
+        sound.nextTime += MUSIC_STEP; sound.step += 1;
+      }
+    }
+
+    /** 배경음악은 하나만 돈다. 이미 돌고 있으면 아무것도 하지 않는다. */
+    function startMusic() {
+      if (!sound.on || sound.timer) return;
+      const audio = ensureAudio();
+      if (!audio) return;
+      sound.musicBus = audio.createGain();
+      sound.musicBus.gain.setValueAtTime(.0001, audio.currentTime);
+      sound.musicBus.gain.exponentialRampToValueAtTime(MUSIC_VOLUME, audio.currentTime + .4);
+      sound.musicBus.connect(audio.destination);
+      sound.nextTime = audio.currentTime + .05; sound.step = 0;
+      scheduleMusic();
+      sound.timer = setInterval(scheduleMusic, 90);
+    }
+
+    /** 예약해 둔 음표까지 함께 끊기도록 음악 출력을 줄이고 분리한다. */
+    function stopMusic() {
+      if (sound.timer) { clearInterval(sound.timer); sound.timer = 0; }
+      const bus = sound.musicBus;
+      sound.musicBus = null;
+      if (bus && sound.ctx) {
+        const t = sound.ctx.currentTime;
+        bus.gain.cancelScheduledValues(t);
+        bus.gain.setValueAtTime(Math.max(.0001, bus.gain.value), t);
+        bus.gain.exponentialRampToValueAtTime(.0001, t + .08);
+        setTimeout(() => bus.disconnect(), 200);
+      }
+    }
+
+    // ---------- 이벤트 ----------
+    for (const radio of document.querySelectorAll('input[name="playMode"]')) {
+      radio.addEventListener("change", () => { $("modeNote").textContent = MODE_INFO[radio.value === "standing" ? "standing" : "seated"].note; });
+    }
+    $("startCamBtn").addEventListener("click", () => startGame("camera"));
+    $("startManualBtn").addEventListener("click", () => startGame("manual"));
+    $("resumeBtn").addEventListener("click", () => { const g = loadSaved(); if (g) startGame("camera", g); });
+    $("clearBtn").addEventListener("click", () => { clearSaved(); refreshResumeBox(); });
+    $("retryBtn").addEventListener("click", () => prepareCamera());
+    $("errorManualBtn").addEventListener("click", () => startManual());
+    $("errorSetupBtn").addEventListener("click", backToSetup);
+    $("goBtn").addEventListener("click", () => { ensureAudio(); startCountdown(); });
+    $("skipPlayerBtn").addEventListener("click", skipPlayer);
+    $("nextBtn").addEventListener("click", goNext);
+    $("finishBtn").addEventListener("click", showFinal);
+    $("replayBtn").addEventListener("click", () => {
+      const players = game.players.map((p) => ({ name: p.name, total: 0, done: false, results: [] }));
+      startGame(inputMode === "manual" ? "manual" : "camera", { players, mode: game.mode, poseCount: game.poseCount, current: 0 });
+    });
+    $("newGameBtn").addEventListener("click", () => { game = null; clearSaved(); backToSetup(); });
+    $("passBtn").addEventListener("click", () => completePose("manual", performance.now()));
+    $("pauseBtn").addEventListener("click", () => pauseGame());
+    $("resumeGameBtn").addEventListener("click", resumeGame);
+    $("pauseSetupBtn").addEventListener("click", backToSetup);
+    $("videoBtn").addEventListener("click", () => {
+      const on = !stage.classList.contains("video-on");
+      stage.classList.toggle("video-on", on);
+      $("videoBtn").textContent = on ? "영상 숨기기" : "영상 보기";
+    });
+    $("soundBtn").addEventListener("click", () => {
+      sound.on = !sound.on;
+      $("soundBtn").textContent = sound.on ? "소리 끄기" : "소리 켜기";
+      if (!sound.on) { stopMusic(); return; }
+      ensureAudio();
+      tone({ freq: 420, to: 520, dur: .15 });
+      if (phase === "playing" || phase === "countdown" || phase === "success") startMusic();
+    });
+
+    window.addEventListener("keydown", (event) => {
+      const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(event.target?.tagName || "");
+      if (typing) return;
+      if (event.code === "Space" && phase === "playing") { event.preventDefault(); completePose("manual", performance.now()); return; }
+      if (event.code === "Enter") {
+        if (event.target?.tagName === "BUTTON") return; // 포커스된 버튼은 브라우저가 누른다
+        if (phase === "turn") { event.preventDefault(); ensureAudio(); startCountdown(); }
+        else if (phase === "turnEnd") { event.preventDefault(); goNext(); }
+      }
+      if (event.code === "Escape" && inPlay()) pauseGame();
+    });
+    window.addEventListener("resize", () => { updateVideoMap(); });
+    video.addEventListener("loadedmetadata", updateVideoMap);
+    document.addEventListener("visibilitychange", () => {
+      if (!document.hidden) return;
+      if (inPlay()) pauseGame("다른 화면으로 이동해 멈췄습니다. 준비되면 계속하기를 누르세요. (빠르기 보너스는 깎이지 않아요)");
+      stopMusic();
+    });
+    window.addEventListener("pagehide", () => { stopCamera(); stopMusic(); });
+
+    // 시작
+    refreshResumeBox();
+    renderBoard(); renderPlayer(); setTeacherButtons();
+    updateVideoMap();
+    ensureLoop();
+  </script>
+</body>
+</html>
