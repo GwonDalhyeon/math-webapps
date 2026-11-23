@@ -89,12 +89,6 @@
 
 ## 5. 알려진 문제
 
-- **`icebreaking/card-images/mosquito-catch.jpg`가 의도치 않게 바뀌어 있다**(70,486 → 94,991바이트, 2026-11-23 20:07). Codex 로그에는 이 경로가 나오지 않아 원인을 특정하지 못했다. 이 작업과 무관하므로 되돌리는 것을 권한다. 되돌리기는 권한 문제로 실행하지 못했다.
-
-  ```bash
-  git checkout -- icebreaking/card-images/mosquito-catch.jpg
-  ```
-
 - 목록 카드에 이미지가 없어 그 카드만 글자만 있다. `docs/agent-guides/card-images.md`가 시안 승인 전 제작을 금지하므로 비워 두었다.
 - `sitemap.xml`에 이 앱이 없다. 다만 `mosquito-catch`, `team-draw`, `stretch-pangpang`도 없어 저장소 관례상 필수는 아닌 것으로 보인다.
 
