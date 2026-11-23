@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="카메라 앞에서 한 명씩 기지개 포즈 7가지를 따라 하고, 기본·빠르기·행운 점수로 선물 주인공을 정하는 아이스브레이킹 웹앱입니다." />
-  <title>기지개 팡팡! 선물 쟁탈전</title>
+  <meta name="description" content="카메라 앞에서 한 명씩 기지개 포즈 7가지를 따라 하고, 기본·빠르기·행운 점수를 모아 순위를 확인하는 아이스브레이킹 웹앱입니다." />
+  <title>기지개 팡팡!</title>
   <link rel="icon" href="../../favicon.ico" sizes="16x16 32x32 48x48" />
   <link rel="icon" href="../../assets/favicon.svg" type="image/svg+xml" />
   <link rel="apple-touch-icon" href="../../assets/apple-touch-icon.png" />
@@ -211,7 +211,7 @@
   <div class="app">
     <header class="topbar">
       <a class="home" href="../">← 아이스브레이킹</a>
-      <h1>기지개 팡팡! <span>선물 쟁탈전</span></h1>
+      <h1>기지개 팡팡!</h1>
       <div class="top-actions">
         <button id="videoBtn" type="button" hidden>영상 숨기기</button>
         <button id="soundBtn" type="button">소리 끄기</button>
@@ -230,8 +230,8 @@
         <!-- 시작 설정 -->
         <div class="overlay setup" id="setupPanel">
           <div class="box">
-            <h2>🤸 기지개 팡팡! 선물 쟁탈전</h2>
-            <p class="rule">한 명씩 카메라 앞에서 포즈를 따라 합니다. 포즈마다 <b>기본 100점 + 빠르기 보너스(최대 50) + 행운 보너스(1~50)</b>. 총점 1등이 선물 주인공!</p>
+            <h2>🤸 기지개 팡팡!</h2>
+            <p class="rule">한 명씩 카메라 앞에서 포즈를 따라 합니다. 포즈마다 <b>기본 100점 + 빠르기 보너스(최대 50) + 행운 보너스(1~50)</b>. 총점으로 순위를 정해요.</p>
             <fieldset class="mode-pick">
               <legend>어디서 하나요?</legend>
               <label><input type="radio" name="playMode" value="seated" checked /><span><b>🪑 앉아서</b>노트북 앞에서 얼굴·손 포즈</span></label>
@@ -317,7 +317,7 @@
 
         <div class="overlay" id="finalPanel" hidden>
           <div class="box">
-            <h2>🎁 선물 주인공은…</h2>
+            <h2>🎁 이번 활동의 1등은…</h2>
             <p class="winner" id="winnerText"></p>
             <p id="winnerSub"></p>
             <ol class="final-list" id="finalList"></ol>
@@ -632,7 +632,7 @@
           if (!ring(a) || !ring(b)) return { ok: false, hint: "엄지와 검지로 동그라미를 만들어요!" };
           const ca = ringCenter(a), cb = ringCenter(b);
           if (!onePerTarget(ca, cb, s.face.eyes, ST.scopeEye)) return { ok: false, hint: "동그라미를 두 눈에 하나씩 대요!" };
-          return { ok: true, hint: "멀리 있는 선물이 보이나요?" };
+          return { ok: true, hint: "멀리 있는 곳까지 바라봐요!" };
         },
       },
       {
