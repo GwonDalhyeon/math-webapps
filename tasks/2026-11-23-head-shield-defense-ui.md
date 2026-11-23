@@ -1,6 +1,6 @@
-# 머리로 막아! 꼬물이 지키기 — UI 상세 설계
+# 알을 지켜라! — UI 상세 설계
 
-웹앱 위치: `icebreaking/head-shield-defense/index.html`
+웹앱 위치: `icebreaking/egg-guardian/index.html`
 이미지 제작 매니페스트: [`2026-11-23-head-shield-defense-art-manifest.md`](./2026-11-23-head-shield-defense-art-manifest.md)
 
 대상: 일반계 고등학교 전체 학생, 첫 수업·모둠 활동 아이스브레이킹

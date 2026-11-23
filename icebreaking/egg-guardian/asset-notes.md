@@ -1,4 +1,4 @@
-# 꼬물이 지키기 이미지 메모
+# 알을 지켜라! 이미지 메모
 
 제작 매니페스트: [`../../tasks/2026-11-23-head-shield-defense-art-manifest.md`](../../tasks/2026-11-23-head-shield-defense-art-manifest.md)
 

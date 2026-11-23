@@ -1,8 +1,8 @@
-# 머리로 막아! 꼬물이 지키기 — 이미지 자산 매니페스트
+# 알을 지켜라! — 이미지 자산 매니페스트
 
 상위 UI 설계서: [`2026-11-23-head-shield-defense-ui.md`](./2026-11-23-head-shield-defense-ui.md)
 작업 주체: Codex 내장 이미지 생성 도구
-저장 위치: `icebreaking/head-shield-defense/assets/`
+저장 위치: `icebreaking/egg-guardian/assets/`
 
 이 문서의 10장은 게임 내부 자산이다. 별도로 사용자가 승인한 목록 카드 이미지는 `icebreaking/card-images/head-shield-defense.jpg`에 적용했으며, 제작·승인 기록은 앱의 `asset-notes.md`에 남겼다.
 
@@ -78,7 +78,7 @@
 
 ## 4. 구현 연결
 
-기존 이미지 10장을 `icebreaking/head-shield-defense/assets/`에서 그대로 재사용하고, 새 이미지를 생성하거나 파일을 교체하지 않는다. 구현 담당자가
+기존 이미지 10장을 `icebreaking/egg-guardian/assets/`에서 그대로 재사용하고, 새 이미지를 생성하거나 파일을 교체하지 않는다. 구현 담당자가
 UI 설계서에 따라 다음을 구현한다. 이미지가 아직 없으면 **같은 자리에 캔버스 도형으로 임시
 대체**해 게임은 먼저 돌아가게 한다.
 
@@ -87,4 +87,4 @@ UI 설계서에 따라 다음을 구현한다. 이미지가 아직 없으면 **�
 - 머리 원 1:1 배치와 접촉 번쩍임
 - 둥지 중앙 배치(`x=aspect×0.5`, `NEST_Y=0.5`, 반지름 0.135), 꼬물이 상태 반응과 시선 추적. 일시정지·부화·재시작 시 이동 및 출현 예약 정지/초기화.
 - 부화 연출 2.8초와 단계 전환, 단계 보너스
-- 제작 방식·참고 범위·후처리를 `icebreaking/head-shield-defense/asset-notes.md`에 기록
+- 제작 방식·참고 범위·후처리를 `icebreaking/egg-guardian/asset-notes.md`에 기록

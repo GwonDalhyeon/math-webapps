@@ -1,7 +1,7 @@
-# 머리로 막아! 꼬물이 지키기 — 작업 상태와 남은 검증
+# 알을 지켜라! — 작업 상태와 남은 검증
 
 갱신: 2026-11-23 · 기준: `head-shield-v2-2026-11-23`
-웹앱: `icebreaking/head-shield-defense/index.html`
+웹앱: `icebreaking/egg-guardian/index.html`
 함께 읽기: [UI 명세](./2026-11-23-head-shield-defense-ui.md) · [아트 매니페스트](./2026-11-23-head-shield-defense-art-manifest.md)
 
 ## 1. 현재 상태
@@ -10,12 +10,19 @@
 
 | 파일 | 이번 변경 |
 |---|---|
-| `icebreaking/head-shield-defense/index.html` | 중앙 둥지, 사방 공격, 단계별 출현·이동·퇴장, 패턴 안내, 생존 점수 중복·긴 정지 파티클 오류 수정 |
-| `icebreaking/head-shield-defense/asset-notes.md` | 현재 위치 기준 좌우 반전과 기존 자산 재사용 기록 |
+| `icebreaking/egg-guardian/index.html` | 중앙 둥지, 사방 공격, 단계별 출현·이동·퇴장, 패턴 안내, 생존 점수 중복·긴 정지 파티클 오류 수정 |
+| `icebreaking/egg-guardian/asset-notes.md` | 현재 위치 기준 좌우 반전과 기존 자산 재사용 기록 |
 | `icebreaking/index.html` | 중앙 둥지·이동 투척 설명과 승인된 카드 이미지 반영 |
 | `icebreaking/card-images/head-shield-defense.jpg` | 사람이 알을 보호하는 최종 승인 시안, 960×540 JPEG |
-| `tests/head-shield-defense.test.cjs` | 실제 HTML의 게임 로직을 읽는 Node 기본 테스트 8개 |
+| `tests/egg-guardian.test.cjs` | 실제 HTML의 게임 로직을 읽는 Node 기본 테스트 8개 |
 | UI·아트·상태 문서 3개 | 새 단계 규칙과 현재 구현·검증 결과 통합 |
+
+### 이름과 주소 변경
+
+- 새 이름: **알을 지켜라!** · 새 주소: `icebreaking/egg-guardian/`.
+- 이전 주소 `icebreaking/head-shield-defense/`는 새 주소로 자동 이동하며, 쿼리와 해시도 유지한다. JavaScript가 꺼져 있어도 이동 링크를 제공한다.
+- 카드 이미지 파일명과 날짜가 포함된 기존 명세서 파일명은 기존 참조를 유지한다. 테스트 파일은 `tests/egg-guardian.test.cjs`로 변경했다.
+- 실제 카메라·교실 기기 검증 보류는 유지한다.
 
 ## 2. 확정 동작
 
@@ -55,7 +62,7 @@
 
 ### 자동 검사
 
-명령: `node --test tests/head-shield-defense.test.cjs` — 8개 통과.
+명령: `node --test tests/egg-guardian.test.cjs` — 8개 통과.
 
 1. 중앙 좌표, 1~5단계 패턴 선택, 새 판 초기화.
 2. 고정 투척 4회 묶음마다 네 방향 모두 등장.
@@ -81,7 +88,7 @@
 - **교실 실물:** 이동하는 사람의 반응 속도에 맞는 난이도, 프로젝터 가독성, 스피커 방향 패닝과 음량.
 - 목록 카드 이미지 제작·적용은 완료했다. 승인된 구도와 기존 공통 카드 스타일을 사용하며, 실제 기기에서의 추가 화면 검증은 보류한다.
 
-확인 방법: 일반 브라우저에서 실행 중인 `http://localhost:1767/icebreaking/head-shield-defense/`를 열어 카메라로 시작한다. 로컬 서버가 없으면 저장소 루트에서 `python -m http.server 1767`로 확인한다. iPad 실물 카메라는 HTTPS 배포 주소에서 검증한다.
+확인 방법: 일반 브라우저에서 실행 중인 `http://localhost:1767/icebreaking/egg-guardian/`를 열어 카메라로 시작한다. 로컬 서버가 없으면 저장소 루트에서 `python -m http.server 1767`로 확인한다. iPad 실물 카메라는 HTTPS 배포 주소에서 검증한다.
 
 ## 5. 문서 작업 추적
 

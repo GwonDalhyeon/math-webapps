@@ -1,4 +1,4 @@
-// node --test tests/head-shield-defense.test.cjs
+// node --test tests/egg-guardian.test.cjs
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
@@ -25,7 +25,7 @@ function game(width = 1152, height = 732) {
     clock, performance: { now: () => clock.now }, matchMedia: () => ({ matches: false }),
     requestAnimationFrame: () => 1, setTimeout: () => 1, setInterval: () => 1, clearInterval() {},
   });
-  const html = fs.readFileSync(path.join(__dirname, '../icebreaking/head-shield-defense/index.html'), 'utf8');
+  const html = fs.readFileSync(path.join(__dirname, '../icebreaking/egg-guardian/index.html'), 'utf8');
   const source = html.match(/<script type="module">([\s\S]*?)<\/script>/)[1]
     .replace(/import\s*\{[\s\S]*?\}\s*from\s*"[^"]+";/, '');
   vm.runInContext(source, context);
