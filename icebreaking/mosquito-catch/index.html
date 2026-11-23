@@ -1075,7 +1075,7 @@ function starPath(g, r) {
 /**
  * 모기 (캐릭터 설정화를 단순한 도형으로 옮김): 날개 2, 다리 6, 주둥이 1, 줄무늬 배.
  * 작게 보여도 알아보도록 머리·눈을 크게, 다리 선을 두껍게 그린다.
- * ready: 지금 치면 잡힘(주황) / bolt: 번개 모기(노란 빛 + 번개 모양) / squash: 잡힌 모습(0..1)
+ * ready: 지금 치면 잡힘(주황) / bolt: 번개 모기(노란 빛 + 번개 모양) / squash: 좌우로 눌려 잡힌 모습(0..1)
  */
 function drawMosquito(g, x, y, r, wing, ready, bolt, now, squash) {
   const line = Math.max(2, r * 0.13);
@@ -1083,7 +1083,8 @@ function drawMosquito(g, x, y, r, wing, ready, bolt, now, squash) {
   const OUT = "#0b1324";
   const flap = 0.75 + 0.3 * Math.sin(wing);
   g.save(); g.translate(x, y);
-  if (squash) g.scale(1 + squash * 0.7, 1 - squash * 0.65);
+  // 양손이 좌우에서 모이므로 잡힌 모기는 가로로 눌리고 세로로 늘어난다
+  if (squash) g.scale(1 - squash * 0.62, 1 + squash * 0.66);
 
   if (ready && !squash) {
     g.strokeStyle = "rgba(251,146,60,.95)"; g.lineWidth = r * 0.26;
