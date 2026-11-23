@@ -90,7 +90,8 @@
     }
     .life i.lost { background: transparent; border-style: dashed; border-color: #8aa0b4; }
     /* 게이지 상자(상단 10px + 높이 약 90px) 아래에 둔다. 겹치면 단계 표시를 가린다. */
-    .badge-row { position: absolute; z-index: 3; left: 50%; transform: translateX(-50%); top: 106px; display: flex; gap: 6px; pointer-events: none; }
+    .badge-row { position: absolute; z-index: 3; left: 50%; transform: translateX(-50%); top: 106px; display: flex; flex-wrap: wrap; justify-content: center; gap: 4px; width: max-content; max-width: calc(100% - 24px); pointer-events: none; }
+    .pattern-badge { color: #fef3c7; background: #32425c; border-color: #a5b8cf; }
     .badge {
       padding: 3px 9px; border: 1px solid #2e4a67; border-radius: 9px; background: rgba(244, 250, 255, .9);
       color: #1f3a55; font-size: 13px; font-weight: 800; white-space: nowrap;
@@ -231,6 +232,10 @@
     @media (max-width: 760px) {
       .topbar { gap: 10px; padding: 6px 10px; }
       .topbar h1 { display: none; }
+      .home { font-size: 13px; }
+      .top-actions { gap: 6px; }
+      .top-actions button { white-space: nowrap; flex-shrink: 0; padding: 6px 10px; font-size: 14px; }
+      .badge { font-size: 11px; padding: 3px 6px; }
       .hud-card { min-width: 0; padding: 3px 9px; }
       .hud-card span { display: none; }
       .gauge-box { width: clamp(180px, 42vw, 260px); }
@@ -267,6 +272,7 @@
       <div class="badge-row">
         <span class="badge" id="privacyBadge">영상 저장·전송 없음</span>
         <span class="badge" id="inputBadge">카메라 모드</span>
+        <span class="badge pattern-badge" id="patternBadge">위·아래·좌·우 고정</span>
       </div>
 
       <div class="notice" id="notice" role="status"></div>
@@ -279,18 +285,21 @@
             <p class="eyebrow">HEAD SHIELD DEFENSE</p>
             <h2>머리로 막아!<br />꼬물이 지키기</h2>
             <svg class="hero-art" viewBox="0 0 120 120" role="img" aria-label="가장자리의 도깨비가 둥지의 알을 향해 돌을 던지는 그림">
-              <ellipse cx="60" cy="86" rx="26" ry="11" fill="#8b5a2b" stroke="#1d3a57" stroke-width="2.5" />
-              <ellipse cx="60" cy="78" rx="14" ry="18" fill="#fef3c7" stroke="#1d3a57" stroke-width="3" />
-              <path d="M53 74 a4 4 0 0 1 7 0 M63 74 a4 4 0 0 1 7 0" fill="none" stroke="#3f2a16" stroke-width="2" stroke-linecap="round" />
-              <circle cx="60" cy="52" r="13" fill="none" stroke="#38bdf8" stroke-width="4" />
+              <ellipse cx="60" cy="69" rx="26" ry="11" fill="#8b5a2b" stroke="#1d3a57" stroke-width="2.5" />
+              <ellipse cx="60" cy="59" rx="14" ry="18" fill="#fef3c7" stroke="#1d3a57" stroke-width="3" />
+              <path d="M51 57 a4 4 0 0 1 7 0 M63 57 a4 4 0 0 1 7 0" fill="none" stroke="#3f2a16" stroke-width="2" stroke-linecap="round" />
+              <circle cx="60" cy="29" r="13" fill="none" stroke="#38bdf8" stroke-width="4" />
               <circle cx="18" cy="20" r="11" fill="#7c3aed" stroke="#1d3a57" stroke-width="2.5" />
               <path d="M12 11 l3 -6 M23 12 l3 -6" stroke="#1d3a57" stroke-width="2.5" stroke-linecap="round" />
               <circle cx="100" cy="24" r="11" fill="#7c3aed" stroke="#1d3a57" stroke-width="2.5" />
               <path d="M94 15 l3 -6 M105 16 l3 -6" stroke="#1d3a57" stroke-width="2.5" stroke-linecap="round" />
               <circle cx="36" cy="38" r="5.5" fill="#94a3b8" stroke="#1d3a57" stroke-width="2" />
               <circle cx="84" cy="42" r="4.5" fill="#fb7185" stroke="#1d3a57" stroke-width="2" />
+              <circle cx="94" cy="100" r="10" fill="#7c3aed" stroke="#1d3a57" stroke-width="2.5" />
+              <circle cx="25" cy="91" r="10" fill="#7c3aed" stroke="#1d3a57" stroke-width="2.5" />
+              <path d="M89 91 l3 -5 M99 91 l3 -5 M20 82 l3 -5 M30 82 l3 -5" stroke="#1d3a57" stroke-width="2.5" stroke-linecap="round" />
             </svg>
-            <p class="story">둥지에 남은 마지막 알, <b>꼬물이</b>.<br />심술 도깨비들이 사방에서 돌을 던집니다.<br /><b>부화까지 35초</b>, 머리로 막아 주세요.</p>
+            <p class="story">화면 가운데 마지막 알, <b>꼬물이</b>.<br />처음엔 고정, 다음엔 나타나고 움직이는 도깨비!<br /><b>사방에서 오는 돌</b>을 부화까지 35초 막아 주세요.</p>
           </div>
           <div class="setup-main">
             <h2>꼬물이를 지킬 준비 됐나요?</h2>
@@ -438,10 +447,10 @@
     const HIT_FLASH_MS = 120;
     const HIT_COOLDOWN_MS = 90;
 
-    // 둥지: 머리 아래(가슴 앞)에 둔다. 둥지 반지름 > 머리 반지름이어야
+    // 둥지는 무대 정중앙. 둥지 반지름 > 머리 반지름이어야
     // "둥지에 머리를 붙이고 버티기"가 통하지 않는다. 이 관계는 반드시 유지한다.
     const NEST_X_RATIO = 0.5;
-    const NEST_Y = 0.72;
+    const NEST_Y = 0.5;
     const NEST_RADIUS = 0.135;
 
     const LIVES = 3;
@@ -452,7 +461,7 @@
     const MAX_BALLS = 16;
     const HEAL_INTERVAL_MS = 22000;
     const GOLD_FROM_STAGE = 2;
-    const FLAME_FROM_STAGE = 3;               // 이 단계부터 꼬물이가 공을 태워 준다
+    const FLAME_FROM_STAGE = 3;               // 성장 3회(3단계 클리어) 뒤, 4단계부터
     const FLAME_INTERVAL_MS = 7000;
     const FLAME_MIN_MS = 5000;
     const FLAME_RANGE = 0.55;
@@ -464,15 +473,25 @@
     const MODEL_PATH = "../../assets/vendor/mediapipe/models/pose_landmarker_lite.task";
     const POSE_POINTS = { nose: 0, leftEar: 7, rightEar: 8, leftShoulder: 11, rightShoulder: 12 };
 
-    // 투척 요정 자리. y는 그림의 중심. flip이 true면 그림을 좌우 반전해 오른쪽을 보게 한다.
-    // 그림 원본은 왼쪽을 보므로, 손이 나가는 방향은 flip ? +x : -x 이다.
+    const APPEAR_MS = 360;
+    const EXIT_MS = 250;
+    const AIM_FREEZE_MS = 220;
+    const MIN_FLIGHT_MS = 900;
+    const THROWER_SIZE = 0.11;
+    const EDGES = ["top", "right", "bottom", "left"];
+    const ATTACK_PATTERNS = [
+      { mode: "fixed", label: "위·아래·좌·우 고정", guide: "네 방향의 고정 도깨비가 던져요." },
+      { mode: "appear", label: "가장자리 깜짝 출현", guide: "가장자리에서 나타나는 도깨비를 찾아요." },
+      { mode: "edge", label: "가장자리 이동 투척", guide: "움직이는 도깨비가 멈추는 순간을 봐요." },
+      { mode: "roam", label: "화면 안쪽 이동 투척", guide: "화면 안쪽까지 움직여요. 돌이 오는 길목으로!" },
+    ];
+    function attackPattern(n = gameStage) { return ATTACK_PATTERNS[Math.min(4, n) - 1]; }
+
+    // 1단계는 사방 고정. 이후에는 네 객체를 재사용하되 자리와 이동 경로를 매번 정한다.
     const THROWER_SLOTS = [
-      // fx 0.22 / 0.78 은 상단 좌우의 점수·콤보 카드와 겹치지 않는 자리다.
-      { id: "A", fx: 0.22,  y: 0.08, flip: true,  size: 0.18, edge: "top" },
-      { id: "B", fx: 0.50,  y: 0.05, flip: false, size: 0.18, edge: "top" },
-      { id: "C", fx: 0.78,  y: 0.08, flip: false, size: 0.18, edge: "top" },
-      { id: "D", fx: 0.05,  y: 0.30, flip: true,  size: 0.16, edge: "left" },
-      { id: "E", fx: 0.95,  y: 0.30, flip: false, size: 0.16, edge: "right" },
+      { id: "A", edge: "top" }, { id: "B", edge: "right" },
+      { id: "C", edge: "bottom" }, { id: "D", edge: "left" },
+      { id: "S", edge: "top", support: true },
     ];
     const HAND_X_RATIO = 0.34;    // 그림 너비에 곱한 손 위치(바라보는 방향)
     const HAND_Y_RATIO = 0.06;
@@ -596,6 +615,7 @@
     let field = { aspect: 1.6, cx: 0.8, nx: 0.8, ny: NEST_Y, spawnR: 1.2 };
 
     let throwers = [];
+    let attackEdges = [];
     let balls = [];
     let particles = [];
     let hitMarks = [];
@@ -703,6 +723,7 @@
       $("comboText").textContent = String(combo);
       $("comboCard").classList.toggle("combo-hot", combo >= 5);
       $("stageBadge").textContent = `${gameStage}단계`;
+      $("patternBadge").textContent = attackPattern().label;
       const total = stageInfo(gameStage).seconds * 1000;
       const left = phase === "hatching" ? 0 : Math.max(0, total - stageElapsedMs);
       $("gaugeLabel").textContent = phase === "hatching" ? "부화 중!" : `부화까지 ${(left / 1000).toFixed(1)}초`;
@@ -719,6 +740,7 @@
 
     // ── 카메라 영상 배치와 좌표 변환 ───────────────────────────────────────────
     function updateVideoMap() {
+      const oldAspect = field.aspect;
       const sw = Math.max(1, stage.clientWidth), sh = Math.max(1, stage.clientHeight);
       const vw = video.videoWidth || CAMERA_W, vh = video.videoHeight || CAMERA_H;
       const coverScale = Math.max(sw / vw, sh / vh);
@@ -727,13 +749,18 @@
       const dw = vw * scale, dh = vh * scale, ox = (sw - dw) / 2, oy = (sh - dh) / 2;
       Object.assign(video.style, { left: `${ox}px`, top: `${oy}px`, width: `${dw}px`, height: `${dh}px` });
       const aspect = sw / sh;
+      if (oldAspect && aspect !== oldAspect) {
+        const ratio = aspect / oldAspect;
+        for (const point of [...keyShield.slice(1), ...keyTarget.slice(1)]) if (point) point.x *= ratio;
+        for (const ball of balls) { ball.x *= ratio; ball.prevX *= ratio; ball.vx *= ratio; }
+      }
       videoMap = { ox: (ox / sw) * aspect, oy: oy / sh, dw: (dw / sw) * aspect, dh: dh / sh };
       field = {
         aspect,
         cx: aspect / 2,
         nx: aspect * NEST_X_RATIO,
         ny: NEST_Y,
-        spawnR: Math.hypot(aspect / 2, NEST_Y) + 0.2,
+        spawnR: Math.hypot(aspect / 2, Math.max(NEST_Y, 1 - NEST_Y)) + 0.2,
       };
     }
 
@@ -908,22 +935,44 @@
     // ── 투척 요정 ──────────────────────────────────────────────────────────────
     function resetThrowers() {
       throwers = THROWER_SLOTS.map((slot) => ({
-        slot, state: "idle", stateUntil: 0, type: "stone", scale: 1, aimMs: 450,
+        slot, state: slot.support || attackPattern().mode !== "fixed" ? "hidden" : "idle",
+        stateUntil: 0, stateStartedAt: 0, type: "stone", scale: 1, aimMs: 450,
+        route: EDGES.indexOf(slot.edge) + 0.5, edge: slot.edge,
+        direction: 1, squirrel: Boolean(slot.support),
       }));
+      attackEdges = [];
     }
 
-    /** 세로 화면에서는 가로폭이 좁아 요정이 서로, 그리고 부화 게이지와 겹친다.
-     *  그래서 상단 세 마리를 게이지 아래로 내리고 좌우로 더 벌린다. */
-    const PORTRAIT_SLOTS = {
-      A: { fx: 0.14, y: 0.17 }, B: { fx: 0.50, y: 0.20 }, C: { fx: 0.86, y: 0.17 },
-      D: { fx: 0.06, y: 0.40 }, E: { fx: 0.94, y: 0.40 },
-    };
+    /** 직사각형 둘레를 0~4로 표현해, 모서리를 돌아도 중앙 둥지를 가로지르지 않는다. */
+    function routePoint(route, bounds) {
+      const u = ((route % 4) + 4) % 4;
+      const edge = Math.floor(u), t = u - edge;
+      const { left, right, top, bottom } = bounds;
+      if (edge === 0) return { x: left + (right - left) * t, y: top, edge: "top" };
+      if (edge === 1) return { x: right, y: top + (bottom - top) * t, edge: "right" };
+      if (edge === 2) return { x: right - (right - left) * t, y: bottom, edge: "bottom" };
+      return { x: left, y: bottom - (bottom - top) * t, edge: "left" };
+    }
+
+    function throwerBounds(size, inner = false) {
+      const pad = size / 2 + 0.018;
+      // 좁은 화면에서는 안쪽 경로의 좌우 폭을 늘려 둥지와 겹치지 않게 한다.
+      const clearance = NEST_RADIUS + size / 2 + 0.02;
+      const inset = inner ? 0.12 : 0;
+      const left = Math.min(pad + inset, Math.max(pad, field.nx - clearance));
+      const right = field.aspect - left;
+      const top = Math.min(field.ny - clearance, Math.max(pad, 142 / Math.max(1, stage.clientHeight) + size / 2));
+      const bottom = Math.max(field.ny + clearance, 1 - pad - inset);
+      return { left, right, top, bottom };
+    }
+
     function throwerBox(thrower) {
-      const slot = thrower.slot;
-      const portrait = field.aspect < 1;
-      const place = portrait ? PORTRAIT_SLOTS[slot.id] : slot;
-      const size = (portrait ? slot.size * 0.8 : slot.size) * (thrower.scale || 1);
-      return { x: place.fx * field.aspect, y: place.y, size, flip: slot.flip };
+      const size = Math.min(THROWER_SIZE, field.aspect * 0.12) * (thrower.scale || 1);
+      // 투척 종류에 따라 몸집이 바뀌어도 이동 경로 자체가 튀지 않게 한다.
+      const routeSize = Math.min(THROWER_SIZE, field.aspect * 0.12) * 1.35;
+      const bounds = throwerBounds(routeSize, attackPattern().mode === "roam" && !thrower.squirrel);
+      const place = routePoint(thrower.route, bounds);
+      return { ...place, size, flip: place.x < field.nx };
     }
 
     function throwerHand(thrower) {
@@ -941,42 +990,111 @@
     }
 
     function throwIntervalMs() {
-      return Math.max(360, levelInfo().throwMs * stageInfo(gameStage).throwScale);
+      const jitter = gameStage >= 2 ? 0.65 + Math.random() * 0.7 : 1;
+      return Math.max(360, levelInfo().throwMs * stageInfo(gameStage).throwScale * jitter);
     }
 
-    /** 조준 → 투척 사이클을 시작한다. 쉬고 있는 요정 중 하나를 고른다. */
-    function startAim(now, type) {
-      const free = throwers.filter((thrower) => thrower.state === "idle"
-        && !(type === "heal" && thrower.slot.id !== "B")
-        && !(type !== "heal" && thrower.slot.id === "B" && thrower.squirrel));
-      if (!free.length) return false;
-      const thrower = type === "heal"
-        ? free.find((item) => item.slot.id === "B") || free[0]
-        : free[Math.floor(Math.random() * free.length)];
+    function nextAttackEdge() {
+      if (!attackEdges.length) {
+        attackEdges = [...EDGES];
+        for (let i = attackEdges.length - 1; i > 0; i -= 1) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [attackEdges[i], attackEdges[j]] = [attackEdges[j], attackEdges[i]];
+        }
+      }
+      return attackEdges[0];
+    }
+
+    /** 다른 요정과 겹치지 않는 출현 위치를 찾고, 성공했을 때만 방향 큐를 소비한다. */
+    function placeThrower(thrower, edge) {
+      const oldRoute = thrower.route;
+      for (let attempt = 0; attempt < 16; attempt += 1) {
+        thrower.route = EDGES.indexOf(edge) + 0.12 + Math.random() * 0.76;
+        const box = throwerBox(thrower);
+        const occupied = throwers.some((other) => {
+          if (other === thrower || other.state === "hidden") return false;
+          const otherBox = throwerBox(other);
+          return Math.hypot(box.x - otherBox.x, box.y - otherBox.y) < (box.size + otherBox.size) * 0.65;
+        });
+        if (!occupied) return true;
+      }
+      thrower.route = oldRoute;
+      return false;
+    }
+
+    function beginAim(thrower, now) {
       thrower.state = "aim";
-      thrower.type = type;
-      thrower.squirrel = type === "heal";
-      thrower.scale = BALL_TYPES[type].thrower;
-      thrower.aimMs = type === "heal" ? 600 : stageInfo(gameStage).aimMs;
+      thrower.stateStartedAt = now;
       thrower.stateUntil = now + thrower.aimMs;
-      sfx.aim(thrower.slot.edge === "left" ? -1 : (thrower.slot.edge === "right" ? 1 : 0));
+      const box = throwerBox(thrower);
+      sfx.aim(clamp((box.x / field.aspect) * 2 - 1, -1, 1));
+    }
+
+    /** 1단계는 고정 4자리, 이후에는 출현·이동을 거쳐 투척한다. */
+    function startAim(now, type) {
+      const support = type === "heal";
+      const edge = support ? "top" : nextAttackEdge();
+      const pattern = attackPattern();
+      const thrower = throwers.find((item) => Boolean(item.slot.support) === support
+        && (item.state === "idle" || item.state === "hidden")
+        && (support || pattern.mode !== "fixed" || item.slot.edge === edge));
+      if (!thrower) return false;
+      thrower.type = type;
+      thrower.squirrel = support;
+      thrower.scale = BALL_TYPES[type].thrower;
+      thrower.aimMs = support ? 600 : Math.max(pattern.mode === "edge" || pattern.mode === "roam" ? 450 : 0, stageInfo(gameStage).aimMs);
+      thrower.direction = Math.random() < 0.5 ? -1 : 1;
+      if (support || pattern.mode !== "fixed") {
+        if (!placeThrower(thrower, edge)) return false;
+        thrower.state = "appearing";
+        thrower.stateStartedAt = now;
+        thrower.stateUntil = now + APPEAR_MS;
+      } else beginAim(thrower, now);
+      // 단계 시작 안내가 상단 요정을 가리지 않도록 첫 출현 때 걷어 낸다.
+      if (!support && now - stageStartedAt <= 3500) showNotice();
+      if (!support) attackEdges.shift();
       return true;
     }
 
-    function updateThrowers(now) {
+    function updateThrowers(now, dt) {
       for (const thrower of throwers) {
-        if (thrower.state === "idle" || now < thrower.stateUntil) continue;
-        if (thrower.state === "aim") {
+        if (thrower.state === "hidden" || thrower.state === "idle") continue;
+        const mode = attackPattern().mode;
+        const moving = !thrower.squirrel && (mode === "edge" || mode === "roam");
+        if (moving && (thrower.state === "moving" || (thrower.state === "aim" && thrower.stateUntil - now > AIM_FREEZE_MS))) {
+          const box = throwerBox(thrower);
+          const bounds = throwerBounds(Math.min(THROWER_SIZE, field.aspect * 0.12) * 1.35, mode === "roam");
+          const sideLength = box.edge === "top" || box.edge === "bottom" ? bounds.right - bounds.left : bounds.bottom - bounds.top;
+          thrower.route += thrower.direction * (mode === "roam" ? 0.23 : 0.17) * dt / Math.max(0.1, sideLength);
+        }
+        if (now < thrower.stateUntil) continue;
+        if (thrower.state === "appearing") {
+          if (moving) {
+            thrower.state = "moving";
+            thrower.stateStartedAt = now;
+            thrower.stateUntil = now + 700 + Math.random() * 400;
+          } else beginAim(thrower, now);
+        } else if (thrower.state === "moving") {
+          beginAim(thrower, now);
+        } else if (thrower.state === "aim") {
           spawnBallFromHand(thrower, now);
           thrower.state = "throw";
+          thrower.stateStartedAt = now;
           thrower.stateUntil = now + THROW_MS;
           sfx.throwBall();
         } else if (thrower.state === "throw") {
           thrower.state = "recover";
+          thrower.stateStartedAt = now;
           thrower.stateUntil = now + RECOVER_MS;
+        } else if (thrower.state === "recover" && (thrower.squirrel || mode !== "fixed")) {
+          thrower.state = "leaving";
+          thrower.stateStartedAt = now;
+          thrower.stateUntil = now + EXIT_MS;
+        } else if (thrower.state === "leaving") {
+          thrower.state = "hidden";
+          thrower.scale = 1;
         } else {
           thrower.state = "idle";
-          thrower.squirrel = false;
           thrower.scale = 1;
         }
       }
@@ -993,7 +1111,9 @@
       const ty = field.ny + Math.sin(aimAngle) * aimR;
       const dx = tx - hand.x, dy = ty - hand.y;
       const length = Math.hypot(dx, dy) || 1;
-      const speed = levelInfo().speed * info.speed * stageInfo(gameStage).speed;
+      // 안쪽에서 던지더라도 둥지에 닿기까지 최소 0.9초의 반응 여유를 준다.
+      const toBoundary = Math.max(0.015, Math.hypot(hand.x - field.nx, hand.y - field.ny) - NEST_RADIUS - info.radius);
+      const speed = Math.min(levelInfo().speed * info.speed * stageInfo(gameStage).speed, toBoundary / (MIN_FLIGHT_MS / 1000));
       balls.push({
         id: `ball-${ballSeq += 1}`, type: thrower.type, radius: info.radius,
         x: hand.x, y: hand.y, prevX: hand.x, prevY: hand.y,
@@ -1005,9 +1125,9 @@
     // ── 단계 진행 ──────────────────────────────────────────────────────────────
     function resetRound() {
       balls = []; particles = []; hitMarks = []; lastHitAt.clear();
-      resetThrowers();
       score = 0; lives = LIVES; combo = 0; maxCombo = 0; blocked = 0;
       gameStage = 1; creatureLevel = 0; creatureMood = "calm"; moodUntil = 0;
+      resetThrowers();
       survivedMs = 0; stageElapsedMs = 0; accumulator = 0; leakGraceUntil = 0;
       flameUntil = 0; nearNestSince = 0; nearNestHinted = false;
       hatchBurst = false; hatchConfetti = false; shieldFlash.clear();
@@ -1032,6 +1152,7 @@
 
     function beginStage(now) {
       phase = "playing";
+      resetThrowers();
       $("countdown").classList.remove("show");
       stageStartedAt = now;
       stageElapsedMs = 0;
@@ -1042,6 +1163,7 @@
       lastFrameAt = now;
       startMusic();
       renderHud();
+      showNotice(`${gameStage}단계 · ${attackPattern().label}`, attackPattern().guide, 2400);
     }
 
     function startPlaying(now) {
@@ -1074,7 +1196,9 @@
         ball.vy = (ry / rl) * speed;
         ball.deflected = true;
       }
-      for (const thrower of throwers) { thrower.state = "idle"; thrower.squirrel = false; thrower.scale = 1; }
+      for (const thrower of throwers) {
+        if (thrower.state !== "hidden") thrower.state = "idle";
+      }
       sfx.hatch();
       setStatus(`${gameStage}단계 성공. 부화 연출이 재생됩니다.`);
       renderHud();
@@ -1102,7 +1226,7 @@
       showNotice();
       survivedMs += stageElapsedMs;
       const seconds = survivedMs / 1000;
-      score += seconds * 5;
+      // 생존 점수는 플레이 루프에서 이미 반영했으므로 종료 때 중복 가산하지 않는다.
       const total = Math.round(score);
       score = total;
       lastRecordNo = playerNo;
@@ -1353,19 +1477,24 @@
       // 조준 중인 요정 쪽 테두리를 붉게 밝힌다(경고 삼각형과 중복 표시).
       for (const thrower of throwers) {
         if (thrower.state !== "aim") continue;
+        const edge = throwerBox(thrower).edge;
         const t = clamp(1 - (thrower.stateUntil - now) / thrower.aimMs, 0, 1);
         ctx.save();
         ctx.globalAlpha = 0.15 + t * 0.3;
         const band = px(0.05);
         let gradient;
-        if (thrower.slot.edge === "left") {
+        if (edge === "left") {
           gradient = ctx.createLinearGradient(0, 0, band, 0);
           gradient.addColorStop(0, "#f87171"); gradient.addColorStop(1, "rgba(248,113,113,0)");
           ctx.fillStyle = gradient; ctx.fillRect(0, 0, band, h);
-        } else if (thrower.slot.edge === "right") {
+        } else if (edge === "right") {
           gradient = ctx.createLinearGradient(w, 0, w - band, 0);
           gradient.addColorStop(0, "#f87171"); gradient.addColorStop(1, "rgba(248,113,113,0)");
           ctx.fillStyle = gradient; ctx.fillRect(w - band, 0, band, h);
+        } else if (edge === "bottom") {
+          gradient = ctx.createLinearGradient(0, h, 0, h - band);
+          gradient.addColorStop(0, "#f87171"); gradient.addColorStop(1, "rgba(248,113,113,0)");
+          ctx.fillStyle = gradient; ctx.fillRect(0, h - band, w, band);
         } else {
           gradient = ctx.createLinearGradient(0, 0, 0, band);
           gradient.addColorStop(0, "#f87171"); gradient.addColorStop(1, "rgba(248,113,113,0)");
@@ -1407,17 +1536,24 @@
 
     function drawThrowers(now) {
       for (const thrower of throwers) {
+        if (thrower.state === "hidden") continue;
         const box = throwerBox(thrower);
         const x = px(box.x), y = px(box.y);
-        const dim = thrower.state === "idle" ? 0.72 : 1;
+        let dim = thrower.state === "idle" ? 0.72 : 1;
+        let pop = 1;
+        if (thrower.state === "appearing") {
+          const progress = clamp((now - thrower.stateStartedAt) / APPEAR_MS, 0, 1);
+          dim *= progress;
+          pop = REDUCED_MOTION ? 1 : 0.55 + easeOut(progress) * 0.45;
+        } else if (thrower.state === "leaving") dim *= clamp(1 - (now - thrower.stateStartedAt) / EXIT_MS, 0, 1);
         // 대기 중에는 살짝 들썩인다.
         const bob = thrower.state === "idle" && !REDUCED_MOTION ? Math.sin(now / 430 + box.x * 7) * px(box.size) * 0.02 : 0;
         const key = thrower.squirrel ? "squirrel"
           : (thrower.state === "aim" ? "goblinAim" : (thrower.state === "throw" ? "goblinThrow" : "goblinIdle"));
-        const drawn = drawArt(key, x, y + bob, box.size, { flip: box.flip, alpha: dim });
+        const drawn = drawArt(key, x, y + bob, box.size * pop, { flip: box.flip, alpha: dim });
         if (!drawn) {
           ctx.globalAlpha = dim;
-          drawGoblinShape(x, y + bob, box.size, box.flip, thrower.state);
+          drawGoblinShape(x, y + bob, box.size * pop, box.flip, thrower.state);
           ctx.globalAlpha = 1;
         }
 
@@ -1426,23 +1562,38 @@
           // 손에서 자라나는 돌
           const hand = throwerHand(thrower);
           const info = BALL_TYPES[thrower.type];
+          const dx = field.nx - hand.x, dy = field.ny - hand.y;
+          const distance = Math.hypot(dx, dy) || 1;
+          // 움직이는 요정도 현재 손 위치에서 어느 방향으로 던질지 읽히게 한다.
+          ctx.save();
+          ctx.strokeStyle = thrower.squirrel ? "#86efac" : "#fca5a5";
+          ctx.lineWidth = Math.max(2, px(0.004));
+          ctx.setLineDash([px(0.012), px(0.009)]);
+          ctx.beginPath();
+          ctx.moveTo(px(hand.x), px(hand.y));
+          ctx.lineTo(px(hand.x + dx / distance * 0.12), px(hand.y + dy / distance * 0.12));
+          ctx.stroke();
+          ctx.restore();
           ctx.fillStyle = info.color;
           ctx.strokeStyle = "#0f2038";
           ctx.lineWidth = Math.max(2, px(0.004));
           ctx.beginPath();
           ctx.arc(px(hand.x), px(hand.y), px(info.radius) * (0.3 + t * 0.7), 0, Math.PI * 2);
           ctx.fill(); ctx.stroke();
-          // 발밑 경고 삼각형
+          // 중앙을 향한 쪽에 경고 삼각형: 아래에서 오는 요정도 화면 밖으로 잘리지 않는다.
           const size = px(box.size) * 0.26 * (0.5 + t * 0.5);
-          const ty = y + px(box.size) * 0.55;
+          const markerX = x + dx / distance * px(box.size) * 0.65;
+          const markerY = y + dy / distance * px(box.size) * 0.65;
           ctx.save();
-          ctx.fillStyle = "#f87171";
-          ctx.strokeStyle = "#7f1d1d";
+          ctx.translate(markerX, markerY);
+          ctx.rotate(Math.atan2(dy, dx) + Math.PI / 2);
+          ctx.fillStyle = thrower.squirrel ? "#86efac" : "#f87171";
+          ctx.strokeStyle = thrower.squirrel ? "#166534" : "#7f1d1d";
           ctx.lineWidth = Math.max(2, px(0.004));
           ctx.beginPath();
-          ctx.moveTo(x, ty - size);
-          ctx.lineTo(x + size * 0.9, ty + size * 0.6);
-          ctx.lineTo(x - size * 0.9, ty + size * 0.6);
+          ctx.moveTo(0, -size);
+          ctx.lineTo(size * 0.9, size * 0.6);
+          ctx.lineTo(-size * 0.9, size * 0.6);
           ctx.closePath(); ctx.fill(); ctx.stroke();
           ctx.restore();
         }
@@ -1474,7 +1625,7 @@
       }
 
       const breathing = REDUCED_MOTION ? 0 : Math.sin(now / (timeLeftMs() <= 5000 && phase === "playing" ? 350 : 700)) * 0.02;
-      const hatching = phase === "hatching";
+      const hatching = phase === "hatching" || (phase === "paused" && pausedFrom === "hatching");
       const t = hatching ? clamp((now - hatchStartedAt) / HATCH_MS, 0, 1) : 0;
 
       let cx = nx, cy = ny - r * 0.18;
@@ -1757,7 +1908,8 @@
 
     function drawParticles(now) {
       for (const particle of particles) {
-        const age = (now - particle.born) / particle.life;
+        const age = clamp((now - particle.born) / particle.life, 0, 1);
+        if (age >= 1) continue;
         ctx.globalAlpha = Math.max(0, 1 - age);
         ctx.fillStyle = particle.color;
         ctx.beginPath();
@@ -1869,9 +2021,10 @@
       updatePhase(now);
 
       if (phase === "playing") {
-        stageElapsedMs = now - stageStartedAt;
-        score += dt * 5;                                    // 생존 점수
-        updateThrowers(now);
+        const elapsed = Math.min(now - stageStartedAt, stageInfo(gameStage).seconds * 1000);
+        score += Math.max(0, elapsed - stageElapsedMs) * 0.005; // 생존 초당 5점, 한 번만
+        stageElapsedMs = elapsed;
+        updateThrowers(now, dt);
         if (now >= nextThrowAt) {
           if (startAim(now, pickBallType())) nextThrowAt = now + throwIntervalMs();
           else nextThrowAt = now + 200;
@@ -1895,7 +2048,7 @@
       }
 
       if (phase !== "paused") updateParticles(now, dt);
-      draw(now);
+      draw(phase === "paused" ? pausedAt : now);
     }
 
     // ── 카메라 ─────────────────────────────────────────────────────────────────
@@ -2005,7 +2158,10 @@
       moodUntil += delay;
       flameUntil += delay;
       if (nearNestSince) nearNestSince += delay;
-      for (const thrower of throwers) thrower.stateUntil += delay;
+      for (const thrower of throwers) {
+        thrower.stateUntil += delay;
+        thrower.stateStartedAt += delay;
+      }
       for (const particle of particles) particle.born += delay;
       for (const mark of hitMarks) mark.born += delay;
       for (const ball of balls) ball.born += delay;
