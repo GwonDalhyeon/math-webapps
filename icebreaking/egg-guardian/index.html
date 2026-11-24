@@ -1680,7 +1680,7 @@
       }
     }
 
-    /** 둥지 경계선 + 둥지 + 알/꼬물이. 눈동자는 가장 가까운 돌을 따라본다. */
+    /** 둥지 경계선 + 둥지 + 알/꼬물이. */
     function drawNest(now) {
       const nx = px(field.nx), ny = px(field.ny), r = px(NEST_RADIUS);
       const hurt = now < leakGraceUntil;
@@ -1744,8 +1744,11 @@
       } else {
         const key = creatureLevel >= 3 ? "hatch3" : (creatureLevel === 2 ? "hatch2" : "hatch1");
         const grow = 1 + Math.max(0, creatureLevel - 3) * 0.06;
-        if (!drawArt(key, cx, cy, height * Math.min(1.3, grow))) drawHatchlingShape(cx, cy, px(height) * Math.min(1.3, grow), creatureLevel, mood);
-        drawEyes(cx, cy, px(height), now, mood);
+        // 그림에는 눈이 이미 있으므로, 코드 눈은 그림을 못 불러온 대체 도형에만 그린다.
+        if (!drawArt(key, cx, cy, height * Math.min(1.3, grow))) {
+          drawHatchlingShape(cx, cy, px(height) * Math.min(1.3, grow), creatureLevel, mood);
+          drawEyes(cx, cy, px(height), now, mood);
+        }
       }
 
       if (now < flameUntil) {
@@ -1878,7 +1881,7 @@
       ctx.restore();
     }
 
-    /** 부화한 꼬물이의 눈. 가장 가까운 돌 쪽으로 눈동자가 움직인다. */
+    /** 대체 도형 꼬물이의 눈(그림을 못 불러왔을 때만). 가장 가까운 돌 쪽으로 눈동자가 움직인다. */
     function drawEyes(cx, cy, h, now, mood) {
       let dx = 0, dy = 0, best = Infinity;
       for (const ball of balls) {
