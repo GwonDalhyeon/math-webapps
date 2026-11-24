@@ -227,7 +227,8 @@
       .title-hero .eyebrow, .story { display: none; }
       .records { grid-template-columns: 1fr 1fr; }
       .badge-row { top: 108px; }
-      .notice { top: 146px; }
+      /* 세로 화면에서는 위 요정이 안내 상자 밑에 가려서, 둥지와 아래 요정 사이로 내린다. */
+      .notice { top: auto; bottom: 18%; }
     }
     @media (max-width: 760px) {
       .topbar { gap: 10px; padding: 6px 10px; }
@@ -455,11 +456,16 @@
 
     const LIVES = 3;
     const LEAK_GRACE_MS = 700;
-    const COUNTDOWN_MS = 3200;
+    const COUNTDOWN_MS = 3700;                // 3·2·1(3.2초) + "시작!"(0.5초)
+    const COUNTDOWN_GO_MS = 500;
     const HATCH_MS = 2800;
     const STAGE_READY_MS = 1200;              // 단계 시작 뒤 첫 조준까지의 여유
     const MAX_BALLS = 16;
-    const HEAL_INTERVAL_MS = 22000;
+    // 회복 다람쥐: 알을 잃고 8초 뒤, 직전 다람쥐에서 20초 이상 지났을 때만 온다.
+    // 단계가 6초 미만 남았으면 보내지 않는다(곧 부화하면서 알이 1개 회복되고, 날아오던 열매는 튕겨 사라진다).
+    const HEAL_DELAY_MS = 8000;
+    const HEAL_GAP_MS = 20000;
+    const HEAL_STAGE_END_MS = 6000;
     const GOLD_FROM_STAGE = 2;
     const FLAME_FROM_STAGE = 3;               // 성장 3회(3단계 클리어) 뒤, 4단계부터
     const FLAME_INTERVAL_MS = 7000;
@@ -478,6 +484,11 @@
     const AIM_FREEZE_MS = 220;
     const MIN_FLIGHT_MS = 900;
     const THROWER_SIZE = 0.11;
+    // 최소 투척 거리(둥지 중심~요정 중심). 좌우 요정까지의 거리에 비례하게 잡아,
+    // 가로로 긴 화면에서 위·아래 요정이 둥지 바로 위·아래가 아니라 대각선 쪽으로 비켜 서게 한다.
+    const THROW_DIST_FROM_SIDE = 0.65;
+    const THROW_DIST_MIN = 0.36;
+    const THROW_DIST_MAX = 0.55;
     const EDGES = ["top", "right", "bottom", "left"];
     const ATTACK_PATTERNS = [
       { mode: "fixed", label: "위·아래·좌·우 고정", guide: "네 방향의 고정 도깨비가 던져요." },
@@ -633,7 +644,8 @@
     let survivedMs = 0;          // 지난 단계까지 버틴 시간의 합
     let stageElapsedMs = 0;
     let nextThrowAt = 0;
-    let nextHealAt = 0;
+    let healDueAt = 0;          // 0이면 다람쥐를 기다리지 않는다
+    let lastHealAt = -Infinity;
     let nextFlameAt = 0;
     let leakGraceUntil = 0;
     let hatchStartedAt = 0;
@@ -669,7 +681,7 @@
       $("message").className = `message${text ? " show" : ""}${kind ? ` ${kind}` : ""}`;
     }
 
-    /** 잠깐 띄웠다 지우는 메시지. 단계가 바뀌어도 남지 않도록 phase를 함께 확인한다. */
+    /** 잠깐 띄웠다 지우는 메시지. 그사이 다른 메시지로 바뀌었으면 그 메시지는 지우지 않는다. */
     function flashMessage(text, kind, ms = 800) {
       setMessage(text, kind);
       const shown = text;
@@ -963,15 +975,63 @@
       const right = field.aspect - left;
       const top = Math.min(field.ny - clearance, Math.max(pad, 142 / Math.max(1, stage.clientHeight) + size / 2));
       const bottom = Math.max(field.ny + clearance, 1 - pad - inset);
-      return { left, right, top, bottom };
+      // 좌우 요정까지의 가로 여유로 최소 투척 거리를 정한다. 안쪽 경로(4단계~)는 원래 더 가까이 오는
+      // 단계라 80%만 지킨다. 그래야 세로 화면에서도 요정이 모서리에 갇히지 않고 움직인다.
+      const minDist = clamp((field.nx - pad) * THROW_DIST_FROM_SIDE, THROW_DIST_MIN, THROW_DIST_MAX) * (inner ? 0.8 : 1);
+      return { left, right, top, bottom, minDist };
+    }
+
+    /** 한 변(0~3)에서 둥지와 minDist 이상 떨어진 구간 [t0, t1]들. 없으면 가장 먼 끝점만 돌려준다. */
+    function allowedRanges(edge, bounds) {
+      const { left, right, top, bottom, minDist } = bounds;
+      const corners = [[left, top], [right, top], [right, bottom], [left, bottom]];
+      const [ax, ay] = corners[edge], [bx, by] = corners[(edge + 1) % 4];
+      const lx = bx - ax, ly = by - ay, length = Math.hypot(lx, ly) || 1;
+      const foot = ((field.nx - ax) * lx + (field.ny - ay) * ly) / (length * length);
+      const gap = Math.abs((field.nx - ax) * ly - (field.ny - ay) * lx) / length;
+      const half = Math.sqrt(Math.max(0, minDist * minDist - gap * gap)) / length;
+      if (half === 0) return [[0, 1]];
+      const ranges = [];
+      if (foot - half > 0) ranges.push([0, Math.min(1, foot - half)]);
+      if (foot + half < 1) ranges.push([Math.max(0, foot + half), 1]);
+      if (ranges.length) return ranges;
+      const da = Math.hypot(ax - field.nx, ay - field.ny), db = Math.hypot(bx - field.nx, by - field.ny);
+      return da >= db ? [[0, 0]] : [[1, 1]];
+    }
+
+    /**
+     * 경로 값이 너무 가까운 구간에 있으면 같은 변의 허용 지점으로 옮긴다.
+     * 기본은 가장 가까운 지점. pinwheel이면 변의 앞쪽(작은 t) 구간을 먼저 써서
+     * 고정 요정이 위→왼쪽, 오른쪽→위, 아래→오른쪽, 왼쪽→아래로 비켜 선다(세로 화면에서도 위 2·아래 2).
+     */
+    function projectRoute(route, bounds, pinwheel = false) {
+      const u = ((route % 4) + 4) % 4;
+      const edge = Math.min(3, Math.floor(u)), t = u - edge;
+      let best = t, bestGap = Infinity, below = null;
+      for (const [start, end] of allowedRanges(edge, bounds)) {
+        // 끝점(모서리)에 놓여도 다음 변으로 분류되지 않게 변 안쪽 0.1%까지만 쓴다.
+        const a = clamp(start, 0.001, 0.999), b = clamp(end, 0.001, 0.999);
+        if (t >= a - 1e-9 && t <= b + 1e-9) return route;
+        if (b < t) below = b;
+        for (const candidate of [a, b]) {
+          const gap = Math.abs(candidate - t);
+          if (gap < bestGap - 1e-9) { best = candidate; bestGap = gap; }   // 같은 거리면 앞쪽(작은 t)
+        }
+      }
+      return route - t + (pinwheel && below !== null ? below : best);
+    }
+
+    function routeBounds(thrower) {
+      // 투척 종류에 따라 몸집이 바뀌어도 이동 경로 자체가 튀지 않게 한다.
+      const routeSize = Math.min(THROWER_SIZE, field.aspect * 0.12) * 1.35;
+      return throwerBounds(routeSize, attackPattern().mode === "roam" && !thrower.squirrel);
     }
 
     function throwerBox(thrower) {
       const size = Math.min(THROWER_SIZE, field.aspect * 0.12) * (thrower.scale || 1);
-      // 투척 종류에 따라 몸집이 바뀌어도 이동 경로 자체가 튀지 않게 한다.
-      const routeSize = Math.min(THROWER_SIZE, field.aspect * 0.12) * 1.35;
-      const bounds = throwerBounds(routeSize, attackPattern().mode === "roam" && !thrower.squirrel);
-      const place = routePoint(thrower.route, bounds);
+      const bounds = routeBounds(thrower);
+      const pinwheel = attackPattern().mode === "fixed" && !thrower.squirrel;
+      const place = routePoint(projectRoute(thrower.route, bounds, pinwheel), bounds);
       return { ...place, size, flip: place.x < field.nx };
     }
 
@@ -1008,8 +1068,16 @@
     /** 다른 요정과 겹치지 않는 출현 위치를 찾고, 성공했을 때만 방향 큐를 소비한다. */
     function placeThrower(thrower, edge) {
       const oldRoute = thrower.route;
+      const index = EDGES.indexOf(edge);
+      // 변의 12~88% 가운데 둥지와 충분히 떨어진 구간에서만 고른다. 그런 구간이 없으면 허용 구간 전체를 쓴다.
+      const allowed = allowedRanges(index, routeBounds(thrower));
+      const inner = allowed.map(([a, b]) => [Math.max(a, 0.12), Math.min(b, 0.88)]).filter(([a, b]) => b > a);
+      const ranges = inner.length ? inner : allowed;
       for (let attempt = 0; attempt < 16; attempt += 1) {
-        thrower.route = EDGES.indexOf(edge) + 0.12 + Math.random() * 0.76;
+        // 구간 길이와 상관없이 구간을 먼저 반반으로 고른다. 세로 화면의 좌우 변은 위쪽 구간이
+        // 짧아(점수판 때문) 길이 비례로 고르면 요정이 거의 아래에만 나온다.
+        const [a, b] = ranges[Math.floor(Math.random() * ranges.length)];
+        thrower.route = index + clamp(a + Math.random() * (b - a), 0.001, 0.999);
         const box = throwerBox(thrower);
         const occupied = throwers.some((other) => {
           if (other === thrower || other.state === "hidden") return false;
@@ -1050,8 +1118,8 @@
         thrower.stateStartedAt = now;
         thrower.stateUntil = now + APPEAR_MS;
       } else beginAim(thrower, now);
-      // 단계 시작 안내가 상단 요정을 가리지 않도록 첫 출현 때 걷어 낸다.
-      if (!support && now - stageStartedAt <= 3500) showNotice();
+      // 단계 시작 안내는 첫 출현과 상관없이 정해진 시간(2.4초) 동안 남긴다.
+      // 위 요정은 최소 투척 거리 규칙으로 가운데를 비켜 서므로 안내와 거의 겹치지 않는다.
       if (!support) attackEdges.shift();
       return true;
     }
@@ -1063,9 +1131,17 @@
         const moving = !thrower.squirrel && (mode === "edge" || mode === "roam");
         if (moving && (thrower.state === "moving" || (thrower.state === "aim" && thrower.stateUntil - now > AIM_FREEZE_MS))) {
           const box = throwerBox(thrower);
-          const bounds = throwerBounds(Math.min(THROWER_SIZE, field.aspect * 0.12) * 1.35, mode === "roam");
+          const bounds = routeBounds(thrower);
           const sideLength = box.edge === "top" || box.edge === "bottom" ? bounds.right - bounds.left : bounds.bottom - bounds.top;
-          thrower.route += thrower.direction * (mode === "roam" ? 0.23 : 0.17) * dt / Math.max(0.1, sideLength);
+          const step = thrower.direction * (mode === "roam" ? 0.23 : 0.17) * dt / Math.max(0.1, sideLength);
+          const next = thrower.route + step;
+          // 둥지에 너무 가까운 구간에 들어서려 하면 그 자리에서 돌아선다.
+          if (projectRoute(next, bounds) === next) thrower.route = next;
+          else {
+            thrower.direction *= -1;
+            const back = thrower.route - step;
+            thrower.route = projectRoute(back, bounds) === back ? back : projectRoute(thrower.route, bounds);
+          }
         }
         if (now < thrower.stateUntil) continue;
         if (thrower.state === "appearing") {
@@ -1130,6 +1206,7 @@
       resetThrowers();
       survivedMs = 0; stageElapsedMs = 0; accumulator = 0; leakGraceUntil = 0;
       flameUntil = 0; nearNestSince = 0; nearNestHinted = false;
+      healDueAt = 0; lastHealAt = -Infinity;
       hatchBurst = false; hatchConfetti = false; shieldFlash.clear();
       resetKeyboardShields();
       renderHud();
@@ -1158,7 +1235,6 @@
       stageElapsedMs = 0;
       stageEndsAt = now + stageInfo(gameStage).seconds * 1000;
       nextThrowAt = now + STAGE_READY_MS;
-      nextHealAt = now + HEAL_INTERVAL_MS;
       nextFlameAt = now + FLAME_INTERVAL_MS;
       lastFrameAt = now;
       startMusic();
@@ -1213,8 +1289,11 @@
       gameStage += 1;
       flashMessage(`${gameStage}단계 시작!`, "good", 1100);
       beginStage(now);
-      showNotice(GROW_LINES[Math.min(creatureLevel, GROW_LINES.length) - 1],
-        creatureLevel === FLAME_FROM_STAGE ? "이제 꼬물이가 가끔 돌을 태워 줍니다." : "", 2400);
+      // 성장 한마디와 새 단계의 공격 패턴 안내를 한 장에 함께 보여 준다(따로 띄우면 패턴 안내가 바로 덮인다).
+      const pattern = attackPattern();
+      const flameLine = creatureLevel === FLAME_FROM_STAGE ? "이제 꼬물이가 가끔 돌을 태워 줍니다. " : "";
+      showNotice(`${GROW_LINES[Math.min(creatureLevel, GROW_LINES.length) - 1]} ${gameStage}단계 · ${pattern.label}`,
+        `${flameLine}${pattern.guide}`, 2400);
     }
 
     function finishRound(now) {
@@ -1368,6 +1447,7 @@
       lives -= 1;
       combo = 0;
       leakGraceUntil = now + LEAK_GRACE_MS;
+      if (!healDueAt) healDueAt = now + HEAL_DELAY_MS;
       creatureMood = "scared";
       moodUntil = now + 800;
       sfx.leak();
@@ -1685,6 +1765,21 @@
     let hatchBurst = false;
     let hatchConfetti = false;
 
+    /** 회복 다람쥐를 보낼 때인가: 잃은 뒤 8초·직전 다람쥐 뒤 20초·단계 시작 여유·단계 끝 6초 전까지. */
+    function healReady(now) {
+      if (!healDueAt || lives >= LIVES) return false;
+      const earliest = Math.max(healDueAt, lastHealAt + HEAL_GAP_MS, stageStartedAt + STAGE_READY_MS);
+      return now >= earliest && timeLeftMs() >= HEAL_STAGE_END_MS;
+    }
+
+    function updateHeal(now) {
+      if (lives >= LIVES) { healDueAt = 0; return; }
+      if (!healReady(now) || !startAim(now, "heal")) return;
+      lastHealAt = now;
+      healDueAt = now + HEAL_DELAY_MS;   // 열매를 놓쳐 알이 여전히 모자라면 간격을 지켜 다시 온다
+      showNotice("다람쥐가 회복 열매를 보냅니다", "초록색 ＋ 열매를 머리로 받으면 알이 하나 돌아옵니다.", 2600);
+    }
+
     function timeLeftMs() {
       return Math.max(0, stageInfo(gameStage).seconds * 1000 - stageElapsedMs);
     }
@@ -1961,7 +2056,8 @@
           $("readyStatus").textContent = `${recentPeopleStatus(now)} · 머리와 한쪽 이상의 어깨를 보여 주세요.`;
         }
       } else if (phase === "countdown") {
-        const left = Math.min(3, Math.ceil((countdownEndsAt - now) / 1000));
+        // 숫자가 끝난 뒤 "시작!"을 0.5초 보여 주고 나서 플레이를 시작한다.
+        const left = Math.min(3, Math.ceil((countdownEndsAt - COUNTDOWN_GO_MS - now) / 1000));
         const shown = left > 0 ? String(left) : "시작!";
         if (shown !== lastCountShown) { lastCountShown = shown; $("countdown").textContent = shown; sfx.count(left <= 0); }
         if (now >= countdownEndsAt) startPlaying(now);
@@ -2029,10 +2125,7 @@
           if (startAim(now, pickBallType())) nextThrowAt = now + throwIntervalMs();
           else nextThrowAt = now + 200;
         }
-        if (lives < LIVES && now >= nextHealAt && startAim(now, "heal")) {
-          nextHealAt = now + HEAL_INTERVAL_MS;
-          showNotice("다람쥐가 회복 열매를 보냅니다", "초록색 ＋ 열매를 머리로 받으면 알이 하나 돌아옵니다.", 2600);
-        }
+        updateHeal(now);
         tryFlame(now);
         applyShieldHits(now);
         accumulator = Math.min(0.05, accumulator + dt);
@@ -2152,7 +2245,8 @@
       stageEndsAt += delay;
       hatchStartedAt += delay;
       nextThrowAt += delay;
-      nextHealAt += delay;
+      if (healDueAt) healDueAt += delay;
+      lastHealAt += delay;
       nextFlameAt += delay;
       leakGraceUntil += delay;
       moodUntil += delay;
@@ -2433,6 +2527,8 @@
       keyState.add(event.code);
     });
     window.addEventListener("keyup", (event) => keyState.delete(event.code));
+    // 다른 창으로 간 사이에 뗀 키가 눌린 채 남아 원이 혼자 움직이지 않게 한다.
+    window.addEventListener("blur", () => keyState.clear());
     window.addEventListener("resize", () => { resizeCanvas(); updateVideoMap(); });
     video.addEventListener("loadedmetadata", updateVideoMap);
     document.addEventListener("visibilitychange", () => {
