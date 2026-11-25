@@ -125,6 +125,42 @@ function foldSvg(t, o = {}) {
   return `<svg viewBox="0 0 400 400" class="plane-svg" role="img" aria-label="${o.title || '접은 평면'}"${o.interactive ? ' tabindex="0"' : ''}>${g}</svg>`;
 }
 
+/* 다 접은 종이를 돌려 본 모습(03 §3-5). 위쪽 반은 z = 0, 넘어온 반(원점 쪽)은 그 위에 조금 떠 있다(접힌 선에서 멀수록 FOLD_GAP까지).
+   o: { yaw, pitch, line:{p,q} (칼날 면), cut, title }. yaw = pitch = 0이면 위에서 본 foldSvg와 좌표가 같다 */
+const FOLD_GAP = 0.35;              // 그림에서 두 겹이 보이도록 일부러 띄운 거리(실제 종이 두께가 아님)
+const U3 = 130;                     // 돌려 본 그림의 축척(라벨이 잘리지 않게 위에서 본 그림보다 조금 작게)
+const creaseDist = (p) => Math.abs(p[0] + p[1] - 1) / Math.SQRT2;
+const flapZ = (q) => FOLD_GAP * Math.min(1, creaseDist(q) / 0.3);
+function fold3DSvg(o = {}) {
+  const yaw = o.yaw || 0, pitch = o.pitch || 0;
+  const k = (yaw || pitch) ? U3 : U;
+  const oy = (yaw || pitch) ? 255 : 200;
+  const S = (P) => { const v = PG.view3(P, yaw, pitch); return [200 + (v[0] - 0.5) * k, oy - (v[1] - 0.5) * k, v[2]]; };
+  const poly = (pts, cls) => `<polygon class="${cls}" points="${pts.map((P) => S(P)).map((q) => `${f1(q[0])},${f1(q[1])}`).join(' ')}"/>`;
+  const up = PG.UPPER.map((p) => [p[0], p[1], 0]);
+  const flap = PG.UPPER.map((p) => [p[0], p[1], flapZ(p)]);      // 넘어온 반은 위에서 보면 위쪽 반과 같은 자리
+  let g = poly(up, 'paper fold3-base');
+  const L = lineFromPts(o.line);
+  const seg = L ? PG.segmentIn(L, PG.UPPER) : null;
+  const along = (z) => { if (!seg) return ''; const pts = []; for (let k = 0; k <= 12; k++) { const t = k / 12; const q = [seg[0][0] + (seg[1][0] - seg[0][0]) * t, seg[0][1] + (seg[1][1] - seg[0][1]) * t]; pts.push(S([q[0], q[1], z(q)])); } return pts.map((q) => `${f1(q[0])},${f1(q[1])}`).join(' '); };
+  if (seg) g += `<polyline class="cut-line" points="${along(() => 0)}"/>`;
+  g += poly(flap, 'paper flap back fold3-flap');
+  g += `<line class="crease" x1="${f1(S([PG.LO, PG.HI, 0])[0])}" y1="${f1(S([PG.LO, PG.HI, 0])[1])}" x2="${f1(S([PG.HI, PG.LO, 0])[0])}" y2="${f1(S([PG.HI, PG.LO, 0])[1])}"/>`;
+  if (seg) {
+    const knife = [[seg[0][0], seg[0][1], -0.22], [seg[1][0], seg[1][1], -0.22], [seg[1][0], seg[1][1], FOLD_GAP + 0.22], [seg[0][0], seg[0][1], FOLD_GAP + 0.22]];
+    g += poly(knife, 'knife');
+    g += `<polyline class="cut-line" points="${along(flapZ)}"/>`;
+  }
+  /* 두 겹의 높이 차를 보이는 세로 점선: 종이 끝 모서리와 겹친 ○ 두 점 사이 */
+  [[PG.HI, PG.HI], [1, 1]].forEach(([a, b]) => { const p0 = S([a, b, 0]), p1 = S([a, b, flapZ([a, b])]); g += `<line class="stack-guide" x1="${f1(p0[0])}" y1="${f1(p0[1])}" x2="${f1(p1[0])}" y2="${f1(p1[1])}"/>`; });
+  /* 점: ● 두 점은 접힌 선 위, ○ (1, 1)은 아래 겹, ○ (0, 0)은 넘어와 위 겹에서 (1, 1) 바로 위 */
+  const dots = [[[0, 1, 0], 'dot on'], [[1, 0, 0], 'dot on'], [[1, 1, 0], 'dot off under'], [[1, 1, flapZ([1, 1])], 'dot off']];
+  dots.map(([P, cls]) => [S(P), cls]).sort((a, b) => a[0][2] - b[0][2]).forEach(([q, cls]) => { g += `<circle class="${cls}" cx="${f1(q[0])}" cy="${f1(q[1])}" r="${R_DOT}"/>`; });
+  const lab = (P, t, an, dx, dy) => { const q = S(P); return svgText(q[0] + dx, q[1] + dy, t, 'coord', an, 15); };
+  g += lab([0, 1, 0], '(0, 1)', 'end', -16, -18) + lab([1, 0, 0], '(1, 0)', 'start', 16, 22) + lab([1, 1, flapZ([1, 1])], '위 겹: (0, 0)', 'end', -18, -14) + lab([1, 1, 0], '아래 겹: (1, 1)', 'end', -18, 16);
+  return `<svg viewBox="0 0 400 400" class="plane-svg fold3-svg" role="img" aria-label="${o.title || '접은 종이를 돌려 본 모습'}">${g}</svg>`;
+}
+
 /* 펼친 모습: 남은 종이 두 조각, 떨어져 나간 자리, 잘린 자리 두 개 */
 function unfoldSvg(line, o = {}) {
   const L = lineFromPts(line);
@@ -232,7 +268,9 @@ function circuitSvg(circuit, vals = null, o = {}) {
   });
   circuit.gates.forEach((gt) => {
     const [cx, cy] = pos[gt.id], w = width(gt.id);
-    nodes += `<rect class="gate-node${o.highlight === gt.id ? ' selected' : ''}" x="${f1(cx - w / 2)}" y="${f1(cy - 19)}" width="${w}" height="38" rx="12"/>` + svgText(cx, cy, gateLabel(gt), 'gate-label', 'middle', gt.type === 'TH' ? 14 : 15);
+    const hl = o.highlight === gt.id || (o.marks || []).includes(gt.id);
+    nodes += `<g${o.pick ? ` class="pick-gate" data-gate="${gt.id}" role="button" tabindex="0" aria-label="${gateLabel(gt)} 게이트 고르기"` : ''}><rect class="gate-node${hl ? ' selected' : ''}" x="${f1(cx - w / 2)}" y="${f1(cy - 19)}" width="${w}" height="38" rx="12"/>` + svgText(cx, cy, gateLabel(gt), 'gate-label', 'middle', gt.type === 'TH' ? 14 : 15) + '</g>';
+    if (o.badges && o.badges[gt.id]) nodes += `<circle class="pair-badge" cx="${f1(cx + w / 2 - 2)}" cy="${f1(cy - 19)}" r="11"/>` + svgText(cx + w / 2 - 2, cy - 19, String(o.badges[gt.id]), 'pair-num', 'middle', 13);
     if (o.names) nodes += svgText(cx, cy - 27, gt.id.replace('G', '게이트 ').replace('T', '장치 '), 'tiny', 'middle', 11);
   });
   if (pos.OUT) {

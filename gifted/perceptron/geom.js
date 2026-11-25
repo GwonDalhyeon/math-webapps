@@ -17,7 +17,8 @@
     AND: [0, 0, 0, 1],
     OR: [0, 1, 1, 1],
     XOR: [0, 1, 1, 0],
-    NOT_A_AND_B: [0, 1, 0, 0]   // 2-1 회로(밝다 센서등): NOT A AND B
+    NOT_A_AND_B: [0, 1, 0, 0],  // 2-1 회로(밝다 센서등): NOT A AND B
+    NOT_A: [1, 1, 0, 0]         // 한 걸음 더(P23): A만 보고 뒤집기. B는 상관없음
   };
 
   /* ------------------------------------------------------------ 직선 */
@@ -295,6 +296,104 @@
     output: 'G4'
   };
 
+  /* ------------------------------------------------------------ 내 장치 설계: 상황 카드 (03 §3-3) */
+  /* 조건마다 내부 id가 있고, 목표 판단 fn은 조건 id로 정한다. 학생이 A·B·C에 놓는 순서와 무관하다 */
+  const SCENARIOS = [
+    { id: 'door', name: '자동문', goal: '사람이 지나갈 때만 문을 열어 준다', out1: '문을 연다', out0: '문을 닫아 둔다',
+      sentence: '앞이나 뒤에 사람이 있으면 문을 연다. 단, 잠금 모드이면 열지 않는다.',
+      conds: [{ id: 'front', yes: '앞에 사람이 있다', no: '앞에 사람이 없다' }, { id: 'back', yes: '뒤에 사람이 있다', no: '뒤에 사람이 없다' },
+        { id: 'lock', yes: '잠금 모드다', no: '잠금 모드가 아니다' }, { id: 'dark', yes: '밖이 어둡다', no: '밖이 어둡지 않다', extra: true }],
+      fn: (v) => (v.front | v.back) & (1 - v.lock) },
+    { id: 'plant', name: '화분 물주기', goal: '화분에 필요할 때만 물을 준다', out1: '물을 준다', out0: '물을 주지 않는다',
+      sentence: '흙이 말랐고 물통에 물이 있으면 물을 준다. 단, 비가 오면 주지 않는다.',
+      conds: [{ id: 'dry', yes: '흙이 말랐다', no: '흙이 마르지 않았다' }, { id: 'rain', yes: '비가 온다', no: '비가 오지 않는다' },
+        { id: 'tank', yes: '물통에 물이 있다', no: '물통에 물이 없다' }, { id: 'window', yes: '화분이 창가에 있다', no: '화분이 창가에 있지 않다', extra: true }],
+      fn: (v) => v.dry & (1 - v.rain) & v.tank },
+    { id: 'light', name: '현관 조명', goal: '필요할 때 현관을 밝혀 준다', out1: '불을 켠다', out0: '불을 끈다',
+      sentence: '어둡고 사람이 움직이면 불을 켠다. 또, 수동 스위치를 켜면 언제나 불을 켠다.',
+      conds: [{ id: 'move', yes: '사람이 움직인다', no: '사람이 움직이지 않는다' }, { id: 'dark', yes: '주변이 어둡다', no: '주변이 어둡지 않다' },
+        { id: 'manual', yes: '수동 스위치가 켜져 있다', no: '수동 스위치가 꺼져 있다' }, { id: 'door', yes: '문이 열려 있다', no: '문이 닫혀 있다', extra: true }],
+      fn: (v) => (v.move & v.dark) | v.manual }
+  ];
+  const scenarioById = (id) => SCENARIOS.find((s) => s.id === id) || null;
+  const neededConds = (sc) => sc.conds.filter((c) => !c.extra).map((c) => c.id);
+  /* 고른 조건이 맞는가: 필요한 조건을 모두, 필요 없는 조건 없이(순서 자유) */
+  function assignOk(sc, assign) {
+    const need = neededConds(sc), got = (assign || []).filter(Boolean);
+    return got.length === need.length && need.every((id) => got.includes(id));
+  }
+  /* assign: A·B·C 순서의 조건 id. 진리표 행 순서는 exprTable과 같다(이진수 순서) */
+  function scenarioTable(sc, assign) {
+    return rows(assign.length).map((vals) => { const env = {}; assign.forEach((id, k) => { env[id] = vals[k]; }); return sc.fn(env); });
+  }
+
+  /* ------------------------------------------------------------ 블록 회로판 → 회로 (03 §3-3) */
+  /* board = { blocks: [{id, type, x, y}], wires: [{from, to, port}] }. from: 입력 이름(A·B·C) 또는 블록 id, to: 블록 id 또는 'OUT' */
+  const portsOf = (type) => (type === 'NOT' ? 1 : 2);
+  /* from에서 나가는 선을 to에 이으면 순환이 생기는가(to에서 출발해 from에 닿으면 순환) */
+  function wouldCycle(board, from, to) {
+    if (from === to) return true;
+    const seen = new Set(), stack = [to];
+    while (stack.length) {
+      const x = stack.pop();
+      if (x === from) return true;
+      if (seen.has(x)) continue;
+      seen.add(x);
+      board.wires.forEach((w) => { if (w.from === x) stack.push(w.to); });
+    }
+    return false;
+  }
+  function boardCircuit(board, inputs) {
+    const blocks = board.blocks || [], wires = board.wires || [];
+    if (!blocks.length) return { error: 'empty' };
+    const src = (id, port) => { const w = wires.find((x) => x.to === id && x.port === port); return w ? w.from : ''; };
+    const outW = wires.find((w) => w.to === 'OUT');
+    const gatesById = {};
+    blocks.forEach((b) => { gatesById[b.id] = { id: b.id, type: b.type, inputs: Array.from({ length: portsOf(b.type) }, (_, k) => src(b.id, k)) }; });
+    for (const g of Object.values(gatesById)) if (g.inputs.some((x) => !x)) return { error: 'emptyInput', gate: g.id };
+    if (!outW) return { error: 'noOutput' };
+    /* 앞선 것만 입력으로 받도록 순서를 정한다(위상 정렬) */
+    const done = new Set(inputs), order = [];
+    let guard = 0;
+    while (order.length < blocks.length && guard++ < 50) {
+      blocks.forEach((b) => { const g = gatesById[b.id]; if (!done.has(g.id) && g.inputs.every((x) => done.has(x))) { order.push(g); done.add(g.id); } });
+    }
+    if (order.length < blocks.length) return { error: 'cycle' };
+    const circuit = { inputs: inputs.slice(), gates: order, output: outW.from };
+    const chk = circuitCheck(circuit);
+    return chk.error ? { error: chk.error } : { circuit };
+  }
+
+  /* ------------------------------------------------------------ 식 입력 커서 (03 §3-3) */
+  function tokenEdit(tokens, cursor, op) {
+    const t = tokens.slice();
+    let c = Math.max(0, Math.min(t.length, cursor));
+    if (op === 'LEFT') c = Math.max(0, c - 1);
+    else if (op === 'RIGHT') c = Math.min(t.length, c + 1);
+    else if (op === 'BACK') { if (c > 0) { t.splice(c - 1, 1); c -= 1; } }
+    else if (op === 'CLEAR') { t.length = 0; c = 0; }
+    else if (t.length < 40) { t.splice(c, 0, op); c += 1; }
+    return { tokens: t, cursor: c };
+  }
+
+  /* ------------------------------------------------------------ 접기 입체로 보기 (03 §3-5) */
+  /* 원점 쪽 반의 점을 접는 선 둘레로 t만큼 들어 올린 3차원 위치 [a, b, z]. 다 접으면 gap만큼 위에 놓인다 */
+  function fold3(p, t, gap = 0) {
+    if (p[0] + p[1] >= 1 - 1e-12) return [p[0], p[1], 0];
+    const fa = (p[0] - p[1] + 1) / 2, fb = (p[1] - p[0] + 1) / 2;
+    const d = Math.hypot(p[0] - fa, p[1] - fb), c = Math.cos(t);
+    return [fa + (p[0] - fa) * c, fb + (p[1] - fb) * c, d * Math.sin(t) + gap * (1 - c) / 2];
+  }
+  /* 보는 방향: yaw(종이 면 안에서 돌리기), pitch(앞으로 기울이기, 0이면 위에서 본 모습). 중심 (0.5, 0.5, 0).
+     돌려 준 값 [x, y, depth]는 평면 단위이고 x, y는 위에서 볼 때 (a, b)와 같다. depth가 클수록 보는 사람 쪽 */
+  function view3(P, yaw, pitch) {
+    const x = P[0] - 0.5, y = P[1] - 0.5, z = P[2];
+    const cy = Math.cos(yaw), sy = Math.sin(yaw);
+    const x1 = x * cy - y * sy, y1 = x * sy + y * cy;
+    const cp = Math.cos(pitch), sp = Math.sin(pitch);
+    return [x1 + 0.5, y1 * cp + z * sp + 0.5, -y1 * sp + z * cp];
+  }
+
   /* ------------------------------------------------------------ 직선 찾기(퍼셉트론 학습) — 100배 정수 */
   const LEARN_START = { w1: 30, w2: -20, t: 40 };
   const LEARN_RATE = 25;
@@ -342,6 +441,8 @@
     parseExpr, evalAst, usedVars, rows, exprTable, astText,
     circuitCheck, circuitValues, circuitTable, XOR_CIRCUIT, BAND_CIRCUIT,
     learnInit, learnStep, learnLine, LEARN_START, LEARN_RATE,
+    SCENARIOS, scenarioById, neededConds, assignOk, scenarioTable,
+    portsOf, wouldCycle, boardCircuit, tokenEdit, fold3, view3,
     parseNumber
   };
   if (typeof module === 'object' && module.exports) module.exports = PG;

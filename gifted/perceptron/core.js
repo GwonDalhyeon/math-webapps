@@ -16,75 +16,80 @@ const gateClosed = () => XOR_GATE.mode === 'word' && !state.screens.P8.gateOpen;
 
 const SECTIONS = {
   0: '0 시작', 1: '1 지난 시간 되짚기', 2: '2 판단은 가르기', 3: '3 직선 하나로 가를 수 있을까',
-  4: '4 접으면?', 5: '5 이것이 퍼셉트론이다', 6: '6 닫기 · 제출', 7: '더 해보기'
+  4: '4 접으면?', 5: '5 이것이 퍼셉트론이다', 6: '6 닫기', 7: '7 한 걸음 더'
 };
-/* mode: demo 함께 보기, solo 혼자 하기, both 함께 본 뒤 혼자 하기 */
+/* 2차 개정(03_2차개정_명세서 §2): 비대면 온라인이라 모든 보기는 학생이 각자 조작한다. 선택 보기 없음, 제출은 맨 끝 */
 const SCREENS = [
-  { id: 'P0', s: 0, label: '시작', mode: 'solo' },
-  { id: 'P1', s: 1, label: '네 가지 판단', mode: 'solo' },
-  { id: 'P2a', s: 1, label: '내 장치 설계 ① 장치와 문장', mode: 'solo' },
-  { id: 'P2e', s: 1, label: '내 장치 설계 ② 식으로 나타내기', mode: 'solo' },
-  { id: 'P2b', s: 1, label: '내 장치 설계 ③ 회로로 만들기', mode: 'solo' },
-  { id: 'P3', s: 1, label: 'XOR을 만든 회로', mode: 'both' },
-  { id: 'P4', s: 2, label: '합격선', mode: 'demo' },
-  { id: 'P5', s: 2, label: '진리표가 점이 된다', mode: 'both' },
-  { id: 'P6', s: 3, label: 'AND와 OR', mode: 'solo' },
-  { id: 'P7', s: 3, label: 'XOR', mode: 'solo' },
-  { id: 'P8', s: 3, label: '나눌 수 있었나', mode: 'solo' },
-  { id: 'P9', s: 3, label: '두 선분이 만나는 점', mode: 'both' },
-  { id: 'P10', s: 4, label: '접어 보기', mode: 'demo' },
-  { id: 'P11', s: 4, label: '접은 채로 직선 하나', mode: 'solo' },
-  { id: 'P12', s: 4, label: '접기와 회로', mode: 'solo' },
-  { id: 'P13', s: 5, label: '쉬는 시간 전에 쓴 답', mode: 'demo' },
-  { id: 'P14', s: 5, label: '더해서 기준과 비교', mode: 'demo' },
-  { id: 'P15', s: 5, label: 'AND', mode: 'solo' },
-  { id: 'P16', s: 5, label: 'OR이 되는 기준 c 찾기', mode: 'solo' },
-  { id: 'P16w', s: 5, label: '기준선은 어떻게 달라지나', mode: 'solo' },
-  { id: 'P17', s: 5, label: 'XOR도 될까', mode: 'solo' },
-  { id: 'P18', s: 5, label: '두 직선 사이의 점', mode: 'both' },
-  { id: 'P18c', s: 5, label: '두 판단을 이어 판단하기', mode: 'both' },
-  { id: 'P19', s: 5, label: '층을 쌓는다', mode: 'both' },
-  { id: 'P20', s: 6, label: '처음 예상과 비교', mode: 'solo' },
-  { id: 'P21', s: 6, label: '처음부터 다시 보기', mode: 'both' },
-  { id: 'P21s', s: 6, label: '마지막 한 문장', mode: 'solo' },
-  { id: 'P22', s: 6, label: '제출', mode: 'solo' },
-  { id: 'P23', s: 7, label: '입력마다 다른 수를 곱하면?', mode: 'solo', optional: true },
-  { id: 'P23w', s: 7, label: '왜 안 되는지 부등식으로', mode: 'solo', optional: true },
-  { id: 'P24', s: 7, label: '직선 하나로 만들 수 있는 나누기', mode: 'solo', optional: true },
-  { id: 'P25', s: 7, label: '기계가 직선을 찾는다', mode: 'solo', optional: true }
+  { id: 'P0', s: 0, label: '시작' },
+  { id: 'P1', s: 1, label: '네 가지 판단' },
+  { id: 'P2a', s: 1, label: '내 장치 설계 ① 상황과 조건' },
+  { id: 'P2b', s: 1, label: '내 장치 설계 ② 회로로 만들기' },
+  { id: 'P2e', s: 1, label: '내 장치 설계 ③ 식으로 나타내기' },
+  { id: 'P3', s: 1, label: 'XOR을 만든 회로' },
+  { id: 'P4', s: 2, label: '합격선' },
+  { id: 'P5', s: 2, label: '진리표가 점이 된다' },
+  { id: 'P6', s: 3, label: 'AND와 OR' },
+  { id: 'P7', s: 3, label: 'XOR' },
+  { id: 'P8', s: 3, label: '나눌 수 있었나' },
+  { id: 'P9', s: 3, label: '두 선분이 만나는 점' },
+  { id: 'P10', s: 4, label: '접어 보기' },
+  { id: 'P11', s: 4, label: '접은 채로 직선 하나' },
+  { id: 'P12', s: 4, label: '접기와 회로' },
+  { id: 'P13', s: 5, label: '쉬는 시간 전에 쓴 답' },
+  { id: 'P14', s: 5, label: '더해서 기준과 비교' },
+  { id: 'P15', s: 5, label: 'AND' },
+  { id: 'P16', s: 5, label: 'OR이 되는 기준 c 찾기' },
+  { id: 'P16w', s: 5, label: '기준선은 어떻게 달라지나' },
+  { id: 'P17', s: 5, label: 'XOR도 될까' },
+  { id: 'P17r', s: 5, label: '그 무렵 연구자들도' },
+  { id: 'P18', s: 5, label: '두 직선 사이의 점' },
+  { id: 'P18c', s: 5, label: '두 판단을 이어 판단하기' },
+  { id: 'P19', s: 5, label: '층을 쌓는다' },
+  { id: 'P20', s: 6, label: '돌아보기' },
+  { id: 'P21', s: 6, label: '처음부터 다시 보기' },
+  { id: 'P21s', s: 6, label: '마지막 한 문장' },
+  { id: 'P24', s: 7, label: '직선 하나로 만들 수 있는 나누기' },
+  { id: 'P23', s: 7, label: '입력마다 다른 수를 곱하면?' },
+  { id: 'P23w', s: 7, label: '왜 안 되는지 부등식으로' },
+  { id: 'P25', s: 7, label: '기계가 직선을 찾는다' },
+  { id: 'P22', s: 7, label: '제출' }
 ];
-const MODE_TEXT = { demo: '함께 보기', solo: '혼자 하기', both: '함께 본 뒤 혼자 하기' };
 
 /* 제출물 「작성한 설명」 순서. required는 미작성 개수에 센다 */
 const WRITE_FIELDS = [
-  ['P2_sentence', '내 장치 설계 · 작동 조건 문장', true],
   ['P8_reason', '직선 하나로 나눌 수 있었나 · 까닭', true],
   ['P8_rule', '규칙을 하나 바꿀 수 있다면', false],
-  ['P12_answer', '접기와 회로는 어떻게 닮았나(쉬는 시간 전)', true],
-  ['P16_range', '기준 c를 어디부터 어디까지 움직여도 OR인가', false],
-  ['P16_sentence', '기준 c를 바꾸면 기준선은 어떻게 달라지나', true],
-  ['P17_reason', 'XOR은 왜 어떤 c로도 안 되나', true],
-  ['P19_line', '쉬는 시간 전의 내 답에서 맞았던 것, 고치고 싶은 것', true],
-  ['P20_reflect', '처음 생각과 달라진 점', true],
+  ['P12_blank1', '접기와 회로 · 둘 다 먼저 하는 것(쉬는 시간 전)', true],
+  ['P12_blank2', '접기와 회로 · 그 결과로 마지막에 하는 것(쉬는 시간 전)', true],
+  ['P16_blank1', '기준 c를 바꾸면 기준선의 기울기는', true],
+  ['P16_blank2', '기준 c를 바꾸면 기준선의 위치는', true],
+  ['P17_reason', 'XOR은 왜 어떤 c로도 안 되나(내 말로 한 줄)', true],
+  ['P20_layer', '쉬는 시간 전 문장을 「층」을 넣어 다시 쓰기', true],
+  ['P20_scene', '그 장면에서 본 것', true],
   ['P21_sentence', '0과 1로 할 수 있게 된 일 가운데 가장 뜻밖이었던 것', true],
-  ['P23_ineq', '[심화] XOR의 네 점이 주는 조건', false],
-  ['P23_reason', '[심화] 네 부등식을 모두 만족하는 수가 없는 까닭', false],
-  ['P24_reason', '[심화] 채울 수 없는 칸이 있을까', false],
-  ['P25_why', '[심화] XOR에서는 왜 멈추지 않을까', false]
+  ['P23_reason', 'XOR의 네 부등식을 모두 만족하는 수가 없는 까닭(내 말로)', true],
+  ['P25_link', '기계가 직선을 찾는 것과 「학습」', false]
 ];
 
 const HINTS = {
-  P1: ['틀린 칸을 표 위의 문장(~이고, ~이거나…)과 비교해 보세요.', '두 입력이 모두 1일 때부터 확인해 보세요.', '표 위의 문장을 한 행씩 그대로 읽어 보세요.'],
-  P2b: ['진리표에서 다른 행을 보세요. 그 행의 입력을 스위치로 넣어 보세요.', '식에서 가장 안쪽 괄호부터 게이트 하나로 만들어 보세요.', 'NOT은 게이트 하나, AND·OR은 두 입력을 받는 게이트 하나입니다. 식의 연산 하나가 게이트 하나예요.'],
-  P3: ['스위치를 표의 입력대로 놓고 출력 칸을 보세요.', '선마다 흐르는 값을 왼쪽부터 따라가 보세요.', '출력 상자에 적힌 값이 그 행의 출력입니다.'],
+  P1: ['표 위의 문장과 한 행씩 비교해 보세요.', '두 입력이 모두 1일 때부터 확인해 보세요.', '표 위의 문장을 한 행씩 그대로 읽어 보세요.'],
+  P2a: ['조건 문장에 나오는 것만 골라 보세요.', '문장에 없는 조건이 하나 섞여 있어요.', '문장을 쉼표와 「단,」에서 끊어 읽고, 조각마다 조건 하나를 찾아보세요.'],
+  P2b: ['다른 행의 입력대로 스위치를 놓고, 어느 선의 값이 생각과 다른지 따라가 보세요.', '「~이고」는 AND, 「~이거나」는 OR, 「~이 아니면」·「단, ~이면 않는다」는 NOT으로 바꿔 보세요.', '먼저 묶이는 부분(예: 앞이나 뒤)을 게이트 하나로 만들고, 그 출력을 다음 게이트로 보내세요.'],
+  P2e: ['회로의 게이트 하나가 식의 괄호 하나입니다.', '출력에 가장 가까운 게이트가 식의 가장 바깥 연산입니다.', '입력에 가장 가까운 게이트부터 (A OR B)처럼 괄호로 쓰고 바깥으로 넓혀 보세요.'],
+  P3: ['스위치를 표의 입력대로 하나씩 놓고 출력 상자를 보세요.', '선마다 흐르는 값을 왼쪽부터 따라가 보세요.', '출력 상자에 적힌 값이 그 행의 출력입니다.'],
   P6: ['잘못된 쪽에 남은 점을 보세요.', '●가 하나뿐이면 그 점만 떼어 내는 직선을 생각해 보세요.', '한 점만 떼어 내려면 그 점과 나머지 세 점 사이로 직선을 지나가게 하면 됩니다.'],
   P7: ['', '● 두 점은 어디에 있고, ○ 두 점은 어디에 있나요?', '몇 번 더 그어 보고, 다음 화면에서 지금까지의 생각을 적어 보세요.'],
   P9: ['두 선분이 겹치는 곳을 그림에서 찾아보세요.', '그 점은 네 점의 한가운데입니다. 가로·세로 좌표는 각각 얼마일까요?', '(0, 0)과 (1, 1)의 가운데, (0, 1)과 (1, 0)의 가운데를 생각해 보세요.'],
   P11: ['겹친 ○와 접힌 선 위의 ● 사이로 직선을 지나가게 해 보세요.', '● 두 점이 같은 쪽에 있어야 합니다.', '접힌 선과 나란하게, ○ 쪽으로 조금 옮긴 직선을 생각해 보세요.'],
+  P12: ['접기만 하고 나서 ●와 ○가 갈렸는지 그림을 보세요.', '출력 단자에 바로 이어진 게이트를 찾아보세요.', '접기도 회로도, 마지막 판단 앞에 한 단계가 더 있습니다.'],
   P15: ['A+B를 먼저 계산하고 1.5와 비교해 보세요.', '1.5보다 크면 1, 아니면 0입니다.', 'A+B가 2일 때만 1.5보다 큽니다.'],
   P16: ['네 점 가운데 OR과 다른 점을 보세요.', '(0, 0)은 0이 되고, 나머지 세 점은 1이 되어야 합니다.', '합이 0인 점과 합이 1인 점 사이에 칸막이를 두어 보세요.'],
+  P17: ['(0, 1)의 합은 1입니다. 출력이 1이 되려면 c가 1보다 어때야 할까요?', '그때 (1, 1)의 합 2와 c를 비교해 보세요.', '칸막이 하나는 오른쪽을 모두 1로 만듭니다. 합 2는 합 1보다 오른쪽에 있어요.'],
   P18: ['두 직선 사이의 띠 안에 있는 점을 보세요.', '「앞은 예, 뒤는 아니오」인 점을 찾아보세요.', '합이 1인 점들입니다.'],
-  P21: ['그 학습지의 그림을 떠올려 보세요.']
+  P18c: ['판단 장치 회로의 상자 하나를 누른 뒤, XOR 회로에서 같은 일을 하는 게이트를 누르세요.', 'A+B > 0.5는 OR과, A+B > 1.5는 AND와 같았습니다.', '그 뒤의 NOT과 AND는 두 회로에서 같은 자리에 있습니다.'],
+  P21: ['그 학습지의 그림을 떠올려 보세요.'],
+  P23w: ['출력이 1인 점은 「> θ」, 0인 점은 「≤ θ」입니다.', 'XOR은 (0, 1)과 (1, 0)에서 1입니다.', '(0, 0): 0 ≤ θ, (0, 1): w₂ > θ, (1, 0): w₁ > θ, (1, 1): w₁ + w₂ ≤ θ'],
+  P24: ['직선을 여러 방향으로 그어 흐린 칸을 채워 보세요.', '한 점만 떼어 내는 직선, 이웃한 두 점씩 나누는 직선을 생각해 보세요.', '대각선에 있는 두 점끼리 묶는 칸은 오늘 어디서 보았나요?']
 };
 
 const $ = (s, r = document) => r.querySelector(s);
@@ -92,45 +97,64 @@ const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 const esc = (v = '') => String(v).replace(/[&<>'"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[c]));
 const clone = (x) => JSON.parse(JSON.stringify(x));
 
+function initialP2() {
+  return { scenario: '', assign: [], assignOk: false, blocks: [], wires: [], nextBlock: 1, sw: { A: 0, B: 0, C: 0 }, checked: false, circuitOk: false, diffRows: [], view: 'board',
+    tokens: [], cursor: 0, exprOk: false, exprError: '', exprChecked: false, exprMatch: false, exprDiff: [] };
+}
 function initialScreens() {
   const blank4 = () => [null, null, null, null];
   return {
     P1: { tables: { AND: blank4(), OR: blank4(), NOT: [null, null], XOR: blank4() } },
-    P2: { view: 'circuit', inputs: 2, tokens: [], exprOk: false, exprError: '', exprTokens: [], match: '', gates: [], output: '', sw: { A: 0, B: 0, C: 0 }, circuitOk: false, diffRows: [] },
+    P2: initialP2(),
     P3: { sw: { A: 0, B: 0 }, table: blank4() },
     P4: { sel: null },
     P5: { step: 0 },
-    P6: { and: { marks: [0, 0, 0, 0], line: null, result: '' }, or: { marks: [0, 0, 0, 0], line: null, result: '' } },
+    P6: { and: { marks: [0, 0, 0, 0], line: null, result: '' }, or: { marks: [0, 0, 0, 0], line: null, result: '' }, alone: { and: null, or: null } },
     P7: { line: null, history: [], parts: [] },
     P8: { choice: '', gateOpen: false, gateTry: '' },
     P9: { black: [], white: [], x: '', y: '', ok: false, tried: false, explain: 0 },
-    P10: { step: 0 },
-    P11: { line: null, ok: false, cut: false, open: false, count: '', countOk: null },
+    P10: { step: 0, yaw: 0, pitch: 0 },
+    P11: { line: null, ok: false, cut: false, open: false, count: '', countOk: null, yaw: 0, pitch: 0 },
+    P12: { q1: '', q2: null },
     P15: { sel: null, guess: null, rows: {}, right: [], same: '' },
-    P16: { c10: 5, found: [], rangeChoice: '', recordMsg: '' },
-    P17: { c10: 5, story: false },
-    P18: { picked: [], pickOk: null, same: '', blank1: '', blank2: '', sw: { A: 0, B: 0 }, band: blank4(), xor: blank4(), tableOk: null },
+    P16: { c10: 5, found: [], dir: '', slope: '' },
+    P17: { c10: 5, swept: false, explain: 0, b1: '', b2: '', b3: '', b4: '', blankOk: null },
+    P18: { picked: [], pickOk: null, same: '', blank1: '', blank2: '', sw: { A: 0, B: 0 }, band: blank4(), xor: blank4(), tableOk: null, pairs: {}, pairSel: '' },
     P21: { links: {}, sel: null, wrongFlash: '' },
-    P23: { target: 'XOR', w1: 10, w2: 10, t: 15 },
-    P24: { line: null, found: [] },
-    P25: { target: 'AND', learn: null, last: null }
+    P23: { target: 'AND', w1: 10, w2: 10, t: 15 },
+    P23w: { signs: ['', '', '', ''], sum: '', explain: 0 },
+    P24: { line: null, found: [], pick: null, shape: '' },
+    P25: { target: 'AND', learn: null, last: null, why: '' }
   };
 }
 function initialState() {
   return {
-    v: 1, app: 'perceptron',
+    v: 2, app: 'perceptron',
     student: { school: '', sid: '', name: '' },
-    includeOptional: false, screenId: 'P0',
+    screenId: 'P0',
     views: {}, writes: {}, writeMeta: {}, predicts: {},
     screens: initialScreens(),
     hints: {}, attemptStats: {}, guideSeen: {},
     log: [], submitted: { at: 0, code: '', status: '', result: '' },
-    lastSavedAt: 0
+    lastSavedAt: 0, migratedFrom1: false
   };
 }
+/* 1판(v1) 기록: 구조가 바뀐 보기(P2·P12·P16w·P17·P19·P20·P23w·P24)는 새로 시작하고, 나머지는 그대로 옮긴다(03 §5) */
+function migrateV1(parsed) {
+  const d = clone(parsed);
+  const sc = d.screens || {};
+  ['P2', 'P12', 'P17', 'P23w', 'P24'].forEach((k) => { delete sc[k]; });
+  if (sc.P16) { delete sc.P16.rangeChoice; delete sc.P16.recordMsg; }
+  if (d.predicts) { delete d.predicts.P5; delete d.predicts.P12; }
+  delete d.includeOptional;
+  d.v = 2; d.migratedFrom1 = true;
+  return d;
+}
 function mergeState(parsed) {
+  if (parsed && parsed.v === 1) parsed = migrateV1(parsed);
   const fresh = initialState();
   const merged = { ...fresh, ...parsed, student: { ...fresh.student, ...(parsed.student || {}) }, submitted: { ...fresh.submitted, ...(parsed.submitted || {}) } };
+  delete merged.includeOptional;
   merged.screens = { ...fresh.screens };
   Object.keys(fresh.screens).forEach((k) => { merged.screens[k] = { ...fresh.screens[k], ...((parsed.screens || {})[k] || {}) }; });
   ['views', 'writes', 'writeMeta', 'predicts', 'hints', 'attemptStats', 'guideSeen'].forEach((k) => { merged[k] = parsed[k] && typeof parsed[k] === 'object' ? parsed[k] : {}; });
@@ -148,7 +172,7 @@ function loadState() {
 }
 function validProgress(d) {
   const obj = (v) => v && typeof v === 'object' && !Array.isArray(v);
-  return obj(d) && d.v === 1 && d.app === 'perceptron' && obj(d.student) && typeof d.student.sid === 'string' && obj(d.screens) && Array.isArray(d.log);
+  return obj(d) && (d.v === 1 || d.v === 2) && d.app === 'perceptron' && obj(d.student) && typeof d.student.sid === 'string' && obj(d.screens) && Array.isArray(d.log);
 }
 
 let state = loadState();
@@ -220,7 +244,7 @@ function fail(screen, firstText, failures) {
 }
 function success(text) { say(text, 'cheer'); }
 
-function activeScreens() { return SCREENS.filter((s) => state.includeOptional || !s.optional); }
+function activeScreens() { return SCREENS; }
 function screenInfo(id = state.screenId) { return SCREENS.find((s) => s.id === id) || SCREENS[0]; }
 function currentIndex() { const list = activeScreens(); const i = list.findIndex((s) => s.id === state.screenId); return i < 0 ? 0 : i; }
 const studentReady = () => ['school', 'sid', 'name'].every((k) => String(state.student[k] || '').trim());
@@ -298,15 +322,14 @@ function renderMenu() {
     const head = s.s !== lastS ? `<div class="menu-section">${esc(SECTIONS[s.s])}</div>` : '';
     lastS = s.s;
     const active = s.id === state.screenId, visited = state.views[s.id]?.visited;
-    return `${head}<button type="button" class="activity-link${active ? ' active' : ''}${s.optional ? ' optional' : ''}" data-nav="${s.id}"><span class="activity-id" aria-hidden="true">·</span><span>${esc(s.label)}${s.optional ? ' · 선택' : ''}</span><span class="activity-status">${active ? '현재' : visited ? '방문' : ''}</span></button>`;
+    return `${head}<button type="button" class="activity-link${active ? ' active' : ''}" data-nav="${s.id}"><span class="activity-id" aria-hidden="true">·</span><span>${esc(s.label)}</span><span class="activity-status">${active ? '현재' : visited ? '방문' : ''}</span></button>`;
   }).join('');
   $$('.activity-link', box).forEach((b) => b.addEventListener('click', () => { navTo(b.dataset.nav); $('#activity-menu').hidden = true; $('#menu-button').setAttribute('aria-expanded', 'false'); }));
 }
 
-/* 보기 머리: 제목, 안내, 형태 칩 */
+/* 보기 머리: 제목, 안내. 모든 보기가 각자 조작이므로 형태 칩은 두지 않는다(03 D16) */
 function head(title, text = '', extra = '', tools = '') {
-  const info = screenInfo();
-  return `<div class="screen-heading"><div class="heading-line"><h2>${title}</h2><span class="mode-chip mode-${info.mode}">${MODE_TEXT[info.mode]}</span>${extra ? `<span class="eyebrow">${esc(extra)}</span>` : ''}${tools}</div>${text ? `<p>${text}</p>` : ''}</div>`;
+  return `<div class="screen-heading"><div class="heading-line"><h2>${title}</h2>${extra ? `<span class="eyebrow">${esc(extra)}</span>` : ''}${tools}</div>${text ? `<p>${text}</p>` : ''}</div>`;
 }
 
 /* ------------------------------------------------------------ 서술 칸·예측 잠금 */

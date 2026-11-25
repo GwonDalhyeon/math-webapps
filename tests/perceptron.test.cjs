@@ -145,3 +145,69 @@ test('숫자 입력: 0.5, .5, 1/2', () => {
   assert.equal(PG.parseNumber('abc'), null);
   assert.equal(PG.parseNumber(''), null);
 });
+
+/* ---------------- 2차 개정 시험 (03_2차개정_명세서 §6) */
+test('상황 카드 세 장의 목표 진리표와 조건 배정 순서', () => {
+  const ones = PG.SCENARIOS.map((sc) => PG.scenarioTable(sc, PG.neededConds(sc)).filter((v) => v).length);
+  assert.deepEqual(ones, [3, 1, 5]);
+  const door = PG.scenarioById('door');
+  assert.deepEqual(PG.scenarioTable(door, ['front', 'back', 'lock']), [0, 0, 1, 0, 1, 0, 1, 0]);
+  /* 순서를 바꿔 놓아도 같은 판단: (잠금, 앞, 뒤) 순서면 NOT A AND (B OR C) */
+  const swapped = PG.scenarioTable(door, ['lock', 'front', 'back']);
+  const expect = PG.rows(3).map(([a, b, c]) => (1 - a) & (b | c));
+  assert.deepEqual(swapped, expect);
+  assert.equal(PG.assignOk(door, ['back', 'lock', 'front']), true);
+  assert.equal(PG.assignOk(door, ['front', 'back', 'dark']), false);
+});
+
+test('블록 회로판: 진리표 계산, 순환 거부, 빈 입력', () => {
+  const board = { blocks: [{ id: 'K1', type: 'OR' }, { id: 'K2', type: 'NOT' }, { id: 'K3', type: 'AND' }],
+    wires: [{ from: 'A', to: 'K1', port: 0 }, { from: 'B', to: 'K1', port: 1 }, { from: 'C', to: 'K2', port: 0 }, { from: 'K2', to: 'K3', port: 1 }, { from: 'K1', to: 'K3', port: 0 }, { from: 'K3', to: 'OUT', port: 0 }] };
+  const r = PG.boardCircuit(board, ['A', 'B', 'C']);
+  assert.equal(r.error, undefined);
+  assert.deepEqual(PG.circuitTable(r.circuit, 3), PG.scenarioTable(PG.scenarioById('door'), ['front', 'back', 'lock']));
+  assert.equal(PG.wouldCycle(board, 'K3', 'K1'), true);    // K3 → K1이면 K1 → K3 → K1
+  assert.equal(PG.wouldCycle(board, 'A', 'K3'), false);
+  const loose = { blocks: board.blocks, wires: board.wires.filter((w) => !(w.to === 'K3' && w.port === 1)) };
+  assert.equal(PG.boardCircuit(loose, ['A', 'B', 'C']).error, 'emptyInput');
+  assert.equal(PG.boardCircuit({ blocks: board.blocks, wires: board.wires.filter((w) => w.to !== 'OUT') }, ['A', 'B', 'C']).error, 'noOutput');
+  const cyc = { blocks: [{ id: 'K1', type: 'NOT' }, { id: 'K2', type: 'NOT' }], wires: [{ from: 'K2', to: 'K1', port: 0 }, { from: 'K1', to: 'K2', port: 0 }, { from: 'K1', to: 'OUT', port: 0 }] };
+  assert.equal(PG.boardCircuit(cyc, ['A']).error, 'cycle');
+});
+
+test('식 입력 커서: 가운데 넣기와 지우기', () => {
+  let r = PG.tokenEdit(['A', 'OR', 'B', 'AND', 'NOT', 'C'], 0, '(');
+  assert.deepEqual(r, { tokens: ['(', 'A', 'OR', 'B', 'AND', 'NOT', 'C'], cursor: 1 });
+  r = PG.tokenEdit(r.tokens, 4, ')');
+  assert.deepEqual(r.tokens.join(' '), '( A OR B ) AND NOT C');
+  assert.equal(PG.parseExpr(r.tokens).error, undefined);
+  r = PG.tokenEdit(r.tokens, 2, 'BACK');
+  assert.deepEqual(r, { tokens: ['(', 'OR', 'B', ')', 'AND', 'NOT', 'C'], cursor: 1 });
+  assert.equal(PG.tokenEdit(r.tokens, 0, 'LEFT').cursor, 0);
+  assert.equal(PG.tokenEdit(r.tokens, 7, 'RIGHT').cursor, 7);
+});
+
+test('NOT A는 곱하는 수로 만들 수 있고, XOR 부등호는 ≤ > > ≤', () => {
+  const outs = PG.POINTS.map((p) => PG.weightOut(-10, 0, -5, p));
+  assert.deepEqual(outs, T.NOT_A);
+  const sign = (v) => (v ? 'gt' : 'le');
+  assert.deepEqual(T.XOR.map(sign), ['le', 'gt', 'gt', 'le']);
+});
+
+test('판단 장치 회로와 XOR 회로의 짝 게이트는 네 경우 모두 같은 값을 낸다', () => {
+  const pairs = { T1: 'G1', T2: 'G2', G3: 'G3', G4: 'G4' };
+  PG.POINTS.forEach(([a, b]) => {
+    const vb = PG.circuitValues(PG.BAND_CIRCUIT, { A: a, B: b }), vx = PG.circuitValues(PG.XOR_CIRCUIT, { A: a, B: b });
+    Object.entries(pairs).forEach(([x, y]) => assert.equal(vb[x], vx[y]));
+  });
+});
+
+test('접기 입체: 위에서 보면 평면 좌표와 같고, 넘어온 (0, 0)은 (1, 1) 바로 위에 놓인다', () => {
+  const v = PG.view3([0.3, 1.2, 0], 0, 0);
+  assert.ok(Math.abs(v[0] - 0.3) < 1e-12 && Math.abs(v[1] - 1.2) < 1e-12);
+  const f = PG.fold3([0, 0], Math.PI, 0.3);
+  assert.ok(Math.abs(f[0] - 1) < 1e-12 && Math.abs(f[1] - 1) < 1e-12 && f[2] > 0.29);
+  /* 칼날 면(직선을 지나는 수직 면)의 점은 어느 높이에서도 위에서 보면 같은 직선 위 */
+  const L = PG.lineSum(1.5);
+  [0, 0.2, 0.5].forEach((z) => { const q = PG.view3([0.2, 1.3, z], 0, 0); assert.ok(Math.abs(PG.value(L, q)) < 1e-9); });
+});
