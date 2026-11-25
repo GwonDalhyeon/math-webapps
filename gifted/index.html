@@ -3,12 +3,25 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="점자 설계, 이진수 변환, 비트 연산, 쉬프트 연산을 직접 조작하며 탐구하는 영재원 수업용 컴퓨팅 수학 웹앱 모음입니다." />
+  <meta name="description" content="점자 설계에서 출발해 2진법·비트 연산, 비트로 담는 이미지·단어·통신, 논리 회로와 퍼셉트론·인공지능까지 직접 조작하며 탐구하는 영재원 수업용 컴퓨팅 수학 웹앱 모음입니다." />
   <title>영재원 수업 웹앱</title>
   <link rel="icon" href="../favicon.ico" sizes="16x16 32x32 48x48" />
   <link rel="icon" href="../assets/favicon.svg" type="image/svg+xml" />
   <link rel="apple-touch-icon" href="../assets/apple-touch-icon.png" />
   <link rel="stylesheet" href="../assets/common.css" />
+  <style>
+    /* 탐구용 앱과 구분되는 수업 진행 자료 표시 */
+    .lesson-tag {
+      display: inline-block;
+      margin-bottom: 6px;
+      padding: 3px 10px;
+      border-radius: 999px;
+      background: #e0e7ff;
+      color: #3730a3;
+      font-size: 13px;
+      font-weight: 700;
+    }
+  </style>
 </head>
 <body>
   <main class="page">
@@ -17,10 +30,13 @@
     <header class="hero">
       <p class="eyebrow">Gifted Education</p>
       <h1>영재원 수업 웹앱</h1>
-      <p>점자 체계 설계, 이진수 변환, 비트 연산 등 컴퓨팅 수학을 직접 조작하며 탐구합니다.</p>
+      <p>점자로 기호를 약속하는 데서 출발해 수를 0과 1로 나타내고, 비트로 이미지·단어·통신을 다룬 뒤, 0과 1로 판단하는 논리와 인공지능까지 직접 조작하며 탐구합니다.</p>
     </header>
 
     <section class="card-grid">
+
+      <h2 class="section-label">1. 점자: 기호를 약속하기</h2>
+
       <a class="card" href="./braille-design/">
         <img class="subject-card-image" src="./card-images/braille-design.jpg" alt="" width="960" height="540" fetchpriority="high" />
         <h2>한글 점자 설계 워크숍</h2>
@@ -28,7 +44,7 @@
       </a>
 
       <a class="card" href="./braille-lab/">
-        <img class="subject-card-image" src="./card-images/braille-lab.jpg" alt="" width="960" height="540" loading="lazy" decoding="async" />
+        <img class="subject-card-image" src="./card-images/braille-lab.jpg" alt="" width="960" height="540" fetchpriority="high" />
         <h2>한글 점자 읽기·쓰기 실험실</h2>
         <p>실제 한글 점자 규칙을 살펴보고, 낱말을 점자로 바꾸거나 점자를 읽는 퀴즈를 풉니다.</p>
       </a>
@@ -39,16 +55,12 @@
         <p>점형을 6비트 이진수와 십진수로, 다시 십진수를 점형과 한글로 바꾸며 점자가 수로 저장되는 원리를 확인합니다.</p>
       </a>
 
+      <h2 class="section-label">2. 2진법과 비트 연산: 수를 0과 1로</h2>
+
       <a class="card" href="./decimal-binary/">
         <img class="subject-card-image" src="./card-images/decimal-binary.jpg" alt="" width="960" height="540" loading="lazy" decoding="async" />
         <h2>10진법과 2진법 변환 실험실</h2>
         <p>자리값과 2의 거듭제곱 규칙을 탐구하며 10진수와 2진수를 직접 변환해 봅니다.</p>
-      </a>
-
-      <a class="card" href="./bitwise-ops/">
-        <img class="subject-card-image" src="./card-images/bitwise-ops.jpg" alt="" width="960" height="540" loading="lazy" decoding="async" />
-        <h2>비트 연산 실험실</h2>
-        <p>AND, OR, XOR, NAND 연산자를 직접 정의하고 6비트 계산을 실험합니다.</p>
       </a>
 
       <a class="card" href="./shift-machine/">
@@ -57,11 +69,33 @@
         <p>이진수를 왼쪽·오른쪽으로 밀며 값이 어떻게 변하는지 관찰합니다.</p>
       </a>
 
+      <a class="card" href="./bitwise-ops/">
+        <img class="subject-card-image" src="./card-images/bitwise-ops.jpg" alt="" width="960" height="540" loading="lazy" decoding="async" />
+        <h2>비트 연산 실험실</h2>
+        <p>AND, OR, XOR, NAND 연산자를 직접 정의하고 6비트 계산을 실험합니다.</p>
+      </a>
+
+      <h2 class="section-label">3. 비트로 담는 정보: 이미지·단어·통신</h2>
+
+      <a class="card" href="./image-bits/">
+        <img class="subject-card-image" src="./card-images/image-bits.jpg" alt="" width="960" height="540" loading="lazy" decoding="async" />
+        <h2>이미지 속 비트</h2>
+        <p>색을 R,G,B 세 숫자로 만들고, 채널당 8비트가 256가지 밝기를 만드는 원리를 확인하고, 사진을 확대해 픽셀을 보고, 색 반전이 NOT 연산과 같음을 확인합니다.</p>
+      </a>
+
+      <a class="card" href="./word-bits/">
+        <img class="subject-card-image" src="./card-images/word-bits.jpg" alt="" width="960" height="540" loading="lazy" decoding="async" />
+        <h2>단어 비트 실험실</h2>
+        <p>단어에 예/아니오 속성 8개로 비트를 부여해 나만의 단어 사전을 만들고, XOR로 유사도와 단어 계산을 탐구하며 word2vec의 원리를 미리 맛봅니다.</p>
+      </a>
+
       <a class="card" href="./noisy-channel/">
         <img class="subject-card-image" src="./card-images/noisy-channel.jpg" alt="" width="960" height="540" loading="lazy" decoding="async" />
         <h2>잡음 통신 실험실</h2>
         <p>비트가 10% 확률로 잘못 전달될 때 반복 전송과 패리티가 오류를 얼마나 줄이고 찾아내는지 시뮬레이션으로 확인합니다.</p>
       </a>
+
+      <h2 class="section-label">4. 논리와 인공지능: 0과 1로 판단하기</h2>
 
       <a class="card" href="./logic-circuit/">
         <img class="subject-card-image" src="./card-images/logic-circuit.jpg" alt="" width="960" height="540" loading="lazy" decoding="async" />
@@ -71,32 +105,22 @@
 
       <a class="card" href="./logic-slides/">
         <img class="subject-card-image" src="./card-images/logic-slides.jpg" alt="" width="960" height="540" loading="lazy" decoding="async" />
+        <span class="lesson-tag">대면 수업 화면</span>
         <h2>0과 1로 판단하기 — 수업 화면</h2>
-        <p>학습지 「0과 1로 판단하기」 대면 수업의 프로젝터 화면입니다. 회로를 읽고 짓고, 모둠 대결 회로를 비교하고, XOR을 평면을 접어 직선 두 개로 가르는 과정을 태블릿으로 직접 그려 봅니다.</p>
+        <p>학습지 「0과 1로 판단하기」 수업의 프로젝터 화면입니다. 회로를 읽고 짓고, XOR을 평면을 접어 직선 두 개로 가르는 과정을 태블릿으로 그려 봅니다.</p>
       </a>
 
       <a class="card" href="./perceptron/">
         <img class="subject-card-image" src="./card-images/perceptron.jpg" alt="" width="960" height="540" loading="lazy" decoding="async" />
+        <span class="lesson-tag">온라인 수업 · 기록 제출</span>
         <h2>퍼셉트론, 직선으로 판단하다</h2>
-        <p>진리표를 좌표평면의 점으로 옮겨 직선 하나로 갈라 보고, XOR에서 막힌 뒤 평면을 접고 판단을 두 층으로 쌓아 푸는 온라인 수업 웹앱입니다. 활동 기록은 앱에서 바로 제출합니다.</p>
-      </a>
-
-      <a class="card" href="./image-bits/">
-        <img class="subject-card-image" src="./card-images/image-bits.jpg" alt="" width="960" height="540" loading="lazy" decoding="async" />
-        <h2>이미지 속 비트</h2>
-        <p>색을 R,G,B 세 숫자로 만들고, 채널당 8비트가 256가지 밝기를 만드는 원리를 확인하고, 사진을 확대해 픽셀을 보고, 색 반전이 NOT 연산과 같음을 확인합니다.</p>
+        <p>진리표를 좌표평면의 점으로 옮겨 직선 하나로 갈라 보고, XOR에서 막힌 뒤 평면을 접고 판단을 두 층으로 쌓아 풉니다.</p>
       </a>
 
       <a class="card" href="./ai-learning/">
         <img class="subject-card-image" src="./card-images/ai-learning.jpg" alt="" width="960" height="540" loading="lazy" decoding="async" />
         <h2>AI는 무엇을 보고 배우나</h2>
         <p>지뢰찾기를 소재로 지도학습·비지도학습·강화학습이 정답·특징·보상 중 무엇으로 배우는지 직접 조작하며 비교합니다.</p>
-      </a>
-
-      <a class="card" href="./word-bits/">
-        <img class="subject-card-image" src="./card-images/word-bits.jpg" alt="" width="960" height="540" loading="lazy" decoding="async" />
-        <h2>단어 비트 실험실</h2>
-        <p>단어에 예/아니오 속성 8개로 비트를 부여해 나만의 단어 사전을 만들고, XOR로 유사도와 단어 계산을 탐구하며 word2vec의 원리를 미리 맛봅니다.</p>
       </a>
 
     </section>
