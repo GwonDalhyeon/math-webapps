@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="날아오는 공 중에 규칙에 맞는 공만 움켜쥐어 잡거나 주먹으로 쳐내는 카메라 아이스브레이킹 게임입니다. 카메라가 없으면 터치로도 할 수 있습니다." />
+  <meta name="description" content="날아오는 공 중에 규칙에 맞는 공만 움켜쥐어 잡거나 주먹으로 쳐내는 카메라 아이스브레이킹 게임입니다. 1분을 버틸 때마다 레벨이 오릅니다. 카메라가 없으면 터치로도 할 수 있습니다." />
   <title>슈퍼 세이브! 맞는 공만 잡아라</title>
   <link rel="icon" href="../../favicon.ico" sizes="16x16 32x32 48x48" />
   <link rel="icon" href="../../assets/favicon.svg" type="image/svg+xml" />
@@ -58,7 +58,7 @@
     .seg button small { display: block; font-size: 12px; font-weight: 700; color: var(--muted); }
     .seg button[aria-pressed="true"] { border-color: var(--line); background: var(--accent); box-shadow: 0 3px 0 var(--line); }
     .ladder { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
-    .ladder div { position: relative; background: var(--panel2); border: 2px solid var(--soft); border-radius: 12px; padding: 8px 4px 7px; text-align: center; font-size: 14px; font-weight: 800; line-height: 1.25; }
+    .ladder div { position: relative; background: var(--panel2); border: 2px solid var(--soft); border-radius: 12px; padding: 8px 4px 7px; text-align: center; font-size: 13px; font-weight: 800; line-height: 1.3; }
     .ladder div b { display: block; font-size: 13px; color: var(--muted); }
     .ladder div:nth-child(1) { margin-top: 24px; } .ladder div:nth-child(2) { margin-top: 16px; } .ladder div:nth-child(3) { margin-top: 8px; }
     .speed-note { font-size: 15px; font-weight: 800; color: var(--muted); margin: -4px 0 0; }
@@ -74,27 +74,36 @@
     #sPlay { flex-direction: column; }
     .hud { flex: none; display: grid; grid-template-columns: 200px 1fr 210px; gap: 12px; padding: 10px 14px; }
     .box { background: var(--panel); border: 3px solid var(--line); border-radius: 18px; box-shadow: var(--shadow); padding: 8px 14px; }
-    .score span { font-size: 14px; font-weight: 800; color: var(--muted); }
-    .score b { display: block; font-size: 40px; line-height: 1; font-weight: 950; font-variant-numeric: tabular-nums; letter-spacing: -1px; }
-    .combo { display: inline-block; margin-top: 4px; font-size: 15px; font-weight: 900; background: var(--accent); border-radius: 8px; padding: 1px 8px; visibility: hidden; }
+    .score { position: relative; }
+    .score .lbl { font-size: 14px; font-weight: 800; color: var(--muted); }
+    .score b { display: block; font-size: 34px; line-height: 1; font-weight: 950; font-variant-numeric: tabular-nums; letter-spacing: -1px; }
+    .hearts { font-size: 21px; letter-spacing: 1px; margin-top: 4px; white-space: nowrap; }
+    .hearts.hit { animation: heartHit .45s ease; }
+    @keyframes heartHit { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+    .combo { position: absolute; right: 8px; top: 8px; font-size: 14px; font-weight: 900; background: var(--accent); border-radius: 8px; padding: 1px 7px; visibility: hidden; }
     .combo.on { visibility: visible; }
-    .rule { display: flex; align-items: center; justify-content: center; gap: 16px; background: var(--accent); min-height: 88px; padding: 6px 14px; }
+    /* 규칙: 무엇을(공 그림+이름) 어떻게(동작 배지) 하는지 가장 크게 */
+    .rule { display: flex; align-items: center; justify-content: center; gap: 18px; background: var(--accent); min-height: 112px; padding: 6px 16px; }
+    .rule .rwhat { font-size: 40px; font-weight: 950; letter-spacing: -1px; line-height: 1.05; white-space: nowrap; }
+    .rule .rrest { font-size: 16px; font-weight: 800; opacity: .8; margin-top: 5px; }
+    .act { display: inline-flex; align-items: center; font-size: 34px; font-weight: 950; padding: 6px 18px; border-radius: 16px; white-space: nowrap; border: 3px solid var(--line); box-shadow: 0 4px 0 var(--line); }
+    .act.grab { background: var(--line); color: #fff; }
+    .act.punch { background: #dc2626; color: #fff; }
+    .act.avoid { background: #fff; color: var(--line); border-style: dashed; box-shadow: none; }
+    .act.sm { font-size: 24px; padding: 2px 12px; border-width: 2px; box-shadow: 0 3px 0 var(--line); }
+    .act.avoid.sm { box-shadow: none; }
     .rule.three { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; background: var(--panel); padding: 6px 8px; }
-    .rule .say { font-size: 34px; font-weight: 950; letter-spacing: -1px; line-height: 1.1; }
-    .rule .say small { display: block; font-size: 16px; font-weight: 800; opacity: .75; letter-spacing: 0; }
-    .rcell { display: flex; align-items: center; gap: 8px; border-radius: 12px; padding: 4px 10px; font-weight: 950; font-size: 24px; letter-spacing: -.5px; line-height: 1.1; }
-    .rcell small { display: block; font-size: 13px; font-weight: 800; opacity: .8; letter-spacing: 0; }
-    .rcell.grab { background: #dbeafe; color: #1e3a8a; }
-    .rcell.punch { background: #ffedd5; color: #7c2d12; }
-    .rcell.avoid { background: #e5e7eb; color: #111827; }
+    .rcell { display: flex; align-items: center; justify-content: center; gap: 8px; border-radius: 14px; padding: 4px 8px; background: var(--panel2); }
+    .rcell small { display: block; font-size: 16px; font-weight: 900; margin-top: 5px; }
+    .rule.flash { animation: ruleFlash .9s ease; }
+    @keyframes ruleFlash { 0% { transform: scale(1); } 25% { transform: scale(1.04); box-shadow: 0 0 0 6px #f59e0b, var(--shadow); } 100% { transform: scale(1); } }
     .clock { display: flex; flex-direction: column; justify-content: center; }
     .clock .stg { font-size: 15px; font-weight: 900; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .clock b { font-size: 34px; line-height: 1.05; font-weight: 950; font-variant-numeric: tabular-nums; white-space: nowrap; }
     .clock .spd { font-size: 13px; font-weight: 900; color: var(--muted); letter-spacing: 1px; margin-top: 3px; white-space: nowrap; }
-    .pips { display: flex; gap: 5px; margin-top: 4px; }
-    .pips i { flex: 1; height: 8px; border-radius: 4px; background: var(--soft); }
-    .pips i.done { background: var(--good); }
-    .pips i.now { background: var(--accent); outline: 2px solid var(--line); }
+    .clock .stg { font-size: 20px; color: var(--ink); }
+    .lvbar { height: 10px; border-radius: 5px; background: var(--soft); overflow: hidden; margin-top: 4px; }
+    .lvbar i { display: block; height: 100%; width: 0; background: var(--good); }
     .field { flex: 1; min-height: 0; position: relative; margin: 0 14px 14px; border-radius: 20px; overflow: hidden; border: 3px solid var(--line); box-shadow: var(--shadow); background: #16324a; touch-action: none; }
     .field > canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
     .field video { display: none; }
@@ -150,7 +159,8 @@
     .res-head img { width: 104px; height: 104px; object-fit: contain; }
     .res-head .eyebrow { font-size: 15px; font-weight: 900; color: var(--muted); }
     .res-head .total { font-size: 62px; font-weight: 950; line-height: 1; letter-spacing: -2px; font-variant-numeric: tabular-nums; }
-    .res-head .total small { font-size: 22px; letter-spacing: 0; }
+    .res-head .total small { font-size: 24px; letter-spacing: 0; }
+    .res-sub { font-size: 20px; font-weight: 800; color: var(--muted); margin-top: 2px; }
     .badge-title { display: inline-block; margin-top: 6px; font-size: 22px; font-weight: 950; background: var(--accent); border: 2px solid var(--line); border-radius: 12px; padding: 3px 14px; }
     .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
     .stat { padding: 10px 12px; }
@@ -187,6 +197,8 @@
       .hud { grid-template-columns: 1fr 1fr; grid-template-areas: "rule rule" "score clock"; }
       .hud .rule { grid-area: rule; }
       .hud .score { grid-area: score; display: flex; align-items: center; gap: 12px; }
+      .hud .score .hearts { margin: 0 0 0 auto; }
+      .rule .rwhat { font-size: 34px; }
       .hud .clock { grid-area: clock; }
       #sResult { flex-direction: column; }
       .res-main, .res-side { flex: none; }
@@ -196,8 +208,9 @@
     }
     @media (max-width: 700px) {
       .kr-top .home { display: none; }
-      .rule .say { font-size: 26px; }
-      .rcell { font-size: 18px; }
+      .rule .rwhat { font-size: 26px; }
+      .act { font-size: 24px; }
+      .act.sm { font-size: 18px; }
       .card h2 { font-size: 32px; }
     }
   </style>
@@ -235,13 +248,13 @@
         <button type="button" data-diff="hard" aria-pressed="false">어려움<small>처음부터 빠르게</small></button>
       </div>
       <h3>이렇게 진행돼요</h3>
-      <div class="ladder" aria-label="1단계부터 4단계까지 점점 어려워집니다">
-        <div><b>1단계</b>색 하나</div>
-        <div><b>2단계</b>모양 하나</div>
-        <div><b>3단계</b>잡기·쳐내기</div>
-        <div><b>4단계</b>규칙 바뀜!</div>
+      <div class="ladder" aria-label="레벨이 오를수록 빨라지고 복잡해집니다">
+        <div><b>레벨 1</b>15초마다 규칙 바뀜<br />색·모양·잡기쳐내기</div>
+        <div><b>레벨 2</b>더 빨리<br />공 2개</div>
+        <div><b>레벨 3</b>더 빨리<br />색+모양 규칙</div>
+        <div><b>레벨 4~</b>10초마다 규칙<br />공 3개까지</div>
       </div>
-      <p class="speed-note">⏩ 단계마다 20초, 갈수록 공이 빨라지고 많아져요.</p>
+      <p class="speed-note">⏱ 1분을 버티면 다음 레벨! ❤️ 5개로 시작해서 놓치거나 틀리면 하나씩 잃어요.</p>
       <input class="nick" id="nick" maxlength="12" placeholder="기록판에 쓸 이름 (선택)" autocomplete="off" />
       <p class="best-line" id="bestLine"></p>
       <p class="notes">🔒 카메라 영상은 <b>이 기기 안에서만</b> 처리되며 저장하거나 전송하지 않습니다.<br />⚠️ 주변 친구와 <b>1m 이상</b> 떨어지고, 카메라 쪽으로 세게 치지 마세요.</p>
@@ -256,13 +269,17 @@
   <!-- 경기 화면 -->
   <section class="screen" id="sPlay">
     <div class="hud">
-      <div class="box score"><span>점수</span><b id="scoreNum">0</b><span class="combo" id="comboTag">콤보 ×0</span></div>
-      <div class="box rule" id="ruleBox"><div class="say">준비!</div></div>
+      <div class="box score">
+        <span class="combo" id="comboTag">콤보 ×0</span>
+        <span class="lbl">점수</span><b id="scoreNum">0</b>
+        <div class="hearts" id="hearts" aria-label="남은 목숨"></div>
+      </div>
+      <div class="box rule" id="ruleBox"><div class="rwhat">준비!</div></div>
       <div class="box clock">
         <span class="stg" id="stageName">준비</span>
-        <b id="timeNum">⏱ 20초</b>
-        <div class="pips" id="pips"><i></i><i></i><i></i><i></i></div>
-        <span class="spd" id="speedTag"></span>
+        <b id="timeNum">⏱ 60초</b>
+        <div class="lvbar"><i id="lvFill"></i></div>
+        <span class="spd">1분 버티면 다음 레벨</span>
       </div>
     </div>
     <div class="field" id="field">
@@ -307,12 +324,18 @@
         <div class="examples" id="riExamples"></div>
         <p id="riSub"></p>
       </div></div>
+      <div class="overlay" id="ovBanner"><div class="card">
+        <div class="eyebrow" id="bnEyebrow"></div>
+        <h2 id="bnTitle"></h2>
+        <p id="bnText"></p>
+      </div></div>
       <div class="overlay" id="ovPause"><div class="card">
         <div class="eyebrow">일시정지</div>
         <h2 id="pauseTitle">잠깐 멈췄어요</h2>
         <p id="pauseText">준비되면 계속하기를 누르세요.</p>
         <div class="btns">
           <button class="btn primary" id="resumeBtn" type="button">▶ 계속하기</button>
+          <button class="btn" id="endBtn" type="button">🏁 여기서 끝내기</button>
           <button class="btn" id="quitBtn" type="button">처음으로</button>
         </div>
       </div></div>
@@ -326,7 +349,8 @@
         <img src="images/hero-gloves.png" alt="" width="400" height="400" />
         <div>
           <div class="eyebrow" id="rWho"></div>
-          <div class="total"><span id="rScore">0</span><small>점</small></div>
+          <div class="total"><span id="rLevel">레벨 1</span><small> 도달</small></div>
+          <div class="res-sub" id="rSub"></div>
           <span class="badge-title" id="rTitle"></span>
         </div>
       </div>
@@ -338,13 +362,13 @@
       </div>
       <div class="box chart">
         <h3>공마다 걸린 시간</h3>
-        <div class="legend"><span style="color:var(--good)">● 세이브</span><span style="color:var(--bad)">✕ 실수</span><span style="color:var(--bad)">▲ 실점</span><span>┆ 단계·규칙 바뀜</span></div>
+        <div class="legend"><span style="color:var(--good)">● 세이브</span><span style="color:var(--bad)">✕ 실수</span><span style="color:var(--bad)">▲ 실점</span><span>┆ 레벨·규칙 바뀜</span></div>
         <svg id="rtChart" viewBox="0 0 700 220" preserveAspectRatio="none" role="img" aria-label="공마다 반응 시간 그래프"></svg>
       </div>
       <p class="fine">반응 시간에는 카메라 처리 시간(약 0.1초)이 포함되어 있어 친구끼리 비교하는 용도입니다.</p>
     </div>
     <div class="res-side">
-      <div class="box tbl"><h3>단계별 기록</h3><table id="stageTable"></table></div>
+      <div class="box tbl"><h3>레벨별 기록</h3><table id="stageTable"></table></div>
       <div class="box board"><h3>🏆 이 기기 기록판</h3><ol id="board"></ol><p class="note">기록은 이 기기 안에만 저장됩니다.</p></div>
       <div class="res-actions">
         <button class="btn primary" id="againBtn" type="button">🔁 다시 하기</button>
@@ -384,12 +408,15 @@ const PUNCH_GAP_MS = 200;           // 손이 이만큼 사라졌다 나타나�
 const PUNCH_COOLDOWN_MS = 300;
 const HOVER_HINT_MS = 500;          // 공 위에 이만큼 머물면 "쥐어요!" 같은 안내
 
-// 진행
-const STAGE_COUNT = 4;
-const STAGE_SEC = 20;
+// 진행: 1분을 버티면 다음 레벨. 목숨을 다 잃으면 끝난다(레벨 상한 없음).
+const LEVEL_SEC = 60;
+const LIVES = 5;                    // 실점·실수·동작 틀림마다 1개씩 잃는다
+const LIFE_REFILL = 1;              // 레벨을 넘길 때마다 회복 (최대 LIVES)
 const COUNTDOWN_S = 3;
 const RULE_INTRO_MS = 2500;
 const RULE_SWITCH_PAUSE_MS = 1200;
+const LEVEL_UP_MS = 2800;
+const OUT_MS = 2000;                // "아웃!"을 보여 주고 결과로 넘어가기까지
 const PRACTICE_SKIP_MS = 8000;
 const FLY_IN_MS = 200;
 const FADE_MS = 350;
@@ -398,25 +425,35 @@ const MAX_AVOID_RUN = 3;
 const MAX_TARGET_RUN = 5;
 const GOAL_RECT = [0.12, 0.10, 0.88, 0.82];   // 카메라 화면 기준 x0, y0, x1, y1 (비율)
 
-// 난이도: 한 판 진행률 t(0→1)에 따라 처음 값 → 끝 값으로 바뀐다
+// 레벨 1은 이전 4단계 게임을 1분으로 줄인 것: 15초마다 색 → 모양 → 잡기·쳐내기 → 무작위
+const LEVEL1_RULES = ["color", "shape", "gp", "any"];
+const RULE_EVERY_SEC = [15, 15, 15, 10];   // 레벨별 규칙이 바뀌는 간격(초). 마지막 값이 이후 레벨에도 쓰인다
+// 레벨이 오를 때마다 빨라지고, 정해진 레벨에서 복잡한 요소가 하나씩 더해진다
+const SPEED_STEP = 0.88;            // 레벨마다 반응 시간·공 사이 간격에 곱한다
+const WINDOW_MIN = 650;             // 반응 시간은 이보다 짧아지지 않는다(ms)
+const GAP_MIN = [200, 420];
+const DOUBLE_BOOST_FROM = 2;        // 이 레벨부터 공 2개가 자주 나온다
+const COMBO_RULE_FROM = 3;          // 이 레벨부터 "파란 별만" 같은 색+모양 규칙
+const TRIPLE_FROM = 5;              // 이 레벨부터 공 3개가 동시에 나온다
+// 난이도는 레벨 1의 출발 속도만 정한다
 const DIFFS = {
-  easy:   { label: "쉬움",   window: [2000, 1400], gap: [[800, 1500], [500, 1100]], double: [0.10, 0.30], radius: 0.36, switchMs: 9000 },
-  normal: { label: "보통",   window: [1500, 1000], gap: [[550, 1150], [350, 800]],  double: [0.20, 0.45], radius: 0.32, switchMs: 7000 },
-  hard:   { label: "어려움", window: [1150, 750],  gap: [[400, 900],  [250, 600]],  double: [0.30, 0.60], radius: 0.29, switchMs: 5500 },
+  easy:   { label: "쉬움",   window: 2000, gap: [800, 1500], double: 0.10, radius: 0.36 },
+  normal: { label: "보통",   window: 1500, gap: [550, 1150], double: 0.20, radius: 0.32 },
+  hard:   { label: "어려움", window: 1150, gap: [400, 900],  double: 0.30, radius: 0.29 },
 };
 
 // 점수
 const PTS_SAVE = 100, PTS_SPEED_MAX = 50, PTS_HOLD = 20, PTS_MISTAKE = -50;
 const COMBO_BONUS_FROM = 5, COMBO_BONUS = 20;
-// 칭호 기준: 빠른 자동 시험(반응 0.3초, 세이브율 95%)이 약 5,700점. 사람은 이보다 낮다고 보고 잡았다. 수업 후 조정한다.
-const TITLES = [[4500, "국가대표 수문장"], [3000, "주전 골키퍼"], [1500, "후보 골키퍼"], [0, "볼보이 신인"]];
+// 칭호는 도달한 레벨로 정한다
+const TITLES = [[6, "전설의 수문장"], [4, "국가대표 수문장"], [3, "주전 골키퍼"], [2, "후보 골키퍼"], [1, "볼보이 신인"]];
 
 // 터치
 const TAP_RADIUS_K = 1.3;
 const TOUCH_SWIPE_SPEED = 1.2;
 
 // 소리
-const MUSIC_BPM = 120, MUSIC_BPM_FAST = 132;
+const MUSIC_BPM = 120, MUSIC_BPM_MAX = 150;   // 레벨마다 조금씩 빨라진다
 const MUSIC_VOLUME = 0.1;           // 효과음보다 작게
 const MUSIC_LOOKAHEAD = 0.18;
 
@@ -425,7 +462,7 @@ const RESULT_IDLE_MS = 30000;       // 결과 화면에서 이만큼 조작이 �
 const WASM_DIR   = "../../assets/vendor/mediapipe/tasks-vision/wasm";
 const MODEL_PATH = "../../assets/vendor/mediapipe/models/hand_landmarker.task";
 const BUNDLE_PATH = "../../assets/vendor/mediapipe/tasks-vision/vision_bundle.mjs";
-const STORE_KEY = "keeper-reflex-records-v1";
+const STORE_KEY = "keeper-reflex-records-v2";   // v2: 레벨 기록 (v1은 4단계 고정판 점수라 섞지 않는다)
 const NICK_KEY  = "keeper-reflex-nick-v1";
 const PREF_KEY  = "keeper-reflex-pref-v1";
 const RECORD_MAX = 500;
@@ -442,7 +479,6 @@ const COLOR_KEYS = Object.keys(COLORS);
 COLORS.gray = { fill: "#e5e7eb", dark: "#374151", letter: "", name: "", topic: "" };
 const SHAPES = { circle: "동그라미", triangle: "세모", square: "네모", star: "별" };
 const SHAPE_KEYS = Object.keys(SHAPES);
-const STAGE_NAMES = ["색 하나", "모양 하나", "잡기·쳐내기", "규칙 바뀜"];
 
 const FINGERS = [[8, 6], [12, 10], [16, 14], [20, 18]];   // [끝, 둘째마디]
 const PALM_POINTS = [0, 5, 9, 13, 17];
@@ -481,11 +517,11 @@ let fpsCount = 0, fpsAt = 0, fpsVal = 0;
 
 // 경기 시간(ms). 일시정지·안내 화면 동안에는 흐르지 않는다.
 let gt = 0;
-let stageIdx = 0, stageLeftMs = 0, playedMs = 0;
+let level = 1, levelLeftMs = 0, playedMs = 0, lives = LIVES, heartsHitUntil = 0;
 let phaseLeftMs = 0, phaseNext = "";       // countdown, ruleIntro의 남은 시간과 다음 단계
 let lastCountShown = 0;
 let pausedFrom = "";
-let rule = null, ruleSwitchLeftMs = 0, ruleSwitches = [];
+let rule = null, ruleIdx = 0, ruleLeftMs = 0, ruleSwitches = [], levelStarts = [];
 let balls = [], ballSeq = 0, nextSpawnGt = 0, volleyOpen = 0;
 let avoidRun = 0, targetRun = 0, lastCells = [];
 let practiceStep = 0, practiceSince = 0;
@@ -499,7 +535,7 @@ function resetStats() {
     targets: 0, saves: 0, goals: 0, wrongs: 0,
     avoids: 0, holds: 0, mistakes: 0,
     rts: [], events: [],
-    stages: Array.from({ length: STAGE_COUNT }, () => ({ saves: 0, goals: 0, mistakes: 0, rts: [] })),
+    levels: [],   // 레벨별 { saves, goals, mistakes, wrongs, rts }
   });
 }
 resetStats();
@@ -653,15 +689,11 @@ function segDist(a, b, p) {
 // 규칙
 // ===========================================================================
 // 규칙은 공을 보고 해야 할 동작을 돌려준다: grab | punch | avoid
+// color: 그 색만 / shape: 그 모양만 / combo: 그 색+모양만 / gp: 한 색은 잡고 한 색은 쳐내고 폭탄은 피하기
 function makeRule(type, avoidSame) {
-  if (type === "color") {
-    const color = pick(COLOR_KEYS.filter((c) => c !== avoidSame?.color));
-    return { type, color };
-  }
-  if (type === "shape") {
-    const shape = pick(SHAPE_KEYS.filter((s) => s !== avoidSame?.shape));
-    return { type, shape };
-  }
+  if (type === "color") return { type, color: pick(COLOR_KEYS.filter((c) => c !== avoidSame?.color)) };
+  if (type === "shape") return { type, shape: pick(SHAPE_KEYS.filter((s) => s !== avoidSame?.shape)) };
+  if (type === "combo") return { type, color: pick(COLOR_KEYS), shape: pick(SHAPE_KEYS) };
   const [grab, punch] = COLOR_KEYS.filter((c) => c !== avoidSame?.grab).sort(() => Math.random() - 0.5);
   return { type: "gp", grab, punch };
 }
@@ -669,6 +701,7 @@ function required(r, b) {
   if (b.bomb) return "avoid";
   if (r.type === "color") return b.color === r.color ? "grab" : "avoid";
   if (r.type === "shape") return b.shape === r.shape ? "grab" : "avoid";
+  if (r.type === "combo") return b.color === r.color && b.shape === r.shape ? "grab" : "avoid";
   if (b.color === r.grab) return "grab";
   if (b.color === r.punch) return "punch";
   return "avoid";
@@ -682,12 +715,18 @@ function makeBallSpec(r, wantTarget) {
   if (r.type === "shape") {
     return wantTarget ? { color: pick(COLOR_KEYS), shape: r.shape } : { color: pick(COLOR_KEYS), shape: pick(others(r.shape, SHAPE_KEYS)) };
   }
+  if (r.type === "combo") {
+    if (wantTarget) return { color: r.color, shape: r.shape };
+    // 헷갈리게: 색만 같거나 모양만 같은 공
+    return Math.random() < 0.5 ? { color: r.color, shape: pick(others(r.shape, SHAPE_KEYS)) } : { color: pick(others(r.color, COLOR_KEYS)), shape: r.shape };
+  }
   if (!wantTarget) return { bomb: true, color: "", shape: "circle" };
   return { color: Math.random() < 0.5 ? r.grab : r.punch, shape: "circle" };
 }
 function ruleTitle(r) {
   if (r.type === "color") return { title: `${COLORS[r.color].name} 공만 잡아!`, sub: "다른 색은 꾹 참기" };
   if (r.type === "shape") return { title: `${SHAPES[r.shape]}만 잡아!`, sub: "색은 무시! 다른 모양은 꾹 참기" };
+  if (r.type === "combo") return { title: `${COLORS[r.color].name} ${SHAPES[r.shape]}만 잡아!`, sub: "색과 모양이 둘 다 맞아야 해요" };
   return { title: `${COLORS[r.grab].topic} 잡고, ${COLORS[r.punch].topic} 쳐내!`, sub: "폭탄은 손대지 말기" };
 }
 function exampleSpecs(r) {
@@ -696,22 +735,31 @@ function exampleSpecs(r) {
     const o = SHAPE_KEYS.filter((s) => s !== r.shape);
     return [[{ color: pick(COLOR_KEYS), shape: r.shape }, "ok", "⭕ 잡기"], [{ color: pick(COLOR_KEYS), shape: r.shape }, "ok", "⭕ 잡기"], [{ color: pick(COLOR_KEYS), shape: o[0] }, "no", "✕ 참기"], [{ color: pick(COLOR_KEYS), shape: o[1] }, "no", "✕ 참기"]];
   }
+  if (r.type === "combo") {
+    const os = SHAPE_KEYS.filter((s) => s !== r.shape), oc = COLOR_KEYS.filter((c) => c !== r.color);
+    return [[{ color: r.color, shape: r.shape }, "ok", "⭕ 잡기"], [{ color: r.color, shape: os[0] }, "no", "✕ 모양 틀림"], [{ color: oc[0], shape: r.shape }, "no", "✕ 색 틀림"]];
+  }
   return [[{ color: r.grab, shape: "circle" }, "ok", "✊ 잡기"], [{ color: r.punch, shape: "circle" }, "ok", "💨 쳐내기"], [{ bomb: true }, "no", "🙅 피하기"]];
 }
 
 // ===========================================================================
 // 공
 // ===========================================================================
-const progress = () => clamp01(playedMs / (STAGE_COUNT * STAGE_SEC * 1000));
-function curve() {
-  const d = DIFFS[diffKey], t = progress();
+/** 지금 레벨의 속도와 한꺼번에 나오는 공 개수 확률 */
+function curveAt(L) {
+  const d = DIFFS[diffKey], k = Math.pow(SPEED_STEP, L - 1);
+  let double = L === 1 && ruleIdx === 0 ? 0 : d.double;   // 첫 규칙 15초는 공 하나씩
+  if (L >= DOUBLE_BOOST_FROM) double = Math.min(0.6, d.double + 0.15 + 0.05 * (L - DOUBLE_BOOST_FROM));
+  const triple = L >= TRIPLE_FROM ? Math.min(0.35, 0.15 + 0.05 * (L - TRIPLE_FROM)) : 0;
   return {
-    window: lerp(d.window[0], d.window[1], t),
-    gapMin: lerp(d.gap[0][0], d.gap[1][0], t),
-    gapMax: lerp(d.gap[0][1], d.gap[1][1], t),
-    double: stageIdx === 0 ? 0 : lerp(d.double[0], d.double[1], t),
+    window: Math.max(WINDOW_MIN, d.window * k),
+    gapMin: Math.max(GAP_MIN[0], d.gap[0] * k),
+    gapMax: Math.max(GAP_MIN[1], d.gap[1] * k),
+    double, triple,
   };
 }
+const curve = () => curveAt(level);
+const ruleEveryMs = () => RULE_EVERY_SEC[Math.min(level - 1, RULE_EVERY_SEC.length - 1)] * 1000;
 
 function chooseTarget() {
   if (avoidRun >= MAX_AVOID_RUN) return true;
@@ -729,12 +777,11 @@ function chooseCell(taken) {
 }
 
 function spawnVolley() {
-  const c = curve();
-  const count = Math.random() < c.double ? 2 : 1;
+  const c = curve(), roll = Math.random();
+  const count = roll < c.triple ? 3 : roll < c.triple + c.double ? 2 : 1;
+  // 여러 개면 목표 하나 + 방해 하나(+ 무작위 하나)
+  const wants = count === 3 ? [true, false, Math.random() < 0.5] : count === 2 ? [true, false] : [chooseTarget()];
   const taken = balls.filter((b) => !b.done).map((b) => b.cell);
-  const wants = [];
-  if (count === 2) wants.push(true, false);   // 두 개면 목표 하나 + 방해 하나
-  else wants.push(chooseTarget());
   for (const want of wants) {
     const cell = chooseCell(taken);
     taken.push(cell);
@@ -745,7 +792,7 @@ function spawnVolley() {
     const p = cellCenter(cell);
     balls.push({
       id: ++ballSeq, ...spec, need, cell, x: p.x, y: p.y,
-      spawnGt: gt, arriveGt: gt + FLY_IN_MS, expireGt: gt + FLY_IN_MS + c.window,
+      spawnGt: gt, arriveGt: gt + FLY_IN_MS, expireGt: gt + FLY_IN_MS + c.window, window: c.window,
       done: false, result: "", doneGt: 0, hoverSince: 0,
     });
   }
@@ -762,6 +809,7 @@ function ballPos(b) {
 function updateBalls() {
   const live = balls.filter((b) => !b.done);
   for (const b of live) {
+    if (phase !== "playing") break;   // 목숨을 다 잃으면 남은 공은 판정하지 않는다
     if (gt >= b.expireGt) resolveBall(b, b.need === "avoid" ? "hold" : "goal");
   }
   balls = balls.filter((b) => !b.done || gt - b.doneGt < 600);
@@ -807,21 +855,20 @@ function judge(b, action, dir) {
 function resolveBall(b, result, info = {}) {
   if (b.done) return;
   b.done = true; b.result = result; b.doneGt = gt; b.info = info;
-  const st = stats.stages[stageIdx];
+  const st = levelStat();
   const p = ballPos(b);
   const t = playedMs / 1000;
   const r = ballRadius();
   if (b.need === "avoid") stats.avoids++; else stats.targets++;
   if (result === "save") {
     const rt = gt - b.spawnGt;
-    const c = curve();
-    const bonus = Math.round(PTS_SPEED_MAX * Math.max(0, 1 - rt / (c.window + FLY_IN_MS)));
+    const bonus = Math.round(PTS_SPEED_MAX * Math.max(0, 1 - rt / (b.window + FLY_IN_MS)));
     stats.combo++;
     stats.maxCombo = Math.max(stats.maxCombo, stats.combo);
     const comboPts = stats.combo >= COMBO_BONUS_FROM ? COMBO_BONUS : 0;
     stats.score += PTS_SAVE + bonus + comboPts;
     stats.saves++; st.saves++;
-    stats.rts.push({ rt, stage: stageIdx, n: stats.targets }); st.rts.push(rt);
+    stats.rts.push({ rt, level, n: stats.targets }); st.rts.push(rt);
     stats.events.push({ t, rt, kind: "save" });
     addFx("burst", p, { color: info.action === "punch" ? "#fb923c" : "#fde047", r });
     addFx("text", { x: p.x, y: p.y - r * 2.1 }, { text: `${info.action === "punch" ? "펀칭 " : ""}세이브! ${(rt / 1000).toFixed(2)}초`, color: "#fde047", big: true });
@@ -833,6 +880,7 @@ function resolveBall(b, result, info = {}) {
     addFx("net", p, { cell: b.cell });
     addFx("text", { x: p.x, y: p.y - r * 1.8 }, { text: "골!", color: "#fca5a5", big: true });
     sfx("goal");
+    loseLife(p);
   } else if (result === "hold") {
     stats.holds++;
     stats.score += PTS_HOLD;
@@ -846,24 +894,39 @@ function resolveBall(b, result, info = {}) {
     addFx("text", { x: p.x, y: p.y - r * 1.8 }, { text: b.bomb ? "펑! 폭탄은 피해요" : "건드리면 안 돼요!", color: "#fca5a5", big: true });
     shakeUntil = performance.now() + 250;
     sfx("mistake");
+    loseLife(p);
   } else if (result === "wrong") {
-    stats.combo = 0; stats.wrongs++;
+    stats.combo = 0; stats.wrongs++; st.wrongs++;
     stats.events.push({ t, kind: "wrong", rt: gt - b.spawnGt });
     addFx("text", { x: p.x, y: p.y - r * 1.8 }, { text: b.need === "punch" ? "쳐내야 해요!" : "쥐어서 잡아야 해요!", color: "#fdba74", big: true });
     sfx("wrong");
+    loseLife(p);
   }
   updateHud();
+}
+
+/** 실점·실수·동작 틀림마다 목숨 하나. 다 잃으면 경기가 끝난다. */
+function loseLife(p) {
+  if (phase !== "playing") return;
+  lives = Math.max(0, lives - 1);
+  heartsHitUntil = performance.now() + 450;
+  const h = $("hearts"); h.classList.remove("hit"); void h.offsetWidth; h.classList.add("hit");
+  addFx("text", { x: p.x, y: p.y + ballRadius() * 1.9 }, { text: "💔 -1", color: "#fca5a5" });
+  if (lives === 0) gameOver();
 }
 
 function addFx(kind, at, opt = {}) { fx.push({ kind, at, born: performance.now(), ...opt }); }
 
 // ===========================================================================
-// 진행
+// 진행: 1분을 버티면 다음 레벨, 목숨을 다 잃으면 끝
 // ===========================================================================
+const PAUSABLE = ["countdown", "ruleIntro", "playing", "levelUp"];
+
 function setPhase(p) {
   phase = p;
   $("ovCount").classList.toggle("show", p === "countdown");
   $("ovRule").classList.toggle("show", p === "ruleIntro");
+  $("ovBanner").classList.toggle("show", p === "levelUp" || p === "out");
   $("ovPause").classList.toggle("show", p === "paused");
   $("ovLoad").classList.toggle("show", p === "loading");
   $("ovError").classList.toggle("show", p === "error");
@@ -871,9 +934,8 @@ function setPhase(p) {
   $("practiceBtns").hidden = p !== "practice";
   $("debug").classList.toggle("show", p === "test");
   $("fps").classList.toggle("show", (p === "practice" || p === "test") && mode === "camera");
-  const inGame = ["countdown", "ruleIntro", "playing", "paused"].includes(p);
-  $("pauseBtn").hidden = !inGame;
-  $("videoBtn").hidden = !(mode === "camera" && ["practice", "countdown", "ruleIntro", "playing", "paused", "test"].includes(p));
+  $("pauseBtn").hidden = ![...PAUSABLE, "paused"].includes(p);
+  $("videoBtn").hidden = !(mode === "camera" && [...PAUSABLE, "practice", "paused", "out", "test"].includes(p));
   $("privacyChip").style.display = mode === "camera" ? "" : "none";
   if (p !== "playing") showNotice("");
 }
@@ -885,9 +947,9 @@ function showScreen(id) {
 
 function resetGame() {
   resetStats();
-  gt = 0; stageIdx = 0; playedMs = 0; stageLeftMs = STAGE_SEC * 1000;
+  gt = 0; playedMs = 0; level = 1; lives = LIVES; ruleIdx = 0; ruleLeftMs = 0; levelLeftMs = LEVEL_SEC * 1000;
   balls = []; fx = []; nextSpawnGt = 0; avoidRun = 0; targetRun = 0; lastCells = [];
-  ruleSwitches = []; rule = null; handsLostSince = 0;
+  ruleSwitches = []; levelStarts = []; rule = null; handsLostSince = 0;
   updateHud();
 }
 
@@ -895,35 +957,53 @@ function startCountdown() {
   resetGame();
   rule = makeRule("color");
   renderRuleBox();
-  phaseLeftMs = COUNTDOWN_S * 1000; phaseNext = "stage"; lastCountShown = 0;
+  phaseLeftMs = COUNTDOWN_S * 1000; lastCountShown = 0;
   setPhase("countdown");
 }
 
-function enterStage(i) {
-  stageIdx = i;
-  stageLeftMs = STAGE_SEC * 1000;
-  balls = balls.filter((b) => b.done);
-  nextSpawnGt = 0; avoidRun = 0; targetRun = 0;
-  const prev = rule;
-  if (i === 0) rule = rule || makeRule("color");
-  else if (i === 1) rule = makeRule("shape");
-  else if (i === 2) rule = makeRule("gp");
-  else { rule = makeRule(pick(["color", "shape", "gp"]), prev); ruleSwitchLeftMs = DIFFS[diffKey].switchMs; }
-  if (i > 0) ruleSwitches.push(playedMs / 1000);
-  showRuleIntro(`${i + 1}단계 · ${STAGE_NAMES[i]}`, RULE_INTRO_MS);
-  sfx("whistle");
+function levelStat() {
+  return (stats.levels[level - 1] ||= { saves: 0, goals: 0, mistakes: 0, wrongs: 0, rts: [] });
 }
 
-function switchRule() {
-  const types = ["color", "shape", "gp"].filter((t) => t !== rule.type || Math.random() < 0.3);
-  rule = makeRule(pick(types), rule);
-  ruleSwitchLeftMs = DIFFS[diffKey].switchMs;
-  // 바뀌기 전 규칙으로 판정해야 하는 공이 남지 않게 치운다 (점수 없음)
+// 레벨이 오를 때 무엇이 달라지는지 알려 준다
+const LEVEL_NEWS = {
+  1: "15초마다 규칙이 바뀌어요",
+  2: "더 빨라지고, 공 2개가 자주 나와요",
+  3: "더 빨라지고, 색+모양 규칙이 나와요",
+  4: "더 빨라지고, 규칙이 10초마다 바뀌어요",
+  5: "더 빨라지고, 공 3개가 한꺼번에 나와요",
+};
+function levelNews(L) {
+  if (LEVEL_NEWS[L]) return LEVEL_NEWS[L];
+  return curveAt(L).window <= WINDOW_MIN ? "최고 속도! 끝까지 버텨요" : "더 빨라져요!";
+}
+
+function beginLevel() {
+  levelLeftMs = LEVEL_SEC * 1000;
+  ruleIdx = 0;
+  levelStat();
+  levelStarts.push(playedMs / 1000);
+  nextRule(true);
+}
+
+function nextRule(levelStart) {
+  const prev = rule;
+  let type = level === 1 ? LEVEL1_RULES[Math.min(ruleIdx, LEVEL1_RULES.length - 1)] : "any";
+  if (levelStart && level === COMBO_RULE_FROM) type = "combo";   // 새로 생긴 규칙을 먼저 보여 준다
+  if (type === "any") {
+    const pool = ["color", "shape", "gp"];
+    if (level >= COMBO_RULE_FROM) pool.push("combo");
+    type = pick(pool.filter((t) => t !== prev?.type));
+  }
+  // 레벨 1의 첫 규칙은 카운트다운 때 미리 보여 준 규칙을 그대로 쓴다
+  rule = levelStart && level === 1 && prev?.type === type ? prev : makeRule(type, prev);
+  ruleLeftMs = ruleEveryMs();
+  // 바뀌기 전 규칙으로 판정해야 하는 공이 남지 않게 치운다 (점수·목숨 변화 없음)
   balls = balls.filter((b) => b.done);
-  nextSpawnGt = 0;
-  ruleSwitches.push(playedMs / 1000);
-  showRuleIntro("규칙 바뀜!", RULE_SWITCH_PAUSE_MS);
-  sfx("whistle2");
+  nextSpawnGt = 0; avoidRun = 0; targetRun = 0;
+  if (levelStart) showRuleIntro(`레벨 ${level} · ${levelNews(level)}`, RULE_INTRO_MS);
+  else { ruleSwitches.push(playedMs / 1000); showRuleIntro("규칙 바뀜!", RULE_SWITCH_PAUSE_MS); }
+  sfx(levelStart ? "whistle" : "whistle2");
 }
 
 function showRuleIntro(eyebrow, ms) {
@@ -931,21 +1011,50 @@ function showRuleIntro(eyebrow, ms) {
   $("riEyebrow").textContent = eyebrow;
   $("riTitle").textContent = title;
   $("riSub").textContent = sub;
-  const ex = $("riExamples");
-  ex.replaceChildren(...exampleSpecs(rule).map(([spec, cls, label]) => {
+  $("riExamples").replaceChildren(...exampleSpecs(rule).map(([spec, cls, label]) => {
     const d = document.createElement("div"); d.className = cls;
     d.append(ballIcon(spec, 64), Object.assign(document.createElement("div"), { textContent: label }));
     return d;
   }));
   renderRuleBox();
-  phaseLeftMs = ms; phaseNext = "play";
+  phaseLeftMs = ms;
   setPhase("ruleIntro");
   updateHud();
 }
 
+function showBanner(eyebrow, title, text) {
+  $("bnEyebrow").textContent = eyebrow;
+  $("bnTitle").textContent = title;
+  $("bnText").textContent = text;
+}
+
+function levelUp() {
+  balls = balls.filter((b) => b.done);
+  const gained = Math.min(LIFE_REFILL, LIVES - lives);
+  lives += gained;
+  level++;
+  levelLeftMs = LEVEL_SEC * 1000;
+  showBanner(`레벨 ${level - 1} 통과!${gained ? "  ❤️ +1" : ""}`, `레벨 ${level}`, levelNews(level));
+  phaseLeftMs = LEVEL_UP_MS;
+  setPhase("levelUp");
+  sfx("levelup");
+  updateHud();
+}
+
+function gameOver() {
+  // 남은 공은 판정 없이 흐려지며 사라진다
+  for (const b of balls) if (!b.done) { b.done = true; b.result = "clear"; b.doneGt = gt; }
+  showBanner("목숨을 다 썼어요", "아웃!", `레벨 ${level}에서 ${fmtTime(playedMs)} 버텼어요`);
+  phaseLeftMs = OUT_MS;
+  setPhase("out");
+  silenceMusic();
+  sfx("out");
+}
+
 function endGame() {
+  const fromOut = phase === "out";
   balls = []; setPhase("result");
-  sfx("end");
+  if (!fromOut) sfx("end");
   silenceMusic();
   renderResult();
   showScreen("sResult");
@@ -954,7 +1063,7 @@ function endGame() {
 }
 
 function pauseGame(title = "잠깐 멈췄어요", text = "준비되면 계속하기를 누르세요.") {
-  if (!["countdown", "ruleIntro", "playing"].includes(phase)) return;
+  if (!PAUSABLE.includes(phase)) return;
   pausedFrom = phase;
   $("pauseTitle").textContent = title;
   $("pauseText").textContent = text;
@@ -973,7 +1082,7 @@ function tick(dt, now) {
     phaseLeftMs -= dt;
     const left = Math.ceil(phaseLeftMs / 1000);
     if (left !== lastCountShown && left > 0) { lastCountShown = left; $("countNum").textContent = String(left); sfx("tick"); }
-    if (phaseLeftMs <= 0) enterStage(0);
+    if (phaseLeftMs <= 0) beginLevel();
     return;
   }
   if (phase === "ruleIntro") {
@@ -981,11 +1090,22 @@ function tick(dt, now) {
     if (phaseLeftMs <= 0) setPhase("playing");
     return;
   }
+  if (phase === "levelUp") {
+    phaseLeftMs -= dt;
+    if (phaseLeftMs <= 0) beginLevel();
+    return;
+  }
+  if (phase === "out") {
+    phaseLeftMs -= dt; gt += dt;   // 마지막 공 효과가 사라지도록 시간만 흐르게 한다
+    if (phaseLeftMs <= 0) endGame();
+    return;
+  }
   if (phase === "practice") { gt += dt; return; }
   if (phase !== "playing") return;
 
-  gt += dt; playedMs += dt; stageLeftMs -= dt;
+  gt += dt; playedMs += dt; levelLeftMs -= dt; ruleLeftMs -= dt;
   updateBalls();
+  if (phase !== "playing") return;   // 방금 목숨을 다 잃었다
 
   // 손이 오래 안 보이면 자동 일시정지
   if (mode === "camera") {
@@ -1001,16 +1121,9 @@ function tick(dt, now) {
     }
   }
 
-  if (stageIdx === 3) {
-    ruleSwitchLeftMs -= dt;
-    if (ruleSwitchLeftMs <= 0 && stageLeftMs > 2000) { switchRule(); updateHud(); return; }
-  }
-  if (stageLeftMs <= 0) {
-    // 남은 공은 그대로 판정하지 않고 치운다
-    balls = balls.filter((b) => b.done);
-    if (stageIdx + 1 < STAGE_COUNT) enterStage(stageIdx + 1);
-    else endGame();
-  }
+  if (levelLeftMs <= 0) { levelUp(); return; }
+  // 레벨 끝 3초 전에는 규칙을 바꾸지 않는다
+  if (ruleLeftMs <= 0 && levelLeftMs > 3000) { ruleIdx++; nextRule(false); return; }
   updateHud();
 }
 
@@ -1348,29 +1461,47 @@ function draw(now) {
 // ===========================================================================
 // 화면 정보
 // ===========================================================================
+const ACT = { grab: "✊ 잡아!", punch: "💨 쳐내!", avoid: "🙅 피해!" };
+function actBadge(kind, small = false) {
+  return Object.assign(document.createElement("div"), { className: `act ${kind}${small ? " sm" : ""}`, textContent: ACT[kind] });
+}
+
+/** 상단 규칙: 무엇을(큰 공 그림 + 이름) 어떻게(동작 배지) 하는지 */
 function renderRuleBox(practice = false) {
   const box = $("ruleBox");
-  if (!rule) { box.className = "box rule"; box.innerHTML = '<div class="say">준비!</div>'; return; }
-  if (practice) { box.className = "box rule"; box.replaceChildren(Object.assign(document.createElement("div"), { className: "say", innerHTML: "연습해 봐요<small>잡기와 쳐내기를 한 번씩</small>" })); return; }
-  if (rule.type === "gp") {
-    box.className = "box rule three";
-    const cell = (cls, spec, verb, what) => {
-      const d = document.createElement("div"); d.className = `rcell ${cls}`;
-      const t = document.createElement("div"); t.innerHTML = `${verb}<small>${what}</small>`;
-      d.append(ballIcon(spec, 46), t); return d;
-    };
-    box.replaceChildren(
-      cell("grab", { color: rule.grab, shape: "circle" }, "잡기 ✊", `${COLORS[rule.grab].name} 공`),
-      cell("punch", { color: rule.punch, shape: "circle" }, "쳐내기 💨", `${COLORS[rule.punch].name} 공`),
-      cell("avoid", { bomb: true }, "피하기 🙅", "폭탄"),
-    );
+  if (!rule) { box.className = "box rule"; box.innerHTML = '<div class="rwhat">준비!</div>'; return; }
+  if (practice) {
+    box.className = "box rule";
+    box.innerHTML = '<div class="rtext"><div class="rwhat">연습해 봐요</div><div class="rrest">잡기와 쳐내기를 한 번씩</div></div>';
     return;
   }
-  box.className = "box rule";
-  const { title, sub } = ruleTitle(rule);
-  const spec = rule.type === "color" ? { color: rule.color, shape: "circle" } : { color: "gray", shape: rule.shape };
-  const say = document.createElement("div"); say.className = "say"; say.innerHTML = `${title}<small>${sub}</small>`;
-  box.replaceChildren(ballIcon(spec, 64), say);
+  if (rule.type === "gp") {
+    box.className = "box rule three";
+    const cell = (kind, spec, what) => {
+      const d = document.createElement("div"); d.className = "rcell";
+      const t = document.createElement("div");
+      t.append(actBadge(kind, true), Object.assign(document.createElement("small"), { textContent: what }));
+      d.append(ballIcon(spec, 60), t);
+      return d;
+    };
+    box.replaceChildren(
+      cell("grab", { color: rule.grab, shape: "circle" }, `${COLORS[rule.grab].name} 공`),
+      cell("punch", { color: rule.punch, shape: "circle" }, `${COLORS[rule.punch].name} 공`),
+      cell("avoid", { bomb: true }, "폭탄"),
+    );
+  } else {
+    box.className = "box rule";
+    let spec, what, rest;
+    if (rule.type === "color") { spec = { color: rule.color, shape: "circle" }; what = `${COLORS[rule.color].name} 공`; rest = "다른 색은 🙅 꾹 참기"; }
+    else if (rule.type === "shape") { spec = { color: "gray", shape: rule.shape }; what = `${SHAPES[rule.shape]} 모양`; rest = "색은 상관없어요 · 다른 모양은 🙅 참기"; }
+    else { spec = { color: rule.color, shape: rule.shape }; what = `${COLORS[rule.color].name} ${SHAPES[rule.shape]}`; rest = "색과 모양 둘 다 맞아야 · 나머지는 🙅 참기"; }
+    const text = document.createElement("div"); text.className = "rtext";
+    text.append(Object.assign(document.createElement("div"), { className: "rwhat", textContent: what }),
+      Object.assign(document.createElement("div"), { className: "rrest", textContent: rest }));
+    box.replaceChildren(ballIcon(spec, 84), text, actBadge("grab"));
+  }
+  // 규칙이 바뀌면 한 번 반짝인다
+  box.classList.remove("flash"); void box.offsetWidth; box.classList.add("flash");
 }
 
 function updateHud() {
@@ -1378,12 +1509,11 @@ function updateHud() {
   const ct = $("comboTag");
   ct.textContent = `콤보 ×${stats.combo}`;
   ct.classList.toggle("on", stats.combo >= 2);
-  const inGame = ["countdown", "ruleIntro", "playing", "paused", "result"].includes(phase);
-  $("stageName").textContent = phase === "practice" ? "연습" : phase === "test" ? "판정 시험" : inGame ? `${stageIdx + 1}단계 · ${STAGE_NAMES[stageIdx]}` : "준비";
-  $("timeNum").textContent = `⏱ ${Math.max(0, Math.ceil(stageLeftMs / 1000))}초`;
-  const lv = 1 + Math.min(4, Math.floor(progress() * 5));
-  $("speedTag").textContent = `속도 ${"▮".repeat(lv)}${"▯".repeat(5 - lv)}`;
-  [...$("pips").children].forEach((p, i) => { p.className = !inGame ? "" : i < stageIdx ? "done" : i === stageIdx ? "now" : ""; });
+  $("hearts").textContent = "❤️".repeat(lives) + "🤍".repeat(LIVES - lives);
+  const inGame = [...PAUSABLE, "paused", "out", "result"].includes(phase);
+  $("stageName").textContent = phase === "practice" ? "연습" : phase === "test" ? "판정 시험" : inGame ? `레벨 ${level}` : "준비";
+  $("timeNum").textContent = `⏱ ${Math.max(0, Math.ceil(levelLeftMs / 1000))}초`;
+  $("lvFill").style.width = `${inGame ? clamp01(1 - levelLeftMs / (LEVEL_SEC * 1000)) * 100 : 0}%`;
 }
 
 function showNotice(text, sub = "") {
@@ -1400,17 +1530,24 @@ function showNotice(text, sub = "") {
 // ===========================================================================
 function loadRecords() { try { return JSON.parse(localStorage.getItem(STORE_KEY) || "[]"); } catch { return []; } }
 function saveRecords(list) { try { localStorage.setItem(STORE_KEY, JSON.stringify(list.slice(-RECORD_MAX))); } catch { /* 저장 불가여도 진행 */ } }
-const titleFor = (s) => TITLES.find(([min]) => s >= min)[1];
+const titleFor = (lv) => TITLES.find(([min]) => lv >= min)[1];
 const pct = (a, b) => (b ? Math.round((a / b) * 100) : null);
 const sec = (ms) => (ms / 1000).toFixed(2);
+function fmtTime(ms) {
+  const s = Math.floor(ms / 1000);
+  return s >= 60 ? `${Math.floor(s / 60)}분 ${s % 60}초` : `${s}초`;
+}
+// 순위: 도달 레벨이 높은 순, 같으면 점수 순
+const better = (a, b) => (b.l - a.l) || (b.s - a.s);
 
 function renderResult() {
-  const rec = { n: nickname, s: stats.score, d: diffKey, m: mode, t: Date.now() };
+  const rec = { n: nickname, s: stats.score, l: level, sec: Math.round(playedMs / 1000), d: diffKey, m: mode, t: Date.now() };
   const all = loadRecords(); all.push(rec); saveRecords(all);
 
   $("rWho").textContent = `${nickname}의 경기 결과 · ${DIFFS[diffKey].label}${mode === "touch" ? " · 👆 터치" : ""}`;
-  $("rScore").textContent = stats.score.toLocaleString("ko-KR");
-  $("rTitle").textContent = `🧤 ${titleFor(stats.score)}`;
+  $("rLevel").textContent = `레벨 ${level}`;
+  $("rSub").textContent = `${fmtTime(playedMs)} 버팀 · ${stats.score.toLocaleString("ko-KR")}점`;
+  $("rTitle").textContent = `🧤 ${titleFor(level)}`;
   const sp = pct(stats.saves, stats.targets), hp = pct(stats.holds, stats.avoids);
   $("rSave").innerHTML = sp == null ? "-" : `${sp}<small>%</small>`;
   $("rSaveSub").textContent = `맞는 공 ${stats.targets}개 중 ${stats.saves}개`;
@@ -1421,25 +1558,25 @@ function renderResult() {
   if (rts.length) {
     const best = stats.rts.reduce((a, b) => (b.rt < a.rt ? b : a));
     $("rBest").innerHTML = `${sec(best.rt)}<small>초</small>`;
-    $("rBestSub").textContent = `${best.stage + 1}단계`;
+    $("rBestSub").textContent = `레벨 ${best.level}`;
   } else { $("rBest").textContent = "-"; $("rBestSub").textContent = ""; }
 
-  const rows = stats.stages.map((s, i) => {
+  const rows = stats.levels.map((s, i) => {
     const avg = s.rts.length ? `${sec(s.rts.reduce((a, b) => a + b, 0) / s.rts.length)}초` : "-";
-    return `<tr><td>${"①②③④"[i]} ${STAGE_NAMES[i]}</td><td>${s.saves}</td><td>${s.goals}</td><td>${s.mistakes}</td><td>${avg}</td></tr>`;
+    return `<tr><td>레벨 ${i + 1}</td><td>${s.saves}</td><td>${s.goals}</td><td>${s.mistakes + s.wrongs}</td><td>${avg}</td></tr>`;
   }).join("");
-  $("stageTable").innerHTML = `<tr><th>단계</th><th>세이브</th><th>실점</th><th>실수</th><th>평균</th></tr>${rows}`;
+  $("stageTable").innerHTML = `<tr><th>레벨</th><th>세이브</th><th>실점</th><th>실수</th><th>평균 반응</th></tr>${rows}`;
 
-  // 기록판: 이름별 최고점
+  // 기록판: 이름마다 가장 좋은 판
   const bestBy = new Map();
-  for (const r of all) { const k = r.n; if (!bestBy.has(k) || r.s > bestBy.get(k).s) bestBy.set(k, r); }
-  const top = [...bestBy.values()].sort((a, b) => b.s - a.s).slice(0, 10);
+  for (const r of all) if (!bestBy.has(r.n) || better(r, bestBy.get(r.n)) < 0) bestBy.set(r.n, r);
+  const top = [...bestBy.values()].sort(better).slice(0, 10);
   $("board").replaceChildren(...top.map((r, i) => {
     const li = document.createElement("li");
     if (r.n === rec.n) li.className = "me";
-    const mark = r.m === "touch" ? " 👆터치" : "";
-    li.innerHTML = `<b>${i + 1}</b><span></span>${r.s.toLocaleString("ko-KR")}`;
-    li.querySelector("span").textContent = `${r.n}${r.t === rec.t ? " (방금)" : ""}${mark}`;
+    li.innerHTML = `<b>${i + 1}</b><span></span>`;
+    li.querySelector("span").textContent = `${r.n}${r.t === rec.t ? " (방금)" : ""}${r.m === "touch" ? " 👆터치" : ""}`;
+    li.append(`레벨 ${r.l} · ${r.s.toLocaleString("ko-KR")}점`);
     return li;
   }));
   drawChart();
@@ -1447,15 +1584,15 @@ function renderResult() {
 
 function drawChart() {
   const svg = $("rtChart");
-  const total = STAGE_COUNT * STAGE_SEC;
+  const total = Math.max(LEVEL_SEC, playedMs / 1000);
   const all = stats.events.filter((e) => e.rt != null).map((e) => e.rt / 1000);
   const top = Math.max(1.2, Math.ceil((Math.max(0, ...all) + 0.1) * 5) / 5), bottom = 0.2;
   const X = (t) => 44 + (t / total) * 646, Y = (s) => 190 - ((s - bottom) / (top - bottom)) * 170;
   const ink = "#47667a", good = "#16a34a", bad = "#dc2626";
   let out = "";
   for (let s = 0.4; s <= top + 1e-6; s += top > 1.6 ? 0.4 : 0.2) out += `<line x1="44" x2="690" y1="${Y(s)}" y2="${Y(s)}" stroke="${ink}" stroke-opacity=".2"/><text x="38" y="${Y(s) + 4}" font-size="11" fill="${ink}" text-anchor="end">${s.toFixed(1)}초</text>`;
-  for (let i = 0; i < STAGE_COUNT; i++) { const t = i * STAGE_SEC; out += `<line x1="${X(t)}" x2="${X(t)}" y1="8" y2="200" stroke="${ink}" stroke-dasharray="4 4"/><text x="${X(t) + 6}" y="20" font-size="13" font-weight="900" fill="${ink}">${"①②③④"[i]}</text>`; }
-  for (const t of ruleSwitches) if (t > STAGE_SEC * 3 + 0.5) out += `<line x1="${X(t)}" x2="${X(t)}" y1="24" y2="200" stroke="${ink}" stroke-opacity=".45" stroke-dasharray="2 5"/>`;
+  levelStarts.forEach((t, i) => { out += `<line x1="${X(t)}" x2="${X(t)}" y1="8" y2="200" stroke="${ink}" stroke-dasharray="4 4"/><text x="${X(t) + 5}" y="20" font-size="13" font-weight="900" fill="${ink}">Lv${i + 1}</text>`; });
+  for (const t of ruleSwitches) out += `<line x1="${X(t)}" x2="${X(t)}" y1="24" y2="200" stroke="${ink}" stroke-opacity=".7" stroke-dasharray="3 4"/>`;
   for (const e of stats.events) {
     if (e.kind === "save") out += `<circle cx="${X(e.t)}" cy="${Y(e.rt / 1000)}" r="5.5" fill="${good}"/>`;
     else if (e.kind === "mistake" || e.kind === "wrong") out += `<text x="${X(e.t)}" y="${Y(Math.min(top, e.rt / 1000)) + 6}" font-size="17" font-weight="900" fill="${bad}" text-anchor="middle">✕</text>`;
@@ -1468,8 +1605,8 @@ function drawChart() {
 function renderBestLine() {
   const all = loadRecords();
   if (!all.length) { $("bestLine").textContent = ""; return; }
-  const best = all.reduce((a, b) => (b.s > a.s ? b : a));
-  $("bestLine").textContent = `🏆 이 기기 최고 기록: ${best.n} ${best.s.toLocaleString("ko-KR")}점`;
+  const best = [...all].sort(better)[0];
+  $("bestLine").textContent = `🏆 이 기기 최고 기록: ${best.n} · 레벨 ${best.l} (${best.s.toLocaleString("ko-KR")}점)`;
 }
 
 // ===========================================================================
@@ -1526,6 +1663,8 @@ function sfx(kind) {
     else if (kind === "hold") tone(1320, t, 0.12, "sine", 0.05);
     else if (kind === "mistake") tone(110, t, 0.3, "sawtooth", 0.08);
     else if (kind === "wrong") tone(260, t, 0.18, "square", 0.06, 200);
+    else if (kind === "levelup") { [523, 659, 784, 1046].forEach((f, i) => tone(f, t + i * 0.09, 0.16, "square", 0.07)); whistle(t + 0.42, 0.3); }
+    else if (kind === "out") { tone(392, t, 0.25, "triangle", 0.12); tone(330, t + 0.22, 0.25, "triangle", 0.12); tone(262, t + 0.44, 0.45, "triangle", 0.12); whistle(t + 0.2, 0.8); }
     else if (kind === "combo") { tone(523, t, 0.1, "square", 0.07); tone(659, t + 0.08, 0.1, "square", 0.07); tone(784, t + 0.16, 0.16, "square", 0.07); }
   } catch { /* 소리는 없어도 진행에 지장이 없다 */ }
 }
@@ -1549,13 +1688,13 @@ function scheduleStep(step, at, stepDur) {
   if (BASS[step]) tone(hz(BASS[step]), at, stepDur * 1.6, "triangle", 0.5, 0, out);
 }
 function updateMusic() {
-  const shouldPlay = soundOn && (phase === "playing" || phase === "countdown" || phase === "ruleIntro");
+  const shouldPlay = soundOn && (phase === "playing" || phase === "countdown" || phase === "ruleIntro" || phase === "levelUp");
   if (!music && !shouldPlay) return;
   if (!ensureMusic()) return;
   const t = audioCtx.currentTime;
   music.gain.gain.setTargetAtTime(shouldPlay ? MUSIC_VOLUME : 0, t, 0.12);
   if (!shouldPlay) { music.nextTime = 0; return; }
-  const bpm = stageIdx === 3 ? MUSIC_BPM_FAST : MUSIC_BPM;
+  const bpm = Math.min(MUSIC_BPM_MAX, MUSIC_BPM + (level - 1) * 6);
   const stepDur = 60 / bpm / 4;
   if (!music.nextTime || music.nextTime < t) music.nextTime = t + 0.05;
   while (music.nextTime < t + MUSIC_LOOKAHEAD) {
@@ -1761,6 +1900,7 @@ $("skipBtn").addEventListener("click", () => {
 $("pauseBtn").addEventListener("click", () => pauseGame());
 $("resumeBtn").addEventListener("click", resumeGame);
 $("quitBtn").addEventListener("click", () => goHome());
+$("endBtn").addEventListener("click", () => { if (phase === "paused") endGame(); });
 $("againBtn").addEventListener("click", () => {
   clearTimeout(resultIdleTimer);
   showScreen("sPlay");
@@ -1785,13 +1925,13 @@ $("videoBtn").addEventListener("click", () => { setVideo(!showVideo); savePref()
 document.addEventListener("keydown", (e) => {
   if (e.code !== "Space" || e.target.tagName === "INPUT") return;
   if (phase === "paused") { e.preventDefault(); resumeGame(); }
-  else if (["countdown", "ruleIntro", "playing"].includes(phase)) { e.preventDefault(); pauseGame(); }
+  else if (PAUSABLE.includes(phase)) { e.preventDefault(); pauseGame(); }
 });
 
 // 탭이 가려지면 멈추고 추론·음악을 쉰다
 document.addEventListener("visibilitychange", () => {
   if (!document.hidden) return;
-  if (["countdown", "ruleIntro", "playing"].includes(phase)) pauseGame("화면을 벗어나서 멈췄어요", "준비되면 계속하기를 누르세요.");
+  if (PAUSABLE.includes(phase)) pauseGame("화면을 벗어나서 멈췄어요", "준비되면 계속하기를 누르세요.");
   silenceMusic();
   if (phase === "result") stopCamera();
 });
@@ -1812,7 +1952,7 @@ updateHud();
 // 판정 시험: ?debug=1&sim=1 이면 카메라 없이 가짜 손 데이터로 판정을 시험할 수 있다
 if (DEBUG) {
   // 시험용: 지금 화면의 공 위치(화면 픽셀)와 해야 할 동작
-  window.__krPeek = () => ({ phase, stageIdx, score: stats.score, stats: { ...stats, events: undefined, stages: undefined, rts: undefined },
+  window.__krPeek = () => ({ phase, level, lives, score: stats.score, stats: { ...stats, events: undefined, levels: undefined, rts: undefined },
     balls: balls.filter((b) => !b.done).map((b) => { const p = ballPos(b); return { id: b.id, need: b.need, x: sx(p.x), y: sy(p.y), fly: gt < b.arriveGt }; }) });
   // 시험용: 경기 시간을 ms만큼 한 번에 돌린다 (bot은 매 단계 화면 상태를 받아 터치 이벤트를 보낼 수 있다)
   window.__krRun = (ms, step = 16, bot = null) => {
