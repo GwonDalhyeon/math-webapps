@@ -1,0 +1,172 @@
+rules_version = '2';
+// 아이스브레이킹 온라인 기록판 (프로젝트: math-webapps-board)
+// - 개인정보를 받지 않는다: 별명·점수·날짜와 익명 로그인 uid만 저장한다.
+// - 누구나 읽을 수 있고(한 번에 50건까지), 익명 로그인한 기기만 자기 기록을 쓰고 지울 수 있다.
+// - 서버 코드가 없으므로 형식·범위·빈도는 여기서 검사한다. 고친 값으로 속이는 것까지 막지는 못한다.
+// - 새 게임을 붙일 때는 gameOk()에 그 게임의 검사 함수를 추가한다.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // 서울 시각 날짜를 20261126 같은 정수로
+    function kstDay(t) {
+      let k = t + duration.value(9, 'h');
+      return k.year() * 10000 + k.month() * 100 + k.day();
+    }
+    // 기기 시계가 조금 틀려도 되도록 전날·다음 날까지 받는다
+    function dayOk(d) {
+      return d is int && (d == kstDay(request.time)
+        || d == kstDay(request.time - duration.value(1, 'd'))
+        || d == kstDay(request.time + duration.value(1, 'd')));
+    }
+    function nickOk(n) {
+      return n is string && n.size() >= 1 && n.size() <= 12 && n.trim() == n
+        && !n.matches('.*[<>].*');
+    }
+    // 모든 게임에 공통인 칸. expireAt(보관 기한 30일)은 기기 시계 차이를 하루까지 허용한다.
+    function baseOk(d) {
+      return d.uid == request.auth.uid
+        && d.game is string && d.board is string
+        && nickOk(d.nick)
+        && dayOk(d.day)
+        && d.rank is int
+        && d.createdAt == request.time
+        && d.expireAt is timestamp
+        && d.expireAt > request.time + duration.value(29, 'd')
+        && d.expireAt < request.time + duration.value(31, 'd');
+    }
+
+    // 슈퍼 세이브! : 도달 레벨이 먼저, 같으면 점수 순 (rank = 레벨 × 1천만 + 점수)
+    // keeperCore는 공개 기록(scores)과 그룹 기록(groups) 모두에 쓰는 값 검사다.
+    function keeperCore(d) {
+      return d.mode in ['camera', 'touch']
+        && d.level is int && d.level >= 1 && d.level <= 100
+        && d.sec is int && d.sec >= 0 && d.sec <= 7200 && (d.level - 1) * 60 <= d.sec
+        && d.score is int && d.score >= 0 && d.score <= (d.sec + 5) * 1000
+        && d.rank == d.level * 10000000 + d.score;
+    }
+    function keeperOk(d) {
+      let fields = ['game', 'board', 'nick', 'rank', 'score', 'level', 'sec', 'mode', 'day', 'uid', 'createdAt', 'expireAt'];
+      return d.keys().hasOnly(fields) && d.keys().hasAll(fields)
+        && d.board in ['easy', 'normal', 'hard']
+        && keeperCore(d);
+    }
+
+    function gameOk(d) {
+      return d.game == 'keeper-reflex' && keeperOk(d);
+    }
+
+    // 그룹 안의 게임 기록 한 칸: 키는 '게임~난이도', 값은 그 사람의 가장 좋은 판 + 판 수(plays) + 마지막 시각(t)
+    function groupGameOk(x) {
+      let fields = ['rank', 'score', 'level', 'sec', 'mode', 'plays', 't'];
+      return x.keys().hasOnly(fields) && x.keys().hasAll(fields)
+        && x.plays is int && x.plays >= 1 && x.plays <= 999
+        && x.t == request.time;
+    }
+    function groupKeyOk(ch, g) {
+      return (ch.hasOnly(['keeper-reflex~easy']) && groupGameOk(g['keeper-reflex~easy']) && keeperCore(g['keeper-reflex~easy']))
+        || (ch.hasOnly(['keeper-reflex~normal']) && groupGameOk(g['keeper-reflex~normal']) && keeperCore(g['keeper-reflex~normal']))
+        || (ch.hasOnly(['keeper-reflex~hard']) && groupGameOk(g['keeper-reflex~hard']) && keeperCore(g['keeper-reflex~hard']));
+    }
+
+    // 같은 기기(익명 uid)는 10초에 한 건. limits/{uid}를 기록과 같은 일괄 쓰기로 갱신해야 한다.
+    function limitPath() {
+      return /databases/$(database)/documents/limits/$(request.auth.uid);
+    }
+    function rateOk(scoreId) {
+      return getAfter(limitPath()).data.sid == scoreId
+        && getAfter(limitPath()).data.last == request.time
+        && (!exists(limitPath()) || request.time > get(limitPath()).data.last + duration.value(10, 's'));
+    }
+
+    match /scores/{scoreId} {
+      // 개수 세기(count)로 "상위 몇 %"를 계산하려면 개수 제한 없는 질의를 허용해야 한다.
+      // 앱은 목록을 15건씩만 읽는다.
+      allow list: if true;
+      allow create: if request.auth != null
+        && baseOk(request.resource.data)
+        && gameOk(request.resource.data)
+        && rateOk(scoreId);
+      // 자기 기록은 언제든, 보관 기한(30일)이 지난 기록은 누구나 지울 수 있다.
+      // 무료 요금제에는 TTL 자동 삭제가 없어서, 게임을 연 기기가 지난 기록을 조금씩 정리한다.
+      allow delete: if request.auth != null
+        && (resource.data.uid == request.auth.uid || resource.data.expireAt < request.time);
+    }
+
+    match /limits/{uid} {
+      allow create, update: if request.auth != null && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['last', 'sid'])
+        && request.resource.data.last == request.time
+        && request.resource.data.sid is string
+        && !exists(/databases/$(database)/documents/scores/$(request.resource.data.sid))
+        && existsAfter(/databases/$(database)/documents/scores/$(request.resource.data.sid));
+    }
+
+    // =======================================================================
+    // 그룹: 6자리 코드를 아는 사람끼리 1시간 동안 기록을 함께 본다.
+    // groups/{코드} = { createdAt, m: { uid: { n: 별명, at: 마지막 쓴 시각, g: { '게임~난이도': 기록 } } } }
+    // 그룹 하나가 문서 하나라서 순위를 한 번 볼 때 읽기 1번이면 된다.
+    // =======================================================================
+    function groupExpired(g) {
+      return request.time > g.createdAt + duration.value(1, 'h');
+    }
+    // 그룹 만들기는 같은 기기에서 1분에 한 번
+    function groupLimitPath() {
+      return /databases/$(database)/documents/glimits/$(request.auth.uid);
+    }
+    function groupRateOk(code) {
+      return getAfter(groupLimitPath()).data.code == code
+        && getAfter(groupLimitPath()).data.last == request.time
+        && (!exists(groupLimitPath()) || request.time > get(groupLimitPath()).data.last + duration.value(60, 's'));
+    }
+    // 한 사람 칸. old는 바꾸기 전 칸(처음 들어오면 null). 바뀐 게임 기록은 한 번에 하나만.
+    function memberOk(e, old) {
+      let g = e.get('g', {});
+      let og = old == null ? {} : old.get('g', {});
+      let ch = g.diff(og).affectedKeys();
+      return e.keys().hasOnly(['n', 'at', 'g'])
+        && nickOk(e.n)
+        && e.at == request.time
+        && g.size() <= 30
+        && (old == null || request.time > old.at + duration.value(3, 's'))
+        && (ch.size() == 0 || (ch.size() == 1 && groupKeyOk(ch, g)));
+    }
+    function groupFresh(code) {
+      let d = request.resource.data;
+      return code.matches('^[0-9]{6}$')
+        && d.keys().hasOnly(['createdAt', 'm'])
+        && d.createdAt == request.time
+        && d.m.keys().hasOnly([request.auth.uid])
+        && memberOk(d.m[request.auth.uid], null)
+        && groupRateOk(code);
+    }
+    // 자기 칸만 고치거나(들어오기·기록) 지울(나가기) 수 있다. 60명까지.
+    function memberUpdateOk() {
+      let uid = request.auth.uid;
+      let d = request.resource.data;
+      return d.diff(resource.data).affectedKeys().hasOnly(['m'])
+        && d.m.diff(resource.data.m).affectedKeys().hasOnly([uid])
+        && d.m.size() <= 60
+        && (!(uid in d.m) || memberOk(d.m[uid], resource.data.m.get(uid, null)));
+    }
+
+    match /groups/{code} {
+      // 코드를 알아야 열 수 있다. 목록은 기한(1시간)이 지난 그룹만 볼 수 있다(정리용).
+      allow get: if true;
+      allow list: if resource.data.createdAt < request.time - duration.value(1, 'h');
+      // 새 코드이거나, 같은 코드의 그룹이 이미 끝났으면 새로 만들 수 있다
+      allow create: if request.auth != null && groupFresh(code);
+      allow update: if request.auth != null
+        && ((groupExpired(resource.data) && groupFresh(code))
+          || (!groupExpired(resource.data) && memberUpdateOk()));
+      allow delete: if request.auth != null && groupExpired(resource.data);
+    }
+
+    match /glimits/{uid} {
+      allow create, update: if request.auth != null && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['last', 'code'])
+        && request.resource.data.last == request.time
+        && request.resource.data.code is string
+        && getAfter(/databases/$(database)/documents/groups/$(request.resource.data.code)).data.createdAt == request.time;
+    }
+  }
+}

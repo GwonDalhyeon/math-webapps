@@ -9,3 +9,6 @@ local-resources/
 /gifted/Fractal.txt
 /gifted/fractal/
 
+
+# Firebase 에뮬레이터·CLI 기록
+*-debug.log

@@ -51,6 +51,13 @@
     .move b { display: block; font-size: 17px; }
     .move span { display: block; font-size: 13px; color: var(--muted); margin-top: 2px; }
     .hero .origin { font-size: 14px; color: var(--muted); margin: 12px 0 0; }
+    /* 그룹에 들어가 있으면 동작 소개 자리에 그룹 순위를 보여 준다 */
+    .hero.in-group .moves, .hero.in-group .origin { display: none; }
+    .hero.in-group img { width: min(150px, 17vh); height: min(150px, 17vh); }
+    .hero.in-group h2 { font-size: 44px; }
+    .hero-group { width: 100%; text-align: left; background: var(--panel2); border: 2px solid var(--soft); border-radius: 14px; padding: 10px 14px; }
+    .hero-group h3 { font-size: 18px; }
+    .hero-group .note { font-size: 13px; }
     .setup { flex: 1.1; min-width: 0; background: var(--panel); border: 3px solid var(--line); border-radius: 26px; box-shadow: 0 6px 0 var(--line); padding: 18px 22px; display: flex; flex-direction: column; gap: 12px; overflow: auto; }
     .setup h3 { margin: 0; font-size: 20px; }
     .seg { display: flex; gap: 8px; }
@@ -63,6 +70,10 @@
     .ladder div:nth-child(1) { margin-top: 24px; } .ladder div:nth-child(2) { margin-top: 16px; } .ladder div:nth-child(3) { margin-top: 8px; }
     .speed-note { font-size: 15px; font-weight: 800; color: var(--muted); margin: -4px 0 0; }
     .nick { min-height: 48px; border-radius: 12px; border: 2px solid var(--soft); background: var(--panel2); padding: 0 12px; font-size: 17px; width: 100%; }
+    .nick-row { display: flex; gap: 10px; }
+    .nick-row .nick { flex: 1; width: auto; min-width: 0; }
+    .online-opt { display: flex; align-items: center; gap: 8px; min-height: 48px; padding: 0 14px; border: 2px solid var(--soft); border-radius: 12px; background: var(--panel2); font-size: 15px; font-weight: 900; white-space: nowrap; cursor: pointer; }
+    .online-opt input { width: 22px; height: 22px; margin: 0; accent-color: var(--line); }
     .notes { font-size: 13px; line-height: 1.5; color: var(--muted); margin: 0; background: var(--panel2); border-radius: 12px; padding: 8px 12px; }
     .notes b { color: var(--ink); }
     .best-line { font-size: 14px; color: var(--muted); margin: 0; }
@@ -182,6 +193,14 @@
     .board li span { flex: 1; }
     .board li.me { background: var(--accent); border-radius: 8px; font-weight: 900; padding: 4px 6px; }
     .board .note { font-size: 12px; color: var(--muted); margin: 6px 0 0; }
+    .board-top { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+    .board-top h3 { margin: 0; }
+    .tabs { display: flex; gap: 4px; margin-left: auto; }
+    .tabs button { min-height: 40px; padding: 2px 10px; border: 2px solid var(--line); border-radius: 10px; background: var(--panel2); font-size: 14px; font-weight: 900; cursor: pointer; }
+    .tabs button[aria-pressed="true"] { background: var(--accent); }
+    .board-sub { font-size: 13px; font-weight: 800; color: var(--muted); margin: 0 0 2px; }
+    .board .empty { color: var(--muted); font-size: 15px; padding: 8px 2px; border: 0; }
+    .linkbtn { border: 0; background: none; padding: 4px 2px; min-height: 32px; font-size: 12px; font-weight: 800; color: var(--muted); text-decoration: underline; cursor: pointer; }
     .res-actions { display: flex; gap: 10px; }
     .res-actions .btn { flex: 1; min-height: 56px; font-size: 19px; }
     .fine { font-size: 12px; color: var(--muted); margin: 0; }
@@ -221,6 +240,7 @@
     <a class="home" href="../">← 아이스브레이킹</a>
     <h1>슈퍼 세이브! <small>맞는 공만 잡아라</small></h1>
     <div class="acts">
+      <span id="groupSlot"></span>
       <button class="btn small" id="videoBtn" type="button" hidden>🎥 영상 숨기기</button>
       <button class="btn small" id="soundBtn" type="button">🔊 소리 끄기</button>
       <button class="btn small" id="pauseBtn" type="button" hidden>⏸ 일시정지</button>
@@ -239,6 +259,11 @@
         <div class="move"><div class="ico">🙅</div><b>꾹 참기</b><span>틀린 공은 그냥 보내기</span></div>
       </div>
       <p class="origin">F1 드라이버와 골키퍼가 순발력을 기르는 연습에서 따온 게임입니다.</p>
+      <div class="hero-group board" id="heroGroup" hidden>
+        <h3 id="hgTitle">👥 그룹 순위</h3>
+        <ol id="hgList"></ol>
+        <p class="note" id="hgNote"></p>
+      </div>
     </div>
     <div class="setup">
       <h3>난이도</h3>
@@ -255,9 +280,12 @@
         <div><b>레벨 4~</b>10초마다 규칙<br />공 3개까지</div>
       </div>
       <p class="speed-note">⏱ 1분을 버티면 다음 레벨! ❤️ 5개로 시작해서 놓치거나 틀리면 하나씩 잃어요.</p>
-      <input class="nick" id="nick" maxlength="12" placeholder="기록판에 쓸 이름 (선택)" autocomplete="off" />
+      <div class="nick-row">
+        <input class="nick" id="nick" maxlength="12" placeholder="기록판에 쓸 별명 (실명 말고)" autocomplete="off" />
+        <label class="online-opt"><input type="checkbox" id="onlineOpt" checked /> 🌐 온라인 기록판에 올리기</label>
+      </div>
       <p class="best-line" id="bestLine"></p>
-      <p class="notes">🔒 카메라 영상은 <b>이 기기 안에서만</b> 처리되며 저장하거나 전송하지 않습니다.<br />⚠️ 주변 친구와 <b>1m 이상</b> 떨어지고, 카메라 쪽으로 세게 치지 마세요.</p>
+      <p class="notes">🌐 켜 두면 <b>별명·레벨·점수·날짜</b>가 30일 동안 온라인 기록판에 올라가 누구나 볼 수 있어요. <b>실명·학번은 쓰지 마세요.</b><br />🔒 카메라 영상은 <b>이 기기 안에서만</b> 처리되며 저장하거나 전송하지 않습니다.<br />⚠️ 주변 친구와 <b>1m 이상</b> 떨어지고, 카메라 쪽으로 세게 치지 마세요.</p>
       <p class="alert" id="startAlert" role="status"></p>
       <div class="actions">
         <button class="btn primary" id="camBtn" type="button">📷 카메라로 시작</button>
@@ -369,7 +397,20 @@
     </div>
     <div class="res-side">
       <div class="box tbl"><h3>레벨별 기록</h3><table id="stageTable"></table></div>
-      <div class="box board"><h3>🏆 이 기기 기록판</h3><ol id="board"></ol><p class="note">기록은 이 기기 안에만 저장됩니다.</p></div>
+      <div class="box board">
+        <div class="board-top">
+          <h3>🏆 기록판</h3>
+          <div class="tabs" id="boardTabs">
+            <button type="button" data-tab="group" aria-pressed="false" hidden>👥 그룹</button>
+            <button type="button" data-tab="today" aria-pressed="false">🌐 오늘</button>
+            <button type="button" data-tab="month" aria-pressed="false">🌐 30일</button>
+            <button type="button" data-tab="local" aria-pressed="true">📱 이 기기</button>
+          </div>
+        </div>
+        <p class="board-sub" id="boardSub"></p>
+        <ol id="board"></ol>
+        <p class="note" id="boardNote"></p>
+      </div>
       <div class="res-actions">
         <button class="btn primary" id="againBtn" type="button">🔁 다시 하기</button>
         <button class="btn" id="homeBtn" type="button">처음으로</button>
@@ -379,6 +420,9 @@
 </div>
 
 <script type="module">
+// 온라인 기록판(여러 게임 공용). Firebase SDK는 이 모듈이 필요할 때 따로 받으므로, 인터넷이 없어도 게임은 열린다.
+import * as OnlineBoard from "../../assets/online-board.js";
+import { mountGroup } from "../../assets/online-group.js";
 // ===========================================================================
 // 판정·진행 상수 (수업 직전에 손볼 값이라 한곳에 모은다)
 // 거리 단위: 카메라 화면 높이 = 1, 가로는 0..aspect. 속도는 "화면 높이/초".
@@ -466,6 +510,7 @@ const STORE_KEY = "keeper-reflex-records-v2";   // v2: 레벨 기록 (v1은 4단
 const NICK_KEY  = "keeper-reflex-nick-v1";
 const PREF_KEY  = "keeper-reflex-pref-v1";
 const RECORD_MAX = 500;
+const GAME_ID = "keeper-reflex";               // 온라인 기록판에서 이 게임을 가리키는 이름 (firestore.rules와 같아야 한다)
 
 // 공
 const COLORS = {
@@ -508,6 +553,7 @@ let diffKey = "normal";
 let showVideo = DEFAULT_SHOW_VIDEO;
 let soundOn = true;
 let nickname = "";
+let nickEntered = false;   // 별명을 비우면 "손님"으로 기록하되 온라인에는 올리지 않는다
 let landmarker = null, stream = null, rafId = 0, starting = false;
 let lastVideoTime = -1, lastFrameAt = 0;
 let audioCtx = null, music = null;
@@ -1567,20 +1613,207 @@ function renderResult() {
   }).join("");
   $("stageTable").innerHTML = `<tr><th>레벨</th><th>세이브</th><th>실점</th><th>실수</th><th>평균 반응</th></tr>${rows}`;
 
-  // 기록판: 이름마다 가장 좋은 판
-  const bestBy = new Map();
-  for (const r of all) if (!bestBy.has(r.n) || better(r, bestBy.get(r.n)) < 0) bestBy.set(r.n, r);
-  const top = [...bestBy.values()].sort(better).slice(0, 10);
-  $("board").replaceChildren(...top.map((r, i) => {
-    const li = document.createElement("li");
-    if (r.n === rec.n) li.className = "me";
-    li.innerHTML = `<b>${i + 1}</b><span></span>`;
-    li.querySelector("span").textContent = `${r.n}${r.t === rec.t ? " (방금)" : ""}${r.m === "touch" ? " 👆터치" : ""}`;
-    li.append(`레벨 ${r.l} · ${r.s.toLocaleString("ko-KR")}점`);
-    return li;
-  }));
+  lastRec = rec;
+  startUpload(rec);
+  setBoardTab(group.inGroup() ? "group" : OnlineBoard.getOptIn() ? "today" : "local");
   drawChart();
 }
+
+// ---------------------------------------------------------------------------
+// 기록판: 👥 그룹 · 🌐 오늘 · 🌐 30일(온라인, 지금 난이도) · 📱 이 기기
+// ---------------------------------------------------------------------------
+let lastRec = null;
+let upload = null;          // { state: "sending" | "done", res }
+let uploadPromise = null;
+let boardTab = "local";
+let boardToken = 0;         // 탭을 빨리 바꿨을 때 늦게 온 응답을 버린다
+const GROUP_TOP = 5;        // 그룹 순위는 위 5명만 이름을 보이고, 나는 몇 위인지 따로 알려 준다
+
+function startUpload(rec) {
+  upload = null; uploadPromise = null;
+  if (!OnlineBoard.getOptIn() && !group.inGroup()) { renderBoardNote(); return; }
+  upload = { state: "sending" };
+  uploadPromise = OnlineBoard.submitScore(GAME_ID, {
+    board: rec.d, mode: rec.m, nick: nickEntered ? rec.n : "", level: rec.l, score: rec.s, sec: rec.sec,
+    rank: rec.l * 10000000 + rec.s,
+  }).then((res) => {
+    if (res.group) group.setDoc(res.group.ok ? res.group.doc : null);   // 올리면서 받은 그룹 상태로 바로 갱신 (따로 읽지 않는다)
+    if (lastRec === rec) upload = { state: "done", res };
+    return res;
+  });
+  uploadPromise.then(() => { if (lastRec === rec) { renderBoardNote(); if (boardTab !== "local") renderBoard(); } });
+  renderBoardNote();
+}
+
+function boardRow(rank, who, what, me) {
+  const li = document.createElement("li");
+  if (me) li.className = "me";
+  li.innerHTML = `<b>${rank}</b><span></span>`;
+  li.querySelector("span").textContent = who;
+  li.append(what);
+  return li;
+}
+const boardMsg = (text) => Object.assign(document.createElement("li"), { className: "empty", textContent: text });
+const fmtGroupCode = (c) => `${c.slice(0, 3)} ${c.slice(3)}`;
+
+// 그룹 순위 목록 (시작 화면과 결과 화면이 함께 쓴다) → { items: [li…], note }
+function groupBoardItems(doc, board, justNow = false) {
+  const list = OnlineBoard.groupRanking(doc, GAME_ID, board);
+  const items = list.slice(0, GROUP_TOP).map((r, i) => boardRow(i + 1,
+    `${r.nick}${r.mine && justNow ? " (방금)" : ""}${r.mode === "touch" ? " 👆터치" : ""}${r.plays > 1 ? ` · ${r.plays}판` : ""}`,
+    `레벨 ${r.level} · ${r.score.toLocaleString("ko-KR")}점`, r.mine));
+  const myIdx = list.findIndex((r) => r.mine);
+  if (myIdx >= GROUP_TOP) {
+    const me = list[myIdx];
+    items.push(boardRow("나", `${list.length}명 중 ${myIdx + 1}위`, `레벨 ${me.level} · ${me.score.toLocaleString("ko-KR")}점`, true));
+  }
+  if (!list.length) items.push(boardMsg(`${DIFFS[board].label} 난이도 기록이 아직 없어요. 첫 기록을 남겨 보세요!`));
+  const waiting = doc.members.length - list.length;
+  const note = myIdx < 0 ? `아직 내 기록이 없어요.${waiting > 0 ? ` 기록 없는 사람 ${waiting}명` : ""}`
+    : `나는 ${list.length}명 중 ${myIdx + 1}위${waiting > 0 ? ` · 기록 없는 사람 ${waiting}명` : ""}`;
+  return { items, note };
+}
+
+// 시작 화면: 그룹에 들어가 있으면 동작 소개 대신 그룹 순위
+function renderHeroGroup() {
+  const doc = group.getDoc();
+  const on = group.inGroup() && !!doc;
+  $("sStart").querySelector(".hero").classList.toggle("in-group", on);
+  $("heroGroup").hidden = !on;
+  if (!on) return;
+  $("hgTitle").textContent = `👥 그룹 ${fmtGroupCode(doc.code)} · ${DIFFS[diffKey].label} 순위`;
+  const { items, note } = groupBoardItems(doc, diffKey);
+  $("hgList").replaceChildren(...items);
+  $("hgNote").textContent = note;
+}
+
+function setBoardTab(tab) {
+  if (tab === "group" && !group.inGroup()) tab = OnlineBoard.getOptIn() ? "today" : "local";
+  boardTab = tab;
+  for (const b of $("boardTabs").children) {
+    if (b.dataset.tab === "group") b.hidden = !group.inGroup();
+    b.setAttribute("aria-pressed", String(b.dataset.tab === tab));
+  }
+  renderBoard();
+}
+
+async function renderBoard() {
+  const token = ++boardToken;
+  const rec = lastRec;
+  if (!rec) return;
+  if (boardTab === "local") {
+    $("boardSub").textContent = "📱 이 기기에서 한 판 · 이름마다 가장 좋은 판";
+    const bestBy = new Map();
+    for (const r of loadRecords()) if (!bestBy.has(r.n) || better(r, bestBy.get(r.n)) < 0) bestBy.set(r.n, r);
+    const top = [...bestBy.values()].sort(better).slice(0, 10);
+    $("board").replaceChildren(...top.map((r, i) => boardRow(i + 1,
+      `${r.n}${r.t === rec.t ? " (방금)" : ""}${r.m === "touch" ? " 👆터치" : ""}`,
+      `레벨 ${r.l} · ${r.s.toLocaleString("ko-KR")}점`, r.n === rec.n)));
+    return;
+  }
+  if (boardTab === "group") {
+    $("board").replaceChildren(boardMsg("그룹 기록을 불러오는 중…"));
+    if (uploadPromise) await uploadPromise;
+    if (token !== boardToken) return;
+    const doc = group.getDoc();
+    if (!doc) { $("boardSub").textContent = "👥 그룹"; $("board").replaceChildren(boardMsg("그룹 기록을 불러오지 못했어요.")); return; }
+    $("boardSub").textContent = `👥 그룹 ${fmtGroupCode(doc.code)} · ${DIFFS[rec.d].label} 난이도 · ${doc.members.length}명`;
+    const { items } = groupBoardItems(doc, rec.d, !!upload?.res?.group?.ok);
+    $("board").replaceChildren(...items);
+    return;
+  }
+  const today = boardTab === "today";
+  $("boardSub").textContent = `🌐 ${today ? "오늘" : "최근 30일"} 온라인 · ${DIFFS[rec.d].label} 난이도`;
+  $("board").replaceChildren(boardMsg("기록을 불러오는 중…"));
+  if (uploadPromise) await uploadPromise;   // 방금 올린 판이 목록에 들어가도록 기다린다
+  const res = await OnlineBoard.fetchBoard(GAME_ID, rec.d, { today });
+  if (token !== boardToken) return;
+  if (!res.ok) {
+    $("board").replaceChildren(boardMsg(res.reason === "offline" ? "인터넷에 연결되지 않아 온라인 기록판을 볼 수 없어요." : "온라인 기록판을 불러오지 못했어요."));
+    return;
+  }
+  const justId = upload?.res?.ok ? upload.res.id : null;
+  const items = res.rows.map((r, i) => boardRow(i + 1,
+    `${r.nick}${r.id === justId ? " (방금)" : ""}${r.mode === "touch" ? " 👆터치" : ""}`,
+    `레벨 ${r.level} · ${r.score.toLocaleString("ko-KR")}점`, r.mine && r.nick === rec.n));
+  if (!res.rows.length) items.push(boardMsg(today ? "오늘 올라온 기록이 아직 없어요." : "올라온 기록이 아직 없어요."));
+  $("board").replaceChildren(...items);
+  // 이번 판이 목록 밖이면 정확한 순위 대신 "상위 몇 %"만 (개수만 세서 읽기를 아낀다)
+  const myRank = rec.l * 10000000 + rec.s;
+  const shown = justId && res.rows.some((r) => r.id === justId);
+  const beaten = res.rows.length >= 10 && myRank <= res.rows[res.rows.length - 1].rank;
+  if (!shown && beaten) {
+    const li = boardMsg("이번 판 위치를 세는 중…");
+    $("board").append(li);
+    const range = await OnlineBoard.rankRange(GAME_ID, rec.d, myRank, { today, counted: !!justId });
+    if (token !== boardToken) return;
+    li.textContent = range.ok ? `이번 판: ${today ? "오늘" : "30일 동안"} 올라온 ${range.total.toLocaleString("ko-KR")}판 중 상위 ${range.pct}%` : "";
+  }
+}
+
+// 기록판 아래 한 줄: 그룹·온라인에 올렸는지, 왜 못 올렸는지, 내 기록 지우기
+function renderBoardNote() {
+  const note = $("boardNote");
+  note.replaceChildren();
+  if (!upload) { note.textContent = "🌐 온라인 기록판 올리기가 꺼져 있어 이 기기에만 저장했어요."; return; }
+  if (upload.state === "sending") { note.textContent = group.inGroup() ? "👥 그룹과 🌐 온라인에 올리는 중…" : "🌐 온라인 기록판에 올리는 중…"; return; }
+  const res = upload.res;
+  const why = {
+    off: "온라인 기록판 올리기는 꺼져 있어요.",
+    nick: `${res.problem} 온라인에는 올리지 않았어요.`,
+    rate: "방금 올린 기록이 있어 이번 판은 온라인에 올리지 않았어요. (10초에 한 번)",
+    offline: "인터넷에 연결되지 않아 이 기기에만 저장했어요.",
+    rejected: "기록 형식이 맞지 않아 온라인에 올리지 못했어요.",
+    error: "온라인에 올리지 못했어요.",
+  };
+  let text = res.ok ? `🌐 온라인 기록판에 올렸어요(${OnlineBoard.KEEP_DAYS_TEXT} 보관). ` : `🌐 ${why[res.reason] || why.error} `;
+  if (res.group) {
+    const g = res.group;
+    text = (g.ok ? "👥 그룹에 올렸어요. " : g.reason === "gone" ? "👥 그룹이 끝나 그룹에는 올리지 않았어요. "
+      : g.reason === "nick" ? "👥 별명이 없거나 맞지 않아 그룹에 올리지 못했어요. " : "👥 그룹에 올리지 못했어요. ") + text;
+  }
+  note.textContent = text;
+  const del = Object.assign(document.createElement("button"), { type: "button", className: "linkbtn", textContent: "이 기기에서 올린 온라인 기록 지우기" });
+  del.addEventListener("click", deleteMyOnline);
+  note.append(del);
+}
+
+async function deleteMyOnline() {
+  if (!confirm("이 기기에서 올린 슈퍼 세이브! 온라인 기록을 모두 지울까요?\n(이 기기 기록판과 그룹 순위는 그대로 남아요)")) return;
+  $("boardNote").textContent = "🌐 지우는 중…";
+  const res = await OnlineBoard.deleteMine(GAME_ID);
+  $("boardNote").textContent = res.ok ? `🌐 이 기기에서 올린 온라인 기록 ${res.count}건을 지웠어요.` : "🌐 지우지 못했어요. 인터넷 연결을 확인해 주세요.";
+  if (res.ok && upload?.res?.ok) upload.res = { ...upload.res, ok: false, reason: "deleted" };
+  if (boardTab === "today" || boardTab === "month") renderBoard();
+}
+
+for (const b of $("boardTabs").children) b.addEventListener("click", () => setBoardTab(b.dataset.tab));
+
+// 그룹 버튼(상단). 게임 중에는 읽지 않고, 눌렀을 때 경기 중이면 일시정지한다.
+const group = mountGroup({
+  slot: $("groupSlot"),
+  buttonClass: "btn small",
+  getNick: () => $("nick").value.trim() || (nickEntered ? nickname : ""),
+  setNick: (n) => {
+    $("nick").value = n;
+    if (phase === "result") { nickname = n; nickEntered = true; }
+    try { localStorage.setItem(NICK_KEY, n); } catch { /* 무시 */ }
+  },
+  isIdle: () => phase === "intro" || phase === "result",
+  onOpen: () => { if (PAUSABLE.includes(phase)) pauseGame(); },
+  onChange: () => {
+    renderHeroGroup();
+    if (phase === "result") {
+      const tabBtn = [...$("boardTabs").children].find((b) => b.dataset.tab === "group");
+      const wasHidden = tabBtn.hidden;
+      tabBtn.hidden = !group.inGroup();
+      if (boardTab === "group" && !group.inGroup()) setBoardTab(OnlineBoard.getOptIn() ? "today" : "local");
+      else if (wasHidden && group.inGroup()) setBoardTab("group");
+      else if (boardTab === "group" && !uploadPromise) renderBoard();
+      else if (boardTab === "group") uploadPromise.then(() => { if (boardTab === "group") renderBoard(); });
+    }
+  },
+});
 
 function drawChart() {
   const svg = $("rtChart");
@@ -1836,6 +2069,8 @@ function goHome(alert = "") {
   showScreen("sStart");
   $("startAlert").textContent = alert;
   renderBestLine();
+  renderHeroGroup();
+  group.refresh();   // 마지막으로 읽은 지 20초가 안 됐으면 읽지 않는다
 }
 
 // ===========================================================================
@@ -1875,6 +2110,7 @@ field.addEventListener("pointercancel", () => { pointer = null; });
 // 이벤트
 // ===========================================================================
 function readStart() {
+  nickEntered = $("nick").value.trim() !== "";
   nickname = $("nick").value.trim() || "손님";
   try { localStorage.setItem(NICK_KEY, nickname); } catch { /* 무시 */ }
   // 소리는 사용자가 누른 이 순간에만 시작할 수 있다
@@ -1884,6 +2120,7 @@ function savePref() { try { localStorage.setItem(PREF_KEY, JSON.stringify({ diff
 function setDiff(k) {
   diffKey = k;
   for (const b of $("diffSeg").children) b.setAttribute("aria-pressed", String(b.dataset.diff === k));
+  renderHeroGroup();
 }
 for (const b of $("diffSeg").children) b.addEventListener("click", () => { setDiff(b.dataset.diff); savePref(); });
 
@@ -1910,6 +2147,7 @@ $("againBtn").addEventListener("click", () => {
 });
 $("homeBtn").addEventListener("click", () => goHome());
 $("nick").addEventListener("keydown", (e) => { if (e.key === "Enter") $("camBtn").click(); });
+$("onlineOpt").addEventListener("change", (e) => OnlineBoard.setOptIn(e.target.checked));
 
 $("soundBtn").addEventListener("click", () => {
   soundOn = !soundOn;
@@ -1946,6 +2184,7 @@ try {
   if (DIFFS[pref.diff]) setDiff(pref.diff);
   if (typeof pref.video === "boolean") setVideo(pref.video);
 } catch { /* 무시 */ }
+$("onlineOpt").checked = OnlineBoard.getOptIn();
 renderBestLine();
 updateHud();
 

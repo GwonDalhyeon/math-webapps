@@ -116,6 +116,7 @@
 - JavaScript 모듈을 사용할 경우 상대경로로 동작해야 한다.
 - 3D 시각화가 필요하면 `assets/vendor/three/`에 파일로 들어 있는 three.js(r184)를 importmap으로 연결해 사용한다. `npm install`이나 빌드 과정은 추가하지 않는다. 자세한 기준은 `docs/agent-guides/3d-webapp.md`에 있다.
 - 카메라 동작 인식이 필요하면 MediaPipe Tasks for Web을 사용할 수 있다. 모델과 WASM은 `assets/vendor/` 아래에 두고 필요한 순간에 나눠 받는다. GitHub Pages는 COOP/COEP 헤더를 설정할 수 없어 멀티스레드 WASM을 전제로 하지 않는다. 자세한 기준은 `docs/agent-guides/camera-webapp.md`에 있다.
+- 예외: 아이스브레이킹 게임의 온라인 기록판과 1시간짜리 그룹(6자리 코드)은 Firebase 프로젝트 `math-webapps-board`(익명 로그인 + Firestore, 서버 코드 없음)를 쓴다. 공용 모듈은 `assets/online-board.js`·`assets/online-group.js`, 보안 규칙은 `firebase/`에 있다. 별명·점수·날짜만 저장하고 실명·학번·영상은 받지 않는다. 자세한 기준은 `docs/agent-guides/icebreaking-webapp.md`의 「온라인 기록판」에 있다. 그 밖의 앱에는 서버·DB·로그인 금지 원칙이 그대로 적용된다.
 
 사용 금지:
 
