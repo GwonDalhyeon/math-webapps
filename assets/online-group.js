@@ -2,12 +2,14 @@
 // 그룹 버튼 + 대화상자 (아이스브레이킹 게임 공용 화면)
 // - 상단에 👥 버튼을 두고, 그룹에 들어가 있으면 "👥 482 913 · 7명 · 52분"을 계속 보여 준다.
 // - 그룹 순위는 게임 화면이 그린다. 이 모듈은 그룹 문서를 읽어 onChange(doc)로 넘겨준다.
-// - 읽기를 아끼려고: 게임 중·화면이 가려졌을 때는 읽지 않고, 20초마다 읽되 바뀐 게 없으면 40초·60초로 늦춘다.
-// 사용: const group = mountGroup({ slot, buttonClass, getNick, setNick, isIdle, onOpen, onChange });
+// - 읽기를 아끼려고: 화면이 가려졌을 때는 읽지 않고, 20초마다 읽되 바뀐 게 없으면 40초·60초로 늦춘다.
+//   게임 중에는 isPlaying()이 참일 때만 30초 이상 간격으로 읽는다(아니면 읽지 않는다).
+// 사용: const group = mountGroup({ slot, buttonClass, getNick, setNick, isIdle, isPlaying, onOpen, onChange });
 // ===========================================================================
 import * as OB from "./online-board.js";
 
 const BASE_MS = 20000, SLOW_MS = 40000, SLOWEST_MS = 60000, TICK_MS = 5000;
+const PLAY_MS = 30000;   // 게임 중에도 순위 패널을 보여 주는 게임은 30초마다(바뀐 게 없으면 더 늦게) 읽는다
 
 const CSS = `
 .og-btn .og-code { font-variant-numeric: tabular-nums; letter-spacing: .5px; }
@@ -49,7 +51,7 @@ function reasonText(res) {
   }[res.reason] || "잠시 뒤 다시 해 주세요.";
 }
 
-export function mountGroup({ slot, buttonClass = "", getNick = () => "", setNick = () => {}, isIdle = () => true, onOpen = () => {}, onChange = () => {} }) {
+export function mountGroup({ slot, buttonClass = "", getNick = () => "", setNick = () => {}, isIdle = () => true, isPlaying = () => false, onOpen = () => {}, onChange = () => {} }) {
   if (!document.getElementById("og-style")) {
     document.head.append(Object.assign(document.createElement("style"), { id: "og-style", textContent: CSS }));
   }
@@ -182,10 +184,10 @@ export function mountGroup({ slot, buttonClass = "", getNick = () => "", setNick
   document.addEventListener("keydown", (e) => { if (e.key === "Escape" && ov.classList.contains("on")) close(); });
 
   // 그룹 문서 읽기: 화면을 보고 있고 게임 중이 아닐 때만, 바뀐 게 없으면 점점 덜 자주
-  async function refresh(force = false) {
+  async function refresh(force = false, minMs = BASE_MS) {
     if (!OB.getGroup()) { if (doc) setDoc(null); return; }
     if (reading) return;
-    const wait = streak >= 6 ? SLOWEST_MS : streak >= 3 ? SLOW_MS : BASE_MS;
+    const wait = Math.max(minMs, streak >= 6 ? SLOWEST_MS : streak >= 3 ? SLOW_MS : BASE_MS);
     if (!force && Date.now() - lastReadAt < wait) return;
     reading = true;
     try {
@@ -201,6 +203,7 @@ export function mountGroup({ slot, buttonClass = "", getNick = () => "", setNick
       renderButton();
       if (!OB.getGroup()) { if (doc) setDoc(null); }
       else if (!document.hidden && isIdle()) await refresh();
+      else if (!document.hidden && isPlaying()) await refresh(false, PLAY_MS);
       schedule();
     }, TICK_MS);
   }

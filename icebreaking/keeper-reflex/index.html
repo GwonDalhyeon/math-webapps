@@ -118,6 +118,87 @@
     .field { flex: 1; min-height: 0; position: relative; margin: 0 14px 14px; border-radius: 20px; overflow: hidden; border: 3px solid var(--line); box-shadow: var(--shadow); background: #16324a; touch-action: none; }
     .field > canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
     .field video { display: none; }
+    /* ===== 경기 화면 양옆 패널: 카메라(4:3) 밖 빈 공간에만 놓는다 ===== */
+    .side-panel { position: absolute; z-index: 2; display: none; flex-direction: column; justify-content: center; gap: 12px; pointer-events: none; color: var(--ink); }
+    .side-panel.on { display: flex; }
+    .spbox { background: var(--panel); border: 3px solid var(--line); border-radius: 14px; box-shadow: 0 4px 0 var(--line); padding: 10px 9px; min-width: 0; }
+    .spbox h4 { margin: 0; font-size: 15px; font-weight: 950; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .sp-sub { font-size: 12px; font-weight: 800; color: var(--muted); margin: 3px 0 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .sp-rank { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+    .sp-rank li { position: relative; padding: 6px 5px; border-bottom: 1px solid var(--soft); border-radius: 8px; min-width: 0; }
+    .sp-rank .who { display: flex; gap: 5px; align-items: baseline; min-width: 0; font-size: 15px; font-weight: 850; }
+    .sp-rank .rk { color: var(--muted); min-width: 14px; }
+    .sp-rank .nm { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .sp-rank .tag { font-size: 10px; font-weight: 800; white-space: nowrap; color: var(--muted); }
+    .sp-rank .rec { display: flex; justify-content: space-between; gap: 6px; font-size: 13px; color: var(--muted); margin-top: 2px; padding-left: 19px; white-space: nowrap; }
+    .sp-rank .rec b { color: var(--ink); font-variant-numeric: tabular-nums; }
+    .sp-rank li.me { background: var(--accent); border-bottom-color: transparent; }
+    .sp-rank li.gap { padding: 0 5px; border: 0; color: var(--muted); font-size: 13px; text-align: center; }
+    .sp-rise { display: none; position: absolute; right: 4px; top: 4px; background: #dcfce7; color: #166534; border: 1px solid #86c99b; border-radius: 6px; padding: 0 5px; font-size: 11px; font-weight: 900; }
+    .sp-rise.on { display: block; }
+    .sp-note { font-size: 11px; color: var(--muted); margin: 8px 0 0; line-height: 1.35; }
+    .sp-tname { font-size: 22px; font-weight: 950; margin: 10px 0 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .sp-trec { font-size: 12px; color: var(--muted); font-weight: 700; white-space: nowrap; }
+    .sp-tleft { font-size: 18px; font-weight: 950; margin: 10px 0 6px; line-height: 1.2; }
+    .sp-tleft small { display: block; font-size: 12px; font-weight: 800; color: var(--muted); }
+    .sp-track { height: 12px; border-radius: 8px; background: var(--soft); overflow: hidden; }
+    .sp-track i { display: block; height: 100%; width: 0; background: var(--good); transition: width .3s; }
+    .sp-pct { text-align: right; font-size: 11px; font-weight: 850; color: var(--muted); margin-top: 3px; }
+    .sp-avg { font-size: 26px; font-weight: 950; letter-spacing: -1px; margin: 8px 0 2px; white-space: nowrap; line-height: 1.15; }
+    .sp-avg span { display: block; font-size: 14px; letter-spacing: 0; }
+    .sp-fast { font-size: 12px; color: var(--muted); font-weight: 700; white-space: nowrap; }
+    .sp-graph { position: relative; height: 96px; margin-top: 12px; border-bottom: 1px solid var(--soft); display: flex; gap: 3px; align-items: flex-end; }
+    .sp-graph .bar { flex: 1; min-width: 0; position: relative; background: #8e9da5; border-radius: 3px 3px 0 0; }
+    .sp-graph .bar.fast { background: var(--good); }
+    .sp-graph .bar em { display: none; position: absolute; left: 50%; transform: translateX(-50%); bottom: 3px; font-style: normal; font-size: 11px; font-weight: 900; color: #fff; }
+    .sp-graph .mean { position: absolute; left: 0; right: 0; border-top: 2px dashed var(--ink); pointer-events: none; }
+    .sp-graph .empty { align-self: center; width: 100%; text-align: center; font-size: 12px; color: var(--muted); font-weight: 800; }
+    .sp-cap { font-size: 10px; color: var(--muted); white-space: nowrap; margin-top: 6px; letter-spacing: -.3px; }
+    /* 넓은 화면(프로젝터) */
+    .side-panel.wide { gap: 20px; }
+    .side-panel.wide .spbox { padding: 18px 16px; }
+    .side-panel.wide h4 { font-size: 24px; }
+    .side-panel.wide .sp-sub { font-size: 16px; margin-bottom: 14px; }
+    .side-panel.wide .sp-rank { gap: 7px; }
+    .side-panel.wide .sp-rank li { display: flex; align-items: center; gap: 8px; padding: 12px 8px; }
+    .side-panel.wide .sp-rank .who { font-size: 21px; gap: 8px; min-width: 0; }
+    .side-panel.wide .sp-rank .rec { margin: 0 0 0 auto; padding: 0; gap: 10px; font-size: 18px; }
+    .side-panel.wide .sp-rank .tag { font-size: 12px; }
+    .side-panel.wide .sp-rise { position: static; font-size: 13px; }
+    .side-panel.wide .sp-note { font-size: 15px; }
+    .side-panel.wide .sp-tname { font-size: 32px; margin-top: 14px; }
+    .side-panel.wide .sp-trec { font-size: 18px; }
+    .side-panel.wide .sp-tleft { font-size: 32px; margin: 14px 0 10px; }
+    .side-panel.wide .sp-tleft small { font-size: 16px; }
+    .side-panel.wide .sp-pct { font-size: 15px; }
+    .side-panel.wide .sp-avg { font-size: 42px; }
+    .side-panel.wide .sp-avg span { display: inline; font-size: 22px; margin-right: 8px; }
+    .side-panel.wide .sp-fast { font-size: 18px; }
+    .side-panel.wide .sp-graph { height: 170px; gap: 6px; margin-top: 20px; }
+    .side-panel.wide .sp-graph .bar em { display: block; font-size: 13px; }
+    .side-panel.wide .sp-graph .bar:not(.lbl) em { display: none; }
+    .side-panel.wide .sp-cap { font-size: 15px; }
+    /* 세로 화면: 카메라 위아래 띠 */
+    .side-panel.strip { flex-direction: row; gap: 12px; justify-content: stretch; }
+    .side-panel.strip .spbox { flex: 1; padding: 8px 12px; display: flex; flex-direction: column; justify-content: center; }
+    .side-panel.strip .sp-sub, .side-panel.strip .sp-note, .side-panel.strip .tag, .side-panel.strip .sp-trec, .side-panel.strip .sp-fast, .side-panel.strip .sp-cap, .side-panel.strip .sp-pct { display: none; }
+    .side-panel.strip .sp-rank { grid-template-columns: repeat(4, 1fr); gap: 7px; margin-top: 6px; }
+    .side-panel.strip .sp-rank li { background: var(--panel2); border: 1px solid var(--soft); padding: 4px 7px; }
+    .side-panel.strip .sp-rank li.me { background: var(--accent); border-color: #c4a11e; }
+    .side-panel.strip .sp-rank li.gap { display: none; }
+    .side-panel.strip .sp-rank .who { font-size: 14px; }
+    .side-panel.strip .sp-rank .rec { font-size: 12px; padding-left: 19px; justify-content: flex-start; }
+    .side-panel.strip .sp-rise { top: 3px; right: 5px; border: 0; background: none; padding: 0; font-size: 12px; }
+    .side-panel.strip .sp-target h4, .side-panel.strip .sp-tname, .side-panel.strip .sp-tleft { display: inline; font-size: 16px; margin: 0; }
+    .side-panel.strip .sp-tline { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .side-panel.strip .sp-tname::before { content: " "; }
+    .side-panel.strip .sp-tleft::before { content: " · "; font-weight: 500; }
+    .side-panel.strip .sp-tleft small { display: none; }
+    .side-panel.strip .sp-track { margin-top: 10px; }
+    .side-panel.strip .sp-react h4 { display: none; }
+    .side-panel.strip .sp-avg { font-size: 20px; margin: 0; }
+    .side-panel.strip .sp-avg span { display: inline; font-size: 15px; margin-right: 4px; }
+    .side-panel.strip .sp-graph { height: 42px; margin-top: 6px; gap: 6px; }
     .chip { position: absolute; left: 12px; bottom: 12px; font-size: 13px; font-weight: 700; color: #fff; background: #0009; border-radius: 10px; padding: 5px 10px; z-index: 2; }
     .notice { position: absolute; top: 14px; left: 50%; transform: translateX(-50%); z-index: 3; font-size: 24px; font-weight: 900; background: #fffdf5f2; border: 3px solid var(--line); border-left: 8px solid #f59e0b; border-radius: 14px; padding: 8px 20px; white-space: nowrap; display: none; }
     .notice.show { display: block; }
@@ -313,6 +394,29 @@
     <div class="field" id="field">
       <video id="video" playsinline muted></video>
       <canvas id="scene"></canvas>
+      <!-- 양옆 패널: 왼쪽 기록판, 오른쪽 다음 목표·반응 속도 (세로 화면에서는 위아래 띠) -->
+      <aside class="side-panel" id="spLeft" aria-label="기록판">
+        <div class="spbox sp-board">
+          <h4 id="spBoardTitle">🏆 기록판</h4>
+          <div class="sp-sub" id="spBoardSub"></div>
+          <ol class="sp-rank" id="spRank"></ol>
+          <div class="sp-note" id="spBoardNote"></div>
+        </div>
+      </aside>
+      <aside class="side-panel" id="spRight" aria-label="다음 목표와 반응 속도">
+        <div class="spbox sp-target">
+          <div class="sp-tline"><h4>🎯 다음 목표</h4><div class="sp-tname" id="spTName"></div><div class="sp-trec" id="spTRec"></div><div class="sp-tleft" id="spTLeft"></div></div>
+          <div class="sp-track"><i id="spTBar"></i></div>
+          <div class="sp-pct" id="spTPct"></div>
+        </div>
+        <div class="spbox sp-react">
+          <h4>⚡ 반응 속도</h4>
+          <div class="sp-avg" id="spAvg"></div>
+          <div class="sp-fast" id="spFast"></div>
+          <div class="sp-graph" id="spGraph"></div>
+          <div class="sp-cap">짧을수록 빨라요 · 최근 10개</div>
+        </div>
+      </aside>
       <span class="chip" id="privacyChip">🔒 영상은 이 기기 밖으로 나가지 않아요</span>
       <div class="notice" id="notice"></div>
       <div class="fps" id="fps"></div>
@@ -610,6 +714,7 @@ function layoutView() {
   let h = H, w = H * aspect;
   if (w > W) { w = W; h = W / aspect; }
   view = { x: (W - w) / 2, y: (H - h) / 2, w, h, W, H, dpr };
+  placeSidePanels();
 }
 const sx = (X) => view.x + X * view.h;
 const sy = (Y) => view.y + Y * view.h;
@@ -988,7 +1093,7 @@ function setPhase(p) {
 
 function showScreen(id) {
   for (const s of document.querySelectorAll(".screen")) s.classList.toggle("on", s.id === id);
-  if (id === "sPlay") requestAnimationFrame(layoutView);
+  if (id === "sPlay") { requestAnimationFrame(layoutView); prepareLiveBoard(); }
 }
 
 function resetGame() {
@@ -1005,6 +1110,7 @@ function startCountdown() {
   renderRuleBox();
   phaseLeftMs = COUNTDOWN_S * 1000; lastCountShown = 0;
   setPhase("countdown");
+  prepareLiveBoard();
 }
 
 function levelStat() {
@@ -1560,6 +1666,186 @@ function updateHud() {
   $("stageName").textContent = phase === "practice" ? "연습" : phase === "test" ? "판정 시험" : inGame ? `레벨 ${level}` : "준비";
   $("timeNum").textContent = `⏱ ${Math.max(0, Math.ceil(levelLeftMs / 1000))}초`;
   $("lvFill").style.width = `${inGame ? clamp01(1 - levelLeftMs / (LEVEL_SEC * 1000)) * 100 : 0}%`;
+  updateSidePanels();
+}
+
+// ===========================================================================
+// 경기 화면 양옆 패널
+// - 왼쪽: 기록판(그룹 → 없으면 오늘 → 오늘 기록이 없으면 30일 → 인터넷이 안 되면 이 기기). 경기 중인 내 줄이 순위 안에서 움직인다.
+// - 오른쪽: 다음 목표(바로 위 사람까지 남은 점수) + 반응 속도(평균·가장 빠름·최근 10개 막대)
+// - 경기 중에는 시작 때 받아 둔 기록과 지금 내 점수로만 계산한다. 그룹만 30초마다 새로 읽는다.
+// ===========================================================================
+const SP_MIN_SIDE = 130, SP_MIN_STRIP = 90, SP_MAX_W = 360;
+const SP_RT_LO = 300;      // 반응 속도 막대의 바닥(ms). 차이가 잘 보이게 0이 아니라 0.3초 근처부터 그린다
+let spLayoutKey = "";
+let live = { kind: "none", title: "🏆 기록판", sub: "", others: [], myBest: null, total: 0 };
+let liveToken = 0, liveKey = "", livePos = 0, riseUntil = 0;
+const fmtN = (n) => n.toLocaleString("ko-KR");
+const PLAY_PHASES = [...PAUSABLE, "paused", "out"];
+
+// 카메라(4:3) 밖 빈 공간에 패널을 놓는다: 양옆이 넉넉하면 옆에, 세로 화면이면 위아래 띠로, 둘 다 좁으면 숨긴다
+function placeSidePanels() {
+  const { x, y, W, H } = view;
+  const key = `${Math.round(W)}x${Math.round(H)}|${Math.round(x)}|${Math.round(y)}`;
+  if (key === spLayoutKey) return;
+  spLayoutKey = key;
+  const L = $("spLeft"), R = $("spRight");
+  for (const p of [L, R]) { p.className = "side-panel"; p.removeAttribute("style"); }
+  const chip = $("privacyChip");   // 영상 안내 칩은 카메라 영역 안쪽 아래로
+  chip.style.left = `${Math.round(x + 12)}px`;
+  chip.style.bottom = `${Math.round(y + 12)}px`;
+  if (x >= SP_MIN_SIDE) {
+    const pw = Math.min(x - 20, SP_MAX_W), wide = pw >= 250;
+    const gap = `${Math.round((x - pw) / 2)}px`;
+    L.className = R.className = `side-panel on${wide ? " wide" : ""}`;
+    Object.assign(L.style, { top: "10px", bottom: "10px", width: `${pw}px`, left: gap });
+    Object.assign(R.style, { top: "10px", bottom: "10px", width: `${pw}px`, right: gap });
+  } else if (y >= SP_MIN_STRIP) {
+    const ph = Math.min(y - 20, 170);
+    const gap = `${Math.round((y - ph) / 2)}px`;
+    L.className = R.className = "side-panel on strip";
+    Object.assign(L.style, { left: "10px", right: "10px", height: `${ph}px`, top: gap });
+    Object.assign(R.style, { left: "10px", right: "10px", height: `${ph}px`, bottom: gap });
+  }
+  liveKey = "";
+  updateSidePanels();
+}
+
+// 게임을 시작할 때 비교할 기록판을 정한다 (그룹은 읽기 없이 가지고 있는 문서로, 공개 기록판은 2분 캐시)
+async function prepareLiveBoard() {
+  const token = ++liveToken;
+  livePos = 0; riseUntil = 0;
+  if (group.inGroup() && group.getDoc()) { buildLiveFromGroup(group.getDoc()); return; }
+  const board = diffKey;
+  live = { kind: "loading", title: "🌐 오늘 기록", sub: `${DIFFS[board].label} · 불러오는 중…`, others: [], myBest: null, total: 0 };
+  liveKey = ""; updateSidePanels();
+  let res = await OnlineBoard.fetchBoard(GAME_ID, board, { today: true });
+  let kind = "today";
+  if (res.ok && !res.rows.length) { res = await OnlineBoard.fetchBoard(GAME_ID, board, {}); kind = "month"; }
+  if (token !== liveToken) return;
+  if (res.ok) {
+    const isMe = (r) => r.mine && r.nick === nickname;
+    live = { kind, title: kind === "today" ? "🌐 오늘 기록" : "🌐 30일 기록", sub: `${DIFFS[board].label} 난이도`,
+      others: res.rows.filter((r) => !isMe(r)), myBest: res.rows.find(isMe) || null, total: res.rows.length };
+  } else {
+    // 인터넷이 안 되면 이 기기 기록과 비교한다
+    const bestBy = new Map();
+    for (const r of loadRecords()) if (r.d === board && (!bestBy.has(r.n) || better(r, bestBy.get(r.n)) < 0)) bestBy.set(r.n, r);
+    const rows = [...bestBy.values()].sort(better).map((r) => ({ nick: r.n, level: r.l, score: r.s, mode: r.m, rank: r.l * 10000000 + r.s }));
+    live = { kind: "local", title: "📱 이 기기 기록", sub: `${DIFFS[board].label} · 인터넷 연결 없음`,
+      others: rows.filter((r) => r.nick !== nickname).slice(0, 10), myBest: rows.find((r) => r.nick === nickname) || null, total: rows.length };
+  }
+  liveKey = ""; updateSidePanels();
+}
+
+function buildLiveFromGroup(doc) {
+  const list = OnlineBoard.groupRanking(doc, GAME_ID, diffKey);
+  live = { kind: "group", title: "👥 그룹 순위", sub: `${DIFFS[diffKey].label} · ${doc.members.length}명`,
+    others: list.filter((r) => !r.mine), myBest: list.find((r) => r.mine) || null, total: doc.members.length };
+  liveKey = ""; updateSidePanels();
+}
+
+function liveNow() {
+  const playing = PLAY_PHASES.includes(phase);
+  const lv = playing ? level : 1, sc = playing ? stats.score : 0;
+  return { level: lv, score: sc, rank: lv * 10000000 + sc, playing };
+}
+
+// 매 프레임 불리지만, 보이는 값이 바뀔 때만 다시 그린다
+function updateSidePanels() {
+  if (!$("spLeft").classList.contains("on")) return;
+  const me = liveNow();
+  const now = performance.now();
+  const key = `${me.rank}|${live.kind}|${live.others.length}|${live.sub}|${stats.rts?.length}|${Math.ceil(levelLeftMs / 1000)}|${riseUntil > now}`;
+  if (key === liveKey) return;
+  liveKey = key;
+  renderLiveBoard(me, now);
+  renderTarget(me);
+  renderReaction();
+}
+
+function renderLiveBoard(me, now) {
+  const others = live.others;   // rank 큰 순
+  const pos = 1 + others.filter((o) => o.rank >= me.rank).length;   // 같은 기록이면 먼저 세운 사람이 위
+  if (me.playing && livePos && pos < livePos) riseUntil = now + 2500;
+  livePos = pos;
+  const limited = live.kind !== "group" && others.length >= 10 && pos > others.length;   // 공개 기록판은 위 10명만 알고 있다
+  const meRow = { me: true, nick: "나", level: me.level, score: me.score, pos };
+  const merged = [...others.slice(0, pos - 1).map((o, i) => ({ ...o, pos: i + 1 })), meRow, ...others.slice(pos - 1).map((o, i) => ({ ...o, pos: pos + 1 + i }))];
+  // 옆 패널은 5줄, 세로 화면 띠는 칩 4개. 내가 그 밖이면 맨 끝 자리에 내 줄을 넣는다.
+  const slots = $("spLeft").classList.contains("strip") ? 4 : 5;
+  const rows = pos <= slots ? merged.slice(0, slots) : [...merged.slice(0, slots - 1), { gap: true }, meRow];
+  $("spBoardTitle").textContent = live.title;
+  $("spBoardSub").textContent = live.sub;
+  $("spRank").replaceChildren(...rows.map((r) => {
+    const li = document.createElement("li");
+    if (r.gap) { li.className = "gap"; li.textContent = "⋯"; return li; }
+    if (r.me) li.className = "me";
+    li.innerHTML = `<div class="who"><span class="rk"></span><span class="nm"></span><span class="tag"></span></div><div class="rec"><span></span><b></b></div><span class="sp-rise"></span>`;
+    li.querySelector(".rk").textContent = r.me && limited ? "–" : r.pos;
+    li.querySelector(".nm").textContent = r.me ? "🔴 나" : r.nick;
+    li.querySelector(".tag").textContent = r.me ? (me.playing ? "경기 중" : "") : r.mode === "touch" ? "👆" : "";
+    li.querySelector(".rec span").textContent = `Lv${r.level}`;
+    li.querySelector(".rec b").textContent = fmtN(r.score);
+    if (r.me && riseUntil > now) { const b = li.querySelector(".sp-rise"); b.textContent = `⬆ ${pos}위!`; b.classList.add("on"); }
+    return li;
+  }));
+  $("spBoardNote").textContent =
+    live.kind === "loading" ? "기록을 불러오는 중…"
+    : !others.length ? (live.myBest ? "내 최고 기록과 겨뤄요" : "첫 기록에 도전해 보세요!")
+    : live.kind === "group" ? `${others.length + 1}명 중 ${pos}위 · 30초마다 갱신`
+    : limited ? `위 ${others.length}명 밖 · 더 올라가 봐요!`
+    : `${others.length + 1}명 중 ${pos}위`;
+}
+
+function renderTarget(me) {
+  const above = live.others.filter((o) => o.rank >= me.rank);
+  let t = above[above.length - 1], name, rec = "", left, sub = "", pct;
+  if (!t && live.myBest && live.myBest.rank >= me.rank) { t = live.myBest; name = "내 최고 기록"; }
+  if (t) {
+    name ||= t.nick;
+    rec = `Lv${t.level} · ${fmtN(t.score)}점`;
+    if (t.level === me.level) { left = `${fmtN(t.score - me.score + 1)}점 남음`; pct = me.score / (t.score + 1); }
+    else { left = `레벨 ${t.level}까지`; sub = `다음 레벨까지 ${Math.max(0, Math.ceil(levelLeftMs / 1000))}초`; pct = me.playing ? clamp01(1 - levelLeftMs / (LEVEL_SEC * 1000)) : 0; }
+  } else if (live.myBest) { name = "🏆 최고 기록 경신!"; rec = `이전 Lv${live.myBest.level} · ${fmtN(live.myBest.score)}점`; left = "계속 가 봐요!"; pct = 1; }
+  else if (live.others.length) { name = "🥇 지금 1위!"; left = "1위를 지켜요"; pct = 1; }
+  else { name = "첫 기록에 도전!"; left = live.kind === "loading" ? "" : "버틸수록 기록이 올라가요"; pct = 0; }
+  $("spTName").textContent = name;
+  $("spTRec").textContent = rec;
+  $("spTLeft").replaceChildren(left || "");
+  if (sub) $("spTLeft").append(Object.assign(document.createElement("small"), { textContent: sub }));
+  $("spTBar").style.width = `${clamp01(pct) * 100}%`;
+  $("spTPct").textContent = `${Math.round(clamp01(pct) * 100)}%`;
+}
+
+function renderReaction() {
+  const rts = (stats.rts || []).map((r) => r.rt);
+  const g = $("spGraph");
+  if (!rts.length) {
+    $("spAvg").replaceChildren(Object.assign(document.createElement("span"), { textContent: "평균" }), "-");
+    $("spFast").textContent = "공을 잡으면 나와요";
+    g.replaceChildren(Object.assign(document.createElement("div"), { className: "empty", textContent: "아직 잡은 공이 없어요" }));
+    return;
+  }
+  const avg = rts.reduce((a, b) => a + b, 0) / rts.length, fastest = Math.min(...rts);
+  $("spAvg").replaceChildren(Object.assign(document.createElement("span"), { textContent: "평균" }), `${(avg / 1000).toFixed(2)}초`);
+  $("spFast").textContent = `가장 빠름 ${(fastest / 1000).toFixed(2)}초`;
+  const last = rts.slice(-10);
+  // 바닥은 0.3초(더 빠른 공이 있으면 그보다 0.1초 아래), 꼭대기는 1초(더 느린 공이 있으면 그 위)
+  const lo = Math.max(0, Math.min(SP_RT_LO, Math.min(...last) - 100));
+  const hi = Math.max(1000, Math.max(...last) + 50);
+  const H = (ms) => clamp01((ms - lo) / (hi - lo)) * 100;
+  const lastFast = Math.min(...last);
+  const bars = last.map((ms, i) => {
+    const b = document.createElement("div");
+    b.className = `bar${ms < avg ? " fast" : ""}${i === last.length - 1 || ms === lastFast ? " lbl" : ""}`;
+    b.style.height = `${Math.max(4, H(ms))}%`;
+    b.append(Object.assign(document.createElement("em"), { textContent: (ms / 1000).toFixed(2) }));
+    return b;
+  });
+  const mean = Object.assign(document.createElement("div"), { className: "mean" });
+  mean.style.bottom = `${H(avg)}%`;
+  g.replaceChildren(...bars, mean);
 }
 
 function showNotice(text, sub = "") {
@@ -1800,9 +2086,14 @@ const group = mountGroup({
     try { localStorage.setItem(NICK_KEY, n); } catch { /* 무시 */ }
   },
   isIdle: () => phase === "intro" || phase === "result",
+  isPlaying: () => [...PAUSABLE, "practice"].includes(phase),   // 경기 화면 왼쪽 그룹 순위용
   onOpen: () => { if (PAUSABLE.includes(phase)) pauseGame(); },
-  onChange: () => {
+  onChange: (doc) => {
     renderHeroGroup();
+    if ($("sPlay").classList.contains("on")) {
+      if (doc && group.inGroup()) buildLiveFromGroup(doc);
+      else if (live.kind === "group") prepareLiveBoard();   // 그룹이 끝났으면 공개 기록판으로
+    }
     if (phase === "result") {
       const tabBtn = [...$("boardTabs").children].find((b) => b.dataset.tab === "group");
       const wasHidden = tabBtn.hidden;
