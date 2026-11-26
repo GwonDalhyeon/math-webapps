@@ -1725,8 +1725,9 @@ async function prepareLiveBoard() {
   if (token !== liveToken) return;
   if (res.ok) {
     const isMe = (r) => r.mine && r.nick === nickname;
+    // 위 15건 안에 내 기록이 없으면 이 기기에 남은 내 최고 기록(같은 별명·난이도)을 쓴다
     live = { kind, title: kind === "today" ? "🌐 오늘 기록" : "🌐 30일 기록", sub: `${DIFFS[board].label} 난이도`,
-      others: res.rows.filter((r) => !isMe(r)), myBest: res.rows.find(isMe) || null, total: res.rows.length };
+      others: res.rows.filter((r) => !isMe(r)), myBest: res.rows.find(isMe) || localBest(board), total: res.rows.length };
   } else {
     // 인터넷이 안 되면 이 기기 기록과 비교한다
     const bestBy = new Map();
@@ -1736,6 +1737,13 @@ async function prepareLiveBoard() {
       others: rows.filter((r) => r.nick !== nickname).slice(0, 10), myBest: rows.find((r) => r.nick === nickname) || null, total: rows.length };
   }
   liveKey = ""; updateSidePanels();
+}
+
+// 이 기기에 남은 내(지금 별명) 최고 기록
+function localBest(board) {
+  let best = null;
+  for (const r of loadRecords()) if (r.d === board && r.n === nickname && (!best || better(r, best) < 0)) best = r;
+  return best && { nick: best.n, level: best.l, score: best.s, mode: best.m, rank: best.l * 10000000 + best.s };
 }
 
 function buildLiveFromGroup(doc) {
@@ -1765,12 +1773,16 @@ function updateSidePanels() {
 }
 
 function renderLiveBoard(me, now) {
-  const others = live.others;   // rank 큰 순
-  const pos = 1 + others.filter((o) => o.rank >= me.rank).length;   // 같은 기록이면 먼저 세운 사람이 위
-  if (me.playing && livePos && pos < livePos) riseUntil = now + 2500;
+  const others = live.others;   // rank 큰 순 (내 기록은 뺀 다른 사람들)
+  // 내 줄은 한 줄: 이번 판이 내 최고 기록을 넘기 전까지는 최고 기록을, 넘으면 이번 판을 보여 준다
+  const best = live.myBest;
+  const showLive = !best || me.rank > best.rank;
+  const mine = showLive ? me : best;
+  const pos = 1 + others.filter((o) => o.rank >= mine.rank).length;   // 같은 기록이면 먼저 세운 사람이 위
+  if (me.playing && showLive && livePos && pos < livePos) riseUntil = now + 2500;
   livePos = pos;
   const limited = live.kind !== "group" && others.length >= 10 && pos > others.length;   // 공개 기록판은 위 10명만 알고 있다
-  const meRow = { me: true, nick: "나", level: me.level, score: me.score, pos };
+  const meRow = { me: true, nick: "나", level: mine.level, score: mine.score, pos };
   const merged = [...others.slice(0, pos - 1).map((o, i) => ({ ...o, pos: i + 1 })), meRow, ...others.slice(pos - 1).map((o, i) => ({ ...o, pos: pos + 1 + i }))];
   // 옆 패널은 5줄, 세로 화면 띠는 칩 4개. 내가 그 밖이면 맨 끝 자리에 내 줄을 넣는다.
   const slots = $("spLeft").classList.contains("strip") ? 4 : 5;
@@ -1783,8 +1795,9 @@ function renderLiveBoard(me, now) {
     if (r.me) li.className = "me";
     li.innerHTML = `<div class="who"><span class="rk"></span><span class="nm"></span><span class="tag"></span></div><div class="rec"><span></span><b></b></div><span class="sp-rise"></span>`;
     li.querySelector(".rk").textContent = r.me && limited ? "–" : r.pos;
-    li.querySelector(".nm").textContent = r.me ? "🔴 나" : r.nick;
-    li.querySelector(".tag").textContent = r.me ? (me.playing ? "경기 중" : "") : r.mode === "touch" ? "👆" : "";
+    li.querySelector(".nm").textContent = r.me ? (showLive ? "🔴 나" : "⭐ 나") : r.nick;
+    li.querySelector(".tag").textContent = !r.me ? (r.mode === "touch" ? "👆" : "")
+      : !showLive ? "최고 기록" : best && me.playing ? "경신 중!" : me.playing ? "경기 중" : "";
     li.querySelector(".rec span").textContent = `Lv${r.level}`;
     li.querySelector(".rec b").textContent = fmtN(r.score);
     if (r.me && riseUntil > now) { const b = li.querySelector(".sp-rise"); b.textContent = `⬆ ${pos}위!`; b.classList.add("on"); }
@@ -1799,15 +1812,17 @@ function renderLiveBoard(me, now) {
 }
 
 function renderTarget(me) {
+  // 먼저 내 최고 기록을 넘고, 그다음 바로 위 사람을 따라잡는다
   const above = live.others.filter((o) => o.rank >= me.rank);
-  let t = above[above.length - 1], name, rec = "", left, sub = "", pct;
-  if (!t && live.myBest && live.myBest.rank >= me.rank) { t = live.myBest; name = "내 최고 기록"; }
+  let t = null, name, rec = "", left, sub = "", pct;
+  if (live.myBest && live.myBest.rank >= me.rank) { t = live.myBest; name = "내 최고 기록"; }
+  else t = above[above.length - 1];
   if (t) {
     name ||= t.nick;
     rec = `Lv${t.level} · ${fmtN(t.score)}점`;
     if (t.level === me.level) { left = `${fmtN(t.score - me.score + 1)}점 남음`; pct = me.score / (t.score + 1); }
     else { left = `레벨 ${t.level}까지`; sub = `다음 레벨까지 ${Math.max(0, Math.ceil(levelLeftMs / 1000))}초`; pct = me.playing ? clamp01(1 - levelLeftMs / (LEVEL_SEC * 1000)) : 0; }
-  } else if (live.myBest) { name = "🏆 최고 기록 경신!"; rec = `이전 Lv${live.myBest.level} · ${fmtN(live.myBest.score)}점`; left = "계속 가 봐요!"; pct = 1; }
+  } else if (live.myBest) { name = "🏆 최고 기록 경신!"; rec = `이전 Lv${live.myBest.level} · ${fmtN(live.myBest.score)}점`; left = "지금 1위예요!"; pct = 1; }
   else if (live.others.length) { name = "🥇 지금 1위!"; left = "1위를 지켜요"; pct = 1; }
   else { name = "첫 기록에 도전!"; left = live.kind === "loading" ? "" : "버틸수록 기록이 올라가요"; pct = 0; }
   $("spTName").textContent = name;
