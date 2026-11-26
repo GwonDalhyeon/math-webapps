@@ -1,9 +1,9 @@
 # 아이스브레이킹 온라인 기록판 (Firebase)
 
 - 프로젝트: `math-webapps-board` (무료 Spark 요금제, Firestore 서울 `asia-northeast3`, 익명 로그인)
-- 브라우저 쪽 코드: `../assets/online-board.js`, 설정값: `../assets/firebase-config.js`
+- 브라우저 쪽 코드: `../assets/online-board.js`(데이터), `../assets/online-group.js`(그룹 버튼), `../assets/online-board-ui.js`(화면 부품), 설정값: `../assets/firebase-config.js`
 - 이 폴더: 보안 규칙(`firestore.rules`), 색인(`firestore.indexes.json`), 익명 로그인 설정(`firebase.json`), 규칙 시험(`test/rules-test.mjs`)
-- 운영 기준: `../docs/agent-guides/icebreaking-webapp.md`의 「온라인 기록판」
+- 연동 명세(게임에 붙이는 법·화면 대응·검증): `../docs/agent-guides/online-board.md`
 
 ## 규칙 시험
 
@@ -16,6 +16,11 @@ cd firebase; firebase emulators:start --only firestore,auth
 ```powershell
 node firebase/test/rules-test.mjs
 ```
+
+## 시험 도구
+
+- `test/sim-group.mjs`: 에뮬레이터 그룹에 가상의 참가자를 넣는다. `node firebase/test/sim-group.mjs <6자리 코드> [게임~board] [기록 JSON]`
+- `test/ui-demo.html`: 화면 부품의 배치 방식(auto·embed·compact·headless) 예제. 로컬에서 `http://localhost:3000/firebase/test/ui-demo?emu=1`
 
 ## 배포
 

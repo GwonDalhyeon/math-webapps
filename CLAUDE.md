@@ -18,6 +18,7 @@
 - 공간도형, 공간벡터, 빛의 반사, 태양계 중력·스윙바이처럼 3D 시각화가 필요할 때: `docs/agent-guides/3d-webapp.md`
 - 카메라로 손·몸·얼굴 동작을 인식하는 웹앱을 만들 때: `docs/agent-guides/camera-webapp.md`
 - 아이스브레이킹 게임을 만들거나 핵심 진행·소리를 수정할 때: `docs/agent-guides/icebreaking-webapp.md`
+- 게임에 온라인 기록판·그룹(Firebase)을 붙이거나 그 공용 모듈·보안 규칙을 고칠 때: `docs/agent-guides/online-board.md`
 - 새 웹앱의 작업지시서 작성, 사전/사후 학습가치 검토를 할 때: `docs/agent-guides/learning-agent-roles.md`
 - 학습지 Markdown을 만들거나 수정할 때: `docs/agent-guides/worksheet.md`
 - 학습지를 PDF로 변환하거나 페이지 수를 맞출 때: `docs/agent-guides/pdf-export.md`
@@ -116,7 +117,7 @@
 - JavaScript 모듈을 사용할 경우 상대경로로 동작해야 한다.
 - 3D 시각화가 필요하면 `assets/vendor/three/`에 파일로 들어 있는 three.js(r184)를 importmap으로 연결해 사용한다. `npm install`이나 빌드 과정은 추가하지 않는다. 자세한 기준은 `docs/agent-guides/3d-webapp.md`에 있다.
 - 카메라 동작 인식이 필요하면 MediaPipe Tasks for Web을 사용할 수 있다. 모델과 WASM은 `assets/vendor/` 아래에 두고 필요한 순간에 나눠 받는다. GitHub Pages는 COOP/COEP 헤더를 설정할 수 없어 멀티스레드 WASM을 전제로 하지 않는다. 자세한 기준은 `docs/agent-guides/camera-webapp.md`에 있다.
-- 예외: 아이스브레이킹 게임의 온라인 기록판과 1시간짜리 그룹(6자리 코드)은 Firebase 프로젝트 `math-webapps-board`(익명 로그인 + Firestore, 서버 코드 없음)를 쓴다. 공용 모듈은 `assets/online-board.js`·`assets/online-group.js`, 보안 규칙은 `firebase/`에 있다. 별명·점수·날짜만 저장하고 실명·학번·영상은 받지 않는다. 자세한 기준은 `docs/agent-guides/icebreaking-webapp.md`의 「온라인 기록판」에 있다. 그 밖의 앱에는 서버·DB·로그인 금지 원칙이 그대로 적용된다.
+- 예외: 아이스브레이킹 게임의 온라인 기록판과 1시간짜리 그룹(6자리 코드)은 Firebase 프로젝트 `math-webapps-board`(익명 로그인 + Firestore, 서버 코드 없음)를 쓴다. 공용 모듈은 `assets/online-board.js`·`assets/online-group.js`·`assets/online-board-ui.js`, 보안 규칙은 `firebase/`에 있다. 별명·점수·날짜만 저장하고 실명·학번·영상은 받지 않는다. 자세한 기준은 `docs/agent-guides/online-board.md`에 있다. 그 밖의 앱에는 서버·DB·로그인 금지 원칙이 그대로 적용된다.
 
 사용 금지:
 

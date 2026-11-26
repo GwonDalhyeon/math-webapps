@@ -56,8 +56,6 @@
     .hero.in-group img { width: min(150px, 17vh); height: min(150px, 17vh); }
     .hero.in-group h2 { font-size: 44px; }
     .hero-group { width: 100%; text-align: left; background: var(--panel2); border: 2px solid var(--soft); border-radius: 14px; padding: 10px 14px; }
-    .hero-group h3 { font-size: 18px; }
-    .hero-group .note { font-size: 13px; }
     .setup { flex: 1.1; min-width: 0; background: var(--panel); border: 3px solid var(--line); border-radius: 26px; box-shadow: 0 6px 0 var(--line); padding: 18px 22px; display: flex; flex-direction: column; gap: 12px; overflow: auto; }
     .setup h3 { margin: 0; font-size: 20px; }
     .seg { display: flex; gap: 8px; }
@@ -118,87 +116,6 @@
     .field { flex: 1; min-height: 0; position: relative; margin: 0 14px 14px; border-radius: 20px; overflow: hidden; border: 3px solid var(--line); box-shadow: var(--shadow); background: #16324a; touch-action: none; }
     .field > canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
     .field video { display: none; }
-    /* ===== 경기 화면 양옆 패널: 카메라(4:3) 밖 빈 공간에만 놓는다 ===== */
-    .side-panel { position: absolute; z-index: 2; display: none; flex-direction: column; justify-content: center; gap: 12px; pointer-events: none; color: var(--ink); }
-    .side-panel.on { display: flex; }
-    .spbox { background: var(--panel); border: 3px solid var(--line); border-radius: 14px; box-shadow: 0 4px 0 var(--line); padding: 10px 9px; min-width: 0; }
-    .spbox h4 { margin: 0; font-size: 15px; font-weight: 950; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .sp-sub { font-size: 12px; font-weight: 800; color: var(--muted); margin: 3px 0 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .sp-rank { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
-    .sp-rank li { position: relative; padding: 6px 5px; border-bottom: 1px solid var(--soft); border-radius: 8px; min-width: 0; }
-    .sp-rank .who { display: flex; gap: 5px; align-items: baseline; min-width: 0; font-size: 15px; font-weight: 850; }
-    .sp-rank .rk { color: var(--muted); min-width: 14px; }
-    .sp-rank .nm { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .sp-rank .tag { font-size: 10px; font-weight: 800; white-space: nowrap; color: var(--muted); }
-    .sp-rank .rec { display: flex; justify-content: space-between; gap: 6px; font-size: 13px; color: var(--muted); margin-top: 2px; padding-left: 19px; white-space: nowrap; }
-    .sp-rank .rec b { color: var(--ink); font-variant-numeric: tabular-nums; }
-    .sp-rank li.me { background: var(--accent); border-bottom-color: transparent; }
-    .sp-rank li.gap { padding: 0 5px; border: 0; color: var(--muted); font-size: 13px; text-align: center; }
-    .sp-rise { display: none; position: absolute; right: 4px; top: 4px; background: #dcfce7; color: #166534; border: 1px solid #86c99b; border-radius: 6px; padding: 0 5px; font-size: 11px; font-weight: 900; }
-    .sp-rise.on { display: block; }
-    .sp-note { font-size: 11px; color: var(--muted); margin: 8px 0 0; line-height: 1.35; }
-    .sp-tname { font-size: 22px; font-weight: 950; margin: 10px 0 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .sp-trec { font-size: 12px; color: var(--muted); font-weight: 700; white-space: nowrap; }
-    .sp-tleft { font-size: 18px; font-weight: 950; margin: 10px 0 6px; line-height: 1.2; }
-    .sp-tleft small { display: block; font-size: 12px; font-weight: 800; color: var(--muted); }
-    .sp-track { height: 12px; border-radius: 8px; background: var(--soft); overflow: hidden; }
-    .sp-track i { display: block; height: 100%; width: 0; background: var(--good); transition: width .3s; }
-    .sp-pct { text-align: right; font-size: 11px; font-weight: 850; color: var(--muted); margin-top: 3px; }
-    .sp-avg { font-size: 26px; font-weight: 950; letter-spacing: -1px; margin: 8px 0 2px; white-space: nowrap; line-height: 1.15; }
-    .sp-avg span { display: block; font-size: 14px; letter-spacing: 0; }
-    .sp-fast { font-size: 12px; color: var(--muted); font-weight: 700; white-space: nowrap; }
-    .sp-graph { position: relative; height: 96px; margin-top: 12px; border-bottom: 1px solid var(--soft); display: flex; gap: 3px; align-items: flex-end; }
-    .sp-graph .bar { flex: 1; min-width: 0; position: relative; background: #8e9da5; border-radius: 3px 3px 0 0; }
-    .sp-graph .bar.fast { background: var(--good); }
-    .sp-graph .bar em { display: none; position: absolute; left: 50%; transform: translateX(-50%); bottom: 3px; font-style: normal; font-size: 11px; font-weight: 900; color: #fff; }
-    .sp-graph .mean { position: absolute; left: 0; right: 0; border-top: 2px dashed var(--ink); pointer-events: none; }
-    .sp-graph .empty { align-self: center; width: 100%; text-align: center; font-size: 12px; color: var(--muted); font-weight: 800; }
-    .sp-cap { font-size: 10px; color: var(--muted); white-space: nowrap; margin-top: 6px; letter-spacing: -.3px; }
-    /* 넓은 화면(프로젝터) */
-    .side-panel.wide { gap: 20px; }
-    .side-panel.wide .spbox { padding: 18px 16px; }
-    .side-panel.wide h4 { font-size: 24px; }
-    .side-panel.wide .sp-sub { font-size: 16px; margin-bottom: 14px; }
-    .side-panel.wide .sp-rank { gap: 7px; }
-    .side-panel.wide .sp-rank li { display: flex; align-items: center; gap: 8px; padding: 12px 8px; }
-    .side-panel.wide .sp-rank .who { font-size: 21px; gap: 8px; min-width: 0; }
-    .side-panel.wide .sp-rank .rec { margin: 0 0 0 auto; padding: 0; gap: 10px; font-size: 18px; }
-    .side-panel.wide .sp-rank .tag { font-size: 12px; }
-    .side-panel.wide .sp-rise { position: static; font-size: 13px; }
-    .side-panel.wide .sp-note { font-size: 15px; }
-    .side-panel.wide .sp-tname { font-size: 32px; margin-top: 14px; }
-    .side-panel.wide .sp-trec { font-size: 18px; }
-    .side-panel.wide .sp-tleft { font-size: 32px; margin: 14px 0 10px; }
-    .side-panel.wide .sp-tleft small { font-size: 16px; }
-    .side-panel.wide .sp-pct { font-size: 15px; }
-    .side-panel.wide .sp-avg { font-size: 42px; }
-    .side-panel.wide .sp-avg span { display: inline; font-size: 22px; margin-right: 8px; }
-    .side-panel.wide .sp-fast { font-size: 18px; }
-    .side-panel.wide .sp-graph { height: 170px; gap: 6px; margin-top: 20px; }
-    .side-panel.wide .sp-graph .bar em { display: block; font-size: 13px; }
-    .side-panel.wide .sp-graph .bar:not(.lbl) em { display: none; }
-    .side-panel.wide .sp-cap { font-size: 15px; }
-    /* 세로 화면: 카메라 위아래 띠 */
-    .side-panel.strip { flex-direction: row; gap: 12px; justify-content: stretch; }
-    .side-panel.strip .spbox { flex: 1; padding: 8px 12px; display: flex; flex-direction: column; justify-content: center; }
-    .side-panel.strip .sp-sub, .side-panel.strip .sp-note, .side-panel.strip .tag, .side-panel.strip .sp-trec, .side-panel.strip .sp-fast, .side-panel.strip .sp-cap, .side-panel.strip .sp-pct { display: none; }
-    .side-panel.strip .sp-rank { grid-template-columns: repeat(4, 1fr); gap: 7px; margin-top: 6px; }
-    .side-panel.strip .sp-rank li { background: var(--panel2); border: 1px solid var(--soft); padding: 4px 7px; }
-    .side-panel.strip .sp-rank li.me { background: var(--accent); border-color: #c4a11e; }
-    .side-panel.strip .sp-rank li.gap { display: none; }
-    .side-panel.strip .sp-rank .who { font-size: 14px; }
-    .side-panel.strip .sp-rank .rec { font-size: 12px; padding-left: 19px; justify-content: flex-start; }
-    .side-panel.strip .sp-rise { top: 3px; right: 5px; border: 0; background: none; padding: 0; font-size: 12px; }
-    .side-panel.strip .sp-target h4, .side-panel.strip .sp-tname, .side-panel.strip .sp-tleft { display: inline; font-size: 16px; margin: 0; }
-    .side-panel.strip .sp-tline { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .side-panel.strip .sp-tname::before { content: " "; }
-    .side-panel.strip .sp-tleft::before { content: " · "; font-weight: 500; }
-    .side-panel.strip .sp-tleft small { display: none; }
-    .side-panel.strip .sp-track { margin-top: 10px; }
-    .side-panel.strip .sp-react h4 { display: none; }
-    .side-panel.strip .sp-avg { font-size: 20px; margin: 0; }
-    .side-panel.strip .sp-avg span { display: inline; font-size: 15px; margin-right: 4px; }
-    .side-panel.strip .sp-graph { height: 42px; margin-top: 6px; gap: 6px; }
     .chip { position: absolute; left: 12px; bottom: 12px; font-size: 13px; font-weight: 700; color: #fff; background: #0009; border-radius: 10px; padding: 5px 10px; z-index: 2; }
     .notice { position: absolute; top: 14px; left: 50%; transform: translateX(-50%); z-index: 3; font-size: 24px; font-weight: 900; background: #fffdf5f2; border: 3px solid var(--line); border-left: 8px solid #f59e0b; border-radius: 14px; padding: 8px 20px; white-space: nowrap; display: none; }
     .notice.show { display: block; }
@@ -268,20 +185,6 @@
     .tbl th { font-size: 13px; color: var(--muted); text-align: right; padding: 3px 4px; border-bottom: 2px solid var(--soft); }
     .tbl td { text-align: right; padding: 5px 4px; border-bottom: 1px solid var(--soft); }
     .tbl th:first-child, .tbl td:first-child { text-align: left; }
-    .board ol { margin: 0; padding: 0; list-style: none; font-size: 16px; }
-    .board li { display: flex; gap: 8px; padding: 4px 2px; border-bottom: 1px solid var(--soft); }
-    .board li b { width: 24px; color: var(--muted); }
-    .board li span { flex: 1; }
-    .board li.me { background: var(--accent); border-radius: 8px; font-weight: 900; padding: 4px 6px; }
-    .board .note { font-size: 12px; color: var(--muted); margin: 6px 0 0; }
-    .board-top { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
-    .board-top h3 { margin: 0; }
-    .tabs { display: flex; gap: 4px; margin-left: auto; }
-    .tabs button { min-height: 40px; padding: 2px 10px; border: 2px solid var(--line); border-radius: 10px; background: var(--panel2); font-size: 14px; font-weight: 900; cursor: pointer; }
-    .tabs button[aria-pressed="true"] { background: var(--accent); }
-    .board-sub { font-size: 13px; font-weight: 800; color: var(--muted); margin: 0 0 2px; }
-    .board .empty { color: var(--muted); font-size: 15px; padding: 8px 2px; border: 0; }
-    .linkbtn { border: 0; background: none; padding: 4px 2px; min-height: 32px; font-size: 12px; font-weight: 800; color: var(--muted); text-decoration: underline; cursor: pointer; }
     .res-actions { display: flex; gap: 10px; }
     .res-actions .btn { flex: 1; min-height: 56px; font-size: 19px; }
     .fine { font-size: 12px; color: var(--muted); margin: 0; }
@@ -340,11 +243,7 @@
         <div class="move"><div class="ico">🙅</div><b>꾹 참기</b><span>틀린 공은 그냥 보내기</span></div>
       </div>
       <p class="origin">F1 드라이버와 골키퍼가 순발력을 기르는 연습에서 따온 게임입니다.</p>
-      <div class="hero-group board" id="heroGroup" hidden>
-        <h3 id="hgTitle">👥 그룹 순위</h3>
-        <ol id="hgList"></ol>
-        <p class="note" id="hgNote"></p>
-      </div>
+      <div class="hero-group" id="heroGroup" hidden></div>
     </div>
     <div class="setup">
       <h3>난이도</h3>
@@ -394,29 +293,6 @@
     <div class="field" id="field">
       <video id="video" playsinline muted></video>
       <canvas id="scene"></canvas>
-      <!-- 양옆 패널: 왼쪽 기록판, 오른쪽 다음 목표·반응 속도 (세로 화면에서는 위아래 띠) -->
-      <aside class="side-panel" id="spLeft" aria-label="기록판">
-        <div class="spbox sp-board">
-          <h4 id="spBoardTitle">🏆 기록판</h4>
-          <div class="sp-sub" id="spBoardSub"></div>
-          <ol class="sp-rank" id="spRank"></ol>
-          <div class="sp-note" id="spBoardNote"></div>
-        </div>
-      </aside>
-      <aside class="side-panel" id="spRight" aria-label="다음 목표와 반응 속도">
-        <div class="spbox sp-target">
-          <div class="sp-tline"><h4>🎯 다음 목표</h4><div class="sp-tname" id="spTName"></div><div class="sp-trec" id="spTRec"></div><div class="sp-tleft" id="spTLeft"></div></div>
-          <div class="sp-track"><i id="spTBar"></i></div>
-          <div class="sp-pct" id="spTPct"></div>
-        </div>
-        <div class="spbox sp-react">
-          <h4>⚡ 반응 속도</h4>
-          <div class="sp-avg" id="spAvg"></div>
-          <div class="sp-fast" id="spFast"></div>
-          <div class="sp-graph" id="spGraph"></div>
-          <div class="sp-cap">짧을수록 빨라요 · 최근 10개</div>
-        </div>
-      </aside>
       <span class="chip" id="privacyChip">🔒 영상은 이 기기 밖으로 나가지 않아요</span>
       <div class="notice" id="notice"></div>
       <div class="fps" id="fps"></div>
@@ -501,20 +377,7 @@
     </div>
     <div class="res-side">
       <div class="box tbl"><h3>레벨별 기록</h3><table id="stageTable"></table></div>
-      <div class="box board">
-        <div class="board-top">
-          <h3>🏆 기록판</h3>
-          <div class="tabs" id="boardTabs">
-            <button type="button" data-tab="group" aria-pressed="false" hidden>👥 그룹</button>
-            <button type="button" data-tab="today" aria-pressed="false">🌐 오늘</button>
-            <button type="button" data-tab="month" aria-pressed="false">🌐 30일</button>
-            <button type="button" data-tab="local" aria-pressed="true">📱 이 기기</button>
-          </div>
-        </div>
-        <p class="board-sub" id="boardSub"></p>
-        <ol id="board"></ol>
-        <p class="note" id="boardNote"></p>
-      </div>
+      <div class="box board" id="resultBoard"></div>
       <div class="res-actions">
         <button class="btn primary" id="againBtn" type="button">🔁 다시 하기</button>
         <button class="btn" id="homeBtn" type="button">처음으로</button>
@@ -527,6 +390,7 @@
 // 온라인 기록판(여러 게임 공용). Firebase SDK는 이 모듈이 필요할 때 따로 받으므로, 인터넷이 없어도 게임은 열린다.
 import * as OnlineBoard from "../../assets/online-board.js";
 import { mountGroup } from "../../assets/online-group.js";
+import { renderGroupMini, createResultBoard, createLivePanels } from "../../assets/online-board-ui.js";
 // ===========================================================================
 // 판정·진행 상수 (수업 직전에 손볼 값이라 한곳에 모은다)
 // 거리 단위: 카메라 화면 높이 = 1, 가로는 0..aspect. 속도는 "화면 높이/초".
@@ -1670,197 +1534,39 @@ function updateHud() {
 }
 
 // ===========================================================================
-// 경기 화면 양옆 패널
-// - 왼쪽: 기록판(그룹 → 없으면 오늘 → 오늘 기록이 없으면 30일 → 인터넷이 안 되면 이 기기). 경기 중인 내 줄이 순위 안에서 움직인다.
-// - 오른쪽: 다음 목표(바로 위 사람까지 남은 점수) + 반응 속도(평균·가장 빠름·최근 10개 막대)
-// - 경기 중에는 시작 때 받아 둔 기록과 지금 내 점수로만 계산한다. 그룹만 30초마다 새로 읽는다.
+// 온라인 기록판 화면 (공용 부품: assets/online-board-ui.js, 기준: docs/agent-guides/online-board.md)
+// - 결과 화면 기록판, 시작 화면 그룹 순위, 경기 화면 양옆 패널(왼쪽 기록판 + 오른쪽 다음 목표·반응 속도)
+// - 순위: 도달 레벨이 먼저, 같으면 점수 (rank = 레벨 × 1천만 + 점수)
 // ===========================================================================
-const SP_MIN_SIDE = 130, SP_MIN_STRIP = 90, SP_MAX_W = 360;
-const SP_RT_LO = 300;      // 반응 속도 막대의 바닥(ms). 차이가 잘 보이게 0이 아니라 0.3초 근처부터 그린다
-let spLayoutKey = "";
-let live = { kind: "none", title: "🏆 기록판", sub: "", others: [], myBest: null, total: 0 };
-let liveToken = 0, liveKey = "", livePos = 0, riseUntil = 0;
 const fmtN = (n) => n.toLocaleString("ko-KR");
+const formatRecord = (r) => ({ main: `레벨 ${r.level} · ${fmtN(r.score)}점`, a: `Lv${r.level}`, b: fmtN(r.score) });
+const boardLabel = (b) => DIFFS[b]?.label || b;
 const PLAY_PHASES = [...PAUSABLE, "paused", "out"];
+let livePanels = null, resultBoard = null;   // 그룹 버튼을 만든 뒤 아래에서 만든다
 
-// 카메라(4:3) 밖 빈 공간에 패널을 놓는다: 양옆이 넉넉하면 옆에, 세로 화면이면 위아래 띠로, 둘 다 좁으면 숨긴다
+// 이 기기 기록(localStorage) → 공용 부품이 쓰는 줄 모양, 이름마다 가장 좋은 판
+const toRow = (r) => ({ nick: r.n, level: r.l, score: r.s, sec: r.sec, mode: r.m, rank: r.l * 10000000 + r.s });
+function bestPerName(records) {
+  const bestBy = new Map();
+  for (const r of records) if (!bestBy.has(r.n) || better(r, bestBy.get(r.n)) < 0) bestBy.set(r.n, r);
+  return [...bestBy.values()].sort(better);
+}
+
+// 카메라(4:3) 밖 빈 공간에 패널을 놓고, 영상 안내 칩은 카메라 영역 안쪽 아래로
 function placeSidePanels() {
-  const { x, y, W, H } = view;
-  const key = `${Math.round(W)}x${Math.round(H)}|${Math.round(x)}|${Math.round(y)}`;
-  if (key === spLayoutKey) return;
-  spLayoutKey = key;
-  const L = $("spLeft"), R = $("spRight");
-  for (const p of [L, R]) { p.className = "side-panel"; p.removeAttribute("style"); }
-  const chip = $("privacyChip");   // 영상 안내 칩은 카메라 영역 안쪽 아래로
-  chip.style.left = `${Math.round(x + 12)}px`;
-  chip.style.bottom = `${Math.round(y + 12)}px`;
-  if (x >= SP_MIN_SIDE) {
-    const pw = Math.min(x - 20, SP_MAX_W), wide = pw >= 250;
-    const gap = `${Math.round((x - pw) / 2)}px`;
-    L.className = R.className = `side-panel on${wide ? " wide" : ""}`;
-    Object.assign(L.style, { top: "10px", bottom: "10px", width: `${pw}px`, left: gap });
-    Object.assign(R.style, { top: "10px", bottom: "10px", width: `${pw}px`, right: gap });
-  } else if (y >= SP_MIN_STRIP) {
-    const ph = Math.min(y - 20, 170);
-    const gap = `${Math.round((y - ph) / 2)}px`;
-    L.className = R.className = "side-panel on strip";
-    Object.assign(L.style, { left: "10px", right: "10px", height: `${ph}px`, top: gap });
-    Object.assign(R.style, { left: "10px", right: "10px", height: `${ph}px`, bottom: gap });
-  }
-  liveKey = "";
-  updateSidePanels();
+  if (!livePanels) return;
+  livePanels.place(view);
+  const chip = $("privacyChip");
+  chip.style.left = `${Math.round(view.x + 12)}px`;
+  chip.style.bottom = `${Math.round(view.y + 12)}px`;
 }
-
-// 게임을 시작할 때 비교할 기록판을 정한다 (그룹은 읽기 없이 가지고 있는 문서로, 공개 기록판은 2분 캐시)
-async function prepareLiveBoard() {
-  const token = ++liveToken;
-  livePos = 0; riseUntil = 0;
-  if (group.inGroup() && group.getDoc()) { buildLiveFromGroup(group.getDoc()); return; }
-  const board = diffKey;
-  live = { kind: "loading", title: "🌐 오늘 기록", sub: `${DIFFS[board].label} · 불러오는 중…`, others: [], myBest: null, total: 0 };
-  liveKey = ""; updateSidePanels();
-  let res = await OnlineBoard.fetchBoard(GAME_ID, board, { today: true });
-  let kind = "today";
-  if (res.ok && !res.rows.length) { res = await OnlineBoard.fetchBoard(GAME_ID, board, {}); kind = "month"; }
-  if (token !== liveToken) return;
-  if (res.ok) {
-    const isMe = (r) => r.mine && r.nick === nickname;
-    // 위 15건 안에 내 기록이 없으면 이 기기에 남은 내 최고 기록(같은 별명·난이도)을 쓴다
-    live = { kind, title: kind === "today" ? "🌐 오늘 기록" : "🌐 30일 기록", sub: `${DIFFS[board].label} 난이도`,
-      others: res.rows.filter((r) => !isMe(r)), myBest: res.rows.find(isMe) || localBest(board), total: res.rows.length };
-  } else {
-    // 인터넷이 안 되면 이 기기 기록과 비교한다
-    const bestBy = new Map();
-    for (const r of loadRecords()) if (r.d === board && (!bestBy.has(r.n) || better(r, bestBy.get(r.n)) < 0)) bestBy.set(r.n, r);
-    const rows = [...bestBy.values()].sort(better).map((r) => ({ nick: r.n, level: r.l, score: r.s, mode: r.m, rank: r.l * 10000000 + r.s }));
-    live = { kind: "local", title: "📱 이 기기 기록", sub: `${DIFFS[board].label} · 인터넷 연결 없음`,
-      others: rows.filter((r) => r.nick !== nickname).slice(0, 10), myBest: rows.find((r) => r.nick === nickname) || null, total: rows.length };
-  }
-  liveKey = ""; updateSidePanels();
-}
-
-// 이 기기에 남은 내(지금 별명) 최고 기록
-function localBest(board) {
-  let best = null;
-  for (const r of loadRecords()) if (r.d === board && r.n === nickname && (!best || better(r, best) < 0)) best = r;
-  return best && { nick: best.n, level: best.l, score: best.s, mode: best.m, rank: best.l * 10000000 + best.s };
-}
-
-function buildLiveFromGroup(doc) {
-  const list = OnlineBoard.groupRanking(doc, GAME_ID, diffKey);
-  live = { kind: "group", title: "👥 그룹 순위", sub: `${DIFFS[diffKey].label} · ${doc.members.length}명`,
-    others: list.filter((r) => !r.mine), myBest: list.find((r) => r.mine) || null, total: doc.members.length };
-  liveKey = ""; updateSidePanels();
-}
-
-function liveNow() {
+function prepareLiveBoard() { livePanels?.prepare(); }
+// 매 프레임 불린다. 공용 부품이 보이는 값이 바뀔 때만 다시 그린다.
+function updateSidePanels() {
+  if (!livePanels) return;
   const playing = PLAY_PHASES.includes(phase);
   const lv = playing ? level : 1, sc = playing ? stats.score : 0;
-  return { level: lv, score: sc, rank: lv * 10000000 + sc, playing };
-}
-
-// 매 프레임 불리지만, 보이는 값이 바뀔 때만 다시 그린다
-function updateSidePanels() {
-  if (!$("spLeft").classList.contains("on")) return;
-  const me = liveNow();
-  const now = performance.now();
-  const key = `${me.rank}|${live.kind}|${live.others.length}|${live.sub}|${stats.rts?.length}|${Math.ceil(levelLeftMs / 1000)}|${riseUntil > now}`;
-  if (key === liveKey) return;
-  liveKey = key;
-  renderLiveBoard(me, now);
-  renderTarget(me);
-  renderReaction();
-}
-
-function renderLiveBoard(me, now) {
-  const others = live.others;   // rank 큰 순 (내 기록은 뺀 다른 사람들)
-  // 내 줄은 한 줄: 이번 판이 내 최고 기록을 넘기 전까지는 최고 기록을, 넘으면 이번 판을 보여 준다
-  const best = live.myBest;
-  const showLive = !best || me.rank > best.rank;
-  const mine = showLive ? me : best;
-  const pos = 1 + others.filter((o) => o.rank >= mine.rank).length;   // 같은 기록이면 먼저 세운 사람이 위
-  if (me.playing && showLive && livePos && pos < livePos) riseUntil = now + 2500;
-  livePos = pos;
-  const limited = live.kind !== "group" && others.length >= 10 && pos > others.length;   // 공개 기록판은 위 10명만 알고 있다
-  const meRow = { me: true, nick: "나", level: mine.level, score: mine.score, pos };
-  const merged = [...others.slice(0, pos - 1).map((o, i) => ({ ...o, pos: i + 1 })), meRow, ...others.slice(pos - 1).map((o, i) => ({ ...o, pos: pos + 1 + i }))];
-  // 옆 패널은 5줄, 세로 화면 띠는 칩 4개. 내가 그 밖이면 맨 끝 자리에 내 줄을 넣는다.
-  const slots = $("spLeft").classList.contains("strip") ? 4 : 5;
-  const rows = pos <= slots ? merged.slice(0, slots) : [...merged.slice(0, slots - 1), { gap: true }, meRow];
-  $("spBoardTitle").textContent = live.title;
-  $("spBoardSub").textContent = live.sub;
-  $("spRank").replaceChildren(...rows.map((r) => {
-    const li = document.createElement("li");
-    if (r.gap) { li.className = "gap"; li.textContent = "⋯"; return li; }
-    if (r.me) li.className = "me";
-    li.innerHTML = `<div class="who"><span class="rk"></span><span class="nm"></span><span class="tag"></span></div><div class="rec"><span></span><b></b></div><span class="sp-rise"></span>`;
-    li.querySelector(".rk").textContent = r.me && limited ? "–" : r.pos;
-    li.querySelector(".nm").textContent = r.me ? (showLive ? "🔴 나" : "⭐ 나") : r.nick;
-    li.querySelector(".tag").textContent = !r.me ? (r.mode === "touch" ? "👆" : "")
-      : !showLive ? "최고 기록" : best && me.playing ? "경신 중!" : me.playing ? "경기 중" : "";
-    li.querySelector(".rec span").textContent = `Lv${r.level}`;
-    li.querySelector(".rec b").textContent = fmtN(r.score);
-    if (r.me && riseUntil > now) { const b = li.querySelector(".sp-rise"); b.textContent = `⬆ ${pos}위!`; b.classList.add("on"); }
-    return li;
-  }));
-  $("spBoardNote").textContent =
-    live.kind === "loading" ? "기록을 불러오는 중…"
-    : !others.length ? (live.myBest ? "내 최고 기록과 겨뤄요" : "첫 기록에 도전해 보세요!")
-    : live.kind === "group" ? `${others.length + 1}명 중 ${pos}위 · 30초마다 갱신`
-    : limited ? `위 ${others.length}명 밖 · 더 올라가 봐요!`
-    : `${others.length + 1}명 중 ${pos}위`;
-}
-
-function renderTarget(me) {
-  // 먼저 내 최고 기록을 넘고, 그다음 바로 위 사람을 따라잡는다
-  const above = live.others.filter((o) => o.rank >= me.rank);
-  let t = null, name, rec = "", left, sub = "", pct;
-  if (live.myBest && live.myBest.rank >= me.rank) { t = live.myBest; name = "내 최고 기록"; }
-  else t = above[above.length - 1];
-  if (t) {
-    name ||= t.nick;
-    rec = `Lv${t.level} · ${fmtN(t.score)}점`;
-    if (t.level === me.level) { left = `${fmtN(t.score - me.score + 1)}점 남음`; pct = me.score / (t.score + 1); }
-    else { left = `레벨 ${t.level}까지`; sub = `다음 레벨까지 ${Math.max(0, Math.ceil(levelLeftMs / 1000))}초`; pct = me.playing ? clamp01(1 - levelLeftMs / (LEVEL_SEC * 1000)) : 0; }
-  } else if (live.myBest) { name = "🏆 최고 기록 경신!"; rec = `이전 Lv${live.myBest.level} · ${fmtN(live.myBest.score)}점`; left = "지금 1위예요!"; pct = 1; }
-  else if (live.others.length) { name = "🥇 지금 1위!"; left = "1위를 지켜요"; pct = 1; }
-  else { name = "첫 기록에 도전!"; left = live.kind === "loading" ? "" : "버틸수록 기록이 올라가요"; pct = 0; }
-  $("spTName").textContent = name;
-  $("spTRec").textContent = rec;
-  $("spTLeft").replaceChildren(left || "");
-  if (sub) $("spTLeft").append(Object.assign(document.createElement("small"), { textContent: sub }));
-  $("spTBar").style.width = `${clamp01(pct) * 100}%`;
-  $("spTPct").textContent = `${Math.round(clamp01(pct) * 100)}%`;
-}
-
-function renderReaction() {
-  const rts = (stats.rts || []).map((r) => r.rt);
-  const g = $("spGraph");
-  if (!rts.length) {
-    $("spAvg").replaceChildren(Object.assign(document.createElement("span"), { textContent: "평균" }), "-");
-    $("spFast").textContent = "공을 잡으면 나와요";
-    g.replaceChildren(Object.assign(document.createElement("div"), { className: "empty", textContent: "아직 잡은 공이 없어요" }));
-    return;
-  }
-  const avg = rts.reduce((a, b) => a + b, 0) / rts.length, fastest = Math.min(...rts);
-  $("spAvg").replaceChildren(Object.assign(document.createElement("span"), { textContent: "평균" }), `${(avg / 1000).toFixed(2)}초`);
-  $("spFast").textContent = `가장 빠름 ${(fastest / 1000).toFixed(2)}초`;
-  const last = rts.slice(-10);
-  // 바닥은 0.3초(더 빠른 공이 있으면 그보다 0.1초 아래), 꼭대기는 1초(더 느린 공이 있으면 그 위)
-  const lo = Math.max(0, Math.min(SP_RT_LO, Math.min(...last) - 100));
-  const hi = Math.max(1000, Math.max(...last) + 50);
-  const H = (ms) => clamp01((ms - lo) / (hi - lo)) * 100;
-  const lastFast = Math.min(...last);
-  const bars = last.map((ms, i) => {
-    const b = document.createElement("div");
-    b.className = `bar${ms < avg ? " fast" : ""}${i === last.length - 1 || ms === lastFast ? " lbl" : ""}`;
-    b.style.height = `${Math.max(4, H(ms))}%`;
-    b.append(Object.assign(document.createElement("em"), { textContent: (ms / 1000).toFixed(2) }));
-    return b;
-  });
-  const mean = Object.assign(document.createElement("div"), { className: "mean" });
-  mean.style.bottom = `${H(avg)}%`;
-  g.replaceChildren(...bars, mean);
+  livePanels.update({ rank: lv * 10000000 + sc, playing, row: { level: lv, score: sc } });
 }
 
 function showNotice(text, sub = "") {
@@ -1914,183 +1620,15 @@ function renderResult() {
   }).join("");
   $("stageTable").innerHTML = `<tr><th>레벨</th><th>세이브</th><th>실점</th><th>실수</th><th>평균 반응</th></tr>${rows}`;
 
-  lastRec = rec;
-  startUpload(rec);
-  setBoardTab(group.inGroup() ? "group" : OnlineBoard.getOptIn() ? "today" : "local");
+  resultBoard.show({ board: rec.d, nickEntered, lastRec: rec,
+    record: { mode: rec.m, nick: rec.n, level: rec.l, score: rec.s, sec: rec.sec, rank: rec.l * 10000000 + rec.s } });
   drawChart();
 }
 
 // ---------------------------------------------------------------------------
-// 기록판: 👥 그룹 · 🌐 오늘 · 🌐 30일(온라인, 지금 난이도) · 📱 이 기기
+// 그룹 버튼(상단) + 결과 기록판 + 경기 화면 패널 + 시작 화면 그룹 순위
 // ---------------------------------------------------------------------------
-let lastRec = null;
-let upload = null;          // { state: "sending" | "done", res }
-let uploadPromise = null;
-let boardTab = "local";
-let boardToken = 0;         // 탭을 빨리 바꿨을 때 늦게 온 응답을 버린다
-const GROUP_TOP = 5;        // 그룹 순위는 위 5명만 이름을 보이고, 나는 몇 위인지 따로 알려 준다
-
-function startUpload(rec) {
-  upload = null; uploadPromise = null;
-  if (!OnlineBoard.getOptIn() && !group.inGroup()) { renderBoardNote(); return; }
-  upload = { state: "sending" };
-  uploadPromise = OnlineBoard.submitScore(GAME_ID, {
-    board: rec.d, mode: rec.m, nick: nickEntered ? rec.n : "", level: rec.l, score: rec.s, sec: rec.sec,
-    rank: rec.l * 10000000 + rec.s,
-  }).then((res) => {
-    if (res.group) group.setDoc(res.group.ok ? res.group.doc : null);   // 올리면서 받은 그룹 상태로 바로 갱신 (따로 읽지 않는다)
-    if (lastRec === rec) upload = { state: "done", res };
-    return res;
-  });
-  uploadPromise.then(() => { if (lastRec === rec) { renderBoardNote(); if (boardTab !== "local") renderBoard(); } });
-  renderBoardNote();
-}
-
-function boardRow(rank, who, what, me) {
-  const li = document.createElement("li");
-  if (me) li.className = "me";
-  li.innerHTML = `<b>${rank}</b><span></span>`;
-  li.querySelector("span").textContent = who;
-  li.append(what);
-  return li;
-}
-const boardMsg = (text) => Object.assign(document.createElement("li"), { className: "empty", textContent: text });
-const fmtGroupCode = (c) => `${c.slice(0, 3)} ${c.slice(3)}`;
-
-// 그룹 순위 목록 (시작 화면과 결과 화면이 함께 쓴다) → { items: [li…], note }
-function groupBoardItems(doc, board, justNow = false) {
-  const list = OnlineBoard.groupRanking(doc, GAME_ID, board);
-  const items = list.slice(0, GROUP_TOP).map((r, i) => boardRow(i + 1,
-    `${r.nick}${r.mine && justNow ? " (방금)" : ""}${r.mode === "touch" ? " 👆터치" : ""}${r.plays > 1 ? ` · ${r.plays}판` : ""}`,
-    `레벨 ${r.level} · ${r.score.toLocaleString("ko-KR")}점`, r.mine));
-  const myIdx = list.findIndex((r) => r.mine);
-  if (myIdx >= GROUP_TOP) {
-    const me = list[myIdx];
-    items.push(boardRow("나", `${list.length}명 중 ${myIdx + 1}위`, `레벨 ${me.level} · ${me.score.toLocaleString("ko-KR")}점`, true));
-  }
-  if (!list.length) items.push(boardMsg(`${DIFFS[board].label} 난이도 기록이 아직 없어요. 첫 기록을 남겨 보세요!`));
-  const waiting = doc.members.length - list.length;
-  const note = myIdx < 0 ? `아직 내 기록이 없어요.${waiting > 0 ? ` 기록 없는 사람 ${waiting}명` : ""}`
-    : `나는 ${list.length}명 중 ${myIdx + 1}위${waiting > 0 ? ` · 기록 없는 사람 ${waiting}명` : ""}`;
-  return { items, note };
-}
-
-// 시작 화면: 그룹에 들어가 있으면 동작 소개 대신 그룹 순위
-function renderHeroGroup() {
-  const doc = group.getDoc();
-  const on = group.inGroup() && !!doc;
-  $("sStart").querySelector(".hero").classList.toggle("in-group", on);
-  $("heroGroup").hidden = !on;
-  if (!on) return;
-  $("hgTitle").textContent = `👥 그룹 ${fmtGroupCode(doc.code)} · ${DIFFS[diffKey].label} 순위`;
-  const { items, note } = groupBoardItems(doc, diffKey);
-  $("hgList").replaceChildren(...items);
-  $("hgNote").textContent = note;
-}
-
-function setBoardTab(tab) {
-  if (tab === "group" && !group.inGroup()) tab = OnlineBoard.getOptIn() ? "today" : "local";
-  boardTab = tab;
-  for (const b of $("boardTabs").children) {
-    if (b.dataset.tab === "group") b.hidden = !group.inGroup();
-    b.setAttribute("aria-pressed", String(b.dataset.tab === tab));
-  }
-  renderBoard();
-}
-
-async function renderBoard() {
-  const token = ++boardToken;
-  const rec = lastRec;
-  if (!rec) return;
-  if (boardTab === "local") {
-    $("boardSub").textContent = "📱 이 기기에서 한 판 · 이름마다 가장 좋은 판";
-    const bestBy = new Map();
-    for (const r of loadRecords()) if (!bestBy.has(r.n) || better(r, bestBy.get(r.n)) < 0) bestBy.set(r.n, r);
-    const top = [...bestBy.values()].sort(better).slice(0, 10);
-    $("board").replaceChildren(...top.map((r, i) => boardRow(i + 1,
-      `${r.n}${r.t === rec.t ? " (방금)" : ""}${r.m === "touch" ? " 👆터치" : ""}`,
-      `레벨 ${r.l} · ${r.s.toLocaleString("ko-KR")}점`, r.n === rec.n)));
-    return;
-  }
-  if (boardTab === "group") {
-    $("board").replaceChildren(boardMsg("그룹 기록을 불러오는 중…"));
-    if (uploadPromise) await uploadPromise;
-    if (token !== boardToken) return;
-    const doc = group.getDoc();
-    if (!doc) { $("boardSub").textContent = "👥 그룹"; $("board").replaceChildren(boardMsg("그룹 기록을 불러오지 못했어요.")); return; }
-    $("boardSub").textContent = `👥 그룹 ${fmtGroupCode(doc.code)} · ${DIFFS[rec.d].label} 난이도 · ${doc.members.length}명`;
-    const { items } = groupBoardItems(doc, rec.d, !!upload?.res?.group?.ok);
-    $("board").replaceChildren(...items);
-    return;
-  }
-  const today = boardTab === "today";
-  $("boardSub").textContent = `🌐 ${today ? "오늘" : "최근 30일"} 온라인 · ${DIFFS[rec.d].label} 난이도`;
-  $("board").replaceChildren(boardMsg("기록을 불러오는 중…"));
-  if (uploadPromise) await uploadPromise;   // 방금 올린 판이 목록에 들어가도록 기다린다
-  const res = await OnlineBoard.fetchBoard(GAME_ID, rec.d, { today });
-  if (token !== boardToken) return;
-  if (!res.ok) {
-    $("board").replaceChildren(boardMsg(res.reason === "offline" ? "인터넷에 연결되지 않아 온라인 기록판을 볼 수 없어요." : "온라인 기록판을 불러오지 못했어요."));
-    return;
-  }
-  const justId = upload?.res?.ok ? upload.res.id : null;
-  const items = res.rows.map((r, i) => boardRow(i + 1,
-    `${r.nick}${r.id === justId ? " (방금)" : ""}${r.mode === "touch" ? " 👆터치" : ""}`,
-    `레벨 ${r.level} · ${r.score.toLocaleString("ko-KR")}점`, r.mine && r.nick === rec.n));
-  if (!res.rows.length) items.push(boardMsg(today ? "오늘 올라온 기록이 아직 없어요." : "올라온 기록이 아직 없어요."));
-  $("board").replaceChildren(...items);
-  // 이번 판이 목록 밖이면 정확한 순위 대신 "상위 몇 %"만 (개수만 세서 읽기를 아낀다)
-  const myRank = rec.l * 10000000 + rec.s;
-  const shown = justId && res.rows.some((r) => r.id === justId);
-  const beaten = res.rows.length >= 10 && myRank <= res.rows[res.rows.length - 1].rank;
-  if (!shown && beaten) {
-    const li = boardMsg("이번 판 위치를 세는 중…");
-    $("board").append(li);
-    const range = await OnlineBoard.rankRange(GAME_ID, rec.d, myRank, { today, counted: !!justId });
-    if (token !== boardToken) return;
-    li.textContent = range.ok ? `이번 판: ${today ? "오늘" : "30일 동안"} 올라온 ${range.total.toLocaleString("ko-KR")}판 중 상위 ${range.pct}%` : "";
-  }
-}
-
-// 기록판 아래 한 줄: 그룹·온라인에 올렸는지, 왜 못 올렸는지, 내 기록 지우기
-function renderBoardNote() {
-  const note = $("boardNote");
-  note.replaceChildren();
-  if (!upload) { note.textContent = "🌐 온라인 기록판 올리기가 꺼져 있어 이 기기에만 저장했어요."; return; }
-  if (upload.state === "sending") { note.textContent = group.inGroup() ? "👥 그룹과 🌐 온라인에 올리는 중…" : "🌐 온라인 기록판에 올리는 중…"; return; }
-  const res = upload.res;
-  const why = {
-    off: "온라인 기록판 올리기는 꺼져 있어요.",
-    nick: `${res.problem} 온라인에는 올리지 않았어요.`,
-    rate: "방금 올린 기록이 있어 이번 판은 온라인에 올리지 않았어요. (10초에 한 번)",
-    offline: "인터넷에 연결되지 않아 이 기기에만 저장했어요.",
-    rejected: "기록 형식이 맞지 않아 온라인에 올리지 못했어요.",
-    error: "온라인에 올리지 못했어요.",
-  };
-  let text = res.ok ? `🌐 온라인 기록판에 올렸어요(${OnlineBoard.KEEP_DAYS_TEXT} 보관). ` : `🌐 ${why[res.reason] || why.error} `;
-  if (res.group) {
-    const g = res.group;
-    text = (g.ok ? "👥 그룹에 올렸어요. " : g.reason === "gone" ? "👥 그룹이 끝나 그룹에는 올리지 않았어요. "
-      : g.reason === "nick" ? "👥 별명이 없거나 맞지 않아 그룹에 올리지 못했어요. " : "👥 그룹에 올리지 못했어요. ") + text;
-  }
-  note.textContent = text;
-  const del = Object.assign(document.createElement("button"), { type: "button", className: "linkbtn", textContent: "이 기기에서 올린 온라인 기록 지우기" });
-  del.addEventListener("click", deleteMyOnline);
-  note.append(del);
-}
-
-async function deleteMyOnline() {
-  if (!confirm("이 기기에서 올린 슈퍼 세이브! 온라인 기록을 모두 지울까요?\n(이 기기 기록판과 그룹 순위는 그대로 남아요)")) return;
-  $("boardNote").textContent = "🌐 지우는 중…";
-  const res = await OnlineBoard.deleteMine(GAME_ID);
-  $("boardNote").textContent = res.ok ? `🌐 이 기기에서 올린 온라인 기록 ${res.count}건을 지웠어요.` : "🌐 지우지 못했어요. 인터넷 연결을 확인해 주세요.";
-  if (res.ok && upload?.res?.ok) upload.res = { ...upload.res, ok: false, reason: "deleted" };
-  if (boardTab === "today" || boardTab === "month") renderBoard();
-}
-
-for (const b of $("boardTabs").children) b.addEventListener("click", () => setBoardTab(b.dataset.tab));
-
-// 그룹 버튼(상단). 게임 중에는 읽지 않고, 눌렀을 때 경기 중이면 일시정지한다.
+// 그룹 버튼: 게임 중에는 30초 이상 간격으로만 읽고, 눌렀을 때 경기 중이면 일시정지한다.
 const group = mountGroup({
   slot: $("groupSlot"),
   buttonClass: "btn small",
@@ -2105,21 +1643,41 @@ const group = mountGroup({
   onOpen: () => { if (PAUSABLE.includes(phase)) pauseGame(); },
   onChange: (doc) => {
     renderHeroGroup();
-    if ($("sPlay").classList.contains("on")) {
-      if (doc && group.inGroup()) buildLiveFromGroup(doc);
-      else if (live.kind === "group") prepareLiveBoard();   // 그룹이 끝났으면 공개 기록판으로
-    }
-    if (phase === "result") {
-      const tabBtn = [...$("boardTabs").children].find((b) => b.dataset.tab === "group");
-      const wasHidden = tabBtn.hidden;
-      tabBtn.hidden = !group.inGroup();
-      if (boardTab === "group" && !group.inGroup()) setBoardTab(OnlineBoard.getOptIn() ? "today" : "local");
-      else if (wasHidden && group.inGroup()) setBoardTab("group");
-      else if (boardTab === "group" && !uploadPromise) renderBoard();
-      else if (boardTab === "group") uploadPromise.then(() => { if (boardTab === "group") renderBoard(); });
-    }
+    if ($("sPlay").classList.contains("on")) livePanels?.onGroupDoc(doc);
+    if (phase === "result") resultBoard?.onGroupChange();
   },
 });
+
+resultBoard = createResultBoard({
+  container: $("resultBoard"), game: GAME_ID, gameName: "슈퍼 세이브!", group, formatRecord, boardLabel,
+  // 이 기기 탭: 모든 난이도에서 이름마다 가장 좋은 판
+  localRows: (rec) => bestPerName(loadRecords()).map((r) => ({ ...toRow(r), justNow: !!rec && r.t === rec.t, mine: !!rec && r.n === rec.n })),
+});
+
+livePanels = createLivePanels({
+  host: field, game: GAME_ID, group, layout: "auto",
+  getBoard: () => diffKey, getNick: () => nickname, boardLabel, formatRecord,
+  localRows: (board) => bestPerName(loadRecords().filter((r) => r.d === board)).map(toRow),
+  // 다음 목표까지: 같은 레벨이면 남은 점수, 레벨이 높으면 그 레벨까지 남은 시간
+  gap: (me, t) => t.level === me.row.level
+    ? { left: `${fmtN(t.score - me.row.score + 1)}점 남음`, pct: me.row.score / (t.score + 1) }
+    : { left: `레벨 ${t.level}까지`, sub: `다음 레벨까지 ${Math.max(0, Math.ceil(levelLeftMs / 1000))}초`,
+        pct: me.playing ? clamp01(1 - levelLeftMs / (LEVEL_SEC * 1000)) : 0 },
+  stat: {
+    title: "⚡ 반응 속도", caption: "짧을수록 빨라요 · 최근 10개", avgLabel: "평균", bestLabel: "가장 빠름",
+    values: () => (stats.rts || []).map((r) => r.rt), format: (ms) => `${(ms / 1000).toFixed(2)}초`,
+    lowerIsBetter: true, floor: 300, ceil: 1000, emptyText: "공을 잡으면 나와요", emptyGraph: "아직 잡은 공이 없어요",
+  },
+});
+
+// 시작 화면: 그룹에 들어가 있으면 동작 소개 대신 그룹 순위
+function renderHeroGroup() {
+  const doc = group.getDoc();
+  const on = group.inGroup() && !!doc;
+  $("sStart").querySelector(".hero").classList.toggle("in-group", on);
+  $("heroGroup").hidden = !on;
+  if (on) renderGroupMini($("heroGroup"), { doc, game: GAME_ID, board: diffKey, formatRecord, boardLabel });
+}
 
 function drawChart() {
   const svg = $("rtChart");

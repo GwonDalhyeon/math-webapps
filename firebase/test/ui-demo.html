@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex" />
+  <title>온라인 기록판 화면 부품 예제</title>
+  <style>
+    /* 온라인 기록판 공용 부품(assets/online-board-ui.js)의 배치 방식을 시험하는 예제. 기록은 올리지 않고 읽기만 한다.
+       로컬에서 ?emu=1 을 붙이면 에뮬레이터를 읽는다. 기준: docs/agent-guides/online-board.md */
+    :root { font-family: system-ui, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif; --ink: #14324a; --muted: #47667a; --panel: #fffdf5;
+      --panel2: #eef8fb; --line: #14324a; --soft: #b9d2da; --accent: #ffd23f; --good: #16a34a; }
+    body { margin: 0; background: #dff3f7; color: var(--ink); }
+    header { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; padding: 10px 16px; background: var(--panel); border-bottom: 3px solid var(--line); }
+    header h1 { margin: 0; font-size: 20px; }
+    label { font-weight: 800; font-size: 15px; }
+    select, input[type=range] { font: inherit; }
+    main { padding: 14px; display: grid; gap: 14px; }
+    .stage { position: relative; height: 520px; border: 3px solid var(--line); border-radius: 18px; background: #16324a; overflow: hidden; }
+    .play { position: absolute; background: linear-gradient(145deg, #2f4a3f, #49584d); border: 1px solid #fff8; }
+    .embed-row { display: none; grid-template-columns: 220px 1fr 220px; gap: 12px; height: 520px; }
+    .embed-row .play-embed { position: relative; background: linear-gradient(145deg, #2f4a3f, #49584d); border: 3px solid var(--line); border-radius: 18px; }
+    .headless { display: none; background: var(--panel); border: 3px solid var(--line); border-radius: 14px; padding: 10px 14px; font: 13px/1.4 ui-monospace, monospace; white-space: pre-wrap; max-height: 300px; overflow: auto; }
+    .mini { max-width: 420px; background: var(--panel2); border: 2px solid var(--soft); border-radius: 14px; padding: 10px 14px; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>온라인 기록판 화면 부품 예제</h1>
+    <label>배치 <select id="layout">
+      <option value="auto">auto (빈 공간에 자동)</option>
+      <option value="embed">embed (게임이 준 상자)</option>
+      <option value="compact">compact (작은 띠)</option>
+      <option value="headless">headless (값만)</option>
+    </select></label>
+    <label>놀이 영역 너비 <input id="playW" type="range" min="40" max="100" value="62" /></label>
+    <label>내 점수 <input id="score" type="range" min="0" max="8000" step="50" value="1500" /></label>
+    <label>게임 <select id="game"><option>keeper-reflex</option></select></label>
+  </header>
+  <main>
+    <div class="stage" id="stage"><div class="play" id="play"></div></div>
+    <div class="embed-row" id="embedRow"><div id="embedL"></div><div class="play-embed"></div><div id="embedR"></div></div>
+    <pre class="headless" id="headless"></pre>
+    <div class="mini" id="mini"><p>그룹에 들어가면 여기에 그룹 순위(renderGroupMini)가 나와요. 오른쪽 위 떠 있는 👥 버튼으로 그룹을 만들거나 들어가 보세요.</p></div>
+  </main>
+<script type="module">
+import { mountGroup } from "../../assets/online-group.js";
+import { renderGroupMini, createLivePanels } from "../../assets/online-board-ui.js";
+
+const $ = (id) => document.getElementById(id);
+const GAME = "keeper-reflex", BOARD = "normal";
+const fmtN = (n) => n.toLocaleString("ko-KR");
+const formatRecord = (r) => ({ main: `레벨 ${r.level} · ${fmtN(r.score)}점`, a: `Lv${r.level}`, b: fmtN(r.score) });
+const reaction = [700, 530, 590, 460, 1180, 380, 1120, 340, 350, 510];
+
+// 상단 바가 없는 게임처럼 그룹 버튼을 화면 구석에 띄운다
+const group = mountGroup({ floating: "top-right", getNick: () => "예제", isIdle: () => true,
+  onChange: (doc) => { renderGroupMini($("mini"), { doc, game: GAME, board: BOARD, formatRecord }); panels?.onGroupDoc(doc); } });
+
+let panels = null;
+function build() {
+  const layout = $("layout").value;
+  for (const e of document.querySelectorAll(".ob-side, .ob-compact")) e.remove();
+  $("stage").style.display = layout === "embed" ? "none" : "";
+  $("embedRow").style.display = layout === "embed" ? "grid" : "none";
+  $("headless").style.display = layout === "headless" ? "block" : "none";
+  panels = createLivePanels({
+    host: $("stage"), game: GAME, group, layout, left: $("embedL"), right: $("embedR"),
+    getBoard: () => BOARD, getNick: () => "예제", formatRecord,
+    gap: (me, t) => t.level === me.row.level ? { left: `${fmtN(t.score - me.row.score + 1)}점 남음`, pct: me.row.score / (t.score + 1) } : { left: `레벨 ${t.level}까지`, pct: 0.3 },
+    stat: { title: "⚡ 반응 속도", caption: "짧을수록 빨라요 · 최근 10개", bestLabel: "가장 빠름", values: () => reaction, format: (ms) => `${(ms / 1000).toFixed(2)}초`, floor: 300, ceil: 1000 },
+  });
+  panels.prepare().then(tick);
+  place();
+}
+function place() {
+  const st = $("stage"), W = st.clientWidth, H = st.clientHeight;
+  const w = Math.min(W, H * 4 / 3) * $("playW").value / 100, h = w * 3 / 4;
+  const rect = { x: (W - w) / 2, y: (H - h) / 2, w, h, W, H };
+  Object.assign($("play").style, { left: `${rect.x}px`, top: `${rect.y}px`, width: `${w}px`, height: `${h}px` });
+  panels?.place(rect);
+  tick();
+}
+function tick() {
+  if (!panels) return;
+  const sc = Number($("score").value), lv = 1 + Math.floor(sc / 2500);
+  const snap = panels.update({ rank: lv * 10000000 + sc, playing: true, row: { level: lv, score: sc } });
+  if ($("layout").value === "headless") $("headless").textContent = JSON.stringify(snap, (k, v) => (k === "live" ? undefined : v), 2);
+}
+$("layout").addEventListener("change", build);
+$("playW").addEventListener("input", place);
+$("score").addEventListener("input", tick);
+addEventListener("resize", place);
+build();
+</script>
+</body>
+</html>

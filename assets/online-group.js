@@ -5,6 +5,7 @@
 // - 읽기를 아끼려고: 화면이 가려졌을 때는 읽지 않고, 20초마다 읽되 바뀐 게 없으면 40초·60초로 늦춘다.
 //   게임 중에는 isPlaying()이 참일 때만 30초 이상 간격으로 읽는다(아니면 읽지 않는다).
 // 사용: const group = mountGroup({ slot, buttonClass, getNick, setNick, isIdle, isPlaying, onOpen, onChange });
+//   상단 바가 없는 게임은 slot 없이 floating: "top-right"(또는 "top-left", "bottom-right", "bottom-left")로 화면 구석에 띄운다.
 // ===========================================================================
 import * as OB from "./online-board.js";
 
@@ -13,6 +14,11 @@ const PLAY_MS = 30000;   // 게임 중에도 순위 패널을 보여 주는 게�
 
 const CSS = `
 .og-btn .og-code { font-variant-numeric: tabular-nums; letter-spacing: .5px; }
+.og-float { position: fixed; z-index: 900; }
+.og-float.top-right { top: 10px; right: 10px; } .og-float.top-left { top: 10px; left: 10px; }
+.og-float.bottom-right { bottom: 10px; right: 10px; } .og-float.bottom-left { bottom: 10px; left: 10px; }
+.og-btn.og-plain { min-height: 44px; padding: 6px 12px; border-radius: 14px; border: 3px solid var(--line, #14324a); background: var(--panel, #fffdf5);
+  color: var(--ink, #14324a); font: inherit; font-size: 15px; font-weight: 900; box-shadow: 0 3px 0 var(--line, #14324a); cursor: pointer; white-space: nowrap; }
 @media (max-width: 760px) { .og-btn .og-extra { display: none; } }
 .og-overlay { position: fixed; inset: 0; z-index: 1000; display: none; align-items: center; justify-content: center; padding: 16px; background: rgba(15, 30, 45, .55); }
 .og-overlay.on { display: flex; }
@@ -51,11 +57,16 @@ function reasonText(res) {
   }[res.reason] || "잠시 뒤 다시 해 주세요.";
 }
 
-export function mountGroup({ slot, buttonClass = "", getNick = () => "", setNick = () => {}, isIdle = () => true, isPlaying = () => false, onOpen = () => {}, onChange = () => {} }) {
+export function mountGroup({ slot = null, floating = "", buttonClass = "", getNick = () => "", setNick = () => {}, isIdle = () => true, isPlaying = () => false, onOpen = () => {}, onChange = () => {} }) {
   if (!document.getElementById("og-style")) {
     document.head.append(Object.assign(document.createElement("style"), { id: "og-style", textContent: CSS }));
   }
-  const btn = Object.assign(document.createElement("button"), { type: "button", className: `${buttonClass} og-btn`.trim() });
+  if (!slot || floating) {
+    slot = document.createElement("div");
+    slot.className = `og-float ${floating || "top-right"}`;
+    document.body.append(slot);
+  }
+  const btn = Object.assign(document.createElement("button"), { type: "button", className: `${buttonClass || "og-plain"} og-btn`.trim() });
   btn.setAttribute("aria-haspopup", "dialog");
   slot.replaceChildren(btn);
 
