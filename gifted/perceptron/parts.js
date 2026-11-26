@@ -74,7 +74,14 @@ function planeSvg(o = {}) {
     if (sideArr && sideArr[i] === 0) extra += ' on-line';
     if (o.wrong && o.wrong.includes(i)) extra += ' wrong';
     if (o.selected && o.selected.includes(i)) extra += ' selected';
-    g += dotSvg(i, labels[i], extra);
+    if (o.unknown && o.unknown.includes(i)) {   /* 아직 옮기지 않은 점: ●/○와 헷갈리지 않게 점선 「?」 */
+      const [a, b] = PG.POINTS[i];
+      g += `<circle class="dot ghost" cx="${PX(a)}" cy="${PY(b)}" r="${R_DOT}"/>` + svgText(PX(a), PY(b) + 5, '?', 'small', 'middle', 14);
+    } else g += dotSvg(i, labels[i], extra);
+    if (o.badges && o.badges[i]) {               /* 진리표 행 번호와 맞추는 번호표 */
+      const [a, b] = PG.POINTS[i], dx = i === 1 ? 28 : -28;   // 좌표 이름표와 겹치지 않는 쪽
+      g += `<g class="pt-badge${o.badgeOn === i ? ' on' : ''}"><circle cx="${PX(a) + dx}" cy="${PY(b) - 26}" r="13"/><text x="${PX(a) + dx}" y="${PY(b) - 21}" text-anchor="middle">${o.badges[i]}</text></g>`;
+    }
   }
   if (o.star) g += `<circle class="star" cx="${PX(0.5)}" cy="${PY(0.5)}" r="8"/>` + svgText(PX(0.5) + 12, PY(0.5) - 16, '(0.5, 0.5)', 'coord', 'start', 15);
   if (o.coords !== false) g += coordLabels((o.coordList) || [0, 1, 2, 3].filter((i) => !(o.hide || []).includes(i)));
@@ -310,12 +317,18 @@ function scatterSvg(o = {}) {
   g += `<g class="axes"><line x1="${sx(0)}" y1="${sy(0)}" x2="${sx(100) + 10}" y2="${sy(0)}"/><line x1="${sx(0)}" y1="${sy(0)}" x2="${sx(0)}" y2="${sy(100) - 10}"/></g>`;
   [0, 50, 100].forEach((s) => { g += svgText(sx(s), sy(0) + 18, String(s), 'small', 'middle', 13) + (s ? svgText(sx(0) - 8, sy(s), String(s), 'small', 'end', 13) : ''); });
   g += svgText(sx(100), sy(0) + 36, '국어 점수', 'small', 'end', 13) + svgText(sx(0) - 4, sy(100) - 18, '수학 점수', 'small', 'start', 13);
-  g += `<line class="fixed-line" x1="${sx(50)}" y1="${sy(100)}" x2="${sx(100)}" y2="${sy(50)}"/>` + svgText(sx(100) - 4, sy(50) + 18, '합 = 150', 'line-label', 'end', 14);
+  /* 기준선 「합 = T」는 학생이 기준 점수를 써 넣은 뒤에만 긋는다(o.line = T) */
+  const T = o.line;
+  if (typeof T === 'number' && T > 0 && T < 200) {
+    const x1 = Math.max(0, T - 100), x2 = Math.min(100, T);
+    g += `<line class="fixed-line" x1="${sx(x1)}" y1="${sy(T - x1)}" x2="${sx(x2)}" y2="${sy(T - x2)}"/>` + svgText(sx(x1), sy(T - x1) - 13, `합 = ${T}`, 'line-label', 'middle', 15);
+  }
+  const wrong = o.wrong || [];
   SCORES.forEach(([x, y], i) => {
     const pass = x + y > 150;
-    g += `<circle class="dot ${pass ? 'on' : 'off'}${o.selected === i ? ' selected' : ''}" data-score="${i}" cx="${sx(x)}" cy="${sy(y)}" r="${o.small ? 5 : 7}"/>`;
+    g += `<circle class="dot ${pass ? 'on' : 'off'}${o.selected === i ? ' selected' : ''}${wrong.includes(i) ? ' wrong' : ''}" data-score="${i}" cx="${sx(x)}" cy="${sy(y)}" r="${o.small ? 5 : 7}"/>`;
   });
-  return `<svg viewBox="0 0 340 340" class="scatter-svg" role="img" aria-label="학생 20명의 국어·수학 점수와 합격선">${g}</svg>`;
+  return `<svg viewBox="0 0 340 340" class="scatter-svg" role="img" aria-label="학생 20명의 국어·수학 점수${typeof T === 'number' ? `와 직선 합 = ${T}` : ''}">${g}</svg>`;
 }
 
 /* ------------------------------------------------------------ 평면 조작 */

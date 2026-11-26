@@ -149,6 +149,12 @@ function truthTableHtml(n, outs, o = {}) {
   const cols = o.cols || [['출력', outs]];
   return `<table class="truth${o.cls ? ' ' + o.cls : ''}"><thead><tr>${names.map((x) => `<th>${x}</th>`).join('')}${cols.map(([h]) => `<th>${h}</th>`).join('')}</tr></thead><tbody>${rows.map((r, i) => `<tr class="${(o.diff || []).includes(i) ? 'diff' : ''}">${r.map((v) => `<td>${v}</td>`).join('')}${cols.map(([, arr]) => `<td><strong>${arr ? arr[i] : ''}</strong></td>`).join('')}</tr>`).join('')}</tbody></table>`;
 }
+/* 가로 진리표(행 8개를 열로 눕힘): 화면 높이를 아낀다. 다른 행(diff)은 열째 칠한다 */
+function hTruthTable(n, cols, diff = []) {
+  const rows = PG.rows(n), names = ['A', 'B', 'C'].slice(0, n);
+  const line = (h, vals, strong) => `<tr><th scope="row">${h}</th>${vals.map((v, i) => `<td class="${diff.includes(i) ? 'diff' : ''}">${strong ? `<strong>${v}</strong>` : v}</td>`).join('')}</tr>`;
+  return `<table class="truth h-truth"><tbody>${names.map((x, k) => line(x, rows.map((r) => r[k]), false)).join('')}${cols.map(([h, arr]) => line(h, arr, true)).join('')}</tbody></table>`;
+}
 const outDef = (sc) => `<div class="out-def"><strong>출력</strong><span>1 = ${esc(sc.out1)}</span><span>0 = ${esc(sc.out0)}</span></div>`;
 const meaningRows = (sc, assign) => assign.map((id, k) => { const c = condOf(sc, id); return `<li><strong class="var-name">${IN3[k]}</strong> 1이면 ${esc(c.yes)}, 0이면 ${esc(c.no)}</li>`; }).join('');
 const needScenario = (title, sub) => `${head(title, '', sub)}<div class="card stack"><div class="notice">먼저 앞 화면에서 상황 카드를 고르고 조건을 A, B, C에 놓아 「확인」을 눌러 주세요.</div><div class="button-row"><button class="secondary-button" type="button" data-go="P2a">앞 화면으로</button></div></div>`;
@@ -156,20 +162,21 @@ const needScenario = (title, sub) => `${head(title, '', sub)}<div class="card st
 RENDER.P2a = () => {
   const p = S('P2'), sc = p2Scenario();
   const cards = PG.SCENARIOS.map((x) => `<button type="button" class="scenario-card${p.scenario === x.id ? ' on' : ''}" data-scenario="${x.id}" aria-pressed="${p.scenario === x.id}"><strong>${x.name}</strong><span>${x.goal}</span></button>`).join('');
-  let right = '<p class="muted" style="margin:0">왼쪽에서 상황 카드를 하나 고르세요.</p>';
+  let right = '<p class="todo-line">왼쪽에서 상황 카드를 하나 고르세요. 고르면 여기에 조건 문장과 할 일이 나옵니다.</p>';
   if (sc) {
     const placed = new Set(p.assign);
     const chips = COND_ORDER.map((k) => sc.conds[k]).map((c) => `<button type="button" class="cond-chip" data-cond="${c.id}" ${placed.has(c.id) || p.assign.length >= 3 ? 'disabled' : ''}>${esc(c.yes)}</button>`).join('');
     const slots = IN3.map((x, k) => { const id = p.assign[k], c = id ? condOf(sc, id) : null; return `<button type="button" class="cond-slot${id ? ' filled' : ''}" data-slot="${k}" ${id ? `aria-label="${x}에서 빼기"` : 'disabled'}><span class="var-name">${x}</span>${c ? `<span><strong>${esc(c.yes)}</strong><small class="slot-mean">1이면 ${esc(c.yes)}, 0이면 ${esc(c.no)}</small></span><span aria-hidden="true">✕</span>` : '<span class="muted">비어 있음</span>'}</button>`; }).join('');
-    right = `<p class="todo-line">왼쪽 조건 문장에 필요한 조건을 눌러 A, B, C 칸에 차례로 놓으세요. 하나는 필요 없는 조건입니다. 놓은 칸을 누르면 뺍니다.</p>
-      <div class="chip-row">${chips}</div>
+    const verdict = p.assignOk ? resultBox('ok', '조건을 맞게 골랐습니다. 다음 화면에서 회로를 만듭니다.')
+      : p.assignTried && p.assign.length === 3 ? resultBox('fail', '조건 문장에 나오지 않는 조건이 하나 섞여 있어요. 문장을 처음부터 읽으며 조건을 하나씩 대조해 보세요.') : '';
+    right = `<div class="task-sentence"><span class="task-tag">${esc(sc.name)} · 조건 문장</span><p>${esc(sc.sentence)}</p>${outDef(sc)}</div>
+      <div class="chip-row" aria-label="조건 보기">${chips}</div>
       <div class="slot-row">${slots}</div>
-      <div class="button-row"><button id="p2a-check" class="primary-button" type="button" ${p.assign.length < 3 ? 'disabled' : ''}>확인</button></div>
-      ${p.assignOk ? resultBox('ok', '조건을 맞게 골랐습니다. 다음 화면에서 회로를 만듭니다.') : ''}`;
+      <div class="check-row"><button id="p2a-check" class="primary-button" type="button" ${p.assign.length < 3 ? 'disabled' : ''}>확인</button>${p.assign.length < 3 ? `<span class="small">${3 - p.assign.length}칸 더 놓으면 확인할 수 있어요.</span>` : verdict}</div>`;
   }
-  return `${head('내 장치 설계 ① 상황과 조건', '조건에 따라 작동하는 장치를 설계합니다. 상황 카드를 하나 고르고, 작동 조건에 필요한 입력을 정해 봅시다.', '오늘의 정리 1 (1)')}
+  return `${head('내 장치 설계 ① 상황과 조건', '조건에 따라 작동하는 장치를 설계합니다. 왼쪽에서 상황 카드를 하나 고르면, 오른쪽에 그 장치의 조건 문장과 할 일이 나옵니다.', '오늘의 정리 1 (1)')}
   <div class="screen-layout two-col scenario-layout">
-    <div class="card stack"><h3 style="margin:0">상황 카드</h3><div class="scenario-list">${cards}</div>${sc ? `${outDef(sc)}<p class="quote-line" style="margin:0"><strong>조건 문장</strong> ${esc(sc.sentence)}</p>` : ''}</div>
+    <div class="card stack"><h3 style="margin:0">상황 카드</h3><div class="scenario-list">${cards}</div>${sc ? `<div class="todo-box"><strong>할 일</strong><ol><li>오른쪽 조건 문장에 나오는 조건 3개를 눌러 A, B, C 칸에 놓습니다. 보기 하나는 문장에 없는 조건입니다.</li><li>「확인」을 누릅니다. 놓은 칸을 누르면 뺍니다.</li></ol></div>` : ''}</div>
     <div class="card stack">${right}</div>
   </div>`;
 };
@@ -177,14 +184,14 @@ BIND.P2a = () => {
   const p = S('P2');
   $$('[data-scenario]').forEach((b) => b.addEventListener('click', () => {
     if (p.scenario === b.dataset.scenario) return;
-    p.scenario = b.dataset.scenario; p.assign = []; p.assignOk = false; p2Reset(1);
+    p.scenario = b.dataset.scenario; p.assign = []; p.assignOk = false; p.assignTried = false; p2Reset(1);
     logEvent('write', 'P2a', `상황 카드: ${PG.scenarioById(p.scenario).name}`); render();
   }));
-  $$('[data-cond]').forEach((b) => b.addEventListener('click', () => { if (p.assign.length < 3) { p.assign.push(b.dataset.cond); p.assignOk = false; p2Reset(1); persist(); render(); } }));
-  $$('[data-slot]').forEach((b) => b.addEventListener('click', () => { p.assign.splice(Number(b.dataset.slot), 1); p.assignOk = false; p2Reset(1); persist(); render(); }));
+  $$('[data-cond]').forEach((b) => b.addEventListener('click', () => { if (p.assign.length < 3) { p.assign.push(b.dataset.cond); p.assignOk = false; p.assignTried = false; p2Reset(1); persist(); render(); } }));
+  $$('[data-slot]').forEach((b) => b.addEventListener('click', () => { p.assign.splice(Number(b.dataset.slot), 1); p.assignOk = false; p.assignTried = false; p2Reset(1); persist(); render(); }));
   $('#p2a-check')?.addEventListener('click', () => {
     const sc = p2Scenario(), ok = PG.assignOk(sc, p.assign);
-    p.assignOk = ok;
+    p.assignOk = ok; p.assignTried = true;
     logEvent('attempt', 'P2a', `${sc.name} · 고른 조건: ${p.assign.map((id) => condOf(sc, id).yes).join(', ')}`, ok ? 'ok' : 'fail');
     if (ok) success('맞게 골랐습니다. 이제 회로를 만들어 봅시다.'); else fail('P2a');
     render();
@@ -258,19 +265,21 @@ RENDER.P2e = () => {
   let exprTable = null;
   if (p.exprOk) { const pr = PG.parseExpr(p.tokens); if (pr.ast) exprTable = PG.exprTable(pr.ast, 3); }
   return `${head('내 장치 설계 ③ 식으로 나타내기', '내가 만든 회로를 AND, OR, NOT을 쓴 식으로 나타내 봅시다. 게이트 하나가 괄호 하나입니다.', '오늘의 정리 1 (3)')}
-  <div class="screen-layout two-col">
+  <div class="screen-layout two-col p2e-top">
     <div class="card stack">
       <div class="board-box small">${boardSvg(p, { inputs: IN3, names: p2Names(sc), outName: `1 = ${sc.out1}`, sw: p.sw, readOnly: true, small: true })}</div>
-      ${p.circuitOk ? '' : '<p class="muted small" style="margin:0">회로가 아직 조건 문장과 다르지만, 지금 회로를 그대로 식으로 나타내 볼 수 있습니다.</p>'}
-      <div class="expr-view cursor-view" aria-live="polite">${exprView}</div>
-      <div class="token-pad">${TOKEN_LIST.map((t) => `<button type="button" class="tok-button" data-tok="${t}">${t}</button>`).join('')}</div>
-      <div class="token-pad soft"><button type="button" class="tok-button soft" data-tok="LEFT" aria-label="커서를 왼쪽으로">◀</button><button type="button" class="tok-button soft" data-tok="RIGHT" aria-label="커서를 오른쪽으로">▶</button><button type="button" class="tok-button soft" data-tok="BACK" aria-label="커서 앞 기호 하나 지우기">⌫</button><button type="button" class="tok-button soft" data-tok="CLEAR">모두 지우기</button></div>
-      <p class="muted small" style="margin:0">기호 사이를 누르거나 ◀ ▶로 커서(세로줄)를 옮기면, 그 자리에 넣거나 지울 수 있습니다. NOT은 바로 뒤의 문자나 괄호 하나에만 붙습니다.</p>
+      ${p.circuitOk ? '' : '<p class="small" style="margin:0">회로가 아직 조건 문장과 다르지만, 지금 회로를 그대로 식으로 나타내 볼 수 있습니다.</p>'}
     </div>
     <div class="card stack">
-      <div class="button-row"><button id="p2e-check" class="primary-button" type="button">식 확인</button></div>
       ${p.exprError ? resultBox('fail', EXPR_ERR[p.exprError] || '식을 다시 확인해 주세요.') : ''}
-      ${p.exprChecked && exprTable ? `<div data-reveal="expr">${p.exprMatch ? resultBox('ok', '식과 회로가 같은 판단을 합니다.') : resultBox('fail', `식과 회로가 다른 행이 ${p.exprDiff.length}개 있어요. 표에서 칠한 행을 보세요.`)}${truthTableHtml(3, null, { cols: [['내 회로', mine], ['내 식', exprTable]], diff: p.exprDiff, cls: 'compact tiny-rows' })}</div>` : '<p class="muted" style="margin:0">「식 확인」을 누르면 회로와 식의 진리표를 나란히 비교합니다.</p>'}
+      ${p.exprChecked && exprTable ? `<div class="stack" data-reveal="expr">${p.exprMatch ? resultBox('ok', '식과 회로가 같은 판단을 합니다.') : resultBox('fail', `식과 회로가 다른 행이 ${p.exprDiff.length}개 있어요. 표에서 칠한 행을 보세요.`)}${hTruthTable(3, [['내 회로', mine], ['내 식', exprTable]], p.exprDiff)}<p class="small" style="margin:0">세로 한 줄이 진리표의 한 행입니다.</p></div>` : p.exprError ? '' : '<p class="todo-line">아래 칸에 식을 만든 뒤 「식 확인」을 누르세요. 회로와 식의 진리표를 여기에 나란히 비교합니다.</p><ul class="tip-list"><li>기호 사이를 누르거나 ◀ ▶로 커서(세로줄)를 옮기면, 그 자리에 넣거나 지울 수 있습니다.</li><li>NOT은 바로 뒤의 문자나 괄호 하나에만 붙습니다.</li></ul>'}
+    </div>
+  </div>
+  <div class="card stack expr-card">
+    <div class="expr-line"><div class="expr-view cursor-view" aria-live="polite">${exprView}</div><button id="p2e-check" class="primary-button" type="button">식 확인</button></div>
+    <div class="token-bar">
+      <div class="token-pad one-line">${TOKEN_LIST.map((t) => `<button type="button" class="tok-button" data-tok="${t}">${t}</button>`).join('')}</div>
+      <div class="token-pad one-line"><button type="button" class="tok-button soft" data-tok="LEFT" aria-label="커서를 왼쪽으로">◀</button><button type="button" class="tok-button soft" data-tok="RIGHT" aria-label="커서를 오른쪽으로">▶</button><button type="button" class="tok-button soft" data-tok="BACK" aria-label="커서 앞 기호 하나 지우기">⌫</button><button type="button" class="tok-button soft" data-tok="CLEAR">모두 지우기</button></div>
     </div>
   </div>`;
 };
@@ -329,30 +338,73 @@ BIND.P3 = () => {
 };
 
 /* ================================================================ 섹션 2 */
+/* 합격 기준 추정: 「합이 T점보다 크면 합격」. 불합격 최고 합 141, 합격 최저 합 160이므로 T = 141~159가 모두 정답 */
+const P4_PASS = SCORES.map(([x, y]) => x + y > 150);
+const isIntText = (t) => /^-?\d+$/.test(String(t || '').trim());
+function judgeP4(t) {
+  const T = Number(String(t).trim());
+  const wrong = SCORES.map(([x, y], i) => ((x + y > T) !== P4_PASS[i] ? i : -1)).filter((i) => i >= 0);
+  return { T, wrong, ok: wrong.length === 0, onLine: SCORES.findIndex(([x, y]) => x + y === T) };
+}
 RENDER.P4 = () => {
-  const sel = S('P4').sel;
-  let info = '점을 누르면 그 학생의 점수가 보입니다.';
-  if (sel !== null) { const [x, y] = SCORES[sel]; info = `국어 ${x}점, 수학 ${y}점 → 합 ${x + y}점 → ${x + y > 150 ? '합격 ●' : '불합격 ○'}`; }
-  return `${head('판단은 평면을 가르는 일이다', '어느 시험에서 국어 점수와 수학 점수의 합이 150점보다 크면 합격이라고 합시다. 학생 20명의 (국어 점수, 수학 점수)를 좌표평면에 점으로 찍고, 합격은 ●, 불합격은 ○로 나타냈습니다.')}
-  <div class="screen-layout two-col"><div class="card"><div class="scatter-box">${scatterSvg({ selected: sel })}</div><div class="result" role="status">${info}</div></div>
-  <div class="card stack"><p class="todo-line">점을 몇 개 눌러 점수를 확인하고, 아래 문장을 읽어 보세요.</p><p style="margin:0">직선 「합 = 150」의 오른쪽 위에는 ●만, 왼쪽 아래에는 ○만 있습니다.</p><p style="margin:0"><strong>기준 하나가 평면을 직선 하나로 두 쪽으로 가른 것입니다.</strong></p><p class="muted small" style="margin:0">「150점 이상」이 아니라 「150점보다 크면」으로 정했습니다. 직선 위에 있는 학생은 없습니다.</p></div></div>`;
+  const p = S('P4'), sel = p.sel;
+  const j = p.tried && isIntText(p.guess) ? judgeP4(p.guess) : null;
+  const info = sel === null ? '<span class="muted">점을 누르면 그 학생의 점수와 합이 여기에 나옵니다.</span>'
+    : (() => { const [x, y] = SCORES[sel]; return `국어 <b>${x}</b> + 수학 <b>${y}</b> = 합 <b>${x + y}</b> → ${P4_PASS[sel] ? '합격 ●' : '불합격 ○'}`; })();
+  let verdict = '';
+  if (p.tried && !isIntText(p.guess)) verdict = resultBox('fail', '정수로 입력하세요. 예: 120');
+  else if (j && j.ok) verdict = resultBox('ok', `맞아요. 직선 「합 = ${j.T}」의 오른쪽 위에는 ●만, 왼쪽 아래에는 ○만 있습니다.${j.onLine >= 0 ? ` 직선 위의 학생(합 ${j.T})은 「${j.T}점보다 크면」이 아니므로 불합격입니다.` : ''}`);
+  else if (j) {
+    const passLow = j.wrong.filter((i) => P4_PASS[i]).length, failHigh = j.wrong.length - passLow;
+    verdict = resultBox('fail', `「합 = ${j.T}」로 가르면 ${[passLow ? `●인데 불합격 쪽에 놓이는 학생이 ${passLow}명` : '', failHigh ? `○인데 합격 쪽에 놓이는 학생이 ${failHigh}명` : ''].filter(Boolean).join(', ')} 있어요. 빨갛게 표시한 점을 눌러 합을 확인해 보세요.`);
+  }
+  return `${head('판단은 평면을 가르는 일이다', '국어 점수와 수학 점수의 합이 <strong>기준 점수보다 크면</strong> 합격인 시험이 있습니다. 학생 20명의 (국어 점수, 수학 점수)를 점으로 찍고 합격은 ●, 불합격은 ○로 나타냈습니다. 기준 점수는 알려 주지 않았습니다.')}
+  <div class="screen-layout two-col"><div class="card"><div class="scatter-box">${scatterSvg({ selected: sel, line: j ? j.T : null, wrong: j && !j.ok ? j.wrong : [] })}</div></div>
+  <div class="card stack">
+    ${j && j.ok ? '' : '<p class="todo-line">점을 눌러 학생의 점수와 합을 확인하고, 합격 기준 점수를 추정해 보세요.</p>'}
+    <div class="score-info" role="status">${info}</div>
+    <div class="field"><label class="field-label" for="p4-guess">합격 기준: 국어 점수와 수학 점수의 합이 □점보다 크면 합격이다. □에 들어갈 수 있는 <u>정수</u>를 하나 쓰시오.</label>
+      <div class="inline-actions"><input id="p4-guess" type="text" inputmode="numeric" value="${esc(p.guess)}" style="max-width:110px" aria-label="합격 기준 점수(정수)"><span>점</span><button id="p4-check" class="primary-button" type="button">직선 그어 확인</button></div></div>
+    ${verdict}
+    ${j && j.ok ? `<p class="read-box" style="margin:0" data-reveal="p4ok">실제 기준은 <strong>150점</strong>이었습니다. 불합격자의 합은 141점 이하, 합격자의 합은 160점 이상이라 <strong>141~159의 정수는 모두</strong> 이 20명을 똑같이 가릅니다. <strong>기준 하나가 평면을 직선 하나로 두 쪽으로 가른 것입니다.</strong></p>` : ''}
+  </div></div>`;
 };
-BIND.P4 = () => { $$('[data-score]').forEach((c) => c.addEventListener('click', () => { S('P4').sel = Number(c.dataset.score); render(); })); };
+BIND.P4 = () => {
+  const p = S('P4');
+  $$('[data-score]').forEach((c) => c.addEventListener('click', () => { p.sel = Number(c.dataset.score); persist(); render(); }));
+  $('#p4-guess').addEventListener('input', (e) => { p.guess = e.target.value; p.tried = false; persist(); });
+  $('#p4-guess').addEventListener('keydown', (e) => { if (e.key === 'Enter') $('#p4-check').click(); });
+  $('#p4-check').addEventListener('click', () => {
+    p.tried = true;
+    if (isIntText(p.guess)) {
+      const j = judgeP4(p.guess);
+      logEvent('attempt', 'P4', `합격 기준 추정 ${j.T} · 잘못 갈린 학생 ${j.wrong.length}명`, j.ok ? 'ok' : 'fail');
+      if (j.ok) success('직선 하나로 합격과 불합격이 갈렸습니다.'); else say('빨갛게 표시한 점을 눌러 합을 확인해 보세요.', 'tilt');
+    }
+    persist(); render();
+  });
+};
 
 const RULES = ['가로축이 A, 세로축이 B입니다.', '출력이 1인 점은 까맣게 칠하고(●), 0인 점은 비워 둡니다(○).', '직선 하나만 긋습니다. 직선이 점 위를 지나면 나눈 것으로 보지 않습니다.', '직선의 한쪽에 ●만, 다른 쪽에 ○만 있으면 「나누었다」고 합니다.'];
 const rulesHtml = (compact) => `<div class="rule-box${compact ? ' compact' : ''}"><strong>규칙</strong><ol>${RULES.map((r) => `<li>${r}</li>`).join('')}</ol></div>`;
 RENDER.P5 = () => {
   const p = S('P5'), step = p.step;
   const out = LAB.NOT_A_AND_B;
+  const NO = ['①', '②', '③', '④'];
   const labels = [0, 1, 2, 3].map((i) => (i < step ? out[i] : null));
-  const rows = [[0, 0], [0, 1], [1, 0], [1, 1]].map((r, i) => `<tr class="${i === step - 1 ? 'now' : ''}"><td>${r[0]}</td><td>${r[1]}</td><td>${out[i]}</td><td>${i < step ? `→ ${COORD[i]} ${out[i] ? '●' : '○'}` : ''}</td></tr>`).join('');
+  const unknown = [0, 1, 2, 3].filter((i) => i >= step);
+  const badges = Object.fromEntries([0, 1, 2, 3].filter((i) => i < step).map((i) => [i, i + 1]));
+  const rows = [[0, 0], [0, 1], [1, 0], [1, 1]].map((r, i) => `<tr class="${i === step - 1 ? 'now' : ''}${i < step ? ' moved' : ''}"><td class="row-no">${NO[i]}</td><td>${r[0]}</td><td>${r[1]}</td><td><strong>${out[i]}</strong></td><td class="pt-cell">${i < step ? `점 <b>${COORD[i]}</b>에 <b class="mark">${out[i] ? '●' : '○'}</b>` : '<span class="muted">아직</span>'}</td></tr>`).join('');
   return `${head('진리표가 점이 된다', '입력이 0과 1뿐이라면 진리표의 한 행 (A, B)는 순서쌍, 곧 좌표평면의 점 하나입니다. 출력이 1이면 ●, 0이면 ○로 나타냅니다.')}
   <div class="screen-layout two-col fig-left">
-    <div class="card stack"><div class="plane-box small">${planeSvg({ labels, title: '2-1 회로의 네 점' })}</div>${rulesHtml(true)}</div>
+    <div class="card stack"><div class="plane-box mid">${planeSvg({ labels, unknown, badges, badgeOn: step - 1, selected: step ? [step - 1] : [], title: '2-1 회로의 네 점' })}</div>
+      <p class="caption">점 옆의 번호는 진리표의 행 번호입니다. 점선 「?」는 아직 옮기지 않은 점입니다.</p></div>
     <div class="card stack">
-      <div class="fig-row"><table class="truth compact"><thead><tr><th>A</th><th>B</th><th>출력</th><th>점</th></tr></thead><tbody>${rows}</tbody></table>
-        <div class="side-col"><span class="small muted">2-1 회로(밝다 센서등)의 진리표</span><button id="p5-next" class="primary-button" type="button" ${step >= 4 ? 'disabled' : ''}>다음 행을 점으로</button><button id="p5-all" class="secondary-button" type="button" ${step >= 4 ? 'disabled' : ''}>모두 옮기기</button>${step ? '<button id="p5-reset" class="secondary-button" type="button">처음부터</button>' : ''}</div></div>
-      ${step >= 4 ? '<p style="margin:0" data-reveal="done">네 행이 모두 점이 되었습니다. 다음 화면부터는 이렇게 점으로 옮긴 판단을 <strong>직선 하나로 가를 수 있는지</strong> 직접 그어 봅니다.</p>' : '<p class="todo-line">「다음 행을 점으로」를 눌러 진리표의 행을 하나씩 점으로 옮겨 보세요.</p>'}
+      <h3 style="margin:0">2-1 회로(밝다 센서등)의 진리표</h3>
+      <table class="truth p5-table"><thead><tr><th>행</th><th>A</th><th>B</th><th>출력</th><th>좌표평면의 점</th></tr></thead><tbody>${rows}</tbody></table>
+      <div class="button-row"><button id="p5-next" class="primary-button" type="button" ${step >= 4 ? 'disabled' : ''}>${step ? `다음 행(${NO[Math.min(step, 3)]})을 점으로` : '① 행을 점으로'}</button><button id="p5-all" class="secondary-button" type="button" ${step >= 4 ? 'disabled' : ''}>모두 옮기기</button>${step ? '<button id="p5-reset" class="secondary-button" type="button">처음부터</button>' : ''}</div>
+      ${step >= 4 ? '<p style="margin:0" data-reveal="done">네 행이 모두 점이 되었습니다. 다음 화면부터는 이렇게 점으로 옮긴 판단을 <strong>직선 하나로 가를 수 있는지</strong> 직접 그어 봅니다.</p>' : `<p class="todo-line">${step ? `${NO[step - 1]} 행 (A, B) = ${COORD[step - 1]}이 왼쪽 그림의 ${NO[step - 1]}번 점이 되었습니다. 다음 행도 옮겨 보세요.` : '버튼을 눌러 진리표의 행을 하나씩 점으로 옮겨 보세요. 행 (A, B)가 점의 좌표가 됩니다.'}</p>`}
+      ${rulesPop()}
     </div>
   </div>`;
 };
@@ -477,15 +529,25 @@ BIND.P7 = () => {
 };
 
 /* ---------- P8 나눌 수 있었나 */
+/* 나눈 방법 하나를 작은 평면으로: XOR의 진짜 ●/○, 그 방법으로 그은 직선 하나, 직선 양쪽 바탕색(파랑·노랑) */
+function xorPartFig(k, hist) {
+  const line = hist.slice().reverse().find((l) => { const L = lineFromPts(l); const r = L && PG.judgeLine(L, LAB.XOR); return r && r.reason !== 'onPoint' && r.key === k; });
+  if (!line) return '';
+  const sd = PG.sides(lineFromPts(line));
+  const grp = (sg) => [0, 1, 2, 3].filter((i) => sd[i] === sg);
+  const txt = (arr) => (arr.length ? arr.map((i) => `${LAB.XOR[i] ? '●' : '○'}${COORD[i]}`).join(' ') : '점 없음');
+  const mixed = [1, -1].some((sg) => { const g = grp(sg); return g.some((i) => LAB.XOR[i]) && g.some((i) => !LAB.XOR[i]); });
+  return `<figure class="mini-fig part-fig"><div class="plane-box">${planeSvg({ labels: LAB.XOR, line, coords: false, title: '나눈 방법' })}</div>
+    <figcaption><span class="side side-a">파랑</span> ${txt(grp(1))}<br><span class="side side-b">노랑</span> ${txt(grp(-1))}<br>${mixed ? '<b class="bad">● ○ 섞임</b>' : '<b class="ok-text">나뉨</b>'}</figcaption></figure>`;
+}
 RENDER.P8 = () => {
   const p7 = S('P7'), p = S('P8');
   const pv = predictValue('P7');
-  const minis = p7.parts.length ? p7.parts.map((k) => `<figure class="mini-fig">${partMiniSvg(k)}<figcaption>${partText(k)}</figcaption></figure>`).join('') : '<p class="muted small" style="grid-column:1/-1;margin:0">아직 그어 본 직선이 없어요. 앞 화면에서 그어 보세요.</p>';
-  return `${head('직선 하나로 나눌 수 있었나', '앞 화면에서 그은 직선을 모두 겹쳐 보았습니다. 직선마다 네 점이 어떻게 두 무리로 갈렸는지도 모았습니다.', '4-2')}
-  <div class="screen-layout two-col fig-left">
-    <div class="card stack"><div class="plane-box small">${planeSvg({ labels: LAB.XOR, ghosts: p7.history, title: '그어 본 직선 모두' })}</div>
-      <p class="muted small" style="margin:0">그어 본 직선 ${p7.history.length}개 · 나눈 방법 ${p7.parts.length}가지 (진한 점과 흐린 점이 직선의 서로 다른 쪽)</p>
-      <div class="mini-grid row">${minis}</div></div>
+  const minis = p7.parts.length ? p7.parts.map((k) => xorPartFig(k, p7.history)).join('') : '<p class="small" style="grid-column:1/-1;margin:0">아직 그어 본 직선이 없어요. 앞 화면에서 그어 보세요.</p>';
+  return `${head('직선 하나로 나눌 수 있었나', '앞 화면에서 그은 직선을 네 점을 가른 방법에 따라 모았습니다. 칸 하나가 한 가지 방법이고, 그 방법으로 그은 직선 하나를 보여 줍니다.', '4-2')}
+  <div class="screen-layout two-col p8-layout">
+    <div class="card stack"><p class="todo-line">그어 본 직선 <strong>${p7.history.length}</strong>개 · 네 점을 가른 방법 <strong>${p7.parts.length}</strong>가지. 칸마다 직선의 파란 쪽과 노란 쪽에 어떤 점이 있는지 보세요.</p>
+      <div class="mini-grid part-figs">${minis}</div></div>
     <div class="card stack">
       ${pv ? `<p class="muted small" style="margin:0">처음 예상(XOR): <strong>${{ yes: '된다', no: '안 된다', unsure: '모르겠다' }[pv]}</strong></p>` : ''}
       <div class="field"><span class="field-label">직선 하나로 ●와 ○를 나눌 수 있었는가?</span>${choiceRow('p8', [['yes', '예'], ['no', '아니오'], ['unsure', '아직 모르겠다']], p.choice)}</div>

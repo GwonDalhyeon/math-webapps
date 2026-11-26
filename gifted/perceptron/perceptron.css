@@ -84,7 +84,7 @@ table.truth tr.diff td { background: var(--red-soft); }
 .plane-box { width: 100%; margin: 0 auto; touch-action: none; }
 .plane-svg { display: block; width: 100%; height: auto; user-select: none; -webkit-user-select: none; }
 .plane-svg:focus-visible { outline: 3px solid #6ca4ff; outline-offset: 2px; border-radius: 8px; }
-.plane-svg .t, .sumline-svg .t, .circuit-svg .t, .scatter-svg .t { font-family: "Pretendard", "Noto Sans KR", "Malgun Gothic", sans-serif; fill: var(--ink); paint-order: stroke; stroke: #fff; stroke-width: 4px; stroke-linejoin: round; }
+.plane-svg .t, .sumline-svg .t, .circuit-svg .t, .scatter-svg .t { font-family: "Pretendard Variable", "Pretendard", "Noto Sans KR", "Malgun Gothic", sans-serif; fill: var(--ink); paint-order: stroke; stroke: #fff; stroke-width: 4px; stroke-linejoin: round; }
 .plane-svg .t.coord, .sumline-svg .t.coord { fill: #4b5563; font-weight: 600; }
 .t.small, .t.tiny { fill: #4b5563; }
 .var { font-style: italic; font-family: "Times New Roman", serif; }
@@ -394,7 +394,7 @@ table.truth.compact th, table.truth.compact td { padding: 2px 6px; line-height: 
 .board-box { width: 100%; max-width: 760px; }
 .board-box.small { max-width: 440px; }
 .board-svg { width: 100%; height: auto; touch-action: none; user-select: none; }
-.board-svg .t { font-family: "Pretendard", "Noto Sans KR", "Malgun Gothic", sans-serif; fill: var(--ink); paint-order: stroke; stroke: #fff; stroke-width: 4px; stroke-linejoin: round; }
+.board-svg .t { font-family: "Pretendard Variable", "Pretendard", "Noto Sans KR", "Malgun Gothic", sans-serif; fill: var(--ink); paint-order: stroke; stroke: #fff; stroke-width: 4px; stroke-linejoin: round; }
 .board-bg { fill: #fbfaf5; stroke: var(--line); stroke-width: 2; }
 .board-svg .t.board-name { fill: var(--muted); font-weight: 700; }
 .board-svg .block { cursor: grab; }
@@ -499,3 +499,127 @@ table.truth.tiny-rows th, table.truth.tiny-rows td { padding: 1px 6px; font-size
 button.part-cell { font: inherit; cursor: pointer; }
 button.part-cell .cap { display: block; font-size: .74rem; color: var(--muted); line-height: 1.35; }
 .part-cell.picked { border-color: var(--blue); box-shadow: inset 0 0 0 2px var(--blue); }
+
+/* ================================================================ 가독성 개정(2026-11-26, 04_가독성_개정)
+   학생이 꼭 읽을 글(할 일·문항·결과·그림 설명)은 진한 글자, 15px 이상. 회색은 보충 설명에만 쓴다.
+   읽어야 할 내용은 투명도로 흐리게 하지 않는다. */
+:root { --muted: #475467; }
+body { -webkit-font-smoothing: antialiased; }
+.screen-heading p { color: var(--ink); font-size: 1rem; line-height: 1.55; }
+.small { font-size: .92rem; }
+.caption { color: #374151; font-size: max(15px, .92rem); }
+.result { font-size: 1rem; font-weight: 700; }
+.result.muted { font-weight: 500; }
+.todo-line { font-size: 1rem; color: #12305f; }
+.rule-box.compact li { font-size: max(15px, .92rem); }
+table.truth.compact th, table.truth.compact td { font-size: max(15px, .98rem); }
+table.truth.tiny-rows th, table.truth.tiny-rows td { font-size: max(15px, .92rem); }
+.scenario-card span { color: #374151; font-size: max(15px, .92rem); }
+.slot-mean { color: #374151; font-size: max(15px, .86rem); }
+.meaning-list, .meaning-list.compact { font-size: max(15px, .95rem); }
+.dv-name { color: #374151; font-size: .78rem; }
+.steps-bar { font-size: .88rem; }
+.steps-bar li { color: #374151; }
+.fold-steps figcaption { color: #374151; font-size: max(15px, .86rem); }
+.xor-row { font-size: .92rem; }
+.xor-row span { color: #374151; }
+.path-key { color: #374151; font-size: .82rem; }
+.mini-fig figcaption, .part-cell figcaption, button.part-cell .cap { color: #374151; font-size: max(15px, .82rem); }
+.part-grid.compact figcaption { font-size: max(15px, .78rem); }
+.story-cell figcaption { font-size: max(15px, .95rem); }
+.t.small, .t.tiny, .plane-svg .t.coord, .sumline-svg .t.coord, .t.wire-val { fill: #374151; }
+.board-svg .t.board-name { fill: #374151; }
+.step-count { color: #374151; }
+.pill input:disabled + span { opacity: 1; color: #374151; background: #f7f6f2; }
+.xor-card.waiting { opacity: 1; color: var(--ink); background: #faf9f5; border-style: dashed; }
+.ws-box:disabled { opacity: 1; cursor: default; }
+/* 내 장치 설계 ①: 조건 문장을 조작하는 칸 맨 위에 크게 */
+.task-sentence { padding: 10px 14px; border: 2px solid var(--ink); border-radius: 14px; background: #fff; }
+.task-sentence p { margin: 4px 0 0; font-size: 1.08rem; font-weight: 800; line-height: 1.5; }
+.task-tag { display: inline-block; padding: 1px 9px; border-radius: 6px; background: var(--ink); color: #fff; font-size: .8rem; font-weight: 800; }
+/* 내 장치 설계 ③: 위는 회로 · 비교, 아래는 화면 폭 전체를 쓰는 식 입력 줄 */
+.screen-layout.two-col.p2e-top { grid-template-columns: minmax(0, 6fr) minmax(0, 5fr); }
+.p2e-top .board-box.small { max-width: 400px; margin: 0 auto; }
+.expr-line { display: flex; gap: 10px; align-items: stretch; }
+.expr-line .expr-view { flex: 1 1 auto; min-width: 0; }
+.expr-line .primary-button { flex: 0 0 auto; }
+.token-bar { display: flex; flex-wrap: wrap; gap: 8px 18px; align-items: center; }
+.token-pad.one-line { flex-wrap: nowrap; gap: 6px; }
+.token-pad.one-line .tok-button { min-width: 54px; min-height: 46px; padding: 0 10px; }
+@media (max-width: 900px) { .screen-layout.two-col.p2e-top { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 560px) { .token-pad.one-line { flex-wrap: wrap; } .expr-line { flex-direction: column; } }
+.task-sentence .out-def { margin-top: 8px; padding: 4px 10px; }
+.todo-box { padding: 10px 14px; border-left: 4px solid var(--blue); border-radius: 8px; background: var(--blue-soft); color: #12305f; }
+.todo-box ol { margin: 4px 0 0; padding-left: 20px; }
+.todo-box li { margin: 2px 0; font-weight: 600; }
+.scenario-layout .scenario-card { padding: 8px 14px; }
+.scenario-layout .cond-chip { min-height: 40px; padding: 4px 12px; }
+.scenario-layout .cond-slot { min-height: 40px; padding: 4px 10px; }
+.scenario-layout .slot-mean { display: inline; margin-left: 8px; }
+.check-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+.check-row .result { flex: 1 1 240px; }
+.p2e-top .board-box.small { max-width: 340px; }
+.expr-card .expr-view { min-height: 48px; padding: 4px 10px; line-height: 1.5; }
+.expr-card .caret-gap { height: 34px; }
+.tip-list { margin: 0; padding-left: 20px; font-size: max(15px, .95rem); }
+.tip-list li { margin: 2px 0; }
+table.truth.h-truth { min-width: 0; width: 100%; }
+table.truth.h-truth th, table.truth.h-truth td { padding: 3px 4px; font-size: max(15px, .98rem); }
+table.truth.h-truth th { text-align: left; white-space: nowrap; }
+table.truth.h-truth tr:nth-child(3) td, table.truth.h-truth tr:nth-child(3) th { border-bottom: 2px solid var(--ink); }
+table.truth.h-truth td.diff { background: var(--red-soft); }
+.p2e-top .board-box.small { max-width: 310px; }
+/* 합격 기준 추정(7번) */
+.score-info { padding: 8px 12px; border: 1px solid var(--line); border-radius: 12px; background: #fff; font-size: 1.05rem; font-weight: 700; }
+.score-info b { font-size: 1.15rem; }
+.scatter-svg .dot.wrong { stroke: var(--red); stroke-width: 4; }
+/* 진리표가 점이 된다(8번): 행 번호 ↔ 점 번호 */
+table.truth.p5-table { width: 100%; }
+table.truth.p5-table th, table.truth.p5-table td { padding: 5px 8px; font-size: 1.05rem; }
+table.truth.p5-table td.row-no { font-weight: 900; color: var(--blue-dark); }
+table.truth.p5-table tr.moved td.row-no { color: #fff; background: var(--blue-dark); }
+table.truth.p5-table tr.now td { background: #fff3c4; }
+table.truth.p5-table tr.now td.row-no { background: #b45309; color: #fff; }
+table.truth.p5-table .pt-cell { text-align: left; }
+.pt-badge circle { fill: var(--blue-dark); }
+.pt-badge.on circle { fill: #b45309; }
+.pt-badge text { fill: #fff; font-size: 15px; font-weight: 900; font-family: "Pretendard Variable", "Pretendard", "Noto Sans KR", sans-serif; }
+/* 나눌 수 있었나(11번): 나눈 방법마다 작은 평면 */
+.mini-grid.part-figs { grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); gap: 8px; }
+.part-fig { padding: 6px; text-align: left; }
+.part-fig .plane-box { max-width: 118px; margin: 0 auto; }
+.part-fig figcaption { color: var(--ink); }
+.side { display: inline-block; padding: 0 5px; border-radius: 4px; font-weight: 800; font-size: inherit; }
+.side-a { background: #c9dafc; color: #12305f; }
+.side-b { background: #fde59a; color: #5c4300; }
+.ok-text { color: var(--green); }
+.mini-grid.part-figs { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 6px; }
+.part-fig { display: grid; grid-template-columns: 86px minmax(0, 1fr); gap: 8px; align-items: center; padding: 4px 8px 4px 4px; }
+.part-fig .plane-box { width: 86px; max-width: 86px; margin: 0; }
+.part-fig figcaption { margin: 0; font-size: max(15px, .86rem); line-height: 1.55; }
+.screen-layout.two-col.p8-layout { grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); }
+.p8-layout .mini-grid.part-figs { grid-template-columns: repeat(auto-fill, minmax(205px, 1fr)); }
+@media (max-width: 900px) { .screen-layout.two-col.p8-layout { grid-template-columns: minmax(0, 1fr); } }
+.p8-layout .part-fig { grid-template-columns: 108px minmax(0, 1fr); }
+.p8-layout .part-fig .plane-box { width: 108px; max-width: 108px; }
+.p8-layout .mini-grid.part-figs { grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); }
+/* 처음부터 다시 보기(27번): 카드마다 색, 선 가운데 번호 원 */
+.xor-card { border-left: 6px solid var(--link, #c8c5bb); }
+.xor-card.linked { border-color: #96d4b6; border-left-color: var(--link); color: var(--ink); }
+.xor-card.linked .card-no { background: var(--link); }
+.xor-card p { color: #1f2937; font-weight: 500; }
+.now-tag { margin-left: auto; padding: 1px 8px; border-radius: 999px; background: var(--blue); color: #fff; font-size: max(15px, .78rem); font-weight: 800; }
+.match-lines path { stroke-width: 3.5; }
+.match-lines text { fill: #fff; font-size: 13px; }
+.tag.link-tag { background: var(--link); color: #fff; }
+.ws-box strong { font-size: 1.02rem; }
+.ws-box { grid-template-columns: minmax(0, 1fr) auto; gap: 0 8px; padding: 7px 12px; align-content: center; }
+.ws-box:disabled { color: var(--ink); }
+.ws-box .path-key { grid-column: 1; grid-row: 1; }
+.ws-box .path-cards { grid-column: 2; grid-row: 1 / span 2; align-self: center; min-height: 0; }
+.ws-box strong, .ws-box > .small { grid-column: 1; }
+.ws-box > .small { color: #374151; }
+.xor-card { padding: 6px 12px; }
+.xor-card p { font-size: max(15px, .86rem); line-height: 1.4; }
+.my-quote { padding: 0 4px; border-radius: 4px; background: var(--blue-soft); font-weight: 700; }
+.expr-card { padding-top: 10px; padding-bottom: 10px; gap: 8px; }

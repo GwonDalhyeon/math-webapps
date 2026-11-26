@@ -117,20 +117,21 @@ function orStatus(c10) {
 }
 function bindC(screen, inputId) {
   const p = S(screen);
-  const setC = (c10) => { p.c10 = Math.max(-5, Math.min(25, c10)); persist(); render(); };
-  $('#' + inputId)?.addEventListener('input', (e) => setC(Number(e.target.value)));
+  const setC = (c10, keep) => { p.c10 = Math.max(-5, Math.min(25, c10)); persist(); if (keep) softRender(keep); else render(); };
+  $('#' + inputId)?.addEventListener('input', (e) => setC(Number(e.target.value), e.target));
+  $('#' + inputId)?.addEventListener('change', () => render());
   $$('[data-cstep]').forEach((b) => b.addEventListener('click', () => setC(p.c10 + Number(b.dataset.cstep))));
   $('#c-num')?.addEventListener('change', (e) => { const v = PG.parseNumber(e.target.value); if (v !== null) setC(Math.round(v * 10)); });
 }
 const cFine = (c10) => `<div class="inline-actions"><button class="tool-button" type="button" data-cstep="-1">− 0.1</button><button class="tool-button" type="button" data-cstep="1">+ 0.1</button><input id="c-num" type="text" inputmode="decimal" value="${fmtK(c10 / 10)}" style="max-width:90px" aria-label="c 값 입력"></div>`;
 RENDER.P16 = () => {
   const p = S('P16'), locked = predictLocked('P16');
-  return `${head('OR이 되는 기준 c 찾기', 'OR을 판단하는 기준을 찾아봅시다. c를 어떤 수로 하면 될까요?', '5-2 (1)·(2)')}
+  return `${head('OR이 되는 기준 c 찾기', 'OR을 판단하는 기준을 찾아봅시다. c의 값을 얼마로 하면 될까요?', '5-2 (1)·(2)')}
   <div class="screen-layout two-col fig-left">
     <div class="card">${locked ? cFigure([p.c10], LAB.OR, `OR과 기준선 A+B=${fmtK(p.c10 / 10)}`) : `<div class="plane-box mid">${planeSvg({ labels: LAB.OR, title: 'OR의 네 점' })}</div>`}</div>
     <div class="card stack">
       ${ruleBoxC()}
-      ${locked ? `<p class="quote-line" style="padding:6px 10px">(1) 내 예측: c = <strong>${esc(predictValue('P16') || '')}</strong> <span class="muted small">(확정함) — 이제 c를 움직여 확인해 보세요.</span></p>` : `<div class="field"><label for="p16-pred">(1) OR을 판단하려면 c를 어떤 수로 하면 될까? 하나 정해 쓰고 「확정」을 누르시오.</label>
+      ${locked ? `<p class="quote-line" style="padding:6px 10px">(1) 내 예측: c = <strong>${esc(predictValue('P16') || '')}</strong> <span class="muted small">(확정함) — 이제 슬라이더로 c의 값을 바꾸어 확인해 보세요.</span></p>` : `<div class="field"><label for="p16-pred">(1) OR을 판단하려면 c의 값을 얼마로 하면 될까? 하나 정해 쓰고 「확정」을 누르시오.</label>
         <div class="inline-actions"><input id="p16-pred" type="text" inputmode="decimal" value="${esc(predictValue('P16') || '')}" style="max-width:120px"><button id="p16-lock" class="primary-button" type="button">확정</button></div></div>`}
       ${locked ? `<div class="stack" data-reveal="slider"><div class="slider-row">${cSlider('p16-c', p.c10)}${cFine(p.c10)}</div>
         ${orStatus(p.c10)}
@@ -171,16 +172,16 @@ RENDER.P16w = () => {
   const p = S('P16');
   const dirOk = p.dir === 'up', slopeOk = p.slope === 'same';
   const blank = (k, label) => `<input id="w-${k}" type="text" class="blank-input" data-write="${k}" value="${esc(state.writes[k] || '')}" aria-label="${label}">`;
-  return `${head('기준선은 어떻게 달라지나', 'c를 움직이면서 기준선이 어떻게 바뀌는지 보고, 두 질문에 답해 봅시다.', '5-2 (3)')}
+  return `${head('기준선은 어떻게 달라지나', '슬라이더로 c의 값을 바꾸어 가며 기준선 A+B=c가 어떻게 달라지는지 보고, 두 질문에 답해 봅시다.', '5-2 (3)')}
   <div class="screen-layout two-col fig-left">
     <div class="card stack"><div class="plane-box small">${cPlaneSvg(p.c10, LAB.OR, { title: `OR과 기준선 A+B=${fmtK(p.c10 / 10)}` })}</div><div class="sumline-box small">${sumlineSvg({ labels: LAB.OR, dividers: [p.c10] })}</div>${cSlider('p16w-c', p.c10)}</div>
     <div class="card stack">
       ${ruleBoxC()}
-      <div class="field"><span class="field-label">(1) c를 키우면 기준선은?</span>${choiceRow('p16dir', [['up', '오른쪽 위로 옮겨진다'], ['down', '왼쪽 아래로 옮겨진다'], ['stay', '그대로다']], p.dir)}</div>
-      ${p.dir ? (dirOk ? resultBox('ok', '맞아요. c가 커지면 기준선이 오른쪽 위로 옮겨집니다.') : resultBox('fail', '슬라이더를 오른쪽으로 끌며 기준선을 다시 보세요.')) : ''}
-      <div class="field"><span class="field-label">(2) c를 바꾸면 기준선의 기울기는?</span>${choiceRow('p16slope', [['change', '바뀐다'], ['same', '그대로다']], p.slope)}</div>
-      ${p.slope ? (slopeOk ? resultBox('ok', '맞아요. 기준선은 기울어진 정도를 그대로 두고 옮겨지기만 합니다.') : resultBox('fail', 'c를 작게 했을 때와 크게 했을 때 두 기준선이 나란한지 보세요.')) : ''}
-      <p class="blank-sentence">c를 바꾸면 기준선의 기울기는 ${blank('P16_blank1', '기울기는')}, 위치는 ${blank('P16_blank2', '위치는')}.</p>
+      <div class="field"><span class="field-label">(1) c의 값이 커지면 기준선 A+B=c는 어떻게 되는가?</span>${choiceRow('p16dir', [['up', '오른쪽 위로 평행이동한다'], ['down', '왼쪽 아래로 평행이동한다'], ['stay', '움직이지 않는다']], p.dir)}</div>
+      ${p.dir ? (dirOk ? resultBox('ok', '맞아요. c의 값이 커지면 기준선은 오른쪽 위로 평행이동합니다.') : resultBox('fail', '슬라이더를 오른쪽으로 끌어 c의 값을 크게 하면서 기준선을 다시 보세요.')) : ''}
+      <div class="field"><span class="field-label">(2) c의 값을 바꾸면 기준선의 기울기는?</span>${choiceRow('p16slope', [['change', '바뀐다'], ['same', '그대로다']], p.slope)}</div>
+      ${p.slope ? (slopeOk ? resultBox('ok', '맞아요. c의 값이 바뀌어도 기준선의 기울기는 그대로이고, 평행이동만 합니다.') : resultBox('fail', 'c의 값이 작을 때와 클 때의 두 기준선이 서로 평행한지 보세요.')) : ''}
+      <p class="blank-sentence">c의 값을 바꾸면 기준선의 기울기는 ${blank('P16_blank1', '기울기는')}, 위치는 ${blank('P16_blank2', '위치는')}.</p>
     </div>
   </div>`;
 };
@@ -203,7 +204,7 @@ RENDER.P17 = () => {
   const step = p.explain;
   const sel = (k, opts) => `<select class="blank-select" data-p17b="${k}" aria-label="빈칸"><option value="">고르기</option>${opts.map((o) => `<option ${p[k] === o ? 'selected' : ''}>${o}</option>`).join('')}</select>`;
   const xorRow = '<div class="xor-row" aria-label="합과 XOR 값"><span>합</span><b>0</b><b>1</b><b>1</b><b>2</b><span>XOR</span><b>0</b><b class="one">1</b><b class="one">1</b><b>0</b></div>';
-  return `${head('XOR도 될까', 'XOR의 값은 (0, 0)에서 0, (0, 1)에서 1, (1, 0)에서 1, (1, 1)에서 0입니다. 같은 판단 장치로 c를 움직여 XOR을 만들어 보세요.', '5-3')}
+  return `${head('XOR도 될까', 'XOR의 값은 (0, 0)에서 0, (0, 1)에서 1, (1, 0)에서 1, (1, 1)에서 0입니다. 같은 판단 장치에서 c의 값을 바꾸어 XOR을 만들어 보세요.', '5-3')}
   <div class="screen-layout two-col fig-left">
     <div class="card">${cFigure([p.c10], LAB.XOR, `XOR과 기준선 A+B=${fmtK(p.c10 / 10)}`, 'small', xorRow)}</div>
     <div class="card stack">
@@ -222,7 +223,8 @@ let p17LogTimer = null;
 BIND.P17 = () => {
   const p = S('P17');
   const logC = () => { clearTimeout(p17LogTimer); p17LogTimer = setTimeout(() => logEvent('attempt', 'P17', `c = ${fmtK(p.c10 / 10)} · XOR 일치 ${PG.matches(p.c10, LAB.XOR)}`, 'fail'), 700); };
-  $('#p17-c').addEventListener('input', (e) => { stopTimer(); p.c10 = Number(e.target.value); persist(); render(); logC(); });
+  $('#p17-c').addEventListener('input', (e) => { stopTimer(); p.c10 = Number(e.target.value); persist(); softRender(e.target); logC(); });
+  $('#p17-c').addEventListener('change', () => render());
   $('#p17-sweep').addEventListener('click', () => {
     if (activeTimer) return;
     p.c10 = -5; render();
@@ -362,7 +364,7 @@ RENDER.P19 = () => {
   <div class="screen-layout two-col fig-left">
     <div class="card stack"><div class="plane-box small">${unfoldSvg(line, { title: '4-3에서 펼친 평면' })}</div><p class="small" style="margin:0">${foldNote}</p></div>
     <div class="card stack">
-      <p style="margin:0"><strong>접기</strong>는 평면을 한 번 바꾼 뒤 직선 하나로, <strong>회로</strong>는 OR과 AND로 먼저 판단한 결과를 다시 판단합니다. 둘 다 <strong>두 단계로 판단한다</strong>는 점이 닮았습니다.</p>
+      <p style="margin:0">${predictValue('P12') ? `쉬는 시간 전에 나는 <span class="my-quote">「${esc(predictValue('P12'))}」</span>라고 썼습니다. ` : ''}<strong>접기</strong>는 평면을 한 번 바꾼 뒤 직선 하나로, <strong>회로</strong>는 OR과 AND로 먼저 판단한 결과를 다시 판단합니다. 둘 다 <strong>두 단계로 판단한다</strong>는 점이 닮았습니다.</p>
       <p class="read-box" style="margin:0"><strong>그 막힘은 이렇게 풀렸습니다</strong> 판단 장치를 여러 층으로 쌓고, 그 층들을 자료로 학습시키는 방법이 1980년대에 알려지면서 막힘이 풀렸습니다. 연구도 다시 활발해졌습니다.</p>
       ${termBox('인공신경망', '오늘날 인공지능에 쓰이는 인공신경망은 퍼셉트론 같은 판단 장치를 여러 층으로 아주 많이 이은 것입니다. 그리고 기준선의 위치를 사람이 정하지 않고, 자료를 보고 컴퓨터가 정합니다. 이것을 <strong>학습</strong>이라고 합니다.')}
       <p class="muted small" style="margin:0">컴퓨터가 기준선을 정하는 모습은 「한 걸음 더」의 「기계가 직선을 찾는다」에서 볼 수 있습니다.</p>
@@ -372,32 +374,6 @@ RENDER.P19 = () => {
 
 /* ================================================================ 섹션 6 */
 const PRED_TEXT = { yes: '된다', no: '안 된다', unsure: '모르겠다' };
-const SCENES = [['lines', 'XOR에 직선을 여러 번 그어 본 것'], ['segments', '두 선분이 한 점에서 만난 것'], ['sweep', '칸막이 c를 끝에서 끝까지 움직인 것'], ['middle', '합으로 줄 세우니 가운데 두 점만 1이어야 했던 것']];
-RENDER.P20 = () => {
-  const pv = predictValue('P7');
-  const p7 = S('P7'), p16 = S('P16'), p20 = state.writes;
-  return `${head('돌아보기', '오늘 남긴 두 기록을 다시 보고, 무엇이 달라졌는지 정리해 봅시다.')}
-  <div class="screen-layout two-col">
-    <div class="card stack">
-      <h3 style="margin:0">1. 쉬는 시간 전에 쓴 문장</h3>
-      <blockquote class="my-answer compact">${predictValue('P12') ? esc(predictValue('P12')) : '<span class="muted">쓰지 않았어요.</span>'}</blockquote>
-      ${writeBox('P20_layer', '이 문장을 「층」이라는 말을 넣어 다시 쓰시오.', { rows: 2 })}
-    </div>
-    <div class="card stack">
-      <h3 style="margin:0">2. XOR에 대한 처음 예상</h3>
-      <table class="truth compact"><thead><tr><th>처음 예상${predictLocked('P7') ? '' : ' (미확정)'}</th><th>실제</th></tr></thead><tbody><tr><td>${PRED_TEXT[pv] || '고르지 않음'}</td><td>직선 하나로는 안 된다 · 두 개(층 둘)면 된다</td></tr></tbody></table>
-      <div class="field"><span class="field-label">직선 하나로 안 된다는 것을 가장 확실히 알게 된 장면은?</span>${choiceRow('p20scene', SCENES, state.writes.P20_scenePick || '')}</div>
-      ${writeBox('P20_scene', '그 장면에서 본 것을 한 줄로 쓰시오.', { rows: 2 })}
-      <div class="evidence small">오늘의 기록 — XOR에 그어 본 직선 ${p7.history.length}개(나눈 방법 ${p7.parts.length}가지) · OR이 되는 c ${p16.found.length ? p16.found.map((x) => fmtK(x / 10)).join(', ') : '없음'} · 접은 그림 ${S('P11').ok ? '직선 하나로 가름' : '미완료'}</div>
-    </div>
-  </div>`;
-};
-BIND.P20 = () => {
-  $$('input[name="p20scene"]').forEach((r) => {
-    r.addEventListener('change', () => { state.writes.P20_scenePick = r.value; logEvent('write', 'P20', `확실히 알게 된 장면: ${(SCENES.find(([v]) => v === r.value) || [, ''])[1]}`); persist(); render(); });
-  });
-};
-
 const WS = [
   ['점자를 수로, 수를 연산으로', '부호화 · 연산', '점자 6칸을 0과 1로, 비트 연산'], ['믿을 수 있게 보내기', '오류', '잡음 통신, 반복 전송과 검사 점'], ['0과 1로 판단하기', '판단', '스위치와 회로, 진리표'], ['퍼셉트론, 직선으로 판단하다 (오늘)', '층', '직선으로 가르기와 층']
 ];
@@ -406,24 +382,25 @@ const CARDS = [
   { text: '같은 열쇠로 잠그고, 같은 열쇠로 연다', ws: 0, ex: '101101 XOR 110011 = 011110 → 다시 011110 XOR 110011 = 101101. 열쇠를 두 번 XOR하면 원래대로 돌아온다(바루비에의 야간 암호).' },
   { text: '1의 개수가 짝수인지 확인한다', ws: 1, ex: '1 XOR 0 XOR 1 = 0 (1이 두 개, 짝수). 비트를 차례로 모두 XOR하면 1의 개수가 홀수일 때 1이 된다. 검사 점이 하는 일이다.' },
   { text: '계단 전등을 켜고 끄고, 한 자리 덧셈의 합을 낸다', ws: 2, ex: '어느 스위치를 눌러도 전등이 바뀐다. 1 + 1 = 10(2)에서 합 자리 0 = 1 XOR 1(반가산기).' },
-  { text: '직선 하나로는 가를 수 없다', ws: 3, ex: '두 판단을 이어서(층을 쌓아서) 판단하면 된다.' }
+  { text: '직선 하나로는 판단할 수 없어서, 판단을 층으로 쌓게 했다', ws: 3, ex: 'XOR은 직선 하나로 가를 수 없었다. 두 판단을 이어서(층을 쌓아서) 판단하면 된다.' }
 ];
+const LINK_COLORS = ['#1d4ed8', '#7c3aed', '#047857', '#b45309', '#be123c'];   // 카드마다 선·번호 색
 const pathHtml = (p, clickable) => `<div class="path">${WS.map(([t, k], i) => `<${clickable ? 'button type="button"' : 'div'} class="path-step${clickable && p.sel !== null ? ' pickable' : ''}" ${clickable ? `data-ws="${i}"` : ''}><span class="path-key">${k}</span><span>${t}</span><span class="path-cards">${CARDS.map((c, j) => (p.links[j] === i ? `<span class="tag">${j + 1}</span>` : '')).join('')}</span></${clickable ? 'button' : 'div'}>${i < 3 ? '<span class="path-arrow" aria-hidden="true">→</span>' : ''}`).join('')}</div>`;
 /* P21: 왼쪽 카드, 오른쪽 학습지. 1번 카드부터 하나씩(03 §3-12) */
 RENDER.P21 = () => {
   const p = S('P21');
   const activeIdx = CARDS.findIndex((c, i) => p.links[i] !== c.ws);
   const done = activeIdx < 0;
-  return `${head('처음부터 다시 보기', '이번 학기에 만난 학습지 네 개입니다. 그 길 내내 XOR이 나왔습니다. 왼쪽 카드의 일을 했던 학습지를 오른쪽에서 누르세요. 1번 카드부터 차례로 잇습니다.')}
+  return `${head('처음부터 다시 보기', '이번 학기 학습지 네 개에는 내내 XOR이 나왔습니다. <strong>왼쪽 카드는 XOR이 한 일</strong>입니다. 「지금 이을 카드」의 일을 배운 학습지를 오른쪽에서 누르세요. <strong>한 학습지에 카드가 여러 장 이어질 수 있습니다.</strong>')}
   <div class="card match-board" id="p21-board">
     <svg class="match-lines" aria-hidden="true"></svg>
     <div class="match-col">${CARDS.map((c, i) => {
       const linked = p.links[i] === c.ws, active = i === activeIdx;
-      return `<div class="xor-card${active ? ' active' : ''}${linked ? ' linked' : ''}${!linked && !active ? ' waiting' : ''}${p.wrongFlash === String(i) ? ' shake' : ''}" data-cardbox="${i}"><span class="card-no">${i + 1}</span><span>${c.text}</span>${linked ? `<p class="small muted">${c.ex}</p>` : ''}</div>`;
+      return `<div class="xor-card${active ? ' active' : ''}${linked ? ' linked' : ''}${!linked && !active ? ' waiting' : ''}${p.wrongFlash === String(i) ? ' shake' : ''}" data-cardbox="${i}" style="--link:${LINK_COLORS[i]}"><span class="card-no">${i + 1}</span><span>${c.text}</span>${active ? '<span class="now-tag">지금 이을 카드</span>' : ''}${linked ? `<p>${c.ex}</p>` : ''}</div>`;
     }).join('')}</div>
-    <div class="match-col ws-col">${WS.map(([t, k, memo], i) => `<button type="button" class="ws-box" data-ws="${i}" ${done ? 'disabled' : ''}><span class="path-key">${k}</span><strong>${t}</strong><span class="small muted">${memo}</span><span class="path-cards">${CARDS.map((c, j) => (p.links[j] === i ? `<span class="tag">${j + 1}</span>` : '')).join('')}</span></button>`).join('')}</div>
-  </div>
-  ${done ? '<p class="small" style="margin:6px 0 0;color:var(--green);font-weight:800">✓ 다섯 장을 모두 이었습니다. 다음 화면에서 마지막 한 문장을 씁니다.</p>' : `<p class="small muted" style="margin:6px 0 0">지금 이을 카드: ${activeIdx + 1}번</p>`}`;
+    <div class="match-col ws-col">${WS.map(([t, k, memo], i) => `<button type="button" class="ws-box" data-ws="${i}" ${done ? 'disabled' : ''}><span class="path-key">${k}</span><strong>${t}</strong><span class="small muted">${memo}</span><span class="path-cards">${CARDS.map((c, j) => (p.links[j] === i ? `<span class="tag link-tag" style="--link:${LINK_COLORS[j]}">${j + 1}</span>` : '')).join('')}</span></button>`).join('')}
+      ${done ? resultBox('ok', '다섯 장을 모두 이었습니다. 다음 화면에서 마지막 한 문장을 씁니다.') : ''}</div>
+  </div>`;
 };
 function drawMatchLines() {
   const board = $('#p21-board'), svg = board && board.querySelector('.match-lines');
@@ -436,7 +413,8 @@ function drawMatchLines() {
     if (!a || !b) return '';
     const ra = a.getBoundingClientRect(), rb = b.getBoundingClientRect();
     const x1 = ra.right - r0.left, y1 = ra.top + ra.height / 2 - r0.top, x2 = rb.left - r0.left, y2 = rb.top + rb.height / 2 - r0.top;
-    return `<path d="M${x1} ${y1} C${x1 + 30} ${y1}, ${x2 - 30} ${y2}, ${x2} ${y2}"/><text x="${(x1 + x2) / 2}" y="${(y1 + y2) / 2 - 4}">${i + 1}</text>`;
+    const mx = (x1 + x2) / 2, my = (y1 + y2) / 2;
+    return `<path d="M${x1} ${y1} C${x1 + 30} ${y1}, ${x2 - 30} ${y2}, ${x2} ${y2}" style="stroke:${LINK_COLORS[i]}"/><circle cx="${mx}" cy="${my}" r="11" style="fill:${LINK_COLORS[i]}"/><text x="${mx}" y="${my + 4.5}">${i + 1}</text>`;
   }).join('');
 }
 BIND.P21 = () => {
@@ -536,8 +514,9 @@ let p23LogTimer = null;
 BIND.P23 = () => {
   const p = S('P23');
   $$('input[name="p23t"]').forEach((r) => r.addEventListener('change', () => { p.target = r.value; persist(); render(); }));
+  $$('[data-p23]').forEach((s) => s.addEventListener('change', () => render()));
   $$('[data-p23]').forEach((s) => s.addEventListener('input', (e) => {
-    p[s.dataset.p23] = Number(e.target.value); persist(); render();
+    p[s.dataset.p23] = Number(e.target.value); persist(); softRender(e.target);
     clearTimeout(p23LogTimer);
     p23LogTimer = setTimeout(() => { const t = LAB[p.target]; const m = PG.POINTS.map((pt) => PG.weightOut(p.w1, p.w2, p.t, pt)).filter((v, i) => v === t[i]).length; logEvent('attempt', 'P23', `${targetName(p.target)} · w1=${p.w1 / 10}, w2=${p.w2 / 10}, θ=${p.t / 10} · 맞는 점 ${m}`, m === 4 ? 'ok' : 'fail'); }, 700);
   }));

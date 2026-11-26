@@ -19,6 +19,7 @@ const SECTIONS = {
   4: '4 접으면?', 5: '5 이것이 퍼셉트론이다', 6: '6 닫기', 7: '7 한 걸음 더'
 };
 /* 2차 개정(03_2차개정_명세서 §2): 비대면 온라인이라 모든 보기는 학생이 각자 조작한다. 선택 보기 없음, 제출은 맨 끝 */
+/* 2026-11-26 가독성 개정: P20 「돌아보기」는 뺐다(P13·P19·P8과 겹침, 04_가독성_개정 §26) */
 const SCREENS = [
   { id: 'P0', s: 0, label: '시작' },
   { id: 'P1', s: 1, label: '네 가지 판단' },
@@ -45,7 +46,6 @@ const SCREENS = [
   { id: 'P18', s: 5, label: '두 직선 사이의 점' },
   { id: 'P18c', s: 5, label: '두 판단을 이어 판단하기' },
   { id: 'P19', s: 5, label: '층을 쌓는다' },
-  { id: 'P20', s: 6, label: '돌아보기' },
   { id: 'P21', s: 6, label: '처음부터 다시 보기' },
   { id: 'P21s', s: 6, label: '마지막 한 문장' },
   { id: 'P24', s: 7, label: '직선 하나로 만들 수 있는 나누기' },
@@ -61,11 +61,9 @@ const WRITE_FIELDS = [
   ['P8_rule', '규칙을 하나 바꿀 수 있다면', false],
   ['P12_blank1', '접기와 회로 · 둘 다 먼저 하는 것(쉬는 시간 전)', true],
   ['P12_blank2', '접기와 회로 · 그 결과로 마지막에 하는 것(쉬는 시간 전)', true],
-  ['P16_blank1', '기준 c를 바꾸면 기준선의 기울기는', true],
-  ['P16_blank2', '기준 c를 바꾸면 기준선의 위치는', true],
+  ['P16_blank1', 'c의 값을 바꾸면 기준선의 기울기는', true],
+  ['P16_blank2', 'c의 값을 바꾸면 기준선의 위치는', true],
   ['P17_reason', 'XOR은 왜 어떤 c로도 안 되나(내 말로 한 줄)', true],
-  ['P20_layer', '쉬는 시간 전 문장을 「층」을 넣어 다시 쓰기', true],
-  ['P20_scene', '그 장면에서 본 것', true],
   ['P21_sentence', '0과 1로 할 수 있게 된 일 가운데 가장 뜻밖이었던 것', true],
   ['P23_reason', 'XOR의 네 부등식을 모두 만족하는 수가 없는 까닭(내 말로)', true],
   ['P25_link', '기계가 직선을 찾는 것과 「학습」', false]
@@ -98,7 +96,7 @@ const esc = (v = '') => String(v).replace(/[&<>'"]/g, (c) => ({ '&': '&amp;', '<
 const clone = (x) => JSON.parse(JSON.stringify(x));
 
 function initialP2() {
-  return { scenario: '', assign: [], assignOk: false, blocks: [], wires: [], nextBlock: 1, sw: { A: 0, B: 0, C: 0 }, checked: false, circuitOk: false, diffRows: [], view: 'board',
+  return { scenario: '', assign: [], assignOk: false, assignTried: false, blocks: [], wires: [], nextBlock: 1, sw: { A: 0, B: 0, C: 0 }, checked: false, circuitOk: false, diffRows: [], view: 'board',
     tokens: [], cursor: 0, exprOk: false, exprError: '', exprChecked: false, exprMatch: false, exprDiff: [] };
 }
 function initialScreens() {
@@ -107,7 +105,7 @@ function initialScreens() {
     P1: { tables: { AND: blank4(), OR: blank4(), NOT: [null, null], XOR: blank4() } },
     P2: initialP2(),
     P3: { sw: { A: 0, B: 0 }, table: blank4() },
-    P4: { sel: null },
+    P4: { sel: null, guess: '', tried: false },
     P5: { step: 0 },
     P6: { and: { marks: [0, 0, 0, 0], line: null, result: '' }, or: { marks: [0, 0, 0, 0], line: null, result: '' }, alone: { and: null, or: null } },
     P7: { line: null, history: [], parts: [] },
@@ -303,6 +301,34 @@ function render() {
     }
   }
   updateScrollCue();
+}
+
+/* 슬라이더를 끄는 동안 쓰는 가벼운 다시 그리기.
+   render()는 화면을 통째로 갈아 끼워서, 끌고 있던 슬라이더가 새 요소로 바뀌어 끌기가 한 칸에서 끊긴다.
+   여기서는 새 화면을 따로 만든 뒤 지금 있는 요소의 글자·속성만 맞춰 바꾼다(요소와 이벤트는 그대로).
+   손을 떼면(change) render()로 한 번 제대로 다시 그린다. */
+function morphNode(a, b, keep) {
+  if (a.nodeType !== b.nodeType || a.nodeName !== b.nodeName) { a.replaceWith(b); return; }
+  if (a.nodeType !== 1) { if (a.nodeValue !== b.nodeValue) a.nodeValue = b.nodeValue; return; }
+  [...a.attributes].forEach((at) => { if (!b.hasAttribute(at.name)) a.removeAttribute(at.name); });
+  [...b.attributes].forEach((at) => { if (a.getAttribute(at.name) !== at.value) a.setAttribute(at.name, at.value); });
+  if (a.tagName === 'INPUT' && a !== keep) {
+    if (a.type === 'checkbox' || a.type === 'radio') a.checked = b.hasAttribute('checked');
+    else if (a !== document.activeElement) a.value = b.getAttribute('value') || '';
+  }
+  const ac = [...a.childNodes], bc = [...b.childNodes];
+  for (let i = 0; i < Math.max(ac.length, bc.length); i++) {
+    if (i >= ac.length) a.appendChild(bc[i]);
+    else if (i >= bc.length) ac[i].remove();
+    else morphNode(ac[i], bc[i], keep);
+  }
+}
+function softRender(keep) {
+  const info = screenInfo(), root = $('#screen-root'), cur = root.firstElementChild;
+  if (!cur || root.dataset.screenId !== info.id) { render(); return; }
+  const tmp = document.createElement('section');
+  tmp.innerHTML = (RENDER[info.id] || (() => ''))();
+  morphNode(cur, Object.assign(tmp, { className: cur.className }), keep);
 }
 
 function updateNavigation() {

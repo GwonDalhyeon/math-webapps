@@ -11,7 +11,7 @@ window.perceptronLayout = (() => {
     Object.assign(S.P2, { inputs: 3, tokens: '( A AND NOT B ) OR C'.split(' '), exprTokens: '( A AND NOT B ) OR C'.split(' '), exprOk: true, match: 'yes', view: 'table',
       gates: [{ id: 'G1', type: 'NOT', inputs: ['B', ''] }, { id: 'G2', type: 'AND', inputs: ['A', 'G1'] }, { id: 'G3', type: 'OR', inputs: ['G2', 'C'] }], output: 'G3', checked: true, circuitOk: true, diffRows: [] });
     Object.assign(state.writes, { P2_device: '화분 자동 물주기', P2_inA: '흙이 말랐다', P2_inB: '밤이다', P2_inC: '버튼을 눌렀다' });
-    S.P3.table = [0, 1, 1, 0]; S.P5.step = 4; state.predicts.P5 = { confirmed: { value: { AND: 'yes', OR: 'yes', XOR: 'unsure' } } };
+    S.P3.table = [0, 1, 1, 0]; Object.assign(S.P4, { sel: 17, guess: '141', tried: true }); S.P5.step = 4; state.predicts.P5 = { confirmed: { value: { AND: 'yes', OR: 'yes', XOR: 'unsure' } } };
     S.P6.and = { marks: [0, 0, 0, 1], line: { p: [0.2, 1.3], q: [1.3, 0.2] } }; S.P6.or = { marks: [0, 1, 1, 1], line: { p: [-0.3, 0.7], q: [0.7, -0.3] } };
     S.P7.history = [{ p: [0.2, 1.3], q: [1.3, 0.2] }, { p: [0.5, -0.4], q: [0.5, 1.4] }, { p: [-0.4, 0.5], q: [1.4, 0.5] }, { p: [-0.3, 0.7], q: [0.7, -0.3] }];
     S.P7.line = S.P7.history[3]; S.P7.parts = [7, 3, 5, 1]; S.P8.choice = 'no';
