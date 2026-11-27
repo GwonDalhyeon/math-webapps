@@ -169,6 +169,8 @@
       display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 8px; padding: 6px 0;
       min-height: 42px; border-top: 1px solid var(--line-soft); font-size: 15px; cursor: pointer;
     }
+    .toggle-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 0 16px; }
+    .toggle-pair .toggle-row { font-size: 14px; }
     .toggle-row input { appearance: none; width: 50px; height: 28px; margin: 0; flex: none; border-radius: 30px; background: #718499; position: relative; cursor: pointer; }
     .toggle-row input::before { content: ""; position: absolute; left: 4px; top: 4px; width: 20px; height: 20px; border-radius: 50%; background: #fff; transition: left .15s; }
     .toggle-row input:checked { background: #117794; }
@@ -188,6 +190,13 @@
     }
     .ball-legend i { width: 14px; height: 14px; border-radius: 50%; border: 2px solid #23344a; }
     .privacy-note { margin: 9px 0 0 !important; font-size: 12px !important; line-height: 1.45 !important; }
+    .nick-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; margin-top: 8px; }
+    .nick-row > input { flex: 1 1 200px; min-width: 0; min-height: 44px; padding: 8px 10px; border: 2px solid var(--line-soft); border-radius: 10px; box-sizing: border-box; font: inherit; }
+    .online-opt { display: flex; align-items: center; gap: 8px; min-height: 44px; font-size: 14px; font-weight: 800; white-space: nowrap; }
+    .online-opt input { width: 22px; height: 22px; margin: 0; }
+    #resultBoard, #startGroup { margin-top: 12px; text-align: left; --ob-muted: var(--ink-soft); --ob-panel: var(--paper); --ob-soft: var(--line-soft); --ob-accent: var(--gold); }
+    #startGroup { width: 100%; }
+    .top-actions .group-button { white-space: nowrap; }
 
     .ready-panel { align-items: flex-end; background: transparent; backdrop-filter: none; pointer-events: none; }
     .ready-panel .sheet { width: min(780px, 100%); margin: 0 auto; padding: 14px 20px; pointer-events: auto; }
@@ -231,6 +240,7 @@
       .notice { top: auto; bottom: 18%; }
     }
     @media (max-width: 760px) {
+      .toggle-pair { grid-template-columns: 1fr; }
       .topbar { gap: 10px; padding: 6px 10px; }
       .topbar h1 { display: none; }
       .home { font-size: 13px; }
@@ -249,6 +259,7 @@
       <a class="home" href="../">← 아이스브레이킹</a>
       <h1>알을 지켜라!</h1>
       <div class="top-actions">
+        <span id="groupSlot"></span>
         <button id="soundBtn" type="button">소리 끄기</button>
         <button id="pauseBtn" type="button" hidden>Ⅱ 일시정지</button>
       </div>
@@ -301,6 +312,7 @@
               <path d="M89 91 l3 -5 M99 91 l3 -5 M20 82 l3 -5 M30 82 l3 -5" stroke="#1d3a57" stroke-width="2.5" stroke-linecap="round" />
             </svg>
             <p class="story">화면 가운데 마지막 알, <b>꼬물이</b>.<br />처음엔 고정, 다음엔 나타나고 움직이는 도깨비!<br /><b>사방에서 오는 돌</b>을 부화까지 35초 막아 주세요.</p>
+            <div id="startGroup" hidden></div>
           </div>
           <div class="setup-main">
             <h2>꼬물이를 지킬 준비 됐나요?</h2>
@@ -324,6 +336,7 @@
               <span><i style="background:#fbbf24"></i>황금알 ★ 60점</span>
               <span><i style="background:#34d399"></i>회복 열매 ＋ 알 1개</span>
             </div>
+            <div class="toggle-pair">
             <label class="toggle-row" for="showVideoCheck">
               <span>게임 중 카메라 영상 보기</span>
               <input id="showVideoCheck" type="checkbox" checked />
@@ -332,13 +345,18 @@
               <span>튕길 때 반사선(법선·입사·반사) 보기</span>
               <input id="showNormalCheck" type="checkbox" />
             </label>
+            </div>
             <div class="control-help" aria-label="키보드와 터치 조작">
               <span class="key-row"><b>카메라</b>머리를 움직여 원으로 막기</span>
               <span class="key-row"><b>P1</b><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd></span>
               <span class="key-row p2"><b>P2</b><kbd>↑</kbd><kbd>←</kbd><kbd>↓</kbd><kbd>→</kbd></span>
               <span class="key-row"><b>터치</b>끌어서 원 이동</span>
             </div>
-            <p class="privacy-note">영상과 머리 좌표는 이 기기 안에서만 처리되며 저장되거나 전송되지 않습니다. 기록은 이 화면을 닫으면 사라집니다.</p>
+            <div class="nick-row">
+              <input id="nick" maxlength="12" placeholder="기록판에 쓸 별명 (실명 말고)" autocomplete="off" aria-label="기록판 별명" />
+              <label class="online-opt"><input type="checkbox" id="onlineOpt" checked /> 🌐 온라인 기록판에 올리기</label>
+            </div>
+            <p class="privacy-note">🌐 켜 두면 별명·점수·단계·날짜가 30일 동안 온라인 기록판에 공개돼요(혼자 모드만). <b>실명·학번은 쓰지 마세요.</b> 🔒 영상과 머리 좌표는 이 기기 안에서만 처리되며 저장·전송하지 않습니다.</p>
             <div class="actions">
               <button class="primary" id="cameraStartBtn" type="button">카메라로 시작 →</button>
               <button id="keyboardStartBtn" type="button">키보드·터치로 시작</button>
@@ -405,6 +423,7 @@
             <button id="nextPlayerBtn" type="button">다음 도전자 →</button>
             <button id="resultBackBtn" type="button">처음으로</button>
           </div>
+          <div id="resultBoard"><div id="resultBoardOnline" hidden></div><div id="resultBoardLocal"></div></div>
         </div>
       </section>
 
@@ -659,6 +678,135 @@
     let playerNo = 1;
     let lastRecordNo = 0;
 
+    // ── 온라인 기록판 화면 (경기 중 패널은 사용하지 않는다) ───────────────────
+    const GAME_ID = "egg-guardian";
+    const RECORDS_KEY = "egg-guardian-records-v1";
+    const NICK_KEY = "egg-guardian-nick-v1";
+    const BOARDS = [null, "easy", "normal", "hard"];
+    const boardLabel = (board) => LEVELS[BOARDS.indexOf(board)]?.label || board;
+    const fmtN = (n) => n.toLocaleString("ko-KR");
+    const formatRecord = (r) => ({ main: `${fmtN(r.score)}점 · ${fmtN(r.stage)}단계`, a: `${fmtN(r.stage)}단계`, b: fmtN(r.score) });
+    const toRow = (r) => ({ nick: r.n, score: r.s, stage: r.st, sec: r.sec, mode: r.m, rank: r.s });
+    let nickname = "", nickEntered = false;
+    let deviceRecords = loadDeviceRecords();
+    let OnlineBoard = null, group = null, resultBoard = null, renderGroupMini = null;
+    let resultContext = null, shownContext = null;
+    let optTouched = false;
+
+    function loadDeviceRecords() {
+      try {
+        const rows = JSON.parse(localStorage.getItem(RECORDS_KEY) || "[]");
+        return Array.isArray(rows) ? rows.filter((r) => r && typeof r.n === "string"
+          && [1, 2, 3].includes(r.l) && ["camera", "keyboard"].includes(r.m)
+          && [r.s, r.st, r.sec, r.t].every(Number.isSafeInteger)
+          && r.s >= 0 && r.st >= 1 && r.sec >= 0).slice(-500) : [];
+      } catch { return []; }
+    }
+
+    function captureNick() {
+      const entered = $("nick").value.trim().slice(0, 12);
+      nickEntered = !!entered;
+      nickname = entered || `도전자 ${playerNo}`;
+      try { localStorage.setItem(NICK_KEY, entered); } catch { /* 저장 불가여도 진행 */ }
+    }
+
+    function localRows(rec) {
+      const bestBy = new Map();
+      for (const r of deviceRecords.filter((r) => r.l === (rec?.l ?? level))) {
+        if (!bestBy.has(r.n) || r.s > bestBy.get(r.n).s) bestBy.set(r.n, r);
+      }
+      return [...bestBy.values()].sort((a, b) => b.s - a.s || a.t - b.t).map((r) => ({
+        ...toRow(r), justNow: !!rec && r === rec, mine: !!rec && r.n === rec.n,
+      }));
+    }
+
+    // 공용 모듈 자체를 못 받은 경우에도 이 기기 기록은 보여 준다.
+    function renderLocalResult() {
+      $("resultBoardOnline").hidden = true;
+      const box = $("resultBoardLocal");
+      box.hidden = false;
+      box.replaceChildren();
+      const note = document.createElement("p");
+      if (players !== 1) {
+        note.textContent = "둘이 모드는 기록판에 올리지 않아요";
+        box.append(note);
+        return;
+      }
+      note.textContent = "📱 이 기기 기록 · 온라인 기록판을 연결하지 못하면 이 기기 기록을 확인하세요.";
+      const list = document.createElement("ol");
+      list.className = "rank";
+      for (const r of localRows(resultContext?.lastRec).slice(0, 10)) {
+        const li = document.createElement("li");
+        li.classList.toggle("me", r.mine);
+        li.textContent = `${r.nick}${r.justNow ? " (방금)" : ""} · ${formatRecord(r).main}`;
+        list.append(li);
+      }
+      box.append(note, list);
+    }
+
+    function showResultBoard() {
+      if (!resultContext || players !== 1 || !resultBoard) { renderLocalResult(); return; }
+      if (shownContext === resultContext) return;
+      shownContext = resultContext;
+      const current = resultContext;
+      $("resultBoardOnline").hidden = false;
+      $("resultBoardLocal").hidden = true;
+      try {
+        Promise.resolve(resultBoard.show(resultContext)).catch(() => {
+          if (phase === "result" && resultContext === current) renderLocalResult();
+        });
+      } catch { renderLocalResult(); }
+    }
+
+    function renderStartGroup() {
+      const box = $("startGroup");
+      const doc = group?.getDoc();
+      box.hidden = !(players === 1 && group?.inGroup() && doc && renderGroupMini);
+      if (!box.hidden) {
+        try { renderGroupMini(box, { doc, game: GAME_ID, board: BOARDS[level], formatRecord, boardLabel }); }
+        catch { box.hidden = true; }
+      }
+    }
+
+    async function initOnlineBoard() {
+      try {
+        // 동적 import: 온라인 부품 로딩이나 실패를 게임 시작이 기다리지 않는다.
+        const [boardModule, groupModule, uiModule] = await Promise.all([
+          import("../../assets/online-board.js"),
+          import("../../assets/online-group.js"),
+          import("../../assets/online-board-ui.js"),
+        ]);
+        OnlineBoard = boardModule;
+        if (optTouched) OnlineBoard.setOptIn($("onlineOpt").checked);
+        else $("onlineOpt").checked = OnlineBoard.getOptIn();
+        renderGroupMini = uiModule.renderGroupMini;
+        group = groupModule.mountGroup({
+          slot: $("groupSlot"), buttonClass: "group-button",
+          getNick: () => $("nick").value.trim(),
+          setNick: (n) => {
+            $("nick").value = n;
+            try { localStorage.setItem(NICK_KEY, n); } catch { /* 무시 */ }
+          },
+          isIdle: () => $("startPanel").classList.contains("show") || $("resultPanel").classList.contains("show"),
+          onOpen: () => { if (inGame()) pauseGame(); },
+          onChange: () => {
+            if ($("startPanel").classList.contains("show")) renderStartGroup();
+            if (phase === "result" && players === 1) {
+              try { Promise.resolve(resultBoard?.onGroupChange()).catch(() => {}); } catch { /* 게임은 계속 */ }
+            }
+          },
+        });
+        resultBoard = uiModule.createResultBoard({
+          container: $("resultBoardOnline"), game: GAME_ID, gameName: "알을 지켜라!",
+          group, formatRecord, boardLabel, localRows,
+        });
+        renderStartGroup();
+        if (phase === "result") showResultBoard();
+      } catch {
+        if (phase === "result") renderLocalResult();
+      }
+    }
+
     const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
     const easeOut = (t) => 1 - Math.pow(1 - t, 3);
 
@@ -707,6 +855,7 @@
       $("levelRange").value = String(level);
       $("levelRange").setAttribute("aria-valuetext", levelInfo().label);
       [...$("levelLabels").children].forEach((label, index) => label.classList.toggle("active", index + 1 === level));
+      renderStartGroup();
     }
 
     function selectPlayers(count) {
@@ -721,6 +870,7 @@
         ? `<li>두 사람이 카메라에서 2~3m 떨어져 좌우에 한 명씩 서요.</li><li>두 사람의 머리 원이 같은 둥지를 함께 지켜요.</li><li>도깨비가 팔을 뒤로 당기면 그쪽에서 돌이 옵니다.</li>`
         : `<li>카메라에서 1.5~2m 떨어져 정면에 서요.</li><li>머리와 양쪽 어깨가 화면에 모두 들어오게 해요.</li><li>도깨비가 팔을 뒤로 당기면 그쪽에서 돌이 옵니다.</li>`;
       $("peopleNeed").textContent = String(players);
+      renderStartGroup();
       updateMeta();
     }
 
@@ -1214,6 +1364,7 @@
 
     function startCountdown() {
       if (phase === "countdown") return;
+      captureNick();
       resetRound();
       phase = "countdown";
       countdownEndsAt = performance.now() + COUNTDOWN_MS;
@@ -1309,7 +1460,18 @@
       const total = Math.round(score);
       score = total;
       lastRecordNo = playerNo;
-      records.push({ no: playerNo, score: total, stage: gameStage, seconds, maxCombo, blocked, level });
+      records.push({ no: playerNo, nick: nickname, score: total, stage: gameStage, seconds, maxCombo, blocked, level });
+      resultContext = null;
+      shownContext = null;
+      if (players === 1) {
+        const lastRec = { n: nickname, s: total, st: gameStage, sec: Math.round(seconds), l: level, m: inputMode, t: Date.now() };
+        deviceRecords.push(lastRec);
+        deviceRecords = deviceRecords.slice(-500);
+        try { localStorage.setItem(RECORDS_KEY, JSON.stringify(deviceRecords)); } catch { /* 현재 실행의 기록은 유지 */ }
+        const board = BOARDS[level];
+        resultContext = { board, nickEntered, lastRec,
+          record: { board, nick: nickname, rank: total, score: total, stage: gameStage, sec: Math.round(seconds), mode: inputMode } };
+      }
       $("finalScore").textContent = total.toLocaleString("ko-KR");
       $("finalStage").textContent = String(gameStage);
       $("finalTime").textContent = seconds.toFixed(1);
@@ -1324,6 +1486,7 @@
       renderHud();
       sfx.gameover();
       setPanel("resultPanel");
+      showResultBoard();
       setStatus(`게임 종료. ${gameStage}단계, ${total}점`);
     }
 
@@ -1343,7 +1506,7 @@
         const rank = document.createElement("span");
         rank.textContent = `${index + 1}위`;
         const who = document.createElement("span");
-        who.textContent = `도전자 ${item.no} · ${item.stage}단계 · ${item.seconds.toFixed(1)}초 · ${LEVELS[item.level].label}`;
+        who.textContent = `${item.nick || `도전자 ${item.no}`} · ${item.stage}단계 · ${item.seconds.toFixed(1)}초 · ${LEVELS[item.level].label}`;
         const value = document.createElement("b");
         value.textContent = `${item.score.toLocaleString("ko-KR")}점`;
         li.append(rank, who, value);
@@ -2301,6 +2464,7 @@
       stopCamera();
       stopMusic();
       setPanel("startPanel");
+      renderStartGroup();
       setMessage();
       showNotice();
       $("countdown").classList.remove("show");
@@ -2309,7 +2473,7 @@
     }
 
     function playAgain(nextPlayer) {
-      if (nextPlayer) playerNo += 1;
+      if (nextPlayer) { playerNo += 1; $("nick").value = ""; }
       resetRound();
       if (inputMode === "camera" && stream) {
         phase = "ready";
@@ -2496,6 +2660,10 @@
     $("soloModeBtn").addEventListener("click", () => selectPlayers(1));
     $("duoModeBtn").addEventListener("click", () => selectPlayers(2));
     $("levelRange").addEventListener("input", (event) => setLevel(event.target.value));
+    $("onlineOpt").addEventListener("change", (event) => {
+      optTouched = true;
+      try { OnlineBoard?.setOptIn(event.target.checked); } catch { /* 게임은 계속 */ }
+    });
     $("showNormalCheck").addEventListener("change", (event) => { showNormals = event.target.checked; });
     $("cameraStartBtn").addEventListener("click", () => { ensureAudio(); prepareCamera(); });
     $("keyboardStartBtn").addEventListener("click", () => { ensureAudio(); startKeyboard(); });
@@ -2541,6 +2709,8 @@
     });
     window.addEventListener("pagehide", () => { stopCamera(); stopMusic(); });
 
+    try { $("nick").value = (localStorage.getItem(NICK_KEY) || "").slice(0, 12); } catch { /* 무시 */ }
+    initOnlineBoard();
     setLevel(2);
     selectPlayers(1);
     resizeCanvas();
