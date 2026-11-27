@@ -51,21 +51,93 @@ service cloud.firestore {
         && keeperCore(d);
     }
 
+    // 박수로 모기잡기 : board = 모드(clap·touch) + 시간(30·60초), rank = 점수
+    // 초당 점수는 박수 약 33점(쿨다운 0.3초 × 한 번에 여러 마리 × 피버), 터치 약 25점(마지막 10초) → 초당 40점까지 받는다.
+    function mosquitoSec(board) {
+      return board in ['clap30', 'touch30'] ? 30 : 60;
+    }
+    function mosquitoCore(d, sec) {
+      return d.score is int && d.score >= 0 && d.score <= sec * 40
+        && d.caught is int && d.caught >= 0 && d.caught <= d.score
+        && d.rank == d.score;
+    }
+    function mosquitoOk(d) {
+      let fields = ['game', 'board', 'nick', 'rank', 'score', 'caught', 'day', 'uid', 'createdAt', 'expireAt'];
+      return d.keys().hasOnly(fields) && d.keys().hasAll(fields)
+        && d.board in ['clap30', 'clap60', 'touch30', 'touch60']
+        && mosquitoCore(d, mosquitoSec(d.board));
+    }
+
+    // 손 명령 : 한 판의 최고 연속 성공 횟수, rank = 연속 횟수. 교사 판정(수동) 모드는 올리지 않는다.
+    // 한 라운드는 명령 듣기 + 반응(0.26초 이상) + 결과 표시로 1초가 넘는다 → 경기 시간 1초에 1.25회까지 받는다.
+    function handCore(d) {
+      return d.sec is int && d.sec >= 0 && d.sec <= 7200
+        && d.score is int && d.score >= 0 && d.score * 4 <= d.sec * 5 + 20
+        && d.rank == d.score;
+    }
+    function handOk(d) {
+      let fields = ['game', 'board', 'nick', 'rank', 'score', 'sec', 'day', 'uid', 'createdAt', 'expireAt'];
+      return d.keys().hasOnly(fields) && d.keys().hasAll(fields)
+        && d.board in ['easy', 'normal', 'hard']
+        && handCore(d);
+    }
+
+    // 달걀 지킴이 : 혼자 모드만, rank = 점수. 단계 하나가 35초 이상이고, 초당 점수는 던지기·부화 보너스를 합쳐 300점까지 받는다.
+    function eggCore(d) {
+      return d.mode in ['camera', 'keyboard']
+        && d.sec is int && d.sec >= 0 && d.sec <= 7200
+        && d.stage is int && d.stage >= 1 && d.stage <= 300 && (d.stage - 1) * 35 <= d.sec
+        && d.score is int && d.score >= 0 && d.score <= (d.sec + 10) * 300
+        && d.rank == d.score;
+    }
+    function eggOk(d) {
+      let fields = ['game', 'board', 'nick', 'rank', 'score', 'stage', 'sec', 'mode', 'day', 'uid', 'createdAt', 'expireAt'];
+      return d.keys().hasOnly(fields) && d.keys().hasAll(fields)
+        && d.board in ['easy', 'normal', 'hard']
+        && eggCore(d);
+    }
+
     function gameOk(d) {
-      return d.game == 'keeper-reflex' && keeperOk(d);
+      return (d.game == 'keeper-reflex' && keeperOk(d))
+        || (d.game == 'mosquito-catch' && mosquitoOk(d))
+        || (d.game == 'hand-command' && handOk(d))
+        || (d.game == 'egg-guardian' && eggOk(d));
     }
 
     // 그룹 안의 게임 기록 한 칸: 키는 '게임~난이도', 값은 그 사람의 가장 좋은 판 + 판 수(plays) + 마지막 시각(t)
-    function groupGameOk(x) {
-      let fields = ['rank', 'score', 'level', 'sec', 'mode', 'plays', 't'];
+    // fields는 그 게임의 기록 칸(공개 기록 칸에서 game·board·nick·day·uid·createdAt·expireAt을 뺀 것) + plays·t
+    function groupGameOk(x, fields) {
       return x.keys().hasOnly(fields) && x.keys().hasAll(fields)
         && x.plays is int && x.plays >= 1 && x.plays <= 999
         && x.t == request.time;
     }
+    function keeperGroupOk(x) {
+      return groupGameOk(x, ['rank', 'score', 'level', 'sec', 'mode', 'plays', 't']) && keeperCore(x);
+    }
+    function mosquitoGroupOk(x, sec) {
+      return groupGameOk(x, ['rank', 'score', 'caught', 'plays', 't']) && mosquitoCore(x, sec);
+    }
+    function handGroupOk(x) {
+      return groupGameOk(x, ['rank', 'score', 'sec', 'plays', 't']) && handCore(x);
+    }
+    function eggGroupOk(x) {
+      return groupGameOk(x, ['rank', 'score', 'stage', 'sec', 'mode', 'plays', 't']) && eggCore(x);
+    }
+    // ch는 바뀐 키 하나. 키 이름으로 게임과 board를 정한다.
     function groupKeyOk(ch, g) {
-      return (ch.hasOnly(['keeper-reflex~easy']) && groupGameOk(g['keeper-reflex~easy']) && keeperCore(g['keeper-reflex~easy']))
-        || (ch.hasOnly(['keeper-reflex~normal']) && groupGameOk(g['keeper-reflex~normal']) && keeperCore(g['keeper-reflex~normal']))
-        || (ch.hasOnly(['keeper-reflex~hard']) && groupGameOk(g['keeper-reflex~hard']) && keeperCore(g['keeper-reflex~hard']));
+      return (ch.hasOnly(['keeper-reflex~easy']) && keeperGroupOk(g['keeper-reflex~easy']))
+        || (ch.hasOnly(['keeper-reflex~normal']) && keeperGroupOk(g['keeper-reflex~normal']))
+        || (ch.hasOnly(['keeper-reflex~hard']) && keeperGroupOk(g['keeper-reflex~hard']))
+        || (ch.hasOnly(['mosquito-catch~clap30']) && mosquitoGroupOk(g['mosquito-catch~clap30'], 30))
+        || (ch.hasOnly(['mosquito-catch~clap60']) && mosquitoGroupOk(g['mosquito-catch~clap60'], 60))
+        || (ch.hasOnly(['mosquito-catch~touch30']) && mosquitoGroupOk(g['mosquito-catch~touch30'], 30))
+        || (ch.hasOnly(['mosquito-catch~touch60']) && mosquitoGroupOk(g['mosquito-catch~touch60'], 60))
+        || (ch.hasOnly(['hand-command~easy']) && handGroupOk(g['hand-command~easy']))
+        || (ch.hasOnly(['hand-command~normal']) && handGroupOk(g['hand-command~normal']))
+        || (ch.hasOnly(['hand-command~hard']) && handGroupOk(g['hand-command~hard']))
+        || (ch.hasOnly(['egg-guardian~easy']) && eggGroupOk(g['egg-guardian~easy']))
+        || (ch.hasOnly(['egg-guardian~normal']) && eggGroupOk(g['egg-guardian~normal']))
+        || (ch.hasOnly(['egg-guardian~hard']) && eggGroupOk(g['egg-guardian~hard']));
     }
 
     // 같은 기기(익명 uid)는 10초에 한 건. limits/{uid}를 기록과 같은 일괄 쓰기로 갱신해야 한다.

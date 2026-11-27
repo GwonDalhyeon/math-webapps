@@ -41,6 +41,17 @@ function keeper(uid, over = {}) {
   return r;
 }
 
+// 다른 게임: 기본 칸 + 게임 칸 (rank는 over에 없으면 score)
+function rec(game, board, vals, uid, over = {}) {
+  const r = { game, board, nick: "참가", ...vals, day: kstDay(), uid, expireAt: new Date(Date.now() + 30 * DAY_MS), ...over };
+  if (!("rank" in over)) r.rank = r.score;
+  for (const k of Object.keys(over)) if (over[k] === undefined) delete r[k];
+  return r;
+}
+const mosq = (uid, over = {}) => rec("mosquito-catch", "clap60", { score: 320, caught: 150 }, uid, over);
+const hand = (uid, over = {}) => rec("hand-command", "normal", { score: 25, sec: 70 }, uid, over);
+const egg = (uid, over = {}) => rec("egg-guardian", "normal", { score: 4200, stage: 3, sec: 90, mode: "camera" }, uid, over);
+
 let seq = 0;
 // 기록 1건과 limits/{uid}를 한 번에 쓴다 (앱과 같은 방식)
 async function submit(uid, data, { withLimit = true, limitUid = uid, sid = null, created = true } = {}) {
@@ -140,12 +151,51 @@ async function main() {
   await adminSet("scores/expired1", { ...keeper("ghost"), createdAt: new Date(Date.now() - 40 * DAY_MS), expireAt: new Date(Date.now() - 10 * DAY_MS) });
   await expect("기한 지난 남의 기록 정리", true, del(fresh(), "expired1"));
 
+  await otherGameTests();
   await groupTests();
 
   const fail = results.filter((r) => !r.pass).length;
   console.log(`\n${results.length}건 중 ${results.length - fail}건 통과${fail ? `, ${fail}건 실패` : ""}`);
   process.exit(fail ? 1 : 0);
 }
+// ---------------------------------------------------------------------------
+// 박수로 모기잡기 · 손 명령 · 달걀 지킴이
+// ---------------------------------------------------------------------------
+async function otherGameTests() {
+  let x;
+  console.log("\n-- 박수로 모기잡기 --");
+  await expect("모기 정상 기록(박수 60초)", true, submit((x = fresh()), mosq(x)));
+  await expect("모기 터치 30초", true, submit((x = fresh()), mosq(x, { board: "touch30", score: 600, caught: 280 })));
+  await expect("모기 30초에 1300점", false, submit((x = fresh()), mosq(x, { board: "clap30", score: 1300, caught: 500 })));
+  await expect("모기 60초 상한 2400점", true, submit((x = fresh()), mosq(x, { score: 2400, caught: 900 })));
+  await expect("모기 60초 2401점", false, submit((x = fresh()), mosq(x, { score: 2401, caught: 900 })));
+  await expect("모기 잡은 수가 점수보다 많음", false, submit((x = fresh()), mosq(x, { score: 100, caught: 101 })));
+  await expect("모기 rank 조작", false, submit((x = fresh()), mosq(x, { rank: 5000 })));
+  await expect("모기 없는 board(clap90)", false, submit((x = fresh()), mosq(x, { board: "clap90" })));
+  await expect("모기 칸 추가(mode)", false, submit((x = fresh()), mosq(x, { mode: "clap" })));
+  await expect("모기 칸 빠짐(caught)", false, submit((x = fresh()), mosq(x, { caught: undefined })));
+  await expect("모기 게임에 골키퍼 칸", false, submit((x = fresh()), keeper(x, { game: "mosquito-catch", board: "clap60" })));
+
+  console.log("\n-- 손 명령 --");
+  await expect("손 명령 정상 기록", true, submit((x = fresh()), hand(x)));
+  await expect("손 명령 0회 기록", true, submit((x = fresh()), hand(x, { score: 0, sec: 5 })));
+  await expect("손 명령 경기 시간에 비해 너무 많음", false, submit((x = fresh()), hand(x, { score: 60, sec: 40 })));
+  await expect("손 명령 rank 조작", false, submit((x = fresh()), hand(x, { rank: 99 })));
+  await expect("손 명령 없는 난이도", false, submit((x = fresh()), hand(x, { board: "manual" })));
+  await expect("손 명령 칸 추가(mode)", false, submit((x = fresh()), hand(x, { mode: "camera" })));
+  await expect("손 명령 칸 빠짐(sec)", false, submit((x = fresh()), hand(x, { sec: undefined })));
+
+  console.log("\n-- 달걀 지킴이 --");
+  await expect("달걀 정상 기록", true, submit((x = fresh()), egg(x)));
+  await expect("달걀 키보드·쉬움", true, submit((x = fresh()), egg(x, { board: "easy", mode: "keyboard" })));
+  await expect("달걀 3단계인데 60초", false, submit((x = fresh()), egg(x, { stage: 3, sec: 60 })));
+  await expect("달걀 점수가 시간에 비해 너무 큼", false, submit((x = fresh()), egg(x, { score: 40000 })));
+  await expect("달걀 rank 조작", false, submit((x = fresh()), egg(x, { rank: 1 })));
+  await expect("달걀 둘이 모드 값", false, submit((x = fresh()), egg(x, { mode: "duo" })));
+  await expect("달걀 칸 빠짐(stage)", false, submit((x = fresh()), egg(x, { stage: undefined })));
+  await expect("달걀 칸 추가(players)", false, submit((x = fresh()), egg(x, { players: 1 })));
+}
+
 // ---------------------------------------------------------------------------
 // 그룹
 // ---------------------------------------------------------------------------
@@ -228,6 +278,19 @@ async function groupTests() {
     { update: { name: `${DB}/limits/${p2}`, fields: fields({ sid }) }, updateTransforms: [{ fieldPath: "last", setToServerValue: "REQUEST_TIME" }] },
     memberWrite(P, p2, { n: "참가", g: { "keeper-reflex~normal": kRec() } }, { gameKey: "keeper-reflex~normal" }),
   ]));
+
+  // 다른 게임의 그룹 기록 (같은 사람이 게임마다 한 칸씩, 3초 간격 규칙 때문에 사람을 바꾼다)
+  const G = code6(), q1 = fresh(), q2 = fresh(), q3 = fresh(), q4 = fresh(), q5 = fresh(), q6 = fresh();
+  const seeded2 = {};
+  for (const p of [q1, q2, q3, q4, q5, q6]) seeded2[p] = { n: "참가" + p.slice(-2), at: old, g: {} };
+  await adminSet(`groups/${G}`, { createdAt: new Date(Date.now() - 60000), m: seeded2 });
+  const gw = (p, key, r, ok, name) => expect(name, ok, commit(p, [memberWrite(G, p, { n: "참가", g: { [key]: r } }, { gameKey: key })]));
+  await gw(q1, "mosquito-catch~touch30", { rank: 500, score: 500, caught: 240, plays: 1 }, true, "그룹 모기 기록");
+  await gw(q2, "mosquito-catch~clap30", { rank: 1300, score: 1300, caught: 400, plays: 1 }, false, "그룹 모기 30초 상한 넘김");
+  await gw(q3, "hand-command~hard", { rank: 18, score: 18, sec: 50, plays: 2 }, true, "그룹 손 명령 기록");
+  await gw(q4, "hand-command~hard", { rank: 18, score: 18, sec: 50, level: 1, plays: 2 }, false, "그룹 손 명령 칸 추가");
+  await gw(q5, "egg-guardian~easy", { rank: 3000, score: 3000, stage: 2, sec: 50, mode: "keyboard", plays: 1 }, true, "그룹 달걀 기록");
+  await gw(q6, "egg-guardian~easy", { rank: 3000, score: 3000, stage: 2, sec: 50, plays: 1 }, false, "그룹 달걀 칸 빠짐(mode)");
 
   const X = code6();
   await adminSet(`groups/${X}`, { createdAt: new Date(Date.now() - 2 * 3600000), m: { [p3]: { n: "늦음", at: old, g: {} } } });

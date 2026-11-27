@@ -304,9 +304,9 @@ async function writeScore(game, record, { wantPub, wantGroup, group, groupNick }
       const key = `${game}~${record.board}`;
       const old = prev.g?.[key];
       const { board, nick, ...vals } = record;
-      const best = old && old.rank >= record.rank
-        ? { rank: old.rank, score: old.score, level: old.level, sec: old.sec, mode: old.mode }
-        : { rank: vals.rank, score: vals.score, level: vals.level, sec: vals.sec, mode: vals.mode };
+      // 그룹 칸은 게임마다 다르다: board·nick을 뺀 기록 칸을 그대로 쓴다(규칙의 groupGameOk 칸과 같아야 한다)
+      const keep = (src) => Object.fromEntries(Object.keys(vals).map((k) => [k, src[k]]));
+      const best = old && old.rank >= record.rank ? keep(old) : keep(vals);
       const entry = { n: groupNick, at: fs.serverTimestamp(), g: { ...(prev.g || {}), [key]: { ...best, plays: (old?.plays || 0) + 1, t: fs.serverTimestamp() } } };
       tx.update(groupRef, new fs.FieldPath("m", uid), entry);
       // 화면에 바로 보일 그룹 상태 (서버 시각 칸은 지금 시각으로 채운다)

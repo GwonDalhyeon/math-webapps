@@ -101,14 +101,15 @@ const group = mountGroup({
 
 판단 순서: ① 개인 점수가 있는가(없으면 미적용) → ② 상단 바가 있는가(없으면 floating) → ③ 놀이 영역 밖 빈 공간이 있는가(있으면 auto) → ④ 이미 쓰는 옆 칸이 있는가(있으면 embed) → ⑤ 구석에 작은 띠를 둘 수 있는가(있으면 compact) → ⑥ 캔버스에 그릴 수 있는가(있으면 headless) → 아니면 off.
 
-현재 게임의 예상(적용할 때 화면을 직접 보고 확정한다):
+현재 게임(2026-11-27 결정):
 
-| 게임 | 예상 |
-|---|---|
-| 슈퍼 세이브! | 모든 단계, `auto` (적용 완료) |
-| 박수로 모기잡기 | 상단 바 없음 → floating, 이미 gutter 사용 → `embed` 또는 좁은 화면 `compact` |
-| 손 명령 | 상단 바 없음 → floating, 배치는 화면 확인 후 |
-| 기지개 팡팡·달걀 지킴이 | 화면 확인 후 결정 |
+| 게임 | board · 칸 · rank | 단계 · 배치 |
+|---|---|---|
+| 슈퍼 세이브! | 난이도 · `level score sec mode` · 레벨×1천만+점수 | 0~4, 상단 바 `slot`, `auto` |
+| 박수로 모기잡기 | `clap30 clap60 touch30 touch60`(터치가 2배쯤 쉬워 따로) · `score caught` · 점수(초당 40점까지) | 0~4, 상단 바 `slot`, gutter `embed`(가로 1.5 미만 비율에서는 gutter가 숨어 패널도 안 보임) |
+| 손 명령 | 난이도 · `score`(한 판 최고 연속) `sec` · 연속 횟수(1초에 1.25회까지) | 0~3, 상단 바 `slot`, `off`(명령을 듣고 반응하는 게임). 교사 판정 모드는 올리지 않는다. 별명 입력을 새로 넣었다 |
+| 달걀 지킴이 | 난이도 `easy normal hard`(level 1~3) · `score stage sec mode(camera·keyboard)` · 점수 | 0~3, 상단 바 `slot`, `off`(돌이 무대 전체를 날아다님). 혼자 모드만. 별명 입력·이 기기 기록을 새로 넣었다 |
+| 기지개 팡팡 | **미적용(결정)**: 명단을 넣고 돌아가며 하는 반 안 순위 게임이라 게임 안 순위로 충분하고, 명단에 실명이 들어가면 공개 기록판에 그대로 올라갈 수 있다 | — |
 | 머리콩! 카피바라 배구(`upper-body-volleyball`) | **미적용(결정, 2026-11-27)**: 카피바라·친구와 5점 먼저 따기라 이기면 누구나 5점이어서 순위가 생기지 않고, 친구 대결은 개인 기록이 아니다. 필요해지면 서버 없이 이 기기 전적(몇 승 몇 패)만 둔다 |
 | 모둠 뽑기·월드컵 | 점수 없음 → 미적용 |
 
@@ -120,7 +121,7 @@ const group = mountGroup({
 ## 7. 적용 절차
 
 1. 4장의 표를 채우고, 6장의 단계·배치를 정한다(큰 화면 변경은 사용자와 먼저 정한다).
-2. `firebase/firestore.rules`: 그 게임의 검사 함수(`xxxCore`, `xxxOk`)와 `gameOk()` 분기, 그룹용 `groupKeyOk()` 키(`'게임~board'`)를 추가한다.
+2. `firebase/firestore.rules`: 그 게임의 검사 함수(`xxxCore`, `xxxOk`, `xxxGroupOk`)와 `gameOk()` 분기, 그룹용 `groupKeyOk()` 키(`'게임~board'`)를 추가한다. 그룹 칸은 `submitScore`가 기록에서 `board`·`nick`만 빼고 그대로 쓰므로 `groupGameOk(x, [게임 칸… , 'plays', 't'])`의 칸 목록을 공개 기록 칸과 맞춘다.
 3. `firebase/test/rules-test.mjs`에 그 게임의 허용·거부 사례(정상, 범위 밖, rank 조작, 칸 추가·누락, 그룹 기록)를 추가하고 에뮬레이터에서 모두 통과시킨다.
 4. 게임 파일: 시작 화면 별명 입력 옆 `🌐 온라인 기록판에 올리기` 체크 상자와 안내 문구, `mountGroup`, `createResultBoard`(결과 화면), 필요하면 `renderGroupMini`, `createLivePanels`를 붙인다. 슈퍼 세이브!의 "온라인 기록판 화면" 절을 그대로 본뜬다.
 5. 에뮬레이터로 검증(8장) → 사용자 확인 뒤 `cd firebase && firebase deploy --only firestore`로 규칙 배포 → 운영 확인 후 시험 기록 삭제.

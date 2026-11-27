@@ -4,7 +4,7 @@
 // 3) node firebase/test/sim-group.mjs <6자리 코드> [게임~난이도] [기록 JSON]
 //    기록 JSON을 생략하면 슈퍼 세이브! 형식(레벨·점수)의 예시 5명 + 기록 없는 1명을 넣는다.
 //    다른 게임은 규칙(groupKeyOk)에 맞는 칸으로 직접 넘긴다. 예:
-//    node firebase/test/sim-group.mjs 123456 mosquito-catch~normal "[{\"n\":\"민수\",\"rec\":{\"rank\":120,\"score\":120,\"mode\":\"camera\"}}]"
+//    node firebase/test/sim-group.mjs 123456 mosquito-catch~clap60 "[{\"n\":\"민수\",\"rec\":{\"rank\":120,\"score\":120,\"caught\":55}}]"
 //    (rank·plays·t 외의 칸은 그 게임 규칙이 요구하는 이름 그대로)
 const [code, key = "keeper-reflex~normal", json] = process.argv.slice(2);
 if (!/^\d{6}$/.test(code || "")) { console.error("사용: node firebase/test/sim-group.mjs <6자리 코드> [게임~난이도] [기록 JSON]"); process.exit(1); }
