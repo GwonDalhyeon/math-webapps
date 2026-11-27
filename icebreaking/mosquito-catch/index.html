@@ -216,6 +216,31 @@
       width: 100%; box-sizing: border-box; font: inherit; font-size: 18px; padding: 12px 14px;
       border-radius: 14px; border: 2px solid var(--line); background: #fff; color: var(--ink);
     }
+    .nick-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+    .nick-row #nick { flex: 1 1 140px; width: 140px; min-width: 0; }
+    .field .online-opt { display: inline-flex; align-items: center; gap: 5px; margin: 0; font-size: 13px; cursor: pointer; min-height: 44px; }
+    .field .online-opt input { width: 18px; height: 18px; padding: 0; accent-color: var(--orange); }
+    #startGroup:empty, #resultBoard:empty { display: none; }
+    #resultBoard { max-height: 260px; overflow: auto; min-width: 0; }
+    /* 기존 카드는 줄이지 않고, 온라인 패널만 gutter의 남는 높이에 맞춘다. */
+    .gutter { min-height: 0; overflow: hidden; }
+    .gutter > .card { flex: none; }
+    .gutter > .ob-side.embed { display: none; }
+    /* gutter가 좁으면(iPad 가로 4:3 화면에서 약 120px) 기록판을 간추린다: 부제·태그·마리 수를 숨기고 제목은 줄바꿈 */
+    .gutter { container: gut / inline-size; }
+    @container gut (max-width: 170px) {
+      .gutter .ob-side.embed .ob-box { padding: 7px 6px; }
+      .gutter .ob-side.embed h4 { font-size: 13px; white-space: normal; line-height: 1.2; }
+      .gutter .ob-side.embed .ob-sub, .gutter .ob-side.embed .ob-rank .tag,
+      .gutter .ob-side.embed .ob-rank .rec span, .gutter .ob-side.embed .ob-pct { display: none; }
+      .gutter .ob-side.embed .ob-rank .rec { padding-left: 0; justify-content: flex-end; }
+      .gutter .ob-side.embed .ob-rank .who { font-size: 14px; }
+      .gutter .ob-side.embed .ob-tname, .gutter .ob-side.embed .ob-trec { white-space: normal; overflow-wrap: anywhere; }
+    }
+    @container stage (min-aspect-ratio: 1.5) {
+      .gutter > .ob-side.embed { display: flex; flex: 0 1 auto; height: auto; min-height: 0; width: calc(100% - 10px); overflow: hidden; margin-top: 10px; }
+      .gutter .ob-box { box-sizing: border-box; min-height: 0; overflow: hidden; flex-shrink: 1; }
+    }
     .seg { display: flex; gap: 8px; }
     .seg button { flex: 1; background: #fff; color: var(--ink); box-shadow: 0 3px 0 var(--line); }
     .seg button[aria-pressed="true"] { background: var(--ink); color: #fff; }
@@ -271,6 +296,8 @@
     @media (orientation: portrait) {
       .sheet { grid-template-columns: 1fr; gap: 14px; padding: 16px; }
       .hero { aspect-ratio: 2 / 1; }
+      /* 세로 화면에서는 결과 버튼이 먼저 보이도록 온라인 기록판을 맨 아래로 */
+      #panelResult .stack > #resultBoard { order: 1; }
       .bar h1 { font-size: 17px; }
       .home { font-size: 14px; }
     }
@@ -287,6 +314,7 @@
     <a class="home" href="../">← 아이스브레이킹</a>
     <h1>짝짝짝! 박수로 <b>모기잡기</b></h1>
     <span class="spacer"></span>
+    <span id="groupSlot"></span>
     <span class="chip" id="whoChip"></span>
     <button class="mini dark" id="soundBtn" type="button">🔊 소리 끄기</button>
   </header>
@@ -363,7 +391,11 @@
           <div class="alert" id="startAlert" role="alert"></div>
           <div class="field">
             <label for="nick">별명 <span>(비우면 ‘손님’)</span></label>
-            <input type="text" id="nick" maxlength="12" placeholder="예: 3반호랑이" autocomplete="off" />
+            <div class="nick-row">
+              <input type="text" id="nick" maxlength="12" placeholder="예: 3반호랑이" autocomplete="off" />
+              <label class="online-opt"><input type="checkbox" id="onlineOpt" checked /> 🌐 온라인 기록판에 올리기</label>
+            </div>
+            <p class="small">🌐 켜 두면 별명·점수·잡은 수·날짜가 30일 동안 온라인 기록판에 올라가 누구나 볼 수 있어요. 실명·학번은 쓰지 마세요.</p>
           </div>
           <div class="seg" role="group" aria-label="게임 시간">
             <button type="button" data-sec="30" aria-pressed="false">30초</button>
@@ -371,6 +403,7 @@
           </div>
           <button class="big" id="beginBtn" type="button">📷 카메라 켜고 시작</button>
           <button class="ghost" id="touchBtn" type="button">👆 카메라 없이 터치로 하기</button>
+          <div id="startGroup" hidden></div>
           <div class="box">
             <h3>📒 이 컴퓨터의 기록 <span>최근 순 · 이 컴퓨터에만 저장</span></h3>
             <ol class="rec" id="startRecords"></ol>
@@ -421,6 +454,7 @@
           </div>
         </div>
         <div class="stack">
+          <div id="resultBoard"></div>
           <div class="box">
             <h3>📒 이 컴퓨터의 기록 <span>최근 순 · 이 컴퓨터에만 저장</span></h3>
             <ol class="rec" id="resultRecords"></ol>
@@ -560,6 +594,14 @@ let rafId = 0;
 let starting = false;
 
 let nickname = "";
+let nickEntered = false;
+let onlineBoard = null, group = null, resultBoard = null, livePanels = null;
+let resultBoardArgs = null;
+
+// 온라인 기능은 실패해도 게임을 멈추지 않는다. 비동기 처리도 기다리지 않는다.
+function withOnline(action) {
+  try { Promise.resolve(action()).catch(() => {}); } catch { /* 게임은 계속 진행 */ }
+}
 let soundOn = true;
 let audioCtx = null;
 let music = null;
@@ -1196,6 +1238,7 @@ function showNotice(text, kind = "warn") {
 }
 
 function showPanel(id) {
+  if (id === "panelStart") withOnline(() => renderStartGroup());
   for (const p of ["panelStart", "panelLoad", "panelPause", "panelResult", "panelError"]) {
     $(p).classList.toggle("show", p === id);
   }
@@ -1232,6 +1275,9 @@ function updateGuide() {
 // ===========================================================================
 function loop() {
   rafId = requestAnimationFrame(loop);
+  const playing = phase === "playing";
+  withOnline(() => livePanels?.update({ rank: playing ? score : 0, playing,
+    row: { score: playing ? score : 0, caught: playing ? caught : 0 } }));
   const now = performance.now();
   const dt = lastFrameAt ? Math.min(0.05, (now - lastFrameAt) / 1000) : 0;
   lastFrameAt = now;
@@ -1320,6 +1366,7 @@ function resetRound() {
 }
 
 function startCountdown(now, resume = false) {
+  withOnline(() => livePanels?.prepare());
   phase = "countdown";
   countdownEndsAt = now + COUNTDOWN_S * 1000;
   lastCountShown = 0;
@@ -1405,6 +1452,10 @@ function endRound(quit = false) {
   };
   records.push(lastRecord);
   saveRecords(records);
+  resultBoardArgs = { board: `${mode}${roundSec}`, nickEntered, lastRec: lastRecord,
+    record: { board: `${mode}${roundSec}`, nick: nickname, rank: Math.round(score),
+      score: Math.round(score), caught: Math.round(caught) } };
+  withOnline(() => resultBoard?.show(resultBoardArgs));
   renderResult(prevBest);
   showPanel("panelResult");
   setBodyState();
@@ -1659,6 +1710,7 @@ function beginTouch() {
 // 이벤트
 // ===========================================================================
 function readNickname() {
+  nickEntered = !!$("nick").value.trim();
   nickname = $("nick").value.trim() || "손님";
   try { localStorage.setItem(NICK_KEY, nickname); } catch { /* 저장 불가여도 진행한다 */ }
   // 기본값은 소리 켜짐. 자동 재생 정책에 맞춰 버튼을 누른 순간 오디오를 활성화한다.
@@ -1674,6 +1726,7 @@ $("nick").addEventListener("keydown", (e) => { if (e.key === "Enter") $("beginBt
 for (const b of document.querySelectorAll(".seg button")) {
   b.addEventListener("click", () => {
     roundSec = Number(b.dataset.sec);
+    withOnline(() => renderStartGroup());
     for (const o of document.querySelectorAll(".seg button")) o.setAttribute("aria-pressed", String(o === b));
     try { localStorage.setItem(PREF_KEY, JSON.stringify({ sec: roundSec })); } catch { /* 무시 */ }
     updateHud();
@@ -1743,6 +1796,81 @@ document.addEventListener("visibilitychange", () => {
   }
 });
 window.addEventListener("pagehide", () => stopCamera());
+
+// ===========================================================================
+// 온라인 기록판 화면: 기존 이 기기 기록의 저장 형식은 유지한다.
+// ===========================================================================
+const GAME_ID = "mosquito-catch";
+const fmtN = (n) => Math.round(n || 0).toLocaleString("ko-KR");
+const formatRecord = (r) => ({ main: `${fmtN(r.score)}점 · ${fmtN(r.caught)}마리`,
+  a: `${fmtN(r.caught)}마리`, b: fmtN(r.score) });
+const boardLabel = (board) => ({ clap30: "👏 박수 · 30초", clap60: "👏 박수 · 60초",
+  touch30: "👆 터치 · 30초", touch60: "👆 터치 · 60초" })[board] || board;
+const toRow = (r) => ({ nick: r.n, score: Math.round(r.s), caught: Math.round(r.c), rank: Math.round(r.s) });
+function bestPerName(records) {
+  const bestBy = new Map();
+  for (const r of records) {
+    if (!bestBy.has(r.n) || r.s > bestBy.get(r.n).s) bestBy.set(r.n, r);
+  }
+  return [...bestBy.values()].sort((a, b) => b.s - a.s);
+}
+function boardRecords(board) {
+  return bestPerName(loadRecords().filter((r) => `${r.m}${r.sec}` === board));
+}
+function renderStartGroup() {
+  const doc = group?.getDoc();
+  const on = !!group?.inGroup();
+  $("startGroup").hidden = !on;
+  if (on && doc) onlineBoard.renderGroupMini($("startGroup"), {
+    doc, game: GAME_ID, board: `clap${roundSec}`, formatRecord, boardLabel,
+  });
+  else $("startGroup").replaceChildren();
+}
+$("onlineOpt").addEventListener("change", (e) => {
+  withOnline(() => onlineBoard?.OB.setOptIn(e.target.checked));
+});
+
+// 동적 import를 기다리지 않아 오프라인·모듈 로딩 실패 때도 시작/종료가 가능하다.
+Promise.all([
+  import("../../assets/online-board.js"),
+  import("../../assets/online-group.js"),
+  import("../../assets/online-board-ui.js"),
+]).then(([OB, { mountGroup }, UI]) => {
+  onlineBoard = { OB, renderGroupMini: UI.renderGroupMini };
+  $("onlineOpt").checked = OB.getOptIn();
+  group = mountGroup({
+    slot: $("groupSlot"), buttonClass: "mini dark",
+    getNick: () => $("nick").value.trim() || nickname,
+    setNick: (n) => {
+      $("nick").value = n;
+      try { localStorage.setItem(NICK_KEY, n); } catch { /* 저장 불가여도 진행 */ }
+    },
+    isIdle: () => $("panelStart").classList.contains("show") || $("panelResult").classList.contains("show"),
+    isPlaying: () => phase === "countdown" || phase === "playing",
+    onOpen: () => { if (phase === "playing" || phase === "countdown") pauseGame(); },
+    onChange: (doc) => {
+      withOnline(() => livePanels?.onGroupDoc(doc));
+      if ($("panelStart").classList.contains("show")) withOnline(() => renderStartGroup());
+      if ($("panelResult").classList.contains("show")) withOnline(() => resultBoard?.onGroupChange());
+    },
+  });
+  resultBoard = UI.createResultBoard({
+    container: $("resultBoard"), game: GAME_ID, gameName: "짝짝짝! 박수로 모기잡기",
+    group, formatRecord, boardLabel,
+    localRows: (rec) => boardRecords(rec ? `${rec.m}${rec.sec}` : `${mode}${roundSec}`)
+      .map((r) => ({ ...toRow(r), justNow: !!rec && r.t === rec.t, mine: !!rec && r.n === rec.n })),
+  });
+  livePanels = UI.createLivePanels({
+    host: stageEl, game: GAME_ID, group, layout: "embed",
+    left: document.querySelector("aside.gutter.a"), right: document.querySelector("aside.gutter.b"),
+    getBoard: () => `${mode}${roundSec}`, getNick: () => nickname,
+    boardLabel, formatRecord, localRows: (board) => boardRecords(board).map(toRow),
+  });
+  renderStartGroup();
+  // 느리게 로딩된 경우에도 현재 화면에 맞춰 연결한다.
+  if (phase === "countdown" || phase === "playing") withOnline(() => livePanels.prepare());
+  if (phase === "result" && resultBoardArgs) withOnline(() => resultBoard.show(resultBoardArgs));
+}).catch(() => { /* 온라인 부품 없이 기존 이 기기 기록과 게임을 그대로 사용 */ });
 
 // 처음 화면 준비: 지난번 별명·시간 선택, 기록 목록
 try {
